@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, Dimensions, Image } from 'react-native';
-import Video from 'react-native-video';
-
+import { VLCPlayer, VlCPlayerView } from 'react-native-vlc-media-player';
 const { width } = Dimensions.get('window');
+import Orientation from 'react-native-orientation';
 
 type Story = {
   name: string;
@@ -15,7 +15,7 @@ const stories: Story[] = [
     name: 'sahilanandofficial',
     image:
       'https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL',
-    link: 'https://yourcdn.com/reels/sahil.mp4',
+    link: 'https://www.youtube.com/shorts/CMqF7gBJhMk',
   },
   {
     name: 'nonaberrry',
@@ -37,22 +37,61 @@ const stories: Story[] = [
   },
 ];
 
+// Individual story card
+function StoryCard({ item, isActive }: { item: Story; isActive: boolean }) {
+  const CARD_WIDTH = width * 0.75;
+
+  return (
+    <View
+      style={{ width: CARD_WIDTH }}
+      className="rounded-2xl overflow-hidden bg-black"
+    >
+      {/* Video */}
+      <View className="aspect-[9/16] bg-black">
+        {/* <VlCPlayerView
+          source={{ uri: item.link }}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="cover"
+          repeat={isActive}
+          muted
+          paused={!isActive}
+          autoplay={isActive}
+          // onError={error => console.log('VLC Error:', error)}
+        /> */}
+        <VLCPlayer
+          style={{ width: '100%', height: '100%' }}
+          source={{ uri: item.link }}
+        />
+      </View>
+
+      {/* Creator Avatar */}
+      <View className="absolute bottom-4 left-4 flex-row items-center gap-3">
+        <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
+          <Image source={{ uri: item.image }} className="w-full h-full" />
+        </View>
+      </View>
+
+      {/* Username */}
+      <Text className="absolute bottom-2 right-4 text-white text-sm">
+        {item.name}
+      </Text>
+    </View>
+  );
+}
+
 export default function CreatorStories() {
   const flatListRef = useRef<FlatList>(null);
   const [current, setCurrent] = useState(0);
-
   const CARD_WIDTH = width * 0.75;
 
-  // autoplay
+  // Autoplay carousel
   useEffect(() => {
     const interval = setInterval(() => {
       const nextIndex = (current + 1) % stories.length;
-
       flatListRef.current?.scrollToIndex({
         index: nextIndex,
         animated: true,
       });
-
       setCurrent(nextIndex);
     }, 3000);
 
@@ -76,35 +115,14 @@ export default function CreatorStories() {
         decelerationRate="fast"
         keyExtractor={item => item.name}
         contentContainerStyle={{ gap: 12 }}
-        renderItem={({ item }) => (
-          <View
-            style={{ width: CARD_WIDTH }}
-            className="rounded-2xl overflow-hidden bg-black"
-          >
-            {/* Video */}
-            <View className="aspect-[9/16] bg-black">
-              <Video
-                source={{ uri: item.link }}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-                repeat
-                muted
-                paused={false}
-              />
-            </View>
-
-            {/* Creator Avatar */}
-            <View className="absolute bottom-4 left-4 flex-row items-center gap-3">
-              <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
-                <Image source={{ uri: item.image }} className="w-full h-full" />
-              </View>
-            </View>
-
-            {/* Username */}
-            <Text className="absolute bottom-2 right-4 text-white text-sm">
-              {item.name}
-            </Text>
-          </View>
+        onMomentumScrollEnd={e => {
+          const index = Math.round(
+            e.nativeEvent.contentOffset.x / (CARD_WIDTH + 12),
+          );
+          setCurrent(index);
+        }}
+        renderItem={({ item, index }) => (
+          <StoryCard item={item} isActive={index === current} />
         )}
       />
 

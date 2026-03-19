@@ -45,4 +45,14 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
+
+  // ✅ Add this
+  override func extraModules(for bridge: RCTBridge) -> [RCTBridgeModule] {
+    return []
+  }
+
+  // ✅ And this
+  override func bridge(_ bridge: RCTBridge, didNotFindModule moduleName: String) -> Bool {
+    return false
+  }
 }
