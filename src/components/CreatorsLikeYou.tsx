@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Image, Pressable, ScrollView } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import {View, Text, Image, Pressable} from 'react-native';
+import Animated, {FadeInUp} from 'react-native-reanimated';
 
 const creators = [
   {
@@ -47,105 +47,101 @@ const creators = [
 
 export default function CreatorsLikeYou() {
   return (
-    <ScrollView className="w-full px-4 py-6">
+    <View className="w-full px-4 py-8 bg-[#F7F7FB]">
       {/* Header */}
       <View className="flex-row justify-between items-center mb-6">
         <View>
-          <Text className="text-lg font-bold text-slate-900 uppercase">
+          <Text className="text-lg font-black text-slate-900 uppercase tracking-tight">
             Creators Like You
           </Text>
-
-          <Text className="text-sm text-slate-500">
+          <Text className="text-xs text-slate-400 font-medium mt-1">
             See how others are growing their income
           </Text>
         </View>
-
         <Pressable>
-          <Text className="text-pink-500 font-semibold">Explore →</Text>
+          <Text className="text-pink-500 font-bold text-xs">Explore →</Text>
         </Pressable>
       </View>
 
       {/* Featured Card */}
       <Animated.View
         entering={FadeInUp.duration(500)}
-        className="bg-white rounded-3xl p-6 border border-slate-200 mb-6"
-      >
-        <View className="flex-row items-center gap-3 mb-6">
+        className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-4">
+        <View className="flex-row items-center mb-4" style={{gap: 12}}>
           <Image
-            source={{ uri: 'https://i.pravatar.cc/150?img=4' }}
+            source={{uri: 'https://i.pravatar.cc/150?img=4'}}
             className="w-12 h-12 rounded-full"
           />
-
           <View>
-            <Text className="font-semibold text-base">Neha P.</Text>
-
-            <Text className="text-xs text-slate-500">Fashion · 20K</Text>
+            <Text className="font-bold text-base text-slate-800">Neha P.</Text>
+            <Text className="text-xs text-slate-400 font-medium">
+              Fashion · 20K followers
+            </Text>
           </View>
         </View>
 
-        <Text className="text-xl font-bold text-slate-800 leading-relaxed">
-          “Brands started reaching out immediately after joining. Best
-          platform!”
+        <Text className="text-lg font-bold text-slate-800 leading-relaxed mb-4">
+          "Brands started reaching out immediately after joining. Best
+          platform!"
         </Text>
 
-        <View className="mt-6 bg-[#009966] rounded-xl px-4 py-4">
-          <Text className="text-xs text-white opacity-80 uppercase">
+        <View className="bg-[#009966] rounded-2xl px-4 py-4">
+          <Text className="text-[10px] text-white/80 uppercase font-bold tracking-wider">
             Record Earnings
           </Text>
-
-          <Text className="text-3xl font-bold text-white">₹55K</Text>
-
-          <Text className="text-xs text-white opacity-80">in 5 weeks</Text>
+          <Text className="text-3xl font-black text-white mt-1">₹55K</Text>
+          <Text className="text-xs text-white/70 mt-0.5">in 5 weeks</Text>
         </View>
       </Animated.View>
 
-      {/* Creator Cards */}
-      <View className="flex-row flex-wrap justify-between">
+      {/* Creator Cards Grid */}
+      <View className="flex-row flex-wrap" style={{gap: 10}}>
         {creators.map((person, index) => (
           <Animated.View
             key={person.id}
             entering={FadeInUp.delay(index * 100)}
-            className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 mb-4"
-          >
-            <View>
-              <View className="flex-row items-center gap-2 mb-3">
-                <Image
-                  source={{ uri: person.image }}
-                  className="w-10 h-10 rounded-full"
-                />
-
-                <View>
-                  <Text className="font-semibold text-sm">{person.name}</Text>
-
-                  <Text className="text-xs text-slate-500">
-                    {person.role} · {person.followers}
-                  </Text>
-                </View>
+            style={{width: '48.5%'}}
+            className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <View className="flex-row items-center mb-3" style={{gap: 8}}>
+              <Image
+                source={{uri: person.image}}
+                className="w-9 h-9 rounded-full"
+              />
+              <View className="flex-1">
+                <Text className="font-bold text-sm text-slate-800">
+                  {person.name}
+                </Text>
+                <Text className="text-[10px] text-slate-400 font-medium">
+                  {person.role} · {person.followers}
+                </Text>
               </View>
-
-              <Text className="text-sm text-slate-600 italic">
-                "{person.quote}"
-              </Text>
             </View>
 
-            <View className="mt-4 flex-row justify-between items-center">
+            <Text
+              className="text-xs text-slate-500 italic leading-relaxed mb-3"
+              numberOfLines={3}>
+              "{person.quote}"
+            </Text>
+
+            <View className="flex-row justify-between items-center pt-3 border-t border-slate-50">
               <View>
-                <Text className="text-xs text-slate-400 uppercase">
+                <Text className="text-[9px] text-slate-400 uppercase font-bold">
                   Earnings
                 </Text>
-
-                <Text className="font-semibold">{person.earnings}</Text>
-
-                <Text className="text-xs text-slate-400">{person.time}</Text>
+                <Text className="font-black text-sm text-slate-800">
+                  {person.earnings}
+                </Text>
+                <Text className="text-[10px] text-slate-400">
+                  {person.time}
+                </Text>
               </View>
-
-              <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center">
-                <Text>↗</Text>
+              <View className="w-8 h-8 bg-emerald-50 rounded-full items-center justify-center">
+                <Text className="text-emerald-500 text-xs font-bold">↗</Text>
               </View>
             </View>
           </Animated.View>
         ))}
       </View>
-    </ScrollView>
+    </View>
   );
 }

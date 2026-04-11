@@ -1,50 +1,90 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  Image,
-  FlatList,
-  Pressable,
-  Dimensions,
-} from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
-import { Star } from 'lucide-react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, Image, FlatList, Pressable, Dimensions} from 'react-native';
+import Animated, {FadeInRight} from 'react-native-reanimated';
+import {Star} from 'lucide-react-native';
+import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
 
-const { width } = Dimensions.get('window');
-
+const {width} = Dimensions.get('window');
 const CARD_WIDTH = width * 0.7;
 
-const journeyData = [
+interface Campaign {
+  id: string;
+  title: string;
+  location: string;
+  budget: number;
+  daysLeft: number;
+  image?: string;
+}
+
+const FALLBACK_DATA = [
   {
-    id: 1,
+    id: '1',
     title: 'Luxury Perfume Launch',
     location: 'Mumbai, India',
-    rating: 4.9,
-    price: 150,
-    duration: '2 Weeks',
+    budget: 150,
+    daysLeft: 14,
     image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800',
   },
   {
-    id: 2,
+    id: '2',
     title: 'Wellness Spa Retreat',
     location: 'Goa, India',
-    rating: 4.8,
-    price: 250,
-    duration: '3 Weeks',
+    budget: 250,
+    daysLeft: 21,
     image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800',
   },
   {
-    id: 3,
+    id: '3',
     title: 'Skincare Brand Collab',
     location: 'Delhi, India',
-    rating: 4.7,
-    price: 200,
-    duration: '2 Weeks',
+    budget: 200,
+    daysLeft: 14,
     image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800',
   },
 ];
 
 export default function JourneyCarousel() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>(FALLBACK_DATA);
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/functions/v1/list-campaigns`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: '{}',
+          },
+        );
+        const data = await res.json();
+        if (data?.campaigns?.length) {
+          const active = data.campaigns
+            .filter((c: any) => c.status === 'active')
+            .slice(0, 6)
+            .map((c: any) => ({
+              id: c.id,
+              title: c.title,
+              location: c.location || 'India',
+              budget: c.budget || 0,
+              daysLeft: c.daysLeft || 0,
+              image:
+                c.image ||
+                'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800',
+            }));
+          if (active.length) setCampaigns(active);
+        }
+      } catch {
+        // Keep fallback data
+      }
+    };
+    fetchCampaigns();
+  }, []);
+
   return (
     <View className="w-full bg-white py-6">
       {/* Header */}
@@ -52,7 +92,6 @@ export default function JourneyCarousel() {
         <Text className="text-xl font-bold text-slate-800 uppercase">
           For You
         </Text>
-
         <Pressable>
           <Text className="text-sm font-bold text-slate-500">See all</Text>
         </Pressable>
@@ -60,65 +99,54 @@ export default function JourneyCarousel() {
 
       {/* Horizontal Carousel */}
       <FlatList
-        data={journeyData}
+        data={campaigns}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={CARD_WIDTH + 16}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item, index }) => (
+        contentContainerStyle={{paddingHorizontal: 16}}
+        keyExtractor={item => item.id}
+        renderItem={({item, index}) => (
           <Animated.View
             entering={FadeInRight.delay(index * 120)}
-            style={{ width: CARD_WIDTH }}
-            className="mr-4"
-          >
+            style={{width: CARD_WIDTH}}
+            className="mr-4">
             <Pressable className="bg-white rounded-[28px] overflow-hidden border border-slate-200">
-              {/* Image */}
               <Image
-                source={{ uri: item.image }}
+                source={{uri: item.image}}
                 className="w-full h-44"
                 resizeMode="cover"
               />
-
-              {/* Content */}
               <View className="p-4">
                 <View className="flex-row justify-between">
                   <Text className="text-lg font-black text-slate-900 flex-1">
                     {item.title}
                   </Text>
-
                   <View className="items-end">
                     <Text className="text-[11px] text-slate-400 font-bold uppercase">
                       {item.location}
                     </Text>
-
                     <View className="flex-row items-center mt-1">
                       <Star size={14} color="#FACC15" fill="#FACC15" />
                       <Text className="text-sm font-black text-slate-700 ml-1">
-                        {item.rating}
+                        4.8
                       </Text>
                     </View>
                   </View>
                 </View>
 
-                {/* Footer */}
                 <View className="flex-row justify-between items-end mt-4">
                   <View>
                     <Text className="text-[10px] text-slate-400 font-black uppercase">
-                      Start from
+                      Budget
                     </Text>
-
                     <Text className="text-lg font-black text-slate-900">
-                      $ {item.price}
-                      <Text className="text-[10px] text-slate-400"> /pax</Text>
+                      ₹{item.budget?.toLocaleString('en-IN')}
                     </Text>
                   </View>
-
-                  {/* Duration badge */}
                   <View className="bg-pink-500 px-4 py-1.5 rounded-full">
                     <Text className="text-white text-[10px] font-black">
-                      {item.duration}
+                      {item.daysLeft} days left
                     </Text>
                   </View>
                 </View>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, Dimensions, Image } from 'react-native';
 import { VLCPlayer, VlCPlayerView } from 'react-native-vlc-media-player';
 const { width } = Dimensions.get('window');
-import Orientation from 'react-native-orientation';
+import Orientation from 'react-native-orientation-locker';
 
 type Story = {
   name: string;

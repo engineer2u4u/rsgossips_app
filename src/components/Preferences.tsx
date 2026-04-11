@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, {useState} from 'react';
+import {View, Text, Pressable} from 'react-native';
 import {
   Video,
   Smartphone,
@@ -10,29 +9,20 @@ import {
 } from 'lucide-react-native';
 
 interface Props {
-  onNext: (data: { services: string[]; rateRange: string }) => void;
+  onNext: (data: {services: string[]}) => void;
+  onSkip?: () => void;
 }
 
 const services = [
-  { id: 'reels', label: 'Reels', icon: Video },
-  { id: 'stories', label: 'Stories', icon: Smartphone },
-  { id: 'shorts', label: 'YouTube Shorts', icon: Youtube },
-  { id: 'posts', label: 'Static Posts', icon: ImageIcon },
-  { id: 'ugc', label: 'UGC Videos', icon: Clapperboard },
+  {id: 'reels', label: 'Reels', icon: Video},
+  {id: 'stories', label: 'Stories', icon: Smartphone},
+  {id: 'shorts', label: 'YouTube Shorts', icon: Youtube},
+  {id: 'posts', label: 'Static Posts', icon: ImageIcon},
+  {id: 'ugc', label: 'UGC Videos', icon: Clapperboard},
 ];
 
-const rateRanges = [
-  '₹10,000 - ₹50,000',
-  '₹50,000 - ₹1,00,000',
-  '₹1,00,000 - ₹2,50,000',
-  '₹2,50,000 - ₹5,00,000',
-  '₹5,00,000 - ₹10,00,000',
-  '₹10,00,000+',
-];
-
-export default function Preferences({ onNext }: Props) {
+export default function Preferences({onNext, onSkip}: Props) {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [rateRange, setRateRange] = useState('');
 
   const toggleService = (id: string) => {
     setSelectedServices(prev =>
@@ -54,66 +44,66 @@ export default function Preferences({ onNext }: Props) {
       </View>
 
       {/* SERVICES GRID */}
-      <View className="flex-row flex-wrap justify-between">
-        {services.map(service => {
-          const Icon = service.icon;
-          const isSelected = selectedServices.includes(service.id);
+      <View>
+        {/* Top row: 3 items */}
+        <View className="flex-row justify-between mb-3">
+          {services.slice(0, 3).map(service => {
+            const Icon = service.icon;
+            const isSelected = selectedServices.includes(service.id);
+            return (
+              <ServiceCard
+                key={service.id}
+                label={service.label}
+                Icon={Icon}
+                isSelected={isSelected}
+                onPress={() => toggleService(service.id)}
+              />
+            );
+          })}
+        </View>
 
-          return (
-            <ServiceCard
-              key={service.id}
-              label={service.label}
-              Icon={Icon}
-              isSelected={isSelected}
-              onPress={() => toggleService(service.id)}
-            />
-          );
-        })}
-      </View>
-
-      {/* RATE RANGE */}
-      <View className="space-y-2">
-        <Text className="text-xs font-medium text-slate-500">Rate Range</Text>
-
-        <View className="border border-slate-200 rounded-xl">
-          <Picker
-            selectedValue={rateRange}
-            onValueChange={v => setRateRange(v)}
-          >
-            <Picker.Item label="Select rate range" value="" />
-
-            {rateRanges.map(range => (
-              <Picker.Item key={range} label={range} value={range} />
-            ))}
-          </Picker>
+        {/* Bottom row: 2 items centered */}
+        <View className="flex-row justify-center gap-3">
+          {services.slice(3).map(service => {
+            const Icon = service.icon;
+            const isSelected = selectedServices.includes(service.id);
+            return (
+              <ServiceCard
+                key={service.id}
+                label={service.label}
+                Icon={Icon}
+                isSelected={isSelected}
+                onPress={() => toggleService(service.id)}
+              />
+            );
+          })}
         </View>
       </View>
 
       {/* CONTINUE BUTTON */}
-      <Pressable
-        onPress={() =>
-          onNext({
-            services: selectedServices,
-            rateRange,
-          })
-        }
-        disabled={selectedServices.length === 0 || !rateRange}
-        className={`h-[54px] rounded-2xl items-center justify-center ${
-          selectedServices.length === 0 || !rateRange
-            ? 'bg-slate-200'
-            : 'bg-[#9810FA]'
-        }`}
-      >
-        <Text
-          className={`text-base font-semibold ${
-            selectedServices.length === 0 || !rateRange
-              ? 'text-slate-400'
-              : 'text-white'
-          }`}
-        >
-          Continue
-        </Text>
-      </Pressable>
+      <View className="space-y-3">
+        <Pressable
+          onPress={() => onNext({services: selectedServices})}
+          disabled={selectedServices.length === 0}
+          className={`h-[54px] rounded-2xl items-center justify-center ${
+            selectedServices.length === 0 ? 'bg-slate-200' : 'bg-[#9810FA]'
+          }`}>
+          <Text
+            className={`text-base font-semibold ${
+              selectedServices.length === 0 ? 'text-slate-400' : 'text-white'
+            }`}>
+            Continue
+          </Text>
+        </Pressable>
+
+        {onSkip && (
+          <Pressable onPress={onSkip}>
+            <Text className="text-center text-sm font-semibold text-[#6347F9]">
+              Skip
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -125,23 +115,21 @@ interface ServiceCardProps {
   onPress: () => void;
 }
 
-function ServiceCard({ label, Icon, isSelected, onPress }: ServiceCardProps) {
+function ServiceCard({label, Icon, isSelected, onPress}: ServiceCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className={`w-[30%] aspect-square rounded-2xl border-2 items-center justify-center mb-3 ${
+      className={`w-[30%] aspect-square rounded-2xl border-2 items-center justify-center ${
         isSelected
           ? 'border-[#6347F9] bg-[#F3EFFF]'
           : 'border-slate-200 bg-white'
-      }`}
-    >
+      }`}>
       <Icon size={24} color={isSelected ? '#6347F9' : '#94A3B8'} />
 
       <Text
         className={`text-[10px] font-bold text-center mt-2 ${
           isSelected ? 'text-[#6347F9]' : 'text-slate-400'
-        }`}
-      >
+        }`}>
         {label}
       </Text>
     </Pressable>

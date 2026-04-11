@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 
 interface Props {
   onNext: (categories: string[]) => void;
+  onSkip?: () => void;
 }
 
 const categories = [
@@ -20,7 +21,7 @@ const categories = [
   'Vlogging',
 ];
 
-export default function CategorySelection({ onNext }: Props) {
+export default function CategorySelection({ onNext, onSkip }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggle = (cat: string) => {
@@ -90,6 +91,14 @@ export default function CategorySelection({ onNext }: Props) {
             Continue
           </Text>
         </Pressable>
+
+        {onSkip && (
+          <Pressable onPress={onSkip}>
+            <Text className="text-center text-sm font-semibold text-[#6347F9]">
+              Skip
+            </Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );

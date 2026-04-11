@@ -51,12 +51,12 @@ export default function OnboardingCarousel({
   const skipToLast = () => {
     setCurrent(slides.length - 1);
   };
-
   const navigation = useNavigation();
 
   return (
     <View className="flex-1 bg-white items-center justify-between">
       {/* TOP IMAGE */}
+
       <View className="w-full items-center pt-20">
         <Image
           source={slides[current].image}
@@ -94,23 +94,6 @@ export default function OnboardingCarousel({
 
         {/* BUTTONS */}
         <View className="w-full gap-3">
-          <View className="flex-row gap-4 mb-6">
-            {/* Influencer Button */}
-            <Pressable
-              className="flex-1 bg-purple-600 py-4 rounded-xl items-center"
-              onPress={() => navigation.navigate('InfluencerHome' as never)}
-            >
-              <Text className="text-white font-semibold">Go Influencer</Text>
-            </Pressable>
-
-            {/* Brand Button */}
-            <Pressable
-              className="flex-1 bg-blue-600 py-4 rounded-xl items-center"
-              onPress={() => navigation.navigate('BrandHome' as never)}
-            >
-              <Text className="text-white font-semibold">Go Brand</Text>
-            </Pressable>
-          </View>
           {current < slides.length - 1 ? (
             <>
               <Pressable
@@ -131,6 +114,14 @@ export default function OnboardingCarousel({
             </>
           ) : (
             <>
+              {/* <Pressable
+                onPress={() => navigation.navigate('InfluencerHome' as never)}
+                className=" bg-[#9810FA] px-3 py-2 rounded-lg z-50"
+              >
+                <Text className="text-white text-xs font-bold">
+                  Skip to Influencer
+                </Text>
+              </Pressable> */}
               <Pressable
                 onPress={onLoginClick}
                 className="w-full bg-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"

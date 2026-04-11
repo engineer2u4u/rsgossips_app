@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Image, Pressable, ScrollView } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import {View, Text, Image, Pressable} from 'react-native';
+import Animated, {FadeInUp} from 'react-native-reanimated';
 import {
   Heart,
   MessageSquare,
@@ -55,143 +55,160 @@ const contributors = [
 
 export default function CommunityFeed() {
   return (
-    <ScrollView className="flex-1 bg-white px-4 py-6">
+    <View className="bg-white px-4 py-8">
       {/* Header */}
-      <View className="mb-6">
-        <Text className="text-xl font-bold text-slate-900 uppercase">
+      <View className="mb-5">
+        <Text className="text-xl font-black text-slate-900 uppercase tracking-tight">
           Creator Community
         </Text>
-
-        <Text className="text-sm text-slate-500 mt-2">
+        <Text className="text-xs text-slate-400 font-medium mt-1">
           Connect with other creators, share wins, and get advice.
         </Text>
       </View>
 
       {/* Start Discussion */}
-      <Pressable className="bg-purple-600 flex-row items-center justify-center gap-2 py-3 rounded-2xl mb-6">
+      <Pressable className="bg-purple-600 flex-row items-center justify-center py-3.5 rounded-2xl mb-5" style={{gap: 8}}>
         <Plus size={16} color="white" />
-        <Text className="text-white font-semibold">Start Discussion</Text>
+        <Text className="text-white font-bold text-sm">Start Discussion</Text>
       </Pressable>
 
       {/* Posts */}
-      {posts.map((post, index) => (
-        <Animated.View
-          key={index}
-          entering={FadeInUp.delay(index * 100)}
-          className="bg-white border border-slate-200 rounded-2xl p-4 mb-4"
-        >
-          {/* User */}
-          <View className="flex-row items-center mb-3">
-            <Image
-              source={{ uri: `https://i.pravatar.cc/150?img=${index + 3}` }}
-              className="w-8 h-8 rounded-full mr-3"
-            />
-
-            <View>
-              <View className="flex-row items-center">
-                <Text className="font-semibold text-slate-800">
-                  {post.name}
-                </Text>
-
-                {post.pinned && (
-                  <Text className="text-purple-500 text-xs ml-2 font-semibold">
-                    PINNED
+      <View style={{gap: 12}}>
+        {posts.map((post, index) => (
+          <Animated.View
+            key={index}
+            entering={FadeInUp.delay(index * 100)}
+            className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+            {/* User */}
+            <View className="flex-row items-center mb-3" style={{gap: 10}}>
+              <Image
+                source={{uri: `https://i.pravatar.cc/150?img=${index + 3}`}}
+                className="w-9 h-9 rounded-full"
+              />
+              <View className="flex-1">
+                <View className="flex-row items-center" style={{gap: 6}}>
+                  <Text className="font-bold text-sm text-slate-800">
+                    {post.name}
                   </Text>
-                )}
-              </View>
-
-              <Text className="text-xs text-slate-400">
-                {post.handle} · {post.time}
-              </Text>
-            </View>
-          </View>
-
-          {/* Title */}
-          <Text className="font-semibold text-slate-800 mb-2">
-            {post.title}
-          </Text>
-
-          {/* Description */}
-          <Text className="text-sm text-slate-500 mb-4">{post.desc}</Text>
-
-          {/* Footer */}
-          <View className="flex-row justify-between items-center">
-            <View className="flex-row gap-4">
-              <View className="flex-row items-center">
-                <Heart size={14} color="#64748B" />
-                <Text className="text-xs text-slate-500 ml-1">
-                  {post.likes}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center">
-                <MessageSquare size={14} color="#64748B" />
-                <Text className="text-xs text-slate-500 ml-1">
-                  {post.comments}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center">
-                <Eye size={14} color="#64748B" />
-                <Text className="text-xs text-slate-500 ml-1">
-                  {post.views}
+                  {post.pinned && (
+                    <View className="bg-purple-50 px-2 py-0.5 rounded-full">
+                      <Text className="text-purple-600 text-[9px] font-black uppercase">
+                        Pinned
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-[11px] text-slate-400 font-medium">
+                  {post.handle} · {post.time}
                 </Text>
               </View>
             </View>
 
-            <View className="flex-row items-center">
-              <Flame size={12} color="#F97316" />
-              <Text className="text-xs text-orange-500 ml-1 font-semibold">
-                Trending
-              </Text>
+            {/* Title */}
+            <Text className="font-bold text-sm text-slate-800 mb-1.5">
+              {post.title}
+            </Text>
+
+            {/* Description */}
+            <Text className="text-xs text-slate-500 leading-relaxed mb-4">
+              {post.desc}
+            </Text>
+
+            {/* Footer */}
+            <View className="flex-row justify-between items-center pt-3 border-t border-slate-50">
+              <View className="flex-row" style={{gap: 16}}>
+                <View className="flex-row items-center" style={{gap: 4}}>
+                  <Heart size={14} color="#94A3B8" />
+                  <Text className="text-xs text-slate-500 font-medium">
+                    {post.likes}
+                  </Text>
+                </View>
+                <View className="flex-row items-center" style={{gap: 4}}>
+                  <MessageSquare size={14} color="#94A3B8" />
+                  <Text className="text-xs text-slate-500 font-medium">
+                    {post.comments}
+                  </Text>
+                </View>
+                <View className="flex-row items-center" style={{gap: 4}}>
+                  <Eye size={14} color="#94A3B8" />
+                  <Text className="text-xs text-slate-500 font-medium">
+                    {post.views}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center" style={{gap: 4}}>
+                <Flame size={12} color="#F97316" />
+                <Text className="text-[11px] text-orange-500 font-bold">
+                  Trending
+                </Text>
+              </View>
             </View>
-          </View>
-        </Animated.View>
-      ))}
+          </Animated.View>
+        ))}
+      </View>
 
       {/* Load More */}
-      <Pressable className="bg-slate-100 py-3 rounded-xl items-center mt-2 mb-8">
-        <Text className="text-slate-500 text-sm">Load more discussions</Text>
+      <Pressable className="bg-slate-50 py-3 rounded-xl items-center mt-4 mb-6">
+        <Text className="text-slate-500 text-xs font-bold">
+          Load more discussions
+        </Text>
       </Pressable>
 
-      {/* Community Stats */}
-      <View className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-        <Text className="text-sm font-semibold mb-4">COMMUNITY STATS</Text>
-
-        <View className="flex-row justify-between">
-          <View className="items-center bg-slate-100 w-[48%] py-6 rounded-2xl">
-            <UserPlus size={18} />
-            <Text className="text-xl font-bold mt-1">12.4k</Text>
-            <Text className="text-xs text-slate-400">Members</Text>
+      {/* Community Stats + Contributors Row */}
+      <View style={{gap: 12}}>
+        <View className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+          <Text className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4">
+            Community Stats
+          </Text>
+          <View className="flex-row" style={{gap: 10}}>
+            <View className="flex-1 items-center bg-slate-50 py-5 rounded-2xl">
+              <UserPlus size={18} color="#64748B" />
+              <Text className="text-xl font-black text-slate-800 mt-2">
+                12.4k
+              </Text>
+              <Text className="text-[10px] text-slate-400 font-bold">
+                Members
+              </Text>
+            </View>
+            <View className="flex-1 items-center bg-slate-50 py-5 rounded-2xl">
+              <MessageSquare size={18} color="#64748B" />
+              <Text className="text-xl font-black text-emerald-600 mt-2">
+                342
+              </Text>
+              <Text className="text-[10px] text-slate-400 font-bold">
+                Online
+              </Text>
+            </View>
           </View>
+        </View>
 
-          <View className="items-center bg-slate-100 w-[48%] py-6 rounded-2xl">
-            <MessageSquare size={18} />
-            <Text className="text-xl font-bold text-green-600 mt-1">342</Text>
-            <Text className="text-xs text-slate-400">Online</Text>
+        <View className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+          <Text className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4">
+            Top Contributors
+          </Text>
+          <View style={{gap: 10}}>
+            {contributors.map((c, i) => (
+              <View
+                key={i}
+                className="flex-row justify-between items-center">
+                <View className="flex-row items-center" style={{gap: 10}}>
+                  <Image
+                    source={{uri: c.img}}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <Text className="text-sm font-semibold text-slate-700">
+                    {c.name}
+                  </Text>
+                </View>
+                <Text className="text-xs font-bold text-slate-400">
+                  {c.points} pts
+                </Text>
+              </View>
+            ))}
           </View>
         </View>
       </View>
-
-      {/* Contributors */}
-      <View className="bg-white border border-slate-200 rounded-2xl p-5">
-        <Text className="text-sm font-semibold mb-4">TOP CONTRIBUTORS</Text>
-
-        {contributors.map((c, i) => (
-          <View key={i} className="flex-row justify-between items-center mb-3">
-            <View className="flex-row items-center">
-              <Image
-                source={{ uri: c.img }}
-                className="w-7 h-7 rounded-full mr-2"
-              />
-
-              <Text className="text-sm text-slate-700">{c.name}</Text>
-            </View>
-
-            <Text className="text-xs text-slate-400">{c.points}</Text>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    </View>
   );
 }
