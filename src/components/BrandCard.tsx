@@ -32,8 +32,9 @@ export default function BrandCard({brand, matchScore = 0}: Props) {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-[32px] p-6 border border-slate-50 shadow-sm"
-      activeOpacity={0.7}>
+      className="bg-white rounded-[32px] p-6 border border-slate-200 shadow-md"
+      activeOpacity={0.7}
+      style={{shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4}}>
       {/* Match Score Badge */}
       {matchScore > 0 && (
         <View

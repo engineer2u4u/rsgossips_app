@@ -26,6 +26,20 @@ import {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
 } from '@env';
 
+const CATEGORY_OPTIONS = [
+  'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
+  'Health, Fitness & Wellness', 'Travel & Hospitality', 'Technology & Gadgets',
+  'Education & Career', 'Gaming & Entertainment', 'Home & Decor',
+];
+
+const SERVICE_OPTIONS = [
+  {id: 'reels', label: 'Reels'},
+  {id: 'stories', label: 'Stories'},
+  {id: 'shorts', label: 'YouTube Shorts'},
+  {id: 'posts', label: 'Static Posts'},
+  {id: 'ugc', label: 'UGC Videos'},
+];
+
 interface Props {
   onBack: () => void;
 }
@@ -41,6 +55,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [tiktok, setTiktok] = useState(profile?.tiktok_url || '');
   const [youtubeUrl, setYoutubeUrl] = useState(profile?.youtube_url || '');
   const [facebookUrl, setFacebookUrl] = useState(profile?.facebook_url || '');
+  const [categories, setCategories] = useState<string[]>(profile?.categories || []);
+  const [services, setServices] = useState<string[]>(profile?.services || []);
+  const [serviceRates, setServiceRates] = useState<Record<string, string>>(
+    profile?.service_rates || {},
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -75,6 +94,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           tiktokUrl: tiktok,
           youtubeUrl,
           facebookUrl,
+          categories,
+          services,
+          serviceRates,
         }),
       });
       const data = await res.json();
@@ -177,6 +199,14 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             icon={<MapPin size={16} color="#9810FA" />}
           />
           <InputGroup
+            label="Phone"
+            value={profile?.phone || ''}
+            onChange={() => {}}
+            placeholder="Not available"
+            icon={<User size={16} color="#9810FA" />}
+            disabled
+          />
+          <InputGroup
             label="Address"
             value={address}
             onChange={setAddress}
@@ -197,6 +227,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             icon={<Instagram size={16} color="#E60076" />}
             disabled
           />
+          <Text className="text-[9px] font-bold text-gray-400 ml-1 -mt-2">
+            Instagram handle is synced from your connected account
+          </Text>
           <InputGroup
             label="TikTok"
             value={tiktok}
@@ -218,6 +251,88 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             placeholder="Facebook page URL"
             icon={<Globe size={16} color="#3B82F6" />}
           />
+
+          {/* Categories */}
+          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
+            Categories
+          </Text>
+          <View className="flex-row flex-wrap" style={{gap: 8}}>
+            {CATEGORY_OPTIONS.map(cat => {
+              const isSelected = categories.includes(cat);
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() =>
+                    setCategories(prev =>
+                      prev.includes(cat)
+                        ? prev.filter(c => c !== cat)
+                        : [...prev, cat],
+                    )
+                  }
+                  className={`px-4 py-2 rounded-full border ${
+                    isSelected
+                      ? 'bg-[#E60076] border-[#E60076]'
+                      : 'bg-white border-slate-200'
+                  }`}>
+                  <Text
+                    className={`text-xs font-bold ${
+                      isSelected ? 'text-white' : 'text-slate-600'
+                    }`}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Services & Rates */}
+          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
+            Services & Rates
+          </Text>
+          <View style={{gap: 8}}>
+            {SERVICE_OPTIONS.map(svc => {
+              const isSelected = services.includes(svc.id);
+              return (
+                <View key={svc.id}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setServices(prev =>
+                        prev.includes(svc.id)
+                          ? prev.filter(s => s !== svc.id)
+                          : [...prev, svc.id],
+                      )
+                    }
+                    className={`flex-row items-center p-3 rounded-xl border ${
+                      isSelected
+                        ? 'bg-pink-50 border-[#E60076]'
+                        : 'bg-white border-slate-200'
+                    }`}
+                    style={{gap: 10}}>
+                    <Text
+                      className={`text-sm font-semibold flex-1 ${
+                        isSelected ? 'text-[#E60076]' : 'text-slate-600'
+                      }`}>
+                      {svc.label}
+                    </Text>
+                    {isSelected && (
+                      <View className="flex-row items-center bg-white border border-slate-200 rounded-lg px-3 h-9" style={{gap: 4}}>
+                        <Text className="text-slate-400 text-sm">₹</Text>
+                        <TextInput
+                          keyboardType="number-pad"
+                          value={String(serviceRates[svc.id] || '')}
+                          onChangeText={v =>
+                            setServiceRates(prev => ({...prev, [svc.id]: v}))
+                          }
+                          placeholder="0"
+                          className="w-16 text-sm font-bold text-slate-800"
+                        />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         {/* Save Button (bottom) */}

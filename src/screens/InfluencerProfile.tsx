@@ -51,7 +51,6 @@ export default function InfluencerProfile() {
         showsVerticalScrollIndicator={false}>
         {view === 'dashboard' && (
           <DashboardView
-            onOpenEdit={() => navigate('edit-profile')}
             onNotificationClick={() => navigate('notifications')}
             onPrivacyClick={() => navigate('privacy')}
             onOpenAnalytics={() => navigate('analytics')}

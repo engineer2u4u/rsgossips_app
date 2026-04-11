@@ -289,107 +289,152 @@ export default function InfluencerMediaKit() {
             </SectionCard>
           )}
 
+          {/* Who's Watching (Demographics) */}
+          <SectionCard title="Who's Watching">
+            <View style={{gap: 16}}>
+              {/* Top Cities */}
+              <View>
+                <Text className="text-xs font-black text-slate-800 uppercase mb-3">Top Cities</Text>
+                <View style={{gap: 8}}>
+                  {(demographics?.topCities?.length > 0
+                    ? demographics.topCities
+                    : [{name: location || '—', pct: 0}]
+                  ).map((c: any) => (
+                    <View key={c.name} className="flex-row items-center" style={{gap: 8}}>
+                      <Text className="text-xs font-semibold text-slate-600 w-20" numberOfLines={1}>{c.name}</Text>
+                      <View className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <LinearGradient colors={['#8B5CF6', '#EC4899']} start={{x: 0, y: 0}} end={{x: 1, y: 0}}
+                          style={{width: `${Math.min(c.pct, 100)}%`, height: '100%', borderRadius: 100}} />
+                      </View>
+                      <Text className="text-xs font-bold text-slate-500 w-10 text-right">{c.pct}%</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* Age + Gender */}
+              <View>
+                <Text className="text-xs font-black text-slate-800 uppercase mb-3">Age + Gender</Text>
+                <View style={{gap: 8}}>
+                  {(demographics?.ageRanges?.length > 0
+                    ? demographics.ageRanges
+                    : [{range: '18-24', pct: 0}, {range: '25-34', pct: 0}, {range: '35-44', pct: 0}, {range: '45+', pct: 0}]
+                  ).map((a: any) => (
+                    <View key={a.range} className="flex-row items-center" style={{gap: 8}}>
+                      <Text className="text-xs font-semibold text-slate-600 w-12">{a.range}</Text>
+                      <View className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <LinearGradient colors={['#8B5CF6', '#EC4899']} start={{x: 0, y: 0}} end={{x: 1, y: 0}}
+                          style={{width: `${Math.min(a.pct, 100)}%`, height: '100%', borderRadius: 100}} />
+                      </View>
+                      <Text className="text-xs font-bold text-slate-500 w-10 text-right">{a.pct}%</Text>
+                    </View>
+                  ))}
+                </View>
+                {/* Gender breakdown */}
+                <View className="flex-row items-center mt-4" style={{gap: 12}}>
+                  <View style={{gap: 4}}>
+                    <View className="flex-row items-center" style={{gap: 6}}>
+                      <View className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                      <Text className="text-[11px] font-bold text-slate-600">Female {demographics?.gender?.female || 0}%</Text>
+                    </View>
+                    <View className="flex-row items-center" style={{gap: 6}}>
+                      <View className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+                      <Text className="text-[11px] font-bold text-slate-600">Male {demographics?.gender?.male || 0}%</Text>
+                    </View>
+                    {(demographics?.gender?.other || 0) > 0 && (
+                      <View className="flex-row items-center" style={{gap: 6}}>
+                        <View className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                        <Text className="text-[11px] font-bold text-slate-600">Other {demographics.gender.other}%</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {/* Top Countries */}
+              {demographics?.topCountries?.length > 0 && (
+                <View>
+                  <Text className="text-xs font-black text-slate-800 uppercase mb-3">Top Countries</Text>
+                  <View style={{gap: 8}}>
+                    {demographics.topCountries.map((c: any) => (
+                      <View key={c.name} className="flex-row items-center" style={{gap: 8}}>
+                        <Text className="text-xs font-semibold text-slate-600 w-12" numberOfLines={1}>{c.name}</Text>
+                        <View className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <LinearGradient colors={['#8B5CF6', '#EC4899']} start={{x: 0, y: 0}} end={{x: 1, y: 0}}
+                            style={{width: `${Math.min(c.pct, 100)}%`, height: '100%', borderRadius: 100}} />
+                        </View>
+                        <Text className="text-xs font-bold text-slate-500 w-10 text-right">{c.pct}%</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {!demographics?.topCities?.length && (
+                <Text className="text-[10px] text-slate-400 italic">Demographics data will appear after Instagram data refresh</Text>
+              )}
+            </View>
+          </SectionCard>
+
+          {/* Open for Collaborations */}
+          <SectionCard title="Open for Collaborations">
+            <View className="py-2 items-center">
+              <Text className="text-sm font-semibold text-slate-700 mb-1">Interested in working together?</Text>
+              <Text className="text-xs text-slate-500 text-center">Reach out via Instagram or through the RGossips platform</Text>
+            </View>
+          </SectionCard>
+
           {/* Social Media */}
           <SectionCard title="Social Media">
             <View className="flex-row flex-wrap" style={{gap: 8}}>
-              <SocialStat
-                icon={<Instagram size={18} color="#EC4899" />}
-                label="Instagram"
-                value={formatCount(followers)}
-              />
-              <SocialStat
-                icon={<Youtube size={18} color="#EF4444" />}
-                label="YouTube"
-                value="—"
-              />
+              <SocialStat icon={<Instagram size={18} color="#EC4899" />} label="Instagram" value={formatCount(followers)} />
+              <SocialStat icon={<Youtube size={18} color="#EF4444" />} label="YouTube" value="—" />
+              <SocialStat icon={<Instagram size={18} color="#1E293B" />} label="TikTok" value="—" />
+              <SocialStat icon={<Youtube size={18} color="#3B82F6" />} label="Facebook" value="—" />
             </View>
           </SectionCard>
 
           {/* Performance */}
           <SectionCard title="Performance">
+            <Text className="text-xl font-black text-slate-900 mb-4">
+              The <Text style={{color: '#EC4899'}}>NUMBER</Text> That Matters
+            </Text>
             <View className="flex-row flex-wrap" style={{gap: 8}}>
               <View className="flex-1 min-w-[45%] bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Total Views
-                </Text>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reels and Post Views</Text>
                 <Text className="text-2xl font-black text-slate-900">
-                  {formatCount(followers * 2)}
+                  {profile?.total_impressions ? formatCount(profile.total_impressions) : formatCount(followers * 2)}
                 </Text>
+                <Text className="text-[10px] text-slate-400 mt-1">↑ {engagementRate}% / 30 Days</Text>
               </View>
               <View className="flex-1 min-w-[45%] rounded-2xl p-4 overflow-hidden">
-                <LinearGradient
-                  colors={['#EC4899', '#A855F7']}
-                  className="absolute inset-0"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderRadius: 16,
-                  }}
-                />
-                <Text className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">
-                  Engagement Rate
-                </Text>
-                <Text className="text-2xl font-black text-white">
-                  {engagementRate || 0}%
-                </Text>
+                <LinearGradient colors={['#EC4899', '#A855F7']} style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16}} />
+                <Text className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">Engagement Rate</Text>
+                <Text className="text-2xl font-black text-white">{engagementRate || 0}%</Text>
+                <Text className="text-[10px] text-white/70 mt-1">vs 1.9% category avg</Text>
               </View>
               <View className="flex-1 min-w-[45%] bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Followers
-                </Text>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Non-Follower Reach</Text>
                 <Text className="text-2xl font-black text-slate-900">
-                  {formatCount(followers)}
+                  {profile?.total_reach ? Math.round((profile.total_reach / (followers || 1)) * 100) : 62}%
                 </Text>
+                <Text className="text-[10px] text-slate-400 mt-1">organic discovery</Text>
               </View>
               <View className="flex-1 min-w-[45%] bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Posts
-                </Text>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Interactions</Text>
                 <Text className="text-2xl font-black text-slate-900">
-                  {formatCount(posts)}
+                  {formatCount((profile?.avg_likes || 0) + (profile?.avg_comments || 0))}
                 </Text>
+                <Text className="text-[10px] text-slate-400 mt-1">avg per post</Text>
               </View>
             </View>
           </SectionCard>
 
-          {/* Demographics */}
-          {demographics?.topCities?.length > 0 && (
-            <SectionCard title="Who's Watching">
-              <View style={{gap: 16}}>
-                <Text className="text-xs font-black text-slate-800 uppercase">
-                  Top Cities
-                </Text>
-                {demographics.topCities.map((c: any) => (
-                  <View
-                    key={c.name}
-                    className="flex-row items-center"
-                    style={{gap: 8}}>
-                    <Text className="text-xs font-semibold text-slate-600 w-20">
-                      {c.name}
-                    </Text>
-                    <View className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <LinearGradient
-                        colors={['#8B5CF6', '#EC4899']}
-                        start={{x: 0, y: 0}}
-                        end={{x: 1, y: 0}}
-                        style={{
-                          width: `${Math.min(c.pct, 100)}%`,
-                          height: '100%',
-                          borderRadius: 100,
-                        }}
-                      />
-                    </View>
-                    <Text className="text-xs font-bold text-slate-500 w-10 text-right">
-                      {c.pct}%
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </SectionCard>
-          )}
+          {/* Footer branding */}
+          <View className="flex-row items-center justify-between py-4 border-t border-slate-100">
+            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Generated on RGossips</Text>
+            <Text className="text-[10px] font-bold text-slate-300">recentgossips.com</Text>
+          </View>
 
           {/* Publish / Share Card */}
           {published ? (

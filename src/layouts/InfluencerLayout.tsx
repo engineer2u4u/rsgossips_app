@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, createContext, useContext} from 'react';
 import {View, SafeAreaView, Pressable, Dimensions, ScrollView, Image, Text} from 'react-native';
 import Animated, {
   useSharedValue,
@@ -14,11 +14,18 @@ import SidebarContent from '../components/SidebarContent';
 
 const SIDEBAR_WIDTH = Dimensions.get('window').width * 0.75;
 
+// Context to share ScrollView ref with children
+const LayoutScrollContext = createContext<React.RefObject<ScrollView> | null>(null);
+export function useLayoutScroll() {
+  return useContext(LayoutScrollContext);
+}
+
 export default function InfluencerLayout({children}: {children: React.ReactNode}) {
   const [open, setOpen] = useState(false);
   const translateX = useSharedValue(-SIDEBAR_WIDTH);
   const navigation = useNavigation();
   const {profile} = useAuth();
+  const scrollRef = useRef<ScrollView>(null);
 
   const toggleSidebar = () => {
     const next = !open;
@@ -51,14 +58,10 @@ export default function InfluencerLayout({children}: {children: React.ReactNode}
 
       {/* Top Navbar */}
       <View className="h-14 flex-row items-center justify-between px-4 bg-white border-b border-slate-100 z-40">
-        {/* Left: Hamburger */}
-        <Pressable
-          onPress={toggleSidebar}
-          className="p-2 rounded-xl">
+        <Pressable onPress={toggleSidebar} className="p-2 rounded-xl">
           <Menu size={22} color="#334155" />
         </Pressable>
 
-        {/* Right: Search + Notifications + Profile */}
         <View className="flex-row items-center" style={{gap: 6}}>
           <Pressable
             onPress={() => navigation.navigate('InfluencerSearch' as never)}
@@ -94,13 +97,16 @@ export default function InfluencerLayout({children}: {children: React.ReactNode}
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{flexGrow: 1}}
-        showsVerticalScrollIndicator={false}>
-        <View className="w-full">{children}</View>
-        <View className="h-20" />
-      </ScrollView>
+      <LayoutScrollContext.Provider value={scrollRef}>
+        <ScrollView
+          ref={scrollRef}
+          className="flex-1"
+          contentContainerStyle={{flexGrow: 1}}
+          showsVerticalScrollIndicator={false}>
+          <View className="w-full">{children}</View>
+          <View className="h-20" />
+        </ScrollView>
+      </LayoutScrollContext.Provider>
 
       {/* Bottom Nav */}
       <View className="absolute bottom-0 left-0 right-0 z-50">

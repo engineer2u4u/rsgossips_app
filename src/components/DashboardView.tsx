@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
 import {
-  Settings,
   Edit2,
   CheckCircle2,
   TrendingUp,
@@ -23,7 +22,6 @@ import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
 
 interface DashboardViewProps {
-  onOpenEdit: () => void;
   onNotificationClick: () => void;
   onPrivacyClick: () => void;
   onOpenAnalytics: () => void;
@@ -42,7 +40,6 @@ function formatCount(n: number | undefined) {
 const TRIAL_DAYS = 30;
 
 const DashboardView: React.FC<DashboardViewProps> = ({
-  onOpenEdit,
   onNotificationClick,
   onPrivacyClick,
   onOpenAnalytics,
@@ -82,16 +79,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <View className="flex-1 px-5 pt-6" style={{gap: 20}}>
       {/* Page Header */}
-      <View className="flex-row justify-between items-center px-1">
-        <View>
-          <Text className="text-2xl font-black text-[#1A1A1A]">Profile</Text>
-          <Text className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-            Manage your creator account
-          </Text>
-        </View>
-        <TouchableOpacity className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-50">
-          <Settings size={20} color="#94A3B8" />
-        </TouchableOpacity>
+      <View className="px-1">
+        <Text className="text-2xl font-black text-[#1A1A1A]">Profile</Text>
+        <Text className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+          Manage your creator account
+        </Text>
       </View>
 
       {/* Identity Card */}
@@ -107,7 +99,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   style={{shadowColor: '#EC4899', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6}}
                 />
                 <TouchableOpacity
-                  onPress={onOpenEdit}
+                  onPress={onOpenInfo}
                   className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl"
                   style={{borderWidth: 2, borderColor: 'white'}}>
                   <Edit2 size={12} color="white" />
@@ -121,7 +113,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   <Text className="text-white text-3xl font-bold">{initials}</Text>
                 </LinearGradient>
                 <TouchableOpacity
-                  onPress={onOpenEdit}
+                  onPress={onOpenInfo}
                   className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl"
                   style={{borderWidth: 2, borderColor: 'white'}}>
                   <Edit2 size={12} color="white" />
