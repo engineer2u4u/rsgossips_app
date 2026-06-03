@@ -214,6 +214,16 @@ export default function LoginScreen() {
   };
 
   const handleSignUpInstagramConnect = (profile: InstaProfile) => {
+    // Refuse to advance past the Instagram step without a usable profile.
+    // The InstagramConnect component already guards against this, but a
+    // second check here means the row can never land with a token-only
+    // half-state that breaks the next sign-in.
+    if (!profile?.username) {
+      setError(
+        "Instagram didn't return your username. Please reconnect Instagram before continuing.",
+      );
+      return;
+    }
     setInstaProfile(profile);
     nextStep(); // -> step 3 (profile form)
   };

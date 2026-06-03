@@ -73,6 +73,16 @@ export default function InstagramConnect({
       if (funcError) throw new Error(funcError.message);
       if (data?.error) throw new Error(data.error);
 
+      // The edge function now returns a fully-populated profile or a
+      // structured error. Defensive guard: a token-only response (no
+      // username) is the exact half-connected state that broke the next
+      // sign-in. Refuse it here so the UI never lands in that state.
+      if (!data?.profile?.username) {
+        throw new Error(
+          "Instagram didn't return your username. Please reconnect Instagram.",
+        );
+      }
+
       setProfile({
         ...data.profile,
         accessToken: data.accessToken,
