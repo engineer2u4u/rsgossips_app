@@ -4,6 +4,7 @@ import {TrendingUp, Star, Box, Compass, Crown} from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
 import ProStatusCard from '../components/ProStatuscard';
 import InstagramReconnectBanner from '../components/InstagramReconnectBanner';
+import {useAuth} from '../context/AuthContext';
 import StackedDeals from '../components/StackedDeals';
 import CompleteProfileCard from '../components/CompleteProfileCard';
 import AiMediaKitCard from '../components/AIMediaKitCard';
@@ -32,6 +33,10 @@ function HomeContent() {
   const layoutScroll = useLayoutScroll();
   const [activeCategory, setActiveCategory] = useState('trending');
   const sectionYs = useRef<Record<string, number>>({});
+  // AuthContext flips instagramTokenMissing when refresh-instagram returns
+  // "No token stored" / "token expired". Pull those + the userId here so
+  // the banner can both render and complete a re-connect via update-profile.
+  const {user, instagramTokenMissing, setInstagramTokenMissing, refreshInstagram} = useAuth();
 
   const handleCategoryPress = (cat: typeof CATEGORIES[number]) => {
     if (cat.action === 'navigate') {
@@ -54,7 +59,16 @@ function HomeContent() {
 
       {/* Instagram Reconnect Banner */}
       <View className="mt-4">
-        <InstagramReconnectBanner instagramTokenMissing={false} />
+        <InstagramReconnectBanner
+          userId={user?.id}
+          instagramTokenMissing={instagramTokenMissing}
+          onReconnected={() => {
+            // Clear the flag locally and re-pull fresh IG data so the home
+            // page reflects the reconnected profile without a manual reload.
+            setInstagramTokenMissing(false);
+            if (user?.id) refreshInstagram(user.id);
+          }}
+        />
       </View>
 
       {/* Category Filters */}
