@@ -10,14 +10,14 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1B7CD021E2E1A126ACB95B63 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		22F2BE7366B1FF3E553B5F7C /* libPods-RGossips.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D95AB286FE850FF4BA7592F /* libPods-RGossips.a */; };
-		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		4E707022A758482B809FBAA8 /* ArchivoBlack-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */; };
-		9B234E155793403DBDDA5433 /* Cardo-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */; };
+		54314DFEC0294747AAD80D97 /* SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */; };
 		5EC8B01321CB4A5D9B9DF985 /* Cardo-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF9AA7C556A44286A86FA9BD /* Cardo-Italic.ttf */; };
 		72B5F6CB03C648E88556E0AD /* Cardo-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF8C5DB1D5E0403F9E092E69 /* Cardo-Regular.ttf */; };
+		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		9B234E155793403DBDDA5433 /* Cardo-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */; };
 		A12DE238DFC64DDDA5E2F906 /* SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 79990B2138184C51B702F87A /* SpaceMono-Bold.ttf */; };
-		54314DFEC0294747AAD80D97 /* SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,18 +25,18 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = RGossips/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = RGossips/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = RGossips/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Bold.ttf"; path = "../assets/fonts/Cardo-Bold.ttf"; sourceTree = "<group>"; };
 		1AFF99B4DCAC3BDAE0F549F5 /* Pods-RGossips.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RGossips.release.xcconfig"; path = "Target Support Files/Pods-RGossips/Pods-RGossips.release.xcconfig"; sourceTree = "<group>"; };
 		2D95AB286FE850FF4BA7592F /* libPods-RGossips.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RGossips.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Regular.ttf"; path = "../assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
 		52B30B5AA01BACDD9E5B0C92 /* Pods-RGossips.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RGossips.debug.xcconfig"; path = "Target Support Files/Pods-RGossips/Pods-RGossips.debug.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = RGossips/AppDelegate.swift; sourceTree = "<group>"; };
+		79990B2138184C51B702F87A /* SpaceMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Bold.ttf"; path = "../assets/fonts/SpaceMono-Bold.ttf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = RGossips/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		DF9AA7C556A44286A86FA9BD /* Cardo-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Italic.ttf"; path = "../assets/fonts/Cardo-Italic.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */ = {isa = PBXFileReference; name = "ArchivoBlack-Regular.ttf"; path = "../assets/fonts/ArchivoBlack-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */ = {isa = PBXFileReference; name = "Cardo-Bold.ttf"; path = "../assets/fonts/Cardo-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		DF9AA7C556A44286A86FA9BD /* Cardo-Italic.ttf */ = {isa = PBXFileReference; name = "Cardo-Italic.ttf"; path = "../assets/fonts/Cardo-Italic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		FF8C5DB1D5E0403F9E092E69 /* Cardo-Regular.ttf */ = {isa = PBXFileReference; name = "Cardo-Regular.ttf"; path = "../assets/fonts/Cardo-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		79990B2138184C51B702F87A /* SpaceMono-Bold.ttf */ = {isa = PBXFileReference; name = "SpaceMono-Bold.ttf"; path = "../assets/fonts/SpaceMono-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; name = "SpaceMono-Regular.ttf"; path = "../assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "ArchivoBlack-Regular.ttf"; path = "../assets/fonts/ArchivoBlack-Regular.ttf"; sourceTree = "<group>"; };
+		FF8C5DB1D5E0403F9E092E69 /* Cardo-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Regular.ttf"; path = "../assets/fonts/Cardo-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,7 +112,7 @@
 			sourceTree = "<group>";
 		};
 		C9E3793733FD42BF90966C90 /* Resources */ = {
-			isa = "PBXGroup";
+			isa = PBXGroup;
 			children = (
 				FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */,
 				1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */,
@@ -122,8 +122,8 @@
 				2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */,
 			);
 			name = Resources;
-			sourceTree = "<group>";
 			path = "";
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
