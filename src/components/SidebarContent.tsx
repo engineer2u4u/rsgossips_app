@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, Pressable, Image} from 'react-native';
+import LogoutConfirmDialog from './LogoutConfirmDialog';
 import {
   Home,
   Search,
@@ -28,6 +29,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
   const navigation = useNavigation();
   const route = useRoute();
   const {profile, signOut} = useAuth();
+  const [showLogout, setShowLogout] = useState(false);
 
   const navigateTo = (screen: string) => {
     closeSidebar();
@@ -133,17 +135,24 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
       {/* Footer */}
       <View className="p-4 border-t border-slate-100">
         <Pressable
-          onPress={async () => {
-            await signOut();
-            closeSidebar();
-            navigation.navigate('Login' as never);
-          }}
+          onPress={() => setShowLogout(true)}
           className="flex-row items-center px-4 py-3 rounded-xl"
           style={{gap: 12}}>
           <LogOut size={20} color="#EF4444" />
           <Text className="text-sm font-semibold text-red-500">Log Out</Text>
         </Pressable>
       </View>
+
+      <LogoutConfirmDialog
+        visible={showLogout}
+        onCancel={() => setShowLogout(false)}
+        onConfirm={async () => {
+          await signOut();
+          setShowLogout(false);
+          closeSidebar();
+          navigation.navigate('Login' as never);
+        }}
+      />
     </View>
   );
 }

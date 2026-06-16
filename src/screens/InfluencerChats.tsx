@@ -170,7 +170,7 @@ export default function InfluencerChats() {
   };
 
   return (
-    <View className="flex-1 bg-[#F8F9FD]">
+    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
       <View className="flex-1 flex-row">
         {/* Sidebar / Contact List */}
         {showChatList && (
@@ -216,7 +216,7 @@ export default function InfluencerChats() {
 
         {/* Chat Area */}
         {showChatArea && (
-          <View className="flex-1 bg-[#F8F9FD]">
+          <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
             {selectedChat ? (
               <KeyboardAvoidingView
                 className="flex-1"

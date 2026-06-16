@@ -4,11 +4,10 @@ import {Instagram, AlertTriangle, X} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import {supabase} from '../utils/supabase';
+import {invokeFn} from '../lib/api';
 import {
   NEXT_PUBLIC_INSTAGRAM_APP_ID as INSTAGRAM_APP_ID,
   INSTAGRAM_REDIRECT_URI,
-  NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
 } from '@env';
 
 interface Props {
@@ -40,25 +39,12 @@ export default function InstagramReconnectBanner({
       if (data?.error) throw new Error(data.error);
 
       // Save the token to the profile
-      const updateRes = await fetch(
-        `${SUPABASE_URL}/functions/v1/update-profile`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            userId,
-            table: 'influencer_profiles',
-            instagramAccessToken: data.accessToken,
-            instagramTokenExpiresAt: data.tokenExpiresAt,
-          }),
-        },
-      );
-      const updateData = await updateRes.json();
-      if (updateData.error) throw new Error(updateData.error);
+      await invokeFn('update-profile', {
+        userId,
+        table: 'influencer_profiles',
+        instagramAccessToken: data.accessToken,
+        instagramTokenExpiresAt: data.tokenExpiresAt,
+      });
 
       onReconnected?.();
     } catch (err: any) {

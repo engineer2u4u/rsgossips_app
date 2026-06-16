@@ -9,10 +9,10 @@ import {
   Modal,
   Pressable,
   Dimensions,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   ChevronLeft,
   Search,
@@ -27,7 +27,7 @@ import {
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY } from '@env';
+import {invokeFn} from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -141,24 +141,21 @@ export default function RecommendedCampaigns() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCampaigns = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/list-campaigns`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({influencerId: user?.id}),
+        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
+          influencerId: user?.id,
         });
-        const data = await res.json();
+        if (cancelled) return;
         if (data?.campaigns?.length) {
           const mapped = data.campaigns
             .filter((c: any) => c.status === 'active' || c.status === 'Active')
             .map((c: any) => ({
               id: c.id,
-              imageUrl: c.image || 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600',
+              imageUrl:
+                c.image ||
+                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600',
               category: c.tags?.[0] || 'General',
               badge: 'Active',
               match: `${Math.floor(Math.random() * 10 + 88)}% Match`,
@@ -166,15 +163,24 @@ export default function RecommendedCampaigns() {
               title: c.title,
               location: c.location || 'India',
               desc: c.description || '',
-              pay: c.budget ? (typeof c.budget === 'number' ? `₹${(c.budget / 1000).toFixed(0)}k` : c.budget) : '₹TBD',
+              pay: c.budget
+                ? typeof c.budget === 'number'
+                  ? `₹${(c.budget / 1000).toFixed(0)}k`
+                  : c.budget
+                : '₹TBD',
               followers: c.deliverables || '10k+ Followers',
             }));
           if (mapped.length) setCampaigns(mapped);
         }
-      } catch {}
-      setLoading(false);
+      } catch {
+        // Best-effort — keeps the dummy list visible.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchCampaigns();
   }, [user?.id]);
 
   // Filter state

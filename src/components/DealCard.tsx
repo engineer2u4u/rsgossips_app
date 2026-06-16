@@ -15,13 +15,21 @@ import LinearGradient from 'react-native-linear-gradient';
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 120;
 
+interface DealCardProps {
+  card: any;
+  positionFromTop: number;
+  isTop: boolean;
+  onSwipe: (direction?: 'left' | 'right') => void;
+  autoSwipe?: boolean;
+}
+
 export default function DealCard({
   card,
   positionFromTop,
   isTop,
   onSwipe,
   autoSwipe,
-}) {
+}: DealCardProps) {
   const x = useSharedValue(0);
   const y = useSharedValue(0);
   const exiting = useSharedValue(false);

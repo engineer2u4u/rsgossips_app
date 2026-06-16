@@ -22,10 +22,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
-import {
-  NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
-} from '@env';
+import {invokeFn, EdgeFunctionError} from '../lib/api';
 
 interface Props {
   visible: boolean;
@@ -62,37 +59,40 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/apply-campaign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          campaignId: campaignData?.id,
-          influencerId: user?.id,
-          proposedRate: proposedRate ? Number(proposedRate) : null,
-        }),
+      const data = await invokeFn<{success?: boolean}>('apply-campaign', {
+        campaignId: campaignData?.id,
+        influencerId: user?.id,
+        proposedRate: proposedRate ? Number(proposedRate) : null,
       });
-      const data = await res.json();
 
-      if (data?.error === 'already_applied') {
-        setError('You have already applied to this campaign.');
-        return;
-      }
-      if (data?.error) {
-        setError(data.error);
-        return;
-      }
       if (data?.success) {
         setSubmitted(true);
         setTimeout(() => {
           onSubmitSuccess();
         }, 2000);
+      } else {
+        setError('Unexpected response from the server.');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit application');
+    } catch (err) {
+      // The edge function returns structured errors (already_applied,
+      // plan_limit_reached, etc.). invokeFn surfaces them as EdgeFunctionError.
+      if (err instanceof EdgeFunctionError) {
+        const code = err.data?.error;
+        if (code === 'already_applied') {
+          setError('You have already applied to this campaign.');
+        } else if (code === 'plan_limit_reached') {
+          const used = err.data?.used ?? '?';
+          const limit = err.data?.limit ?? '?';
+          const plan = (err.data?.plan || 'starter') as string;
+          setError(
+            `You've used ${used}/${limit} applications on your ${plan} plan this month. Upgrade to apply to more campaigns.`,
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError((err as Error)?.message || 'Failed to submit application');
+      }
     } finally {
       setSubmitting(false);
     }

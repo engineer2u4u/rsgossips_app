@@ -167,7 +167,15 @@ export default function PerformanceDashboard() {
   );
 }
 
-function MetricCard({ icon, title, value, growth, positive }) {
+interface MetricCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  growth: string;
+  positive: boolean;
+}
+
+function MetricCard({ icon, title, value, growth, positive }: MetricCardProps) {
   return (
     <View className="bg-white w-[48%] rounded-2xl p-4 mb-4">
       <View className="flex-row justify-between">
@@ -189,7 +197,13 @@ function MetricCard({ icon, title, value, growth, positive }) {
   );
 }
 
-function ActionItem({ title, sub, alert }) {
+interface ActionItemProps {
+  title: string;
+  sub: string;
+  alert?: boolean;
+}
+
+function ActionItem({ title, sub, alert }: ActionItemProps) {
   return (
     <View className="flex-row justify-between items-center mb-3">
       <View>

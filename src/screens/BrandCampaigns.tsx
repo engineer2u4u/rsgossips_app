@@ -1,52 +1,126 @@
-import React, {useState} from 'react';
+// Brand campaigns list.
+//
+// Real `brand-campaigns` (action="list") data, tabbed by status. Cards open
+// BrandCampaignDetail. The Post Request floating button stays as a stub for
+// now — the full create-campaign form (~25 fields, web commit df31bb1) is
+// its own batch.
+
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Image,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from 'react-native';
-import {
-  Search,
-  SlidersHorizontal,
-  ArrowRight,
-  Plus,
-  X,
-  Calendar,
-  ChevronDown,
-  Upload,
-  ArrowUpRight,
-} from 'lucide-react-native';
+import {ArrowRight, ArrowUpRight, Plus, Search, SlidersHorizontal} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import BrandsLayout from '../layouts/BrandLayout';
-import {CampaignCard} from '../components/brands/CampaignCard';
-import {FeaturedCampaign} from '../components/brands/FeaturedCampaign';
+import {useAuth} from '../context/AuthContext';
+import {invokeFn} from '../lib/api';
 
-const TABS = ['Live', 'My Posts', 'Applied', 'Missed'];
+const TABS = ['Active', 'Draft', 'Paused', 'Completed'] as const;
+type Tab = (typeof TABS)[number];
+
+type BrandCampaign = {
+  id: string;
+  title: string;
+  description?: string;
+  bannerImage?: string;
+  status: 'active' | 'draft' | 'paused' | 'completed';
+  campaignType?: string;
+  maxInfluencers?: number;
+  budgetTotal?: number;
+  budgetPerInfluencer?: number;
+  categories?: string[];
+  applicationDeadline?: string;
+  applicationsTotal?: number;
+  applicationsPending?: number;
+  createdAt?: string;
+};
+
+const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
+  Active: 'active',
+  Draft: 'draft',
+  Paused: 'paused',
+  Completed: 'completed',
+};
 
 export default function BrandCampaigns() {
-  const [activeTab, setActiveTab] = useState('Live');
+  const {user} = useAuth();
+  const navigation = useNavigation<any>();
+  const [campaigns, setCampaigns] = useState<BrandCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('Active');
+  const [query, setQuery] = useState('');
+
+  const load = useCallback(async () => {
+    if (!user?.id) return;
+    setError(null);
+    try {
+      const data = await invokeFn<{campaigns?: BrandCampaign[]}>(
+        'brand-campaigns',
+        {action: 'list', brandId: user.id},
+      );
+      setCampaigns(data?.campaigns || []);
+    } catch (err: any) {
+      console.warn('brand-campaigns list failed:', err);
+      setError(err?.message || 'Failed to load campaigns');
+      setCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Refresh when returning from the create-campaign flow so the new draft /
+  // published row appears without a manual pull.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const counts = useMemo(() => {
+    const c: Record<Tab, number> = {Active: 0, Draft: 0, Paused: 0, Completed: 0};
+    for (const k of campaigns) {
+      const t = (Object.keys(TAB_STATUS) as Tab[]).find(x => TAB_STATUS[x] === k.status);
+      if (t) c[t] += 1;
+    }
+    return c;
+  }, [campaigns]);
+
+  const filtered = useMemo(() => {
+    const status = TAB_STATUS[activeTab];
+    const q = query.trim().toLowerCase();
+    return campaigns
+      .filter(c => c.status === status)
+      .filter(c => !q || c.title.toLowerCase().includes(q));
+  }, [campaigns, activeTab, query]);
 
   return (
     <BrandsLayout>
-      {/* Header Section */}
+      {/* Header */}
       <View className="relative mb-16">
         <LinearGradient
           colors={['#4C75BE', '#4A3996']}
           className="px-6 pt-12 pb-16 rounded-b-[40px]">
           <View className="flex-row justify-between items-start mb-6">
             <View>
-              <Text className="text-2xl font-bold text-white">Campaign</Text>
+              <Text className="text-2xl font-bold text-white">Campaigns</Text>
               <Text className="text-purple-100 text-xs">
-                Discover new opportunities
+                Manage and review your collaborations
               </Text>
             </View>
             <View className="flex-row gap-2">
-              <TouchableOpacity className="p-2 bg-white/10 rounded-full">
+              <TouchableOpacity className="p-2 bg-white/10 rounded-full" onPress={load}>
                 <Search size={20} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity className="p-2 bg-white/10 rounded-full">
@@ -56,280 +130,207 @@ export default function BrandCampaigns() {
           </View>
         </LinearGradient>
 
-        {/* Search + Tabs overlay */}
         <View className="absolute left-6 right-6 -bottom-12">
-          {/* Search Bar */}
           <View className="flex-row items-center bg-white rounded-3xl p-2 shadow-md shadow-gray-200 mb-4">
             <TextInput
-              placeholder="Enter Campaign Name........"
+              placeholder="Search your campaigns…"
               placeholderTextColor="#D1D5DB"
+              value={query}
+              onChangeText={setQuery}
               className="flex-1 pl-4 text-sm text-gray-800"
             />
-            <LinearGradient
-              colors={['#5851DB', '#4338CA']}
-              className="rounded-full">
+            <LinearGradient colors={['#5851DB', '#4338CA']} className="rounded-full">
               <TouchableOpacity className="p-2.5">
                 <ArrowRight size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </LinearGradient>
           </View>
 
-          {/* Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="gap-3">
-            {TABS.map(tab =>
-              activeTab === tab ? (
-                <LinearGradient
-                  key={tab}
-                  colors={['#5851DB', '#4338CA']}
-                  className="rounded-full shadow-lg shadow-purple-100">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row" style={{gap: 8}}>
+              {TABS.map(tab =>
+                activeTab === tab ? (
+                  <LinearGradient
+                    key={tab}
+                    colors={['#5851DB', '#4338CA']}
+                    className="rounded-full shadow-lg shadow-purple-100">
+                    <TouchableOpacity
+                      onPress={() => setActiveTab(tab)}
+                      className="px-5 py-2 flex-row items-center gap-2">
+                      {tab === 'Active' && (
+                        <View className="w-2 h-2 bg-red-500 rounded-full" />
+                      )}
+                      <Text className="text-xs font-semibold text-white">
+                        {tab} ({counts[tab]})
+                      </Text>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                ) : (
                   <TouchableOpacity
+                    key={tab}
                     onPress={() => setActiveTab(tab)}
-                    className="px-6 py-2 flex-row items-center gap-2">
-                    {tab === 'Live' && (
-                      <View className="w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                    <Text className="text-xs font-semibold text-white">
-                      {tab}
+                    className="px-5 py-2 rounded-full bg-white flex-row items-center gap-2">
+                    <Text className="text-xs font-semibold text-gray-400">
+                      {tab} ({counts[tab]})
                     </Text>
                   </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  className="px-6 py-2 rounded-full bg-white flex-row items-center gap-2">
-                  <Text className="text-xs font-semibold text-gray-400">
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              ),
-            )}
+                ),
+              )}
+            </View>
           </ScrollView>
         </View>
       </View>
 
-      {activeTab === 'Live' ? (
-        <View>
-          {/* Featured Campaign */}
-          <View className="px-6 mt-4">
-            <FeaturedCampaign />
+      <View className="px-6 mt-2 pb-24" style={{gap: 12}}>
+        {loading ? (
+          <View className="py-16 items-center">
+            <ActivityIndicator color="#5851DB" />
           </View>
-
-          <View className="px-6 mt-8 pb-8">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-base font-bold text-gray-900">
-                Recent Campaigns
-              </Text>
-              <TouchableOpacity>
-                <Text className="text-[10px] text-[#5851DB] font-bold">
-                  See all
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View className="gap-4">
-              <CampaignCard />
-              <CampaignCard />
-              <CampaignCard />
-              <CampaignCard />
-              <CampaignCard />
-              <CampaignCard />
-            </View>
+        ) : error ? (
+          <View className="p-4 bg-red-50 border border-red-200 rounded-2xl">
+            <Text className="text-sm text-red-600">{error}</Text>
           </View>
-        </View>
-      ) : activeTab === 'My Posts' ? (
-        <View className="items-center justify-center pt-20 px-10">
-          <Image
-            source={{uri: 'https://via.placeholder.com/160x160?text=Empty'}}
-            className="w-40 h-40 opacity-80 mb-6"
-          />
-          <Text className="text-lg font-bold text-gray-900 mb-2 text-center">
-            You haven't posted yet
-          </Text>
-          <Text className="text-xs text-gray-400 leading-5 text-center">
-            Post your requirements to connect creators and boost your campaign
-            in ease.
-          </Text>
-          <CreateCampaignButton label="Post a Request" />
-        </View>
-      ) : null}
+        ) : filtered.length === 0 ? (
+          <View className="py-16 items-center" style={{gap: 8}}>
+            <Image
+              source={{uri: 'https://via.placeholder.com/120x120?text=Empty'}}
+              className="w-24 h-24 opacity-50 mb-2"
+            />
+            <Text className="text-base font-bold text-gray-800">
+              No {activeTab.toLowerCase()} campaigns
+            </Text>
+            <Text className="text-xs text-gray-400 text-center px-12">
+              {activeTab === 'Active'
+                ? 'Post a campaign request to start receiving creator applications.'
+                : `You have no campaigns in ${activeTab.toLowerCase()} status.`}
+            </Text>
+          </View>
+        ) : (
+          filtered.map(c => (
+            <RealCampaignCard
+              key={c.id}
+              campaign={c}
+              onPress={() =>
+                navigation.navigate('BrandCampaignDetail', {id: c.id})
+              }
+            />
+          ))
+        )}
+      </View>
 
-      {/* Floating FAB */}
+      {/* Floating FAB — full create flow is its own batch */}
       <View className="absolute bottom-24 right-6 z-50">
-        <CreateCampaignButton label="Post Request" showIcon />
+        <LinearGradient
+          colors={['#5851DB', '#4338CA']}
+          className="rounded-2xl shadow-lg shadow-purple-200">
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CreateCampaign')}
+            className="px-6 py-3 flex-row items-center gap-2"
+            activeOpacity={0.8}>
+            <Plus size={20} color="#FFFFFF" />
+            <Text className="text-white font-bold text-sm">Post Request</Text>
+            <ArrowUpRight size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     </BrandsLayout>
   );
 }
 
-/* Campaign Form Modal */
-const CampaignFormModal = ({
-  visible,
-  onClose,
+function RealCampaignCard({
+  campaign,
+  onPress,
 }: {
-  visible: boolean;
-  onClose: () => void;
-}) => {
+  campaign: BrandCampaign;
+  onPress: () => void;
+}) {
+  const total = campaign.applicationsTotal || 0;
+  const pending = campaign.applicationsPending || 0;
+  const slots = campaign.maxInfluencers || 0;
+  const budget = campaign.budgetTotal
+    ? `₹${campaign.budgetTotal.toLocaleString('en-IN')}`
+    : '—';
+  const deadline = campaign.applicationDeadline
+    ? new Date(campaign.applicationDeadline).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+      })
+    : null;
+
+  const statusBg: Record<BrandCampaign['status'], string> = {
+    active: 'bg-emerald-100',
+    draft: 'bg-slate-100',
+    paused: 'bg-amber-100',
+    completed: 'bg-indigo-100',
+  };
+  const statusText: Record<BrandCampaign['status'], string> = {
+    active: 'text-emerald-700',
+    draft: 'text-slate-600',
+    paused: 'text-amber-700',
+    completed: 'text-indigo-700',
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/40 justify-end">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View className="bg-white rounded-t-[40px] max-h-[92%]">
-            {/* Header */}
-            <View className="flex-row justify-between items-center px-6 py-4 border-b border-gray-100">
-              <TouchableOpacity onPress={onClose}>
-                <X size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-              <Text className="text-lg font-bold text-gray-900">
-                Create Campaign Request
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.9}
+      className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      {campaign.bannerImage ? (
+        <Image
+          source={{uri: campaign.bannerImage}}
+          className="w-full h-32"
+          resizeMode="cover"
+        />
+      ) : null}
+      <View className="p-4" style={{gap: 8}}>
+        <View className="flex-row items-center" style={{gap: 6}}>
+          {campaign.campaignType ? (
+            <View className="bg-purple-50 px-2 py-0.5 rounded-full">
+              <Text className="text-[10px] font-semibold text-[#5851DB] capitalize">
+                {campaign.campaignType}
               </Text>
-              <View className="w-6" />
             </View>
-
-            {/* Form */}
-            <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
-              <View className="gap-6">
-                {/* Title */}
-                <View>
-                  <Text className="text-xs font-bold text-gray-900 mb-2">
-                    Title <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    placeholder="Enter campaign title"
-                    placeholderTextColor="#D1D5DB"
-                    className="w-full bg-[#F8F9FE] p-4 rounded-2xl text-sm"
-                  />
-                </View>
-
-                {/* Description */}
-                <View>
-                  <Text className="text-xs font-bold text-gray-900 mb-2">
-                    Description <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    placeholder="Describe what you're looking for..."
-                    placeholderTextColor="#D1D5DB"
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    className="w-full bg-[#F8F9FE] p-4 rounded-2xl text-sm min-h-[100px]"
-                  />
-                </View>
-
-                {/* Category */}
-                <View>
-                  <Text className="text-xs font-bold text-gray-900 mb-2">
-                    Category
-                  </Text>
-                  <TouchableOpacity className="w-full bg-[#F8F9FE] p-4 rounded-2xl flex-row items-center justify-between">
-                    <Text className="text-sm text-gray-400">
-                      Select Category
-                    </Text>
-                    <ChevronDown size={18} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Budget & Deadline */}
-                <View className="flex-row gap-4">
-                  <View className="flex-1">
-                    <Text className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
-                      Budget{' '}
-                      <Text className="text-[10px] normal-case">
-                        (Optional)
-                      </Text>
-                    </Text>
-                    <TextInput
-                      placeholder="Set Budget"
-                      placeholderTextColor="#D1D5DB"
-                      className="w-full bg-[#F8F9FE] p-4 rounded-2xl text-sm"
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
-                      Deadline{' '}
-                      <Text className="text-[10px] normal-case">
-                        (Optional)
-                      </Text>
-                    </Text>
-                    <TouchableOpacity className="w-full bg-[#F8F9FE] p-4 rounded-2xl flex-row items-center justify-between">
-                      <Text className="text-sm text-gray-400">
-                        Pick a date
-                      </Text>
-                      <Calendar size={16} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Attachments */}
-                <View>
-                  <Text className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
-                    Attachments{' '}
-                    <Text className="text-[10px] normal-case">(Optional)</Text>
-                  </Text>
-                  <TouchableOpacity className="w-full border-2 border-dashed border-gray-100 rounded-[32px] p-10 items-center justify-center gap-3 bg-white">
-                    <View className="p-3 bg-[#F8F9FE] rounded-full">
-                      <Upload size={24} color="#9CA3AF" />
-                    </View>
-                    <Text className="text-xs font-bold text-gray-900">
-                      Tap to upload
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View className="h-4" />
-            </ScrollView>
-
-            {/* Footer Buttons */}
-            <View className="p-6 flex-row gap-4 border-t border-gray-100">
-              <TouchableOpacity
-                onPress={onClose}
-                className="flex-1 py-4 rounded-2xl border border-gray-100 items-center">
-                <Text className="font-bold text-gray-900">Cancel</Text>
-              </TouchableOpacity>
-              <LinearGradient
-                colors={['#5851DB', '#4338CA']}
-                className="flex-1 rounded-2xl">
-                <TouchableOpacity className="py-4 items-center">
-                  <Text className="font-bold text-white">Submit Request</Text>
-                </TouchableOpacity>
-              </LinearGradient>
-            </View>
+          ) : null}
+          <View className={`${statusBg[campaign.status]} px-2 py-0.5 rounded-full`}>
+            <Text
+              className={`text-[10px] font-bold uppercase ${statusText[campaign.status]}`}>
+              {campaign.status}
+            </Text>
           </View>
-        </KeyboardAvoidingView>
+        </View>
+        <Text className="text-base font-bold text-gray-900" numberOfLines={1}>
+          {campaign.title}
+        </Text>
+        {campaign.description ? (
+          <Text className="text-xs text-gray-500" numberOfLines={2}>
+            {campaign.description}
+          </Text>
+        ) : null}
+        <View className="flex-row flex-wrap" style={{gap: 6, marginTop: 4}}>
+          <Pill label="Budget" value={budget} />
+          <Pill label="Slots" value={`${total}/${slots || '∞'}`} />
+          {pending > 0 ? <Pill label="Pending" value={String(pending)} highlight /> : null}
+          {deadline ? <Pill label="Deadline" value={deadline} /> : null}
+        </View>
       </View>
-    </Modal>
+    </TouchableOpacity>
   );
-};
+}
 
-/* Reusable button that opens the campaign form modal */
-const CreateCampaignButton = ({
-  label,
-  showIcon,
-}: {
-  label: string;
-  showIcon?: boolean;
-}) => {
-  const [visible, setVisible] = useState(false);
-
+function Pill({label, value, highlight}: {label: string; value: string; highlight?: boolean}) {
   return (
-    <>
-      <LinearGradient
-        colors={['#5851DB', '#4338CA']}
-        className={`rounded-2xl shadow-lg shadow-purple-200 ${showIcon ? '' : 'mt-8'}`}>
-        <TouchableOpacity
-          onPress={() => setVisible(true)}
-          className="px-6 py-3 flex-row items-center gap-2"
-          activeOpacity={0.8}>
-          {showIcon && <Plus size={20} color="#FFFFFF" />}
-          <Text className="text-white font-bold text-sm">{label}</Text>
-          {!showIcon && <ArrowUpRight size={18} color="#FFFFFF" />}
-        </TouchableOpacity>
-      </LinearGradient>
-      <CampaignFormModal visible={visible} onClose={() => setVisible(false)} />
-    </>
+    <View
+      className={`flex-row items-center px-2 py-1 rounded-lg border ${
+        highlight ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'
+      }`}
+      style={{gap: 4}}>
+      <Text className="text-[9px] font-bold uppercase text-slate-400">{label}</Text>
+      <Text
+        className={`text-[11px] font-bold ${
+          highlight ? 'text-amber-700' : 'text-slate-700'
+        }`}>
+        {value}
+      </Text>
+    </View>
   );
-};
+}

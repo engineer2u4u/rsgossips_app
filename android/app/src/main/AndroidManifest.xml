@@ -22,6 +22,21 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+
+        <!--
+          Deep link for the in-app browser used by Stripe Checkout. Chrome
+          Custom Tabs won't intercept an HTTPS redirect without App Links,
+          so we send Stripe a com.rgossips:// success URL instead. When
+          Stripe redirects to that scheme, Android hands the URL off to
+          this activity and InAppBrowser.openAuth() resolves with it
+          instead of loading a web page.
+        -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="com.rgossips" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

@@ -59,9 +59,7 @@ export default function SignInPhone({
       {/* ERROR */}
       {error !== '' && (
         <View className="p-3 mb-4 bg-red-50 border border-red-200 rounded-lg">
-          <Text className="text-sm text-red-600">
-            Some error has occurred. Please try again later.
-          </Text>
+          <Text className="text-sm text-red-600">{error}</Text>
         </View>
       )}
 

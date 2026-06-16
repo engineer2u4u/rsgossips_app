@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
+  Alert,
+  Linking,
 } from 'react-native';
 import {
   Check,
@@ -18,9 +20,55 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
+import RazorpayCheckout from 'react-native-razorpay';
 import {useAuth} from '../context/AuthContext';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {invokeFn} from '../lib/api';
 import InfluencerLayout from '../layouts/InfluencerLayout';
+import GatewayPickerModal from '../components/GatewayPickerModal';
+import VerifyingOverlay from '../components/VerifyingOverlay';
+import {
+  PLAN_RAZORPAY_IDS,
+  PLAN_STRIPE_PRICES,
+  RAZORPAY_KEY_ID,
+  type PlanId,
+} from '../lib/plans';
+
+// Stripe Checkout success redirect URL. We send a custom-scheme origin so
+// the in-app browser (Chrome Custom Tabs on Android, ASWebAuthenticationSession
+// on iOS) actually intercepts the redirect — both backends only auto-close
+// on a redirect to a URL scheme the app has *registered* (see the intent-filter
+// in AndroidManifest.xml and CFBundleURLTypes in Info.plist). Plain HTTPS
+// would just load rgossips.com inside the browser tab instead of returning
+// control to the app.
+//
+// IMPORTANT: this scheme must also be on the edge function's ALLOWED_ORIGINS
+// allow-list in `supabase/functions/stripe-checkout/index.ts`; otherwise the
+// function silently falls back to APP_URL and we'd ship the old bug.
+const STRIPE_RETURN_ORIGIN = 'com.rgossips://stripe-return';
+const STRIPE_RETURN_URL_PREFIX = `${STRIPE_RETURN_ORIGIN}/influencer/pricing`;
+
+// `profile.phone` is stored as raw digits with the country code but no `+`
+// (e.g. "919876543210"). Razorpay's customer API + SDK prefill accept either
+// a bare 10-digit Indian number or E.164 — they silently drop anything else,
+// which is why the Razorpay checkout sheet was opening with an empty phone
+// field. Normalize before sending in both places.
+function formatPhoneForRazorpay(raw: string | undefined | null): string {
+  if (!raw) return '';
+  // Keep the leading `+` if present, then strip everything that isn't a digit.
+  const hasPlus = raw.trim().startsWith('+');
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits) return '';
+  if (hasPlus) return `+${digits}`;
+  // 10 digits → assume Indian → prepend +91.
+  if (digits.length === 10) return `+91${digits}`;
+  // 12 digits starting with 91 → already country-coded, just add the +.
+  if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+  // Other lengths (11 digits with leading 0, intl numbers, etc.) — leave
+  // them as-is with a leading + so Razorpay still tries to parse them
+  // rather than silently dropping.
+  return `+${digits}`;
+}
 
 const TRIAL_DAYS = 30;
 
@@ -216,11 +264,23 @@ const PlanIcon = ({name, color}: {name: string; color: string}) => {
 };
 
 export default function InfluencerPricing() {
-  const {profile, user} = useAuth();
+  const {profile, user, refreshProfile} = useAuth();
   const navigation = useNavigation();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [successPlan, setSuccessPlan] = useState<string | null>(null);
+  // Holds the plan the user tapped Upgrade on; opens the gateway picker.
+  const [pickerPlan, setPickerPlan] = useState<Plan | null>(null);
+  // True while we poll the profile after a successful payment, waiting
+  // for the webhook to flip subscription_plan on the row.
+  const [verifying, setVerifying] = useState(false);
+
+  // refreshProfile gets a new reference every time AuthContext re-renders
+  // (which happens *because* we call it during polling). Stashing it in
+  // a ref lets the polling loop call the latest version without re-running
+  // the effect that owns the loop.
+  const refreshProfileRef = useRef(refreshProfile);
+  refreshProfileRef.current = refreshProfile;
 
   const currentPlan = profile?.subscription_plan || 'free';
   const createdAt = profile?.created_at
@@ -237,27 +297,218 @@ export default function InfluencerPricing() {
 
   const currentPlans = PLANS[billing];
 
-  const handleUpgrade = async (plan: Plan) => {
-    if (upgrading) return;
+  // Step 1 — user taps Upgrade on a plan card. Open the gateway picker.
+  const handleUpgrade = (plan: Plan) => {
+    if (upgrading || verifying) return;
+    if (!user?.id) {
+      Alert.alert('Sign in required', 'Please sign in to upgrade your plan.');
+      return;
+    }
+    setPickerPlan(plan);
+  };
+
+  // Step 2 — user picked a gateway in the modal. Kick off the actual
+  // checkout for that gateway. setUpgrading shows the spinner on the
+  // plan card; the picker modal closes.
+  const handleGatewayPick = async (gateway: 'stripe' | 'razorpay') => {
+    const plan = pickerPlan;
+    if (!plan) return;
+    setPickerPlan(null);
     setUpgrading(plan.id);
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/update-profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      if (gateway === 'razorpay') {
+        await startRazorpay(plan);
+      } else {
+        await startStripe(plan);
+      }
+    } catch (err: any) {
+      Alert.alert(
+        "Couldn't start checkout",
+        err?.message || 'Something went wrong. Please try again in a moment.',
+      );
+    } finally {
+      setUpgrading(null);
+    }
+  };
+
+  // After payment succeeds we poll the profile for up to 12s so the
+  // banner / plan card updates the moment the webhook lands. Identical
+  // pattern + ceiling to the web pricing page.
+  const runVerify = async () => {
+    setVerifying(true);
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+      try {
+        await refreshProfileRef.current?.();
+      } catch (e) {
+        console.warn('refreshProfile during verify failed:', e);
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    setVerifying(false);
+  };
+
+  const startRazorpay = async (plan: Plan) => {
+    const razorpayPlanId =
+      PLAN_RAZORPAY_IDS[plan.id as PlanId]?.[billing];
+    if (!razorpayPlanId) {
+      throw new Error(
+        `Razorpay isn't configured for the ${plan.id} ${billing} plan yet. ` +
+          'Set NEXT_PUBLIC_RAZORPAY_PLAN_… in .env and rebuild.',
+      );
+    }
+    const contact = formatPhoneForRazorpay(profile?.phone);
+    const created = await invokeFn<{
+      subscription_id?: string;
+      key_id?: string;
+      error?: string;
+    }>('razorpay-checkout', {
+      userId: user?.id,
+      planId: razorpayPlanId,
+      plan: plan.id,
+      cycle: billing,
+      email: profile?.email || '',
+      name: profile?.full_name || '',
+      contact,
+    });
+    if (created?.error) throw new Error(created.error);
+    if (!created?.subscription_id || !created?.key_id) {
+      throw new Error("Razorpay didn't return a subscription / key.");
+    }
+
+    // Razorpay's native checkout sheet. Success / failure come back as a
+    // resolved / rejected promise; the webhook is still the source of
+    // truth for the row update — handler() just routes us into the
+    // verifying overlay.
+    try {
+      await RazorpayCheckout.open({
+        key: created.key_id,
+        subscription_id: created.subscription_id,
+        name: 'RGossips',
+        description: `Upgrade to ${plan.name} · ${billing}`,
+        prefill: {
+          email: profile?.email || '',
+          contact,
+          name: profile?.full_name || '',
         },
-        body: JSON.stringify({
-          userId: user?.id,
-          table: 'influencer_profiles',
-          subscriptionPlan: plan.id,
-          billingCycle: billing,
-        }),
+        notes: {
+          user_id: String(user?.id || ''),
+          plan: plan.id,
+          cycle: billing,
+        },
+        theme: {color: '#5851DB'},
       });
+      // Promise resolved → payment succeeded → start the post-payment
+      // poll loop.
+      await runVerify();
       setSuccessPlan(plan.id);
-    } catch {}
-    setUpgrading(null);
+    } catch (err: any) {
+      // Razorpay error codes — 0 / undefined typically means the user
+      // dismissed the sheet without paying; treat that as a silent
+      // cancel rather than a hard error.
+      if (err?.code !== 0 && err?.code !== undefined) {
+        throw new Error(err?.description || 'Payment failed.');
+      }
+    }
+  };
+
+  const startStripe = async (plan: Plan) => {
+    const priceId = PLAN_STRIPE_PRICES[plan.id as PlanId]?.[billing];
+    if (!priceId) {
+      throw new Error(
+        `Stripe isn't configured for the ${plan.id} ${billing} plan yet. ` +
+          'Set NEXT_PUBLIC_STRIPE_PRICE_… in .env and rebuild.',
+      );
+    }
+    const created = await invokeFn<{url?: string; error?: string}>(
+      'stripe-checkout',
+      {
+        userId: user?.id,
+        priceId,
+        plan: plan.id,
+        cycle: billing,
+        email: profile?.email || '',
+        origin: STRIPE_RETURN_ORIGIN,
+      },
+    );
+    if (created?.error) throw new Error(created.error);
+    if (!created?.url) throw new Error("Stripe didn't return a checkout URL.");
+
+    // Open Stripe's hosted Checkout in an in-app browser. openAuth is
+    // *supposed* to intercept the navigation to STRIPE_RETURN_URL_PREFIX
+    // and resolve with the URL — that works cleanly on iOS via
+    // ASWebAuthenticationSession.
+    //
+    // On Android (Chrome Custom Tabs), Chrome's security model often
+    // blocks the JS-initiated redirect away from a hosted Stripe page to
+    // a custom-scheme URL — the user sees `com.rgossips://…` flash in the
+    // address bar and the tab stays open. We work around it by *also*
+    // listening for the URL via React Native's Linking module. Whenever
+    // the OS does manage to fire the intent-filter (some Android versions
+    // / browsers still hand it off cleanly even when Chrome misbehaves
+    // visually), the listener catches it, we dismiss the tab, and we
+    // process the success the same way. Whichever path fires first wins.
+    if (!(await InAppBrowser.isAvailable())) {
+      throw new Error(
+        'No in-app browser is available on this device. Update Chrome / Safari and try again.',
+      );
+    }
+
+    const linkPromise = new Promise<{url: string} | null>(resolve => {
+      const sub = Linking.addEventListener('url', (event: {url: string}) => {
+        if (event.url?.startsWith(STRIPE_RETURN_ORIGIN)) {
+          sub.remove();
+          // Close the tab if it's still open (best-effort — no-op on iOS
+          // where ASWebAuthenticationSession owns its lifecycle).
+          try { InAppBrowser.close(); } catch {}
+          try { InAppBrowser.closeAuth(); } catch {}
+          resolve({url: event.url});
+        }
+      });
+      // Linking subscription needs an out — when openAuth resolves first,
+      // we still want to release the listener cleanly.
+      (linkPromise as any).__sub = sub;
+    });
+
+    const authPromise = InAppBrowser.openAuth(
+      created.url,
+      STRIPE_RETURN_URL_PREFIX,
+      {
+        ephemeralWebSession: true,
+        showTitle: false,
+        enableUrlBarHiding: true,
+        enableDefaultShare: false,
+      },
+    ).then(r => {
+      // Drop the link listener since openAuth handled it.
+      try { (linkPromise as any).__sub?.remove(); } catch {}
+      return r;
+    });
+
+    const winner = await Promise.race([authPromise, linkPromise]);
+    // Normalise both shapes to a single { type, url } for downstream code.
+    const result: {type: string; url?: string} =
+      winner && 'type' in winner
+        ? (winner as any)
+        : winner && (winner as any).url
+          ? {type: 'success', url: (winner as any).url}
+          : {type: 'cancel'};
+
+    if (result.type === 'success' && result.url) {
+      try {
+        const u = new URL(result.url);
+        if (u.searchParams.get('success') === '1') {
+          await runVerify();
+          setSuccessPlan(plan.id);
+        }
+        // canceled=1 or anything else: user backed out; no-op.
+      } catch {
+        // URL parse failed — be safe and still kick off a verify in case
+        // the redirect did happen; worst case the row didn't change and
+        // the banner stays where it was.
+        await runVerify();
+      }
+    }
   };
 
   const planOrder = [
@@ -274,7 +525,7 @@ export default function InfluencerPricing() {
 
   return (
     <InfluencerLayout>
-      <ScrollView className="flex-1 bg-[#F8F7FF]">
+      <ScrollView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
         {/* Header */}
         <View className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100" style={{gap: 12}}>
           <Pressable
@@ -347,30 +598,47 @@ export default function InfluencerPricing() {
                   </View>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setBilling('annual')}
-                className="overflow-hidden rounded-full relative">
-                {billing === 'annual' ? (
-                  <LinearGradient
-                    colors={['#9810FA', '#E60076']}
-                    className="px-6 py-2.5 rounded-full">
-                    <Text className="text-sm font-bold text-white">
-                      Annual
-                    </Text>
-                  </LinearGradient>
-                ) : (
-                  <View className="px-6 py-2.5">
-                    <Text className="text-sm font-bold text-slate-500">
-                      Annual
-                    </Text>
-                  </View>
-                )}
-                <View className="absolute -top-2 -right-4 bg-red-500 px-2 py-0.5 rounded-full">
+              {/* Wrap the button + the SAVE badge so the badge can sit
+                  outside the button's clipped bounds (overflow-hidden on
+                  the TouchableOpacity rounds the gradient pill but also
+                  clipped this badge previously). */}
+              <View className="relative">
+                <TouchableOpacity
+                  onPress={() => setBilling('annual')}
+                  className="overflow-hidden rounded-full">
+                  {billing === 'annual' ? (
+                    <LinearGradient
+                      colors={['#9810FA', '#E60076']}
+                      className="px-6 py-2.5 rounded-full">
+                      <Text className="text-sm font-bold text-white">
+                        Annual
+                      </Text>
+                    </LinearGradient>
+                  ) : (
+                    <View className="px-6 py-2.5">
+                      <Text className="text-sm font-bold text-slate-500">
+                        Annual
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <View
+                  pointerEvents="none"
+                  className="absolute bg-red-500 px-2 py-0.5 rounded-full"
+                  style={{
+                    top: -10,
+                    right: -14,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    shadowOffset: {width: 0, height: 2},
+                    elevation: 3,
+                  }}>
                   <Text className="text-[8px] text-white font-black">
                     SAVE 20%
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -464,6 +732,14 @@ export default function InfluencerPricing() {
 
         <View className="h-20" />
       </ScrollView>
+
+      <GatewayPickerModal
+        visible={!!pickerPlan}
+        planLabel={pickerPlan?.name || ''}
+        onCancel={() => setPickerPlan(null)}
+        onPick={handleGatewayPick}
+      />
+      <VerifyingOverlay visible={verifying} />
     </InfluencerLayout>
   );
 }

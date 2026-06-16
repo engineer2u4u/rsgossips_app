@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useContext} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {
   Check,
@@ -23,12 +24,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
-import {useNavigation} from '@react-navigation/native';
-import {
-  NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
-} from '@env';
+import {NavigationContext} from '@react-navigation/native';
+import {invokeFn} from '../lib/api';
+import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
 
 const SERVICE_OPTIONS = [
   {id: 'reels', label: 'Reels', icon: Video},
@@ -40,7 +40,13 @@ const SERVICE_OPTIONS = [
 
 export default function CompleteProfileCard() {
   const {profile, user, refreshProfile} = useAuth();
-  const navigation = useNavigation();
+  // Read the nav context directly instead of useNavigation() — that hook
+  // throws "Couldn't find a navigation context" when the context is briefly
+  // undefined (which can happen during a re-render cascade triggered by the
+  // rates-save flow, where AuthContext refreshes and the navigator subtree
+  // temporarily unmounts). A null check makes the click handlers no-op
+  // instead of crashing the whole card.
+  const navigation = useContext(NavigationContext);
   const [showRatesModal, setShowRatesModal] = useState(false);
 
   const hasInstagram = !!profile?.instagram_handle;
@@ -49,19 +55,26 @@ export default function CompleteProfileCard() {
   const hasRates =
     !!serviceRates && Object.values(serviceRates).some((v: any) => v > 0);
 
-  const completedCount =
-    1 + (hasInstagram ? 1 : 0) + (hasMediaKit ? 1 : 0) + (hasRates ? 1 : 0);
-  const progressPercent = Math.round((completedCount / 5) * 100);
-
   const steps = [
-    {id: 1, title: 'Create your account', subtitle: "You're all set", completed: true},
+    {
+      id: 1,
+      title: 'Create your account',
+      subtitle: "You're all set",
+      completed: true,
+      active: false as boolean,
+      action: undefined as string | undefined,
+      onPress: undefined as (() => void) | undefined,
+    },
     {
       id: 2,
       title: 'Connect Instagram',
-      subtitle: hasInstagram ? `@${profile?.instagram_handle}` : 'Brands discover you instantly',
+      subtitle: hasInstagram
+        ? `@${profile?.instagram_handle}`
+        : 'Brands discover you instantly',
       completed: hasInstagram,
       action: hasInstagram ? undefined : 'Connect',
       active: !hasInstagram,
+      onPress: undefined as (() => void) | undefined,
     },
     {
       id: 3,
@@ -70,7 +83,7 @@ export default function CompleteProfileCard() {
       completed: hasMediaKit,
       action: hasMediaKit ? undefined : 'Create',
       active: hasInstagram && !hasMediaKit,
-      onPress: () => navigation.navigate('InfluencerMediaKit' as never),
+      onPress: () => navigation?.navigate('InfluencerMediaKit' as never),
     },
     {
       id: 4,
@@ -82,13 +95,20 @@ export default function CompleteProfileCard() {
       onPress: () => setShowRatesModal(true),
     },
     {
+      // Mirrors web: once the rate card is set the creator has done
+      // everything brands need — treat the funnel as complete.
       id: 5,
       title: 'Apply to first campaign',
-      subtitle: 'Land your first deal',
-      action: 'Browse',
-      onPress: () => navigation.navigate('InfluencerCampaigns' as never),
+      subtitle: hasRates ? "You're discoverable to brands!" : 'Land your first deal',
+      completed: hasRates,
+      action: hasRates ? undefined : 'Browse',
+      active: false,
+      onPress: () => navigation?.navigate('InfluencerCampaigns' as never),
     },
   ];
+
+  const completedCount = steps.filter(s => s.completed).length;
+  const progressPercent = Math.round((completedCount / 5) * 100);
 
   const progress = useSharedValue(0);
   useEffect(() => {
@@ -100,51 +120,113 @@ export default function CompleteProfileCard() {
   }));
 
   const handleSaveRates = async (services: string[], rates: Record<string, string>) => {
+    // Coerce the string inputs into numbers — downstream code reads them
+    // numerically (matchScore.ts → `Number(profile.service_rates?.reels)`,
+    // and `hasRates` checks `v > 0`). Storing strings worked by coincidence
+    // of JS coercion; numbers are the correct shape for the JSONB column.
+    const numericRates: Record<string, number> = {};
+    for (const id of services) {
+      const n = Number(rates[id]);
+      if (Number.isFinite(n) && n > 0) numericRates[id] = n;
+    }
+
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/update-profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          table: 'influencer_profiles',
-          services,
-          serviceRates: rates,
-        }),
+      await invokeFn('update-profile', {
+        userId: user?.id,
+        table: 'influencer_profiles',
+        services,
+        serviceRates: numericRates,
       });
       await refreshProfile();
-    } catch {}
-    setShowRatesModal(false);
+      setShowRatesModal(false);
+    } catch (err: any) {
+      // Used to be a silent catch. That hid every failure — auth, network,
+      // edge-function rejection, RLS — and left the user thinking save
+      // worked while the row was actually untouched. Surface the message
+      // so we can see what's actually happening.
+      console.error('Failed to save rates:', err);
+      const msg =
+        err?.message ||
+        (typeof err === 'string' ? err : 'Something went wrong.');
+      Alert.alert("Couldn't save rates", msg);
+      // Keep the modal open on failure so the user can retry without re-
+      // selecting services + retyping prices.
+    }
   };
 
+  const RING_SIZE = 56;
+  const RING_STROKE = 5;
+  const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+  const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+  const ringOffset = RING_CIRCUMFERENCE - RING_CIRCUMFERENCE * (completedCount / 5);
+
   return (
-    <View className="w-full px-4 mb-6">
-      <View className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm">
+    <View className="w-full mb-6">
+      <View
+        style={[
+          {
+            backgroundColor: '#ffffff',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: 'rgba(25,22,43,0.06)',
+            padding: 20,
+          },
+          CARD_SHADOW,
+        ]}>
         {/* HEADER */}
         <View className="mb-6">
           <View className="flex-row items-center mb-5" style={{gap: 16}}>
-            <View className="w-16 h-16 rounded-full border-4 border-slate-50 items-center justify-center">
-              <Text className="text-pink-600 font-black text-lg">
+            <View
+              style={{width: RING_SIZE, height: RING_SIZE}}
+              className="items-center justify-center">
+              <Svg width={RING_SIZE} height={RING_SIZE} style={{position: 'absolute', transform: [{rotate: '-90deg'}]}}>
+                <Defs>
+                  <SvgLinearGradient id="profile-ring" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <Stop offset="0%" stopColor={BRAND.coral} />
+                    <Stop offset="50%" stopColor={BRAND.accent} />
+                    <Stop offset="100%" stopColor={BRAND.violet} />
+                  </SvgLinearGradient>
+                </Defs>
+                <Circle
+                  cx={RING_SIZE / 2}
+                  cy={RING_SIZE / 2}
+                  r={RING_RADIUS}
+                  stroke="#F1F5F9"
+                  strokeWidth={RING_STROKE}
+                  fill="transparent"
+                />
+                <Circle
+                  cx={RING_SIZE / 2}
+                  cy={RING_SIZE / 2}
+                  r={RING_RADIUS}
+                  stroke="url(#profile-ring)"
+                  strokeWidth={RING_STROKE}
+                  strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                  strokeDashoffset={ringOffset}
+                  strokeLinecap="round"
+                  fill="transparent"
+                />
+              </Svg>
+              <Text className="text-xs font-black text-slate-800">
                 {progressPercent}%
               </Text>
             </View>
+
             <View className="flex-1">
-              <Text className="text-xl font-black text-slate-900 leading-tight">
+              <Text className="text-[17px] font-black text-slate-900 leading-tight">
                 Get Your First Brand Deal
               </Text>
-              <Text className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                {completedCount}/5 steps — keep going!
+              <Text className="text-xs text-slate-400 font-bold mt-0.5">
+                {completedCount}/5 steps —{' '}
+                {completedCount === 5 ? 'All done!' : 'Keep going!'}
               </Text>
             </View>
           </View>
 
-          <View className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <View className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <Animated.View style={progressStyle} className="h-full">
               <LinearGradient
-                colors={['#8E2DE2', '#F6339A']}
+                colors={[...BRAND_GRADIENT_WARM]}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
                 style={{flex: 1}}
@@ -155,55 +237,93 @@ export default function CompleteProfileCard() {
 
         {/* STEPS */}
         <View>
-          {steps.map(step => (
-            <View
-              key={step.id}
-              className="flex-row items-center justify-between py-4 border-b border-slate-50">
-              <View className="flex-row items-center flex-1" style={{gap: 12}}>
-                {step.completed ? (
-                  <LinearGradient
-                    colors={['#8E2DE2', '#F6339A']}
-                    style={{borderRadius: 100, width: 32, height: 32, alignItems: 'center', justifyContent: 'center'}}>
-                    <Check size={16} color="white" strokeWidth={4} />
-                  </LinearGradient>
-                ) : (
-                  <View
-                    className={`w-8 h-8 rounded-full border-2 items-center justify-center ${step.active ? 'border-pink-500' : 'border-slate-200'}`}>
-                    <Text className={`text-xs font-black ${step.active ? 'text-pink-500' : 'text-slate-300'}`}>
-                      {step.id}
-                    </Text>
-                  </View>
-                )}
-                <View className="flex-1 pr-2">
-                  <Text className={`font-black text-sm ${step.completed ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
-                    {step.title}
-                  </Text>
-                  <Text className="text-[11px] text-slate-400 font-bold">
-                    {step.subtitle}
-                  </Text>
-                </View>
-              </View>
-
-              {step.action && !step.completed && (
-                <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
-                  {step.active ? (
+          {steps.map((step, index) => (
+            <View key={step.id}>
+              <View
+                className={`flex-row items-center justify-between py-3.5 ${
+                  index !== steps.length - 1 ? 'border-b border-slate-50' : ''
+                }`}>
+                <View className="flex-row items-center flex-1" style={{gap: 14}}>
+                  {step.completed ? (
                     <LinearGradient
-                      colors={['#8E2DE2', '#F6339A']}
-                      start={{x: 0, y: 0}}
-                      end={{x: 1, y: 0}}
-                      style={{borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8}}>
-                      <Text className="text-white text-[10px] font-black uppercase">
-                        {step.action}
-                      </Text>
+                      colors={[...BRAND_GRADIENT_WARM]}
+                      style={{
+                        borderRadius: 100,
+                        width: 32,
+                        height: 32,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Check size={16} color="white" strokeWidth={4} />
                     </LinearGradient>
                   ) : (
-                    <View className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-50">
-                      <Text className="text-slate-400 text-[10px] font-black uppercase">
-                        {step.action}
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 100,
+                        borderWidth: 2,
+                        borderColor: step.active ? BRAND.accent : '#e2e8f0',
+                        backgroundColor: step.active
+                          ? 'rgba(210,65,143,0.08)'
+                          : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Text
+                        className="text-[13px] font-black"
+                        style={{color: step.active ? BRAND.accent : '#94a3b8'}}>
+                        {step.id}
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
+                  <View className="flex-1 pr-2">
+                    <Text
+                      className={`font-bold text-sm ${
+                        step.completed
+                          ? 'text-slate-300 line-through'
+                          : 'text-slate-800'
+                      }`}>
+                      {step.title}
+                    </Text>
+                    <Text className="text-[11px] text-slate-400 font-semibold">
+                      {step.subtitle}
+                    </Text>
+                  </View>
+                </View>
+
+                {step.action && !step.completed && (
+                  <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
+                    {step.active ? (
+                      <LinearGradient
+                        colors={[...BRAND_GRADIENT_WARM]}
+                        start={{x: 0, y: 0}}
+                        end={{x: 1, y: 0}}
+                        style={{
+                          borderRadius: 12,
+                          paddingHorizontal: 14,
+                          paddingVertical: 6,
+                        }}>
+                        <Text className="text-white text-[11px] font-black uppercase tracking-wider">
+                          {step.action}
+                        </Text>
+                      </LinearGradient>
+                    ) : (
+                      <View className="px-3.5 py-1.5 rounded-xl border border-slate-200">
+                        <Text className="text-slate-400 text-[11px] font-black uppercase tracking-wider">
+                          {step.action}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {index !== steps.length - 1 && (
+                <View
+                  className="border-l-2 border-dashed border-slate-200 my-1"
+                  style={{height: 16, marginLeft: 15}}
+                />
               )}
             </View>
           ))}
@@ -287,20 +407,24 @@ function SetRatesModal({
                   <TouchableOpacity
                     key={svc.id}
                     onPress={() => toggleService(svc.id)}
-                    style={{width: '31%'}}
-                    className={`items-center py-4 rounded-2xl border-2 ${
-                      isSelected
-                        ? 'border-[#E60076] bg-pink-50'
-                        : 'border-slate-100 bg-white'
-                    }`}>
+                    style={{
+                      width: '31%',
+                      alignItems: 'center',
+                      paddingVertical: 16,
+                      borderRadius: 16,
+                      borderWidth: 2,
+                      borderColor: isSelected ? BRAND.accent : '#f1f5f9',
+                      backgroundColor: isSelected
+                        ? 'rgba(210,65,143,0.07)'
+                        : '#ffffff',
+                    }}>
                     <Icon
                       size={22}
-                      color={isSelected ? '#E60076' : '#94A3B8'}
+                      color={isSelected ? BRAND.accent : '#94A3B8'}
                     />
                     <Text
-                      className={`text-[10px] font-bold mt-2 ${
-                        isSelected ? 'text-[#E60076]' : 'text-slate-400'
-                      }`}>
+                      className="text-[10px] font-bold mt-2"
+                      style={{color: isSelected ? BRAND.accent : '#94a3b8'}}>
                       {svc.label}
                     </Text>
                   </TouchableOpacity>

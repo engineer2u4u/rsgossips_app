@@ -1,5 +1,6 @@
 import React, {useState, useRef} from 'react';
-import {View, ScrollView, SafeAreaView, StatusBar} from 'react-native';
+import {View, ScrollView, StatusBar} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import DashboardView from '../components/DashboardView';
 import MyInformationDetail from '../components/MyInformationDetail';
 import AddReelFlow from '../components/AddReelFlow';
@@ -42,7 +43,7 @@ export default function InfluencerProfile() {
   const showBottomNav = view === 'dashboard';
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <ScrollView

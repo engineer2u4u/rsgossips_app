@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,34 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Search, SlidersHorizontal} from 'lucide-react-native';
+import {useNavigation} from '@react-navigation/native';
 import BrandCard from '../components/BrandCard';
 import FilterModal from '../components/FilterModal';
 import BottomNav from '../components/BottomNav';
 import {useAuth} from '../context/AuthContext';
 import {calculateBrandMatchScore} from '../utils/matchScore';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {invokeFn} from '../lib/api';
+
+const PAGE_SIZE = 10;
+const LOAD_MORE_STEP = 6;
 
 interface Brand {
   id: string;
   name: string;
+  /** Single canonical category (legacy / fallback). */
   category: string;
+  /** Multi-category list when the brand has more than one. The web filter
+   *  prefers this; we fall back to `category` when it's empty. */
+  categories?: string[];
+  /** Instagram @handle — web's brand filter matches the search query
+   *  against this in addition to `name`, with the leading `@` stripped. */
+  instagram?: string;
   minBudget: number;
   maxBudget?: number;
   isVerified: boolean;
@@ -30,6 +43,10 @@ interface Brand {
   followers: string;
   logo: string;
   payout: string;
+  /** 0-1000 composite trust score from list-brands. */
+  trustScore?: number;
+  /** Label that maps to a trust band (Excellent / Very Good / Good / Fair / Poor). */
+  trustBand?: string;
 }
 
 const FALLBACK_BRANDS: Brand[] = [
@@ -107,35 +124,39 @@ const FALLBACK_BRANDS: Brand[] = [
 
 export default function InfluencerDiscover() {
   const {profile} = useAuth();
+  const navigation = useNavigation<any>();
   const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [budgetRange, setBudgetRange] = useState({min: 0, max: 10000});
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
+  // Client-side pagination — render `visibleCount` cards, bump by
+  // LOAD_MORE_STEP when the user scrolls past the bottom threshold.
+  // Reset whenever the filtered list shrinks below `visibleCount` so
+  // we never show stale slices after toggling a filter.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadingMoreRef = useRef(false);
+
   useEffect(() => {
-    const fetchBrands = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/list-brands`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: '{}',
-        });
-        const data = await res.json();
+        const data = await invokeFn<{brands?: any[]}>('list-brands', {});
+        if (cancelled) return;
         if (data?.brands?.length) {
           setBrands(
             data.brands.map((b: any) => ({
               id: b.id || String(Math.random()),
               name: b.name || 'Brand',
               category: b.category || 'General',
+              // Carry through both shapes the edge function can return so
+              // the category filter can match either one (web behaviour).
+              categories: Array.isArray(b.categories) ? b.categories : [],
+              instagram: b.instagram || b.handle || '',
               minBudget: b.minBudget || 0,
               maxBudget: b.maxBudget || 10000,
               isVerified: b.isVerified || false,
@@ -145,58 +166,99 @@ export default function InfluencerDiscover() {
               followers: b.followers || '0',
               logo: b.logo || '',
               payout: b.payout || '—',
+              trustScore: typeof b.trustScore === 'number' ? b.trustScore : undefined,
+              trustBand: b.trustBand || undefined,
             })),
           );
         }
       } catch {
-        // Keep fallback
+        // Keep fallback brands.
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchBrands();
   }, []);
 
+  // Matches web's filter engine in src/app/influencer/brands/page.js:
+  //  - search matches name OR @handle (with the leading @ stripped)
+  //  - category check looks in brand.categories[] first, falls back to
+  //    brand.category for single-cat rows
+  //  - budget filter is skipped entirely when a brand has no budget info
+  //    (minBudget === 0/null) — otherwise we'd hide every brand without
+  //    a price tag attached
+  //  - platforms filter dropped on web; mirrored here
   const filteredBrands = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return brands.filter(brand => {
-      const matchesSearch = brand.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      const name = (brand.name || '').toLowerCase();
+      const ig = (brand.instagram || '').toLowerCase();
+      const cats = Array.isArray(brand.categories) ? brand.categories : [];
+
+      const matchesSearch =
+        q === '' ||
+        name.includes(q) ||
+        ig.includes(q.replace(/^@/, ''));
+
       const matchesCategory =
         selectedCategories.length === 0 ||
-        selectedCategories.includes(brand.category);
+        selectedCategories.some(
+          c => cats.includes(c) || brand.category === c,
+        );
+
       const matchesBudget =
-        brand.minBudget >= budgetRange.min &&
-        brand.minBudget <= budgetRange.max;
+        !brand.minBudget ||
+        (brand.minBudget >= budgetRange.min &&
+          brand.minBudget <= budgetRange.max);
+
       const matchesVerified = isVerifiedOnly ? brand.isVerified : true;
-      const matchesPlatform =
-        selectedPlatforms.length === 0 ||
-        brand.platforms.some(p => selectedPlatforms.includes(p));
 
       return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesBudget &&
-        matchesVerified &&
-        matchesPlatform
+        matchesSearch && matchesCategory && matchesBudget && matchesVerified
       );
     });
-  }, [
-    brands,
-    searchQuery,
-    selectedCategories,
-    budgetRange,
-    isVerifiedOnly,
-    selectedPlatforms,
-  ]);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
+
+  // Whenever the filtered list changes (filters/search toggled), snap
+  // visibleCount back to the first page so we never display an empty
+  // tail of "phantom" loaded rows.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
+
+  const visibleBrands = useMemo(
+    () => filteredBrands.slice(0, visibleCount),
+    [filteredBrands, visibleCount],
+  );
+  const hasMore = visibleCount < filteredBrands.length;
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!hasMore || loadingMoreRef.current) return;
+    const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+    if (distanceFromBottom < 240) {
+      loadingMoreRef.current = true;
+      setVisibleCount(c =>
+        Math.min(c + LOAD_MORE_STEP, filteredBrands.length),
+      );
+      setTimeout(() => {
+        loadingMoreRef.current = false;
+      }, 250);
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <ScrollView
-        className="flex-1 bg-white"
-        showsVerticalScrollIndicator={false}>
+        className="flex-1" style={{backgroundColor: '#F5F4F8'}}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={64}>
         {/* Header */}
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           <View className="flex-row items-center justify-between">
@@ -228,8 +290,8 @@ export default function InfluencerDiscover() {
           </View>
         </View>
 
-        {/* Brand Cards */}
-        <View className="px-4 pt-2 pb-4" style={{gap: 12}}>
+        {/* Brand Cards — two per row, matches web's `sm:grid-cols-2` */}
+        <View className="px-4 pt-2 pb-4">
           {loading ? (
             <View className="py-20 items-center" style={{gap: 12}}>
               <ActivityIndicator size="large" color="#9810FA" />
@@ -237,28 +299,40 @@ export default function InfluencerDiscover() {
                 Loading brands...
               </Text>
             </View>
+          ) : filteredBrands.length === 0 ? (
+            <View className="py-20 bg-white rounded-[32px] items-center">
+              <Text className="text-sm font-bold text-slate-400">
+                No brands match these filters.
+              </Text>
+            </View>
           ) : (
             <>
-              {filteredBrands.map(brand => (
-                <BrandCard
-                  key={brand.id}
-                  brand={brand}
-                  matchScore={calculateBrandMatchScore(profile, brand)}
-                />
-              ))}
-
-              {filteredBrands.length === 0 && (
-                <View className="py-20 bg-white rounded-[32px] items-center">
-                  <Text className="text-sm font-bold text-slate-400">
-                    No brands match these filters.
-                  </Text>
+              <View className="flex-row flex-wrap" style={{gap: 12}}>
+                {visibleBrands.map(brand => (
+                  <View key={brand.id} style={{width: '48%'}}>
+                    <BrandCard
+                      brand={brand}
+                      matchScore={calculateBrandMatchScore(profile, brand)}
+                      onPress={() =>
+                        navigation.navigate('InfluencerCampaigns', {
+                          brandName: brand.name,
+                        })
+                      }
+                    />
+                  </View>
+                ))}
+              </View>
+              {hasMore && (
+                <View className="py-6 items-center">
+                  <ActivityIndicator size="small" color="#9810FA" />
                 </View>
               )}
             </>
           )}
         </View>
 
-        <View className="h-20" />
+        {/* Clears the floating glass nav pill (bottom 14/24 + height 68). */}
+        <View className="h-32" />
       </ScrollView>
 
       {/* Bottom Nav */}
@@ -266,7 +340,8 @@ export default function InfluencerDiscover() {
         <BottomNav />
       </View>
 
-      {/* Filter Modal */}
+      {/* Filter Modal — brands don't need Platforms or Brand picker, so
+          we pass the minimum subset of props (matching the web shape). */}
       <FilterModal
         visible={isFiltersOpen}
         onClose={() => setIsFiltersOpen(false)}
@@ -274,8 +349,7 @@ export default function InfluencerDiscover() {
         setSelectedCategories={setSelectedCategories}
         budgetRange={budgetRange}
         setBudgetRange={setBudgetRange}
-        selectedPlatforms={selectedPlatforms}
-        setSelectedPlatforms={setSelectedPlatforms}
+        budgetMaxDefault={10000}
         isVerifiedOnly={isVerifiedOnly}
         setIsVerifiedOnly={setIsVerifiedOnly}
       />

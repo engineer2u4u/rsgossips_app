@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Users/hride/OneDrive/Desktop/RGossips/src -type f \\\\\\(-name *.tsx -o -name *.ts \\\\\\))",
-      "Bash(node -e \"const icons = require\\(''lucide-react-native''\\); console.log\\(Object.keys\\(icons\\).filter\\(k => /instagram|youtube|twitter|facebook/i.test\\(k\\)\\).join\\(''\\\\n''\\)\\)\")",
+      "Bash",
+      "PowerShell",
       "Read(//c/Users/hride/OneDrive/Desktop/Work/RS_Gossips/**)",
       "Read(//c/Users/hride/OneDrive/Desktop/Influencer-App/src/app/**)",
       "Read(//c/Users/hride/OneDrive/Desktop/Influencer-App/src/components/login/**)",

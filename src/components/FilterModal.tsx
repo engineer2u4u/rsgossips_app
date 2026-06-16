@@ -11,6 +11,8 @@ import {
 import {ChevronLeft} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
+// Canonical category list — same 15 used on the web's FilterModal.jsx so
+// brand/campaign filters share the same vocabulary across platforms.
 const CATEGORIES = [
   'Beauty & Skincare',
   'Fashion & Lifestyle',
@@ -38,10 +40,18 @@ type FilterModalProps = {
   setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>;
   budgetRange: {min: number; max: number};
   setBudgetRange: (range: {min: number; max: number}) => void;
-  selectedPlatforms: string[];
-  setSelectedPlatforms: React.Dispatch<React.SetStateAction<string[]>>;
+  /** Default max for the "no cap" check on Reset. Brands uses 10000, Campaigns 200000. */
+  budgetMaxDefault?: number;
+  /** Platforms is web-deprecated; only render when both ends are provided. */
+  selectedPlatforms?: string[];
+  setSelectedPlatforms?: React.Dispatch<React.SetStateAction<string[]>>;
   isVerifiedOnly: boolean;
   setIsVerifiedOnly: (val: boolean) => void;
+  /** Optional brand-name picker (used by Campaigns; brands list is derived
+   *  from whatever campaigns the screen has loaded). */
+  brands?: string[];
+  selectedBrands?: string[];
+  setSelectedBrands?: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 export default function FilterModal({
@@ -51,10 +61,14 @@ export default function FilterModal({
   setSelectedCategories,
   budgetRange,
   setBudgetRange,
+  budgetMaxDefault = 10000,
   selectedPlatforms,
   setSelectedPlatforms,
   isVerifiedOnly,
   setIsVerifiedOnly,
+  brands,
+  selectedBrands,
+  setSelectedBrands,
 }: FilterModalProps) {
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
@@ -63,15 +77,24 @@ export default function FilterModal({
   };
 
   const togglePlatform = (p: string) => {
+    if (!setSelectedPlatforms) return;
     setSelectedPlatforms(prev =>
       prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p],
     );
   };
 
+  const toggleBrand = (name: string) => {
+    if (!setSelectedBrands) return;
+    setSelectedBrands(prev =>
+      prev.includes(name) ? prev.filter(b => b !== name) : [...prev, name],
+    );
+  };
+
   const handleReset = () => {
     setSelectedCategories([]);
-    setBudgetRange({min: 0, max: 10000});
-    setSelectedPlatforms([]);
+    setBudgetRange({min: 0, max: budgetMaxDefault});
+    if (setSelectedPlatforms) setSelectedPlatforms([]);
+    if (setSelectedBrands) setSelectedBrands([]);
     setIsVerifiedOnly(false);
   };
 
@@ -176,7 +199,7 @@ export default function FilterModal({
                     onChangeText={v =>
                       setBudgetRange({
                         ...budgetRange,
-                        max: parseInt(v) || 10000,
+                        max: parseInt(v) || budgetMaxDefault,
                       })
                     }
                     className="h-12 bg-slate-50 rounded-xl px-4 font-bold text-slate-700"
@@ -185,33 +208,82 @@ export default function FilterModal({
               </View>
             </View>
 
-            {/* Platforms */}
-            <View className="mb-6">
-              <Text className="text-sm font-bold text-slate-800 mb-3">
-                Platform
-              </Text>
-              <View className="flex-row flex-wrap" style={{gap: 8}}>
-                {PLATFORMS.map(p => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => togglePlatform(p)}
-                    className={`flex-row items-center px-4 py-2.5 rounded-2xl border ${
-                      selectedPlatforms.includes(p)
-                        ? 'bg-[#E60076] border-[#E60076]'
-                        : 'border-slate-100 bg-white'
-                    }`}>
-                    <Text
-                      className={`text-xs font-bold ${
-                        selectedPlatforms.includes(p)
-                          ? 'text-white'
-                          : 'text-slate-600'
-                      }`}>
-                      {p}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            {/* Brand picker — Campaigns only; renders only when the caller
+                passes the derived `brands` list + state hooks. */}
+            {brands && brands.length > 0 && setSelectedBrands && (
+              <View className="mb-6">
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-sm font-bold text-slate-800">Brand</Text>
+                  {selectedBrands && selectedBrands.length > 0 && (
+                    <TouchableOpacity onPress={() => setSelectedBrands([])}>
+                      <Text className="text-[11px] font-bold text-slate-400">
+                        Clear
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View
+                  style={{maxHeight: 200}}
+                  className="border border-slate-100 rounded-2xl p-2">
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <View className="flex-row flex-wrap" style={{gap: 6}}>
+                      {brands.map(name => {
+                        const active = selectedBrands?.includes(name) || false;
+                        return (
+                          <TouchableOpacity
+                            key={name}
+                            onPress={() => toggleBrand(name)}
+                            className={`px-3 py-1.5 rounded-xl border ${
+                              active
+                                ? 'bg-[#E60076] border-[#E60076]'
+                                : 'border-slate-100 bg-white'
+                            }`}>
+                            <Text
+                              className={`text-[11px] font-bold ${
+                                active ? 'text-white' : 'text-slate-600'
+                              }`}>
+                              {name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
               </View>
-            </View>
+            )}
+
+            {/* Platforms — only render when caller provides state. Web
+                dropped this from the canonical filter; keep optional for
+                screens that still want it. */}
+            {selectedPlatforms && setSelectedPlatforms && (
+              <View className="mb-6">
+                <Text className="text-sm font-bold text-slate-800 mb-3">
+                  Platform
+                </Text>
+                <View className="flex-row flex-wrap" style={{gap: 8}}>
+                  {PLATFORMS.map(p => (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => togglePlatform(p)}
+                      className={`flex-row items-center px-4 py-2.5 rounded-2xl border ${
+                        selectedPlatforms.includes(p)
+                          ? 'bg-[#E60076] border-[#E60076]'
+                          : 'border-slate-100 bg-white'
+                      }`}>
+                      <Text
+                        className={`text-xs font-bold ${
+                          selectedPlatforms.includes(p)
+                            ? 'text-white'
+                            : 'text-slate-600'
+                        }`}>
+                        {p}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Verified Only */}
             <View className="mb-6 flex-row items-center justify-between bg-slate-50 p-4 rounded-2xl">

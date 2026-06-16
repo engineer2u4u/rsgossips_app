@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {View, Text, Image, FlatList, Pressable, Dimensions} from 'react-native';
 import Animated, {FadeInRight} from 'react-native-reanimated';
 import {Star} from 'lucide-react-native';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {invokeFn} from '../lib/api';
 
 const {width} = Dimensions.get('window');
 const CARD_WIDTH = width * 0.7;
@@ -47,24 +47,14 @@ export default function JourneyCarousel() {
   const [campaigns, setCampaigns] = useState<Campaign[]>(FALLBACK_DATA);
 
   useEffect(() => {
-    const fetchCampaigns = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/list-campaigns`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-            body: '{}',
-          },
-        );
-        const data = await res.json();
+        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {});
+        if (cancelled) return;
         if (data?.campaigns?.length) {
           const active = data.campaigns
-            .filter((c: any) => c.status === 'active')
+            .filter((c: any) => c.status === 'active' || c.status === 'Active')
             .slice(0, 6)
             .map((c: any) => ({
               id: c.id,
@@ -79,10 +69,12 @@ export default function JourneyCarousel() {
           if (active.length) setCampaigns(active);
         }
       } catch {
-        // Keep fallback data
+        // Keep fallback data on error.
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchCampaigns();
   }, []);
 
   return (

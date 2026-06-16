@@ -8,7 +8,8 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import {User, CheckCircle2} from 'lucide-react-native';
+import {useNavigation} from '@react-navigation/native';
+import {User, CheckCircle2, Check} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 
 interface InstaProfile {
@@ -54,8 +55,19 @@ export default function SignUpForm({
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [localError, setLocalError] = useState('');
+  const [consentAgreed, setConsentAgreed] = useState(false);
 
+  const navigation = useNavigation();
   const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // Auto-focus the first OTP slot when the grid first appears (otpSent flips
+  // true) so the keyboard pops up without an extra tap. Re-focuses if the
+  // user goes back and resends.
+  useEffect(() => {
+    if (!otpSent || otpVerified) return;
+    const t = setTimeout(() => otpInputs.current[0]?.focus(), 120);
+    return () => clearTimeout(t);
+  }, [otpSent, otpVerified]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -112,6 +124,23 @@ export default function SignUpForm({
     }
   };
 
+  // Backspace on an empty slot should walk focus back AND clear the digit
+  // in the previous slot. Without this, onChangeText never fires for an
+  // already-empty slot and the user's clear key feels stuck on the current
+  // input.
+  const handleOtpKeyPress = (
+    e: {nativeEvent: {key: string}},
+    index: number,
+  ) => {
+    if (e.nativeEvent.key !== 'Backspace') return;
+    if (otp[index]) return;
+    if (index === 0) return;
+    const arr = otp.split('');
+    arr[index - 1] = '';
+    setOtp(arr.join(''));
+    otpInputs.current[index - 1]?.focus();
+  };
+
   const handleVerifyOtp = async () => {
     if (otp.length < 6) return;
     setVerifyLoading(true);
@@ -147,6 +176,10 @@ export default function SignUpForm({
     }
     if (!otpVerified) {
       setLocalError('Please verify your phone number');
+      return;
+    }
+    if (!consentAgreed) {
+      setLocalError('Please accept the Influencer Consent Policy to continue');
       return;
     }
     onSubmit({...formData});
@@ -272,15 +305,24 @@ export default function SignUpForm({
           {/* OTP Input */}
           {otpSent && !otpVerified && (
             <View className="space-y-3 pt-2">
+              <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+                <Text className="text-[11px] text-emerald-700 text-center">
+                  Your OTP just slid into WhatsApp — say hi to{' '}
+                  <Text className="font-bold">Rgossips Media</Text>!
+                </Text>
+              </View>
               <View className="flex-row justify-center gap-1.5">
                 {[...Array(6)].map((_, i) => (
                   <TextInput
                     key={i}
-                    ref={ref => (otpInputs.current[i] = ref)}
+                    ref={ref => {
+                      otpInputs.current[i] = ref;
+                    }}
                     keyboardType="number-pad"
                     maxLength={1}
                     value={otp[i] ?? ''}
                     onChangeText={value => handleOtpChange(value, i)}
+                    onKeyPress={e => handleOtpKeyPress(e, i)}
                     className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 text-center"
                   />
                 ))}
@@ -324,12 +366,41 @@ export default function SignUpForm({
           )}
         </View>
 
+        {/* Consent (mandatory) */}
+        <Pressable
+          onPress={() => setConsentAgreed(v => !v)}
+          className="flex-row items-start gap-3 px-1 py-1"
+          hitSlop={4}>
+          <View
+            className={`w-5 h-5 rounded border items-center justify-center mt-0.5 ${
+              consentAgreed
+                ? 'bg-[#6347F9] border-[#6347F9]'
+                : 'border-slate-300 bg-white'
+            }`}>
+            {consentAgreed && <Check size={14} color="white" strokeWidth={3} />}
+          </View>
+          <Text className="flex-1 text-[12px] text-slate-600 leading-snug">
+            I have read and agree to the{' '}
+            <Text
+              className="text-[#6347F9] font-bold"
+              onPress={() =>
+                (navigation as any).navigate('ConsentPolicy', {
+                  role: 'influencer',
+                })
+              }>
+              Influencer Consent Policy
+            </Text>
+            , Terms of Service, Privacy Policy and Community Guidelines of
+            Recent Gossips.
+          </Text>
+        </Pressable>
+
         {/* Submit */}
         <Pressable
           onPress={handleSubmit}
-          disabled={loading || !formData.name || !otpVerified}
+          disabled={loading || !formData.name || !otpVerified || !consentAgreed}
           className={`w-full h-[54px] rounded-2xl items-center justify-center flex-row ${
-            loading || !formData.name || !otpVerified
+            loading || !formData.name || !otpVerified || !consentAgreed
               ? 'bg-slate-200'
               : 'bg-[#9810FA]'
           }`}>
@@ -343,7 +414,9 @@ export default function SignUpForm({
           ) : (
             <Text
               className={`text-base font-semibold ${
-                !formData.name || !otpVerified ? 'text-slate-400' : 'text-white'
+                !formData.name || !otpVerified || !consentAgreed
+                  ? 'text-slate-400'
+                  : 'text-white'
               }`}>
               Create Account
             </Text>

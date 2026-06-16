@@ -1,6 +1,18 @@
 import React from 'react';
 import { View, Text, Image, Pressable, Linking } from 'react-native';
 import { CheckCircle, Link } from 'lucide-react-native';
+import { CARD_SHADOW } from '../theme/brand';
+
+interface CreatorCardProps {
+  name: string;
+  verified?: boolean;
+  image: string;
+  posts: string | number;
+  followers: string | number;
+  following: string | number;
+  bio: string;
+  link: string;
+}
 
 export default function CreatorCard({
   name,
@@ -11,9 +23,11 @@ export default function CreatorCard({
   following,
   bio,
   link,
-}) {
+}: CreatorCardProps) {
   return (
-    <View className="border border-gray-200 rounded-xl p-6 w-[280px] flex flex-col gap-4 shadow-sm bg-white mb-10">
+    <View
+      className="border border-gray-200 rounded-xl p-6 w-[280px] flex flex-col gap-4 bg-white mb-10"
+      style={CARD_SHADOW}>
       {/* Name */}
       <View className="flex-row items-center justify-center">
         <Text className="text-lg font-semibold">{name}</Text>
@@ -31,22 +45,29 @@ export default function CreatorCard({
         </View>
       </View>
 
-      {/* Stats */}
-      <View className="flex-row justify-between text-center mt-1 pb-2">
-        <View className="items-center">
-          <Text className="font-semibold">{posts}</Text>
-          <Text className="text-gray-500 text-xs">posts</Text>
-        </View>
+      {/* Stats — empty values are hidden so featured_creators rows (which
+          only carry followers_label) don't render blank columns. */}
+      <View className="flex-row justify-around text-center mt-1 pb-2">
+        {!!posts && (
+          <View className="items-center">
+            <Text className="font-semibold">{posts}</Text>
+            <Text className="text-gray-500 text-xs">posts</Text>
+          </View>
+        )}
 
-        <View className="items-center">
-          <Text className="font-semibold">{followers}</Text>
-          <Text className="text-gray-500 text-xs">followers</Text>
-        </View>
+        {!!followers && (
+          <View className="items-center">
+            <Text className="font-semibold">{followers}</Text>
+            <Text className="text-gray-500 text-xs">followers</Text>
+          </View>
+        )}
 
-        <View className="items-center">
-          <Text className="font-semibold">{following}</Text>
-          <Text className="text-gray-500 text-xs">following</Text>
-        </View>
+        {!!following && (
+          <View className="items-center">
+            <Text className="font-semibold">{following}</Text>
+            <Text className="text-gray-500 text-xs">following</Text>
+          </View>
+        )}
       </View>
 
       {/* Bio (optional) */}

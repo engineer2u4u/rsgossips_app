@@ -1,20 +1,15 @@
-import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
-import {
-  ArrowRight,
-  Users,
-  TrendingUp,
-  Eye,
-  Sparkles,
-} from 'lucide-react-native';
+import React, {useEffect} from 'react';
+import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {ArrowRight, Sparkles, BadgeCheck} from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import {useAuth} from '../context/AuthContext';
+import {useNavigation} from '@react-navigation/native';
+import {BRAND, BRAND_GRADIENT, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
 
 function formatCount(n: number | undefined) {
   if (!n) return '0';
@@ -24,155 +19,177 @@ function formatCount(n: number | undefined) {
 }
 
 export default function AiMediaKitCard() {
-  const { profile } = useAuth();
+  const {profile} = useAuth();
   const navigation = useNavigation();
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 500 });
-    translateY.value = withTiming(0, { duration: 500 });
+    opacity.value = withTiming(1, {duration: 500});
+    translateY.value = withTiming(0, {duration: 500});
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
+    transform: [{translateY: translateY.value}],
   }));
 
   const userName = profile?.full_name || 'Creator';
-  const userHandle =
-    profile?.instagram_handle || profile?.username || 'creator';
+  const userHandle = profile?.instagram_handle || profile?.username || 'creator';
   const userPhoto = profile?.profile_photo_url;
 
   const stats = [
-    {
-      icon: <Users size={18} color="#CBD5E1" />,
-      label: 'FOLLOWERS',
-      value: formatCount(profile?.followers_count),
-    },
-    {
-      icon: <TrendingUp size={18} color="#CBD5E1" />,
-      label: 'POSTS',
-      value: formatCount(profile?.media_count),
-    },
-    {
-      icon: <Eye size={18} color="#CBD5E1" />,
-      label: 'FOLLOWING',
-      value: formatCount(profile?.follows_count),
-    },
+    {label: 'FOLLOWERS', value: formatCount(profile?.followers_count)},
+    {label: 'POSTS', value: formatCount(profile?.media_count)},
+    {label: 'FOLLOWING', value: formatCount(profile?.follows_count)},
   ];
 
   return (
-    <View className="w-full">
-      <Animated.View
-        style={animatedStyle}
-        className="w-full bg-white border border-slate-200 rounded-[32px] shadow-sm overflow-hidden p-6"
-      >
-        {/* Header */}
-        <View className="flex-row justify-between items-start">
-          <View>
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              <Text className="text-xl font-black text-slate-900 tracking-tight">
-                AI Media Kit
-              </Text>
-              <Sparkles size={20} color="#3B82F6" />
-            </View>
-            <Text className="text-slate-400 text-[10px] font-black mt-1 uppercase tracking-widest">
-              Real-time analytics
-            </Text>
-          </View>
-          <View className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100">
-            <Text className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-              Preview
-            </Text>
-          </View>
+    <Animated.View
+      style={[
+        animatedStyle,
+        CARD_SHADOW,
+        {
+          width: '100%',
+          backgroundColor: '#ffffff',
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: 'rgba(25,22,43,0.06)',
+          padding: 20,
+        },
+      ]}>
+      {/* Title row — compact heading + accent PREVIEW pill */}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center" style={{gap: 6}}>
+          <Text className="text-[16px] font-bold text-slate-900">
+            AI Media Kit
+          </Text>
+          <Sparkles size={14} color={BRAND.accent} />
         </View>
+        <View
+          className="px-2.5 py-1 rounded-full"
+          style={{backgroundColor: 'rgba(210,65,143,0.12)'}}>
+          <Text
+            className="text-[10px] font-bold tracking-widest"
+            style={{color: BRAND.accent}}>
+            PREVIEW
+          </Text>
+        </View>
+      </View>
 
-        {/* Profile Section */}
-        <View className="items-center py-8">
-          {/* Avatar with gradient border */}
-          <View className="mb-6">
-            <LinearGradient
-              colors={['#9810fa', '#ff8ba7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                padding: 3,
-                borderRadius: 50,
-                shadowColor: '#9810fa',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 6,
-              }}
-            >
-              <View className="w-20 h-20 rounded-full bg-white p-1 overflow-hidden">
-                {userPhoto ? (
-                  <Image
-                    source={{ uri: userPhoto }}
-                    className="w-full h-full rounded-full"
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <LinearGradient
-                    colors={['#A855F7', '#EC4899']}
-                    className="w-full h-full items-center justify-center"
-                  >
-                    <Text className="text-white text-2xl font-bold">
-                      {userName.charAt(0)}
-                    </Text>
-                  </LinearGradient>
-                )}
-              </View>
-            </LinearGradient>
+      {/* Centered REAL-TIME ANALYTICS subtitle */}
+      <Text
+        className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mt-3">
+        Real-Time Analytics
+      </Text>
+
+      {/* Avatar with gradient ring */}
+      <View className="items-center mt-4">
+        <LinearGradient
+          colors={[...BRAND_GRADIENT]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={{
+            padding: 3,
+            borderRadius: 50,
+            shadowColor: BRAND.accent,
+            shadowOffset: {width: 0, height: 4},
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            elevation: 5,
+          }}>
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: '#ffffff',
+              padding: 3,
+              overflow: 'hidden',
+            }}>
+            {userPhoto ? (
+              <Image
+                source={{uri: userPhoto}}
+                style={{flex: 1, borderRadius: 40}}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={['#8b6df0', '#6a64c0']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={{flex: 1, borderRadius: 40, alignItems: 'center', justifyContent: 'center'}}>
+                <Text className="text-white text-2xl font-bold">
+                  {userName.charAt(0).toUpperCase()}
+                </Text>
+              </LinearGradient>
+            )}
           </View>
+        </LinearGradient>
 
-          {/* Name & Handle */}
-          <Text className="text-xl font-black text-slate-800 leading-tight">
+        {/* Name with inline green verified check */}
+        <View className="flex-row items-center mt-3" style={{gap: 5}}>
+          <Text className="text-[18px] font-bold text-slate-900">
             {userName}
           </Text>
-          <Text className="text-sm font-bold text-slate-400 tracking-wide mt-1">
-            @{userHandle}
-          </Text>
+          {profile?.instagram_handle && (
+            <BadgeCheck size={16} color={BRAND.green} fill={BRAND.green} stroke="#fff" />
+          )}
         </View>
+        <Text className="text-[13px] font-medium text-slate-400 mt-0.5">
+          @{userHandle}
+        </Text>
+      </View>
 
-        {/* Stats Grid */}
-        <View className="flex-row mb-6" style={{ gap: 8 }}>
-          {stats.map((stat, i) => (
-            <View
-              key={i}
-              className="flex-1 items-center bg-slate-50/50 border border-slate-100 rounded-3xl py-4"
-            >
-              <View className="mb-2">{stat.icon}</View>
-              <Text className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">
-                {stat.label}
-              </Text>
-              <Text className="text-base font-black text-slate-800">
-                {stat.value}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* CTA Button */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate('InfluencerMediaKit' as never)}
-        >
-          <LinearGradient
-            colors={['#7C3AED', '#EC4899']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ borderRadius: 16 }}
-            className="w-full py-4 rounded-2xl items-center justify-center flex-row"
-          >
-            <Text className="text-white font-black text-xs uppercase tracking-widest">
-              Generate Media Kit
+      {/* 3-column stats with vertical dividers */}
+      <View className="flex-row mt-4">
+        {stats.map((stat, i) => (
+          <View
+            key={stat.label}
+            className="flex-1 items-center"
+            style={{
+              paddingVertical: 4,
+              borderLeftWidth: i === 0 ? 0 : 1,
+              borderLeftColor: 'rgba(25,22,43,0.06)',
+            }}>
+            <Text className="text-[20px] font-bold text-slate-900">
+              {stat.value}
             </Text>
-            <ArrowRight size={18} color="white" style={{ marginLeft: 8 }} />
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
+            <Text className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              {stat.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Full-width gradient CTA */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('InfluencerMediaKit' as never)}
+        style={{marginTop: 16}}>
+        <LinearGradient
+          colors={[...BRAND_GRADIENT_WARM]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={{
+            borderRadius: 14,
+            paddingVertical: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            shadowColor: BRAND.accent,
+            shadowOffset: {width: 0, height: 6},
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 5,
+          }}>
+          <Text className="text-white font-bold text-[13px] uppercase tracking-widest">
+            {profile?.media_kit_published ? 'View Media Kit' : 'Generate Media Kit'}
+          </Text>
+          <ArrowRight size={16} color="#fff" />
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }

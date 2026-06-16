@@ -2,10 +2,21 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import './global.css';
 import { AuthProvider } from './src/context/AuthContext';
+import { LoadingProvider } from './src/context/LoadingContext';
 import LoginScreen from './src/screens/LoginScreen';
+import ConsentPolicyScreen from './src/screens/ConsentPolicyScreen';
 import BrandHome from './src/screens/BrandHome';
+import BrandCampaignDetail from './src/screens/BrandCampaignDetail';
+import CreateCampaignScreen from './src/screens/CreateCampaignScreen';
+import BrandNotifications from './src/screens/BrandNotifications';
+import InfluencerServicesList from './src/screens/InfluencerServicesList';
+import InfluencerServiceDetail from './src/screens/InfluencerServiceDetail';
+import InfluencerServiceQuote from './src/screens/InfluencerServiceQuote';
+import InfluencerServiceOrders from './src/screens/InfluencerServiceOrders';
+import InfluencerServiceOrderDetail from './src/screens/InfluencerServiceOrderDetail';
 import InfluencerHome from './src/screens/InfluencerHome';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import BrandSearch from './src/screens/BrandSearch';
 import BrandCampaigns from './src/screens/BrandCampaigns';
 import BrandProfile from './src/screens/BrandProfile';
@@ -26,13 +37,32 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <GestureHandlerRootView>
+      <SafeAreaProvider>
+      <LoadingProvider>
       <AuthProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen
+            name="ConsentPolicy"
+            component={ConsentPolicyScreen}
+            options={{ presentation: 'modal' }}
+          />
           <Stack.Screen name="BrandHome" component={BrandHome} />
           <Stack.Screen name="BrandSearch" component={BrandSearch} />
           <Stack.Screen name="BrandCampaigns" component={BrandCampaigns} />
+          <Stack.Screen
+            name="BrandCampaignDetail"
+            component={BrandCampaignDetail}
+          />
+          <Stack.Screen
+            name="CreateCampaign"
+            component={CreateCampaignScreen}
+          />
+          <Stack.Screen
+            name="BrandNotifications"
+            component={BrandNotifications}
+          />
           <Stack.Screen name="BrandChats" component={BrandChats} />
           <Stack.Screen name="BrandProfile" component={BrandProfile} />
           <Stack.Screen name="InfluencerHome" component={InfluencerHome} />
@@ -73,9 +103,31 @@ export default function App() {
             name="RecommendedCampaigns"
             component={RecommendedCampaigns}
           />
+          <Stack.Screen
+            name="InfluencerServices"
+            component={InfluencerServicesList}
+          />
+          <Stack.Screen
+            name="InfluencerServiceDetail"
+            component={InfluencerServiceDetail}
+          />
+          <Stack.Screen
+            name="InfluencerServiceQuote"
+            component={InfluencerServiceQuote}
+          />
+          <Stack.Screen
+            name="InfluencerServiceOrders"
+            component={InfluencerServiceOrders}
+          />
+          <Stack.Screen
+            name="InfluencerServiceOrderDetail"
+            component={InfluencerServiceOrderDetail}
+          />
         </Stack.Navigator>
       </NavigationContainer>
       </AuthProvider>
+      </LoadingProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

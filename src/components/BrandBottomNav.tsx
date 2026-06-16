@@ -25,7 +25,7 @@ const BottomNav = () => {
           return (
             <Pressable
               key={item.label}
-              onPress={() => navigation.navigate(item.screen)}
+              onPress={() => navigation.navigate(item.screen as never)}
               className="flex-1 items-center justify-center relative"
             >
               {/* Active indicator */}

@@ -5,8 +5,12 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import {supabase} from '../utils/supabase';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {supabase, safeGetSession, isInvalidRefreshTokenError} from '../utils/supabase';
+import {invokeFn} from '../lib/api';
+import {
+  registerDeviceSession,
+  isCurrentDeviceActive,
+} from '../utils/device-session';
 
 interface Profile {
   id: string;
@@ -36,6 +40,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshInstagram: (userId?: string) => Promise<void>;
   instagramTokenMissing: boolean;
   setInstagramTokenMissing: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -48,6 +53,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
+  refreshInstagram: async () => {},
   instagramTokenMissing: false,
   setInstagramTokenMissing: () => {},
 });
@@ -65,34 +71,79 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/check-profile`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({userId}),
-        },
-      );
-      const data = await res.json();
+      const data = await invokeFn<{
+        exists?: boolean;
+        profile?: Profile;
+        role?: string;
+      }>('check-profile', {userId});
 
-      if (data?.profile) {
+      if (data?.exists && data.profile) {
         setProfile(data.profile);
         setRole(data.role || data.profile.role || null);
 
-        // Check if Instagram token is missing
         if (
           data.profile.instagram_handle &&
           !data.profile.instagram_access_token
         ) {
           setInstagramTokenMissing(true);
         }
+      } else {
+        setProfile(null);
+        setRole(null);
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
+      setProfile(null);
+      setRole(null);
+    }
+  }, []);
+
+  const refreshInstagram = useCallback(
+    async (userId?: string) => {
+      const uid = userId || user?.id;
+      if (!uid) return;
+      try {
+        const data = await invokeFn<{
+          success?: boolean;
+          skipped?: boolean;
+          error?: string;
+        }>('refresh-instagram', {userId: uid});
+        if (data?.success && !data?.skipped) {
+          setInstagramTokenMissing(false);
+          await fetchProfile(uid);
+        } else if (
+          data?.error &&
+          (data.error.includes('No Instagram token stored') ||
+            data.error.includes('token expired'))
+        ) {
+          setInstagramTokenMissing(true);
+        }
+      } catch (err: any) {
+        // invokeFn throws on { error: "..." } responses, which is exactly
+        // how refresh-instagram reports "No token stored" / "token expired"
+        // — the cases that should flip the banner on. Without this branch
+        // we'd silently miss expired-but-stored tokens (the web equivalent
+        // catches them in its branched response check).
+        const msg = err?.message || String(err);
+        if (
+          msg.includes('No Instagram token stored') ||
+          msg.includes('token expired')
+        ) {
+          setInstagramTokenMissing(true);
+        } else {
+          // Truly unexpected — don't surface to the UI.
+          console.warn('Instagram refresh failed:', err);
+        }
+      }
+    },
+    [user, fetchProfile],
+  );
+
+  const checkProfileNotification = useCallback(async (userId: string) => {
+    try {
+      await invokeFn('notifications', {action: 'checkProfile', userId});
+    } catch {
+      // Best-effort.
     }
   }, []);
 
@@ -110,38 +161,85 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   }, []);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({data: {session}}) => {
+    let isMounted = true;
+
+    const init = async () => {
+      try {
+        const session = await safeGetSession();
+        if (!isMounted) return;
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+          // Background, non-blocking
+          refreshInstagram(session.user.id);
+          checkProfileNotification(session.user.id);
+          registerDeviceSession(supabase, session.user.id);
+        }
+      } catch (err) {
+        if (isInvalidRefreshTokenError(err)) {
+          // Stale refresh token — already cleared inside safeGetSession in
+          // most paths; ensure local state is reset and let the user re-login.
+          await supabase.auth.signOut().catch(() => {});
+          setUser(null);
+          setProfile(null);
+          setRole(null);
+        } else {
+          console.error('Auth init failed:', err);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    const {
+      data: {subscription},
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
+        // Re-register on auth-state-change so a new device shows up in the
+        // Trusted Devices list right after sign-in.
+        registerDeviceSession(supabase, session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setRole(null);
       }
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const {data: {subscription}} = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          fetchProfile(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-          setRole(null);
-        }
-        setLoading(false);
-      },
-    );
+    // Safety: don't hang on loading=true forever if init throws unexpectedly.
+    const safety = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 5000);
 
-    // Safety timeout
-    const timeout = setTimeout(() => setLoading(false), 5000);
+    // Trusted Devices revocation poll — 60s cadence, matches the web. If the
+    // user removed this device from the Trusted Devices list elsewhere, we
+    // sign them out within a minute.
+    const REVOCATION_POLL_MS = 60_000;
+    const revokePoll = setInterval(async () => {
+      if (!isMounted) return;
+      const session = await safeGetSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      const active = await isCurrentDeviceActive(supabase, uid);
+      if (!active) {
+        console.warn('Device session revoked — signing out.');
+        await supabase.auth.signOut();
+      }
+    }, REVOCATION_POLL_MS);
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
-      clearTimeout(timeout);
+      clearTimeout(safety);
+      clearInterval(revokePoll);
     };
-  }, [fetchProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -153,6 +251,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         loading,
         signOut,
         refreshProfile,
+        refreshInstagram,
         instagramTokenMissing,
         setInstagramTokenMissing,
       }}>

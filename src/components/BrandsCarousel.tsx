@@ -1,116 +1,208 @@
-import React, {useState, useEffect} from 'react';
-import {View, Text, Image, Dimensions} from 'react-native';
+import React, {useState, useEffect, useMemo} from 'react';
+import {View, Text, Image, Dimensions, Pressable} from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import LinearGradient from 'react-native-linear-gradient';
+import {useNavigation} from '@react-navigation/native';
+import {supabase} from '../utils/supabase';
+import {invokeFn} from '../lib/api';
+import {BRAND_GRADIENT} from '../theme/brand';
 
 const {width} = Dimensions.get('window');
-const ITEM_WIDTH = width / 3;
+const ITEM_WIDTH = width / 2; // Two brands visible at a time, matches web mobile basis-1/2.
 
 interface Brand {
   id: string;
   name: string;
   logo: string;
+  instagram_url?: string;
 }
 
 const FALLBACK_BRANDS: Brand[] = [
-  {
-    id: '1',
-    name: 'D LUXE PERFUMES',
-    logo: 'https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs',
-  },
-  {
-    id: '2',
-    name: 'ZAUDI',
-    logo: 'https://lh3.googleusercontent.com/d/1PS9A-rPC48WUPo8imZjw4XAzChADsceu',
-  },
-  {
-    id: '3',
-    name: 'RIAR ELUX',
-    logo: 'https://lh3.googleusercontent.com/d/1cUytBemciPv8OdMi6-gADzUCKzfymr1R',
-  },
-  {
-    id: '4',
-    name: 'BIODANCE',
-    logo: 'https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG',
-  },
-  {
-    id: '5',
-    name: 'SESA POWERPLUS',
-    logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r',
-  },
-  {
-    id: '6',
-    name: 'SESA AYURVEDIC',
-    logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r',
-  },
+  {id: '1', name: 'D LUXE PERFUMES', logo: 'https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs'},
+  {id: '2', name: 'ZAUDI', logo: 'https://lh3.googleusercontent.com/d/1PS9A-rPC48WUPo8imZjw4XAzChADsceu'},
+  {id: '3', name: 'RIAR ELUX', logo: 'https://lh3.googleusercontent.com/d/1cUytBemciPv8OdMi6-gADzUCKzfymr1R'},
+  {id: '4', name: 'BIODANCE', logo: 'https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG'},
+  {id: '5', name: 'SESA POWERPLUS', logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r'},
+  {id: '6', name: 'SESA AYURVEDIC', logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r'},
 ];
 
+// Section title — warm half of the logo gradient fades INTO the heading on
+// the left, cool half emerges from it on the right. Echoes the
+// `.marquee::before/::after` rules in the web prototype.
+function SectionTitle({text}: {text: string}) {
+  return (
+    <View className="w-full flex-row items-center mb-6 px-6" style={{gap: 12}}>
+      <LinearGradient
+        colors={['#f5907f', '#e07f9a', '#c95fa2', 'rgba(201,95,162,0)']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 0}}
+        style={{flex: 1, height: 2}}
+      />
+      <Text className="text-base font-bold tracking-widest text-slate-600 uppercase">
+        {text}
+      </Text>
+      <LinearGradient
+        colors={['rgba(139,100,186,0)', '#8b64ba', '#6a64c0', '#5e6fc0']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 0}}
+        style={{flex: 1, height: 2}}
+      />
+    </View>
+  );
+}
+
+// 128px circular brand tile — the image fills the whole disc (cover),
+// matching the web's BRANDS YOU'LL LOVE row. Falls back to a coral→
+// fuchsia→purple gradient initial when the URL is missing or 404s.
+function BrandLogo({logo, name}: {logo: string; name: string}) {
+  const [failed, setFailed] = useState(false);
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
+  const LOGO_SIZE = 128;
+  const sharedShadow = {
+    shadowColor: '#19162b',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 4,
+  } as const;
+
+  if (!logo || failed) {
+    return (
+      <LinearGradient
+        colors={['#ec4899', '#d946ef', '#a855f7']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={{
+          width: LOGO_SIZE,
+          height: LOGO_SIZE,
+          borderRadius: LOGO_SIZE / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...sharedShadow,
+        }}>
+        <Text className="text-white font-black" style={{fontSize: 40}}>
+          {initial}
+        </Text>
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: LOGO_SIZE,
+        height: LOGO_SIZE,
+        borderRadius: LOGO_SIZE / 2,
+        // White fallback shows through if the brand logo has transparent
+        // edges — keeps the round silhouette clean while the image covers.
+        backgroundColor: '#ffffff',
+        overflow: 'hidden',
+        ...sharedShadow,
+      }}>
+      <Image
+        source={{uri: logo}}
+        onError={() => setFailed(true)}
+        style={{width: '100%', height: '100%'}}
+        resizeMode="cover"
+      />
+    </View>
+  );
+}
+
 export default function BrandsCarousel() {
+  const navigation = useNavigation<any>();
   const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
 
   useEffect(() => {
-    const fetchBrands = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/list-brands`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-            body: '{}',
-          },
-        );
-        const data = await res.json();
+        // Admin-curated featured brands first; fall back to the full directory.
+        const {data: featured} = await supabase
+          .from('featured_brands')
+          .select('id, name, logo_url, instagram_url')
+          .eq('is_active', true)
+          .order('position', {ascending: true});
+        if (cancelled) return;
+        if (featured && featured.length > 0) {
+          setBrands(
+            featured.map((b: any) => ({
+              id: String(b.id),
+              name: b.name,
+              logo: b.logo_url || '',
+              instagram_url: b.instagram_url || '',
+            })),
+          );
+          return;
+        }
+        const data = await invokeFn<{brands?: any[]}>('list-brands', {});
+        if (cancelled) return;
         if (data?.brands?.length) {
-          const mapped = data.brands.map((b: any) => ({
-            id: b.id,
-            name: b.name || 'Brand',
-            logo:
-              b.logo ||
-              'https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs',
-          }));
-          if (mapped.length) setBrands(mapped);
+          setBrands(
+            data.brands.map((b: any) => ({
+              id: String(b.id),
+              name: b.name || 'Brand',
+              logo: b.logo || '',
+              instagram_url: b.instagram_url || '',
+            })),
+          );
         }
       } catch {
-        // Keep fallback data
+        // Keep the fallback set on any failure.
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchBrands();
   }, []);
 
+  // Brands with a real logo first — the initial-tile fallback handles the
+  // rest. Without this nudge the carousel opens on a run of letter tiles.
+  const sortedBrands = useMemo(
+    () =>
+      [...brands].sort((a, b) => (b.logo ? 1 : 0) - (a.logo ? 1 : 0)),
+    [brands],
+  );
+
+  if (!sortedBrands.length) return null;
+
   return (
-    <View className="w-full py-8">
-      <Text className="text-lg font-bold text-center text-slate-800 mb-6 uppercase tracking-widest">
-        Brands You'll Love
-      </Text>
+    <View className="w-full py-10">
+      <SectionTitle text="Brands You'll Love" />
 
       <Carousel
         loop
         autoPlay
         autoPlayInterval={3000}
-        scrollAnimationDuration={1200}
+        scrollAnimationDuration={1000}
         width={ITEM_WIDTH}
-        height={140}
+        height={196}
         style={{width}}
-        data={brands}
-        renderItem={({item}) => (
-          <View className="items-center justify-center">
-            <View className="w-20 h-20 rounded-full border border-slate-100 bg-white items-center justify-center">
-              <Image
-                source={{uri: item.logo}}
-                className="w-12 h-12"
-                resizeMode="contain"
-              />
-            </View>
+        data={sortedBrands}
+        // Let vertical pans bubble to the page ScrollView; only this
+        // carousel takes the gesture once horizontal motion clears 10px.
+        onConfigurePanGesture={g =>
+          g.activeOffsetX([-10, 10]).failOffsetY([-5, 5])
+        }
+        renderItem={({item}: {item: Brand}) => (
+          <Pressable
+            onPress={() =>
+              // Open the Campaigns tab with this brand pre-seeded as the
+              // search filter. The campaigns screen reads route.params and
+              // initialises its searchQuery from it — same case-insensitive
+              // brand-name substring match it already uses for typing.
+              navigation.navigate('InfluencerCampaigns', {
+                brandName: item.name,
+              })
+            }
+            className="items-center justify-center px-3">
+            <BrandLogo logo={item.logo} name={item.name} />
             <Text
-              numberOfLines={2}
-              className="text-[10px] font-black text-center mt-3 text-slate-500 uppercase px-2">
+              numberOfLines={1}
+              className="text-[13px] font-bold mt-3 text-center text-slate-700">
               {item.name}
             </Text>
-          </View>
+          </Pressable>
         )}
       />
     </View>

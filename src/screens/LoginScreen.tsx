@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Pressable, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, View, Pressable, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 import { supabase } from '../utils/supabase';
-import { NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY } from '@env';
+import { invokeFn, EdgeFunctionError } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import OnboardingCarousel from '../components/OnboardingCarousel';
 import RoleSelection from '../components/RoleSelection';
 import InstagramConnect from '../components/InstagramConnect';
@@ -13,6 +14,28 @@ import SignUpForm from '../components/SignUpForm';
 import BrandSignUpForm from '../components/BrandSignUpForm';
 import CategorySelection from '../components/CategorySelection';
 import Preferences from '../components/Preferences';
+import SignInPhone from '../components/SignInPhone';
+import VerifyOTP from '../components/VerifyOTP';
+
+// "+918743898976" / "8743898976" → "+91 87438 98976"
+function formatDisplayPhone(raw: string): string {
+  const digits = String(raw || '')
+    .replace(/\D/g, '')
+    .replace(/^91/, '');
+  if (digits.length < 5) return `+91 ${digits}`;
+  return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+}
+
+// verifyOtp throws this when the backend reports a structured error code
+// (e.g. "no_user", "wrong_role"). Callers can branch on `.code` instead of
+// parsing message strings.
+class OtpError extends Error {
+  code: string;
+  constructor(code: string, message?: string) {
+    super(message || code);
+    this.code = code;
+  }
+}
 
 interface InstaProfile {
   username: string;
@@ -26,6 +49,17 @@ interface InstaProfile {
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const {user: authedUser, role: authedRole, loading: authLoading} = useAuth();
+
+  // If AuthContext restored a session from AsyncStorage (cold start with a
+  // persisted login), redirect past the login UI to the role-appropriate home.
+  // navigation.reset (not navigate) so the back button can't return to Login.
+  useEffect(() => {
+    if (authLoading) return;
+    if (!authedUser) return;
+    const target = authedRole === 'brand' ? 'BrandHome' : 'InfluencerHome';
+    (navigation as any).reset({index: 0, routes: [{name: target}]});
+  }, [authLoading, authedUser, authedRole, navigation]);
 
   // --- UI & FLOW STATE ---
   // signin steps: 1=role, 2=instagram connect (auto-login)
@@ -40,6 +74,7 @@ export default function LoginScreen() {
 
   // --- AUTH STATE ---
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [pendingSession, setPendingSession] = useState<any>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
 
@@ -77,6 +112,7 @@ export default function LoginScreen() {
     setStep(1);
     setError('');
     setPhone('');
+    setOtp('');
     setInstaProfile(null);
   };
 
@@ -104,17 +140,27 @@ export default function LoginScreen() {
   };
 
   // --- SHARED: Verify OTP & create session ---
-  const verifyOtp = async (phoneNumber: string, otpCode: string) => {
+  // mode="signin" makes the backend refuse to auto-create a user — sign-in
+  // shouldn't silently spin up accounts. Backend returns { error: 'no_user' }
+  // when the phone isn't registered and we're in signin mode; we surface that
+  // as an OtpError so the caller can switch into sign-up cleanly.
+  const verifyOtp = async (
+    phoneNumber: string,
+    otpCode: string,
+    mode: 'signin' | 'signup' = 'signup',
+  ) => {
     const rawDigits = phoneNumber.replace(/\D/g, '');
     const fullPhone = `+${rawDigits.startsWith('91') ? rawDigits : `91${rawDigits}`}`;
 
     const { data, error: authError } = await supabase.functions.invoke(
       'whatsapp-otp-verifier',
-      { body: { phone: fullPhone, otp: otpCode } },
+      { body: { phone: fullPhone, otp: otpCode, mode } },
     );
 
     if (authError) throw new Error(authError.message);
-    if (data?.error) throw new Error(data.error);
+    if (data?.error) {
+      throw new OtpError(data.error, data.message || data.error);
+    }
 
     setPendingSession(data.session);
     setAuthUserId(data.user.id);
@@ -124,83 +170,115 @@ export default function LoginScreen() {
   // ========================
   // SIGN IN FLOW HANDLERS
   // ========================
+  // Sign-in is mobile-OTP based for both brands and influencers — Instagram
+  // is only used for sign-UP. Web parity: commit 9da2224 + 247f99d.
+  //
+  // Step flow:
+  //   1 → role
+  //   2 → SignInPhone (calls check-phone-exists, then sends OTP, advances)
+  //   3 → VerifyOTP (verifyOtp mode='signin', role-mismatch guard, set session)
 
   const handleSignInRoleSelected = (selectedRole: 'brand' | 'influencer') => {
     setSignupData(prev => ({ ...prev, role: selectedRole }));
-    nextStep(); // -> step 2 (Instagram connect)
+    setError('');
+    nextStep(); // -> step 2 (phone entry)
   };
 
-  const handleSignInInstagramConnect = async (profile: InstaProfile) => {
+  // Phone pre-check: if this number isn't on file, prompt to sign up instead.
+  // If it's registered to the other role, tell the user before burning an OTP.
+  // The check-phone-exists edge function also records unknown numbers in
+  // public.leads — web commit 247f99d.
+  const handleSignInSendOtp = async (phoneNumber: string) => {
     setLoading(true);
-    setLoadingMsg('Signing in...');
+    setLoadingMsg('Checking your number…');
     setError('');
     try {
-      setInstaProfile(profile);
-
-      // Look up existing user by Instagram username
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/instagram-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          instagramUsername: profile.username,
-          role: signupData.role,
-        }),
+      // invokeFn (vs supabase.functions.invoke) so we get a hard 20s timeout —
+      // the supabase-js helper on RN can hang forever on a dropped connection.
+      const check = await invokeFn<{
+        exists?: boolean;
+        match?: boolean;
+        role?: string;
+        error?: string;
+      }>('check-phone-exists', {
+        phone: phoneNumber,
+        role: signupData.role,
       });
 
-      const data = await res.json();
+      if (!check?.exists) {
+        setError("You don't exist with us. Kindly sign up first.");
+        setLoading(false);
+        return;
+      }
 
-      if (data?.success && data?.session) {
-        // Existing user found - apply session and navigate
-        setLoadingMsg('Setting up your session...');
-        await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-        navigation.navigate(
-          signupData.role === 'brand'
-            ? ('BrandHome' as never)
-            : ('InfluencerHome' as never),
+      if (check.match === false) {
+        const otherRole = check.role === 'brand' ? 'a Brand' : 'an Influencer';
+        setError(
+          `This number is registered as ${otherRole}. Please switch role and try again.`,
         );
-        return;
-      }
-
-      if (data?.error === 'invitation_found') {
-        // Admin pre-registered - go to signup with pre-filled data
-        setInvitation(data.invitation);
-        setSignupData(prev => ({
-          ...prev,
-          name: data.invitation.full_name || data.invitation.brand_name || '',
-        }));
-        setFlow('signup');
-        setStep(3);
-        setError('');
         setLoading(false);
         return;
       }
 
-      if (data?.error === 'wrong_role') {
-        setError(data.message);
-        setLoading(false);
-        return;
-      }
-
-      if (data?.error === 'not_found') {
-        // No account - switch to signup flow, skip to profile form (step 3)
-        setFlow('signup');
-        setStep(3);
-        setError('');
-        setLoading(false);
-        return;
-      }
-
-      throw new Error(data?.message || 'Login failed');
+      setLoadingMsg('Sending OTP…');
+      await sendOtp(phoneNumber);
+      setOtp('');
+      nextStep(); // -> step 3 (verify)
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Instagram');
+      if (err instanceof EdgeFunctionError) {
+        setError(err.message);
+      } else {
+        setError(err?.message || 'Failed to send OTP');
+      }
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignInVerifyOtp = async (otpCode: string) => {
+    setLoading(true);
+    setLoadingMsg('Verifying…');
+    setError('');
+    try {
+      const data = await verifyOtp(phone, otpCode, 'signin');
+
+      // Role-mismatch defence in depth. The pre-check above catches this in
+      // the happy path, but a tampered or stale client could still get here
+      // pointed at the wrong role — refuse the sign-in outright instead of
+      // landing the user in the wrong dashboard.
+      const detectedRole = data?.user?.role;
+      const requestedRole = signupData.role;
+      if (detectedRole && requestedRole && detectedRole !== requestedRole) {
+        const otherRole = detectedRole === 'brand' ? 'a Brand' : 'an Influencer';
+        const wanted = requestedRole === 'brand' ? 'a Brand' : 'an Influencer';
+        setError(
+          `This number is registered as ${otherRole}, not ${wanted}. Please go back and pick the correct role.`,
+        );
+        setLoading(false);
+        return;
+      }
+
+      setLoadingMsg('Setting up your session…');
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      const target = (detectedRole || requestedRole) === 'brand'
+        ? 'BrandHome'
+        : 'InfluencerHome';
+      navigation.navigate(target as never);
+    } catch (err: any) {
+      if (err instanceof OtpError && err.code === 'no_user') {
+        // Backend says no account on this phone — bounce to sign-up.
+        setError('');
+        setFlow('signup');
+        setStep(1);
+        setLoading(false);
+        return;
+      }
+      setError(err?.message || 'Failed to verify OTP');
+      setLoading(false);
+      return;
     }
   };
 
@@ -220,7 +298,7 @@ export default function LoginScreen() {
     // half-state that breaks the next sign-in.
     if (!profile?.username) {
       setError(
-        "Instagram didn't return your username. Please reconnect Instagram before continuing.",
+        'Instagram didn\'t return your username. Please reconnect Instagram before continuing.',
       );
       return;
     }
@@ -349,6 +427,23 @@ export default function LoginScreen() {
   // RENDER
   // ========================
 
+  // Splash while AuthContext is restoring a persisted session — and while we
+  // already have a user but the reset() effect above hasn't fired yet. Keeps
+  // the carousel from flashing for signed-in users on cold start.
+  if (authLoading || authedUser) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#0F0F1A',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <ActivityIndicator size="large" color="#E60076" />
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-[#0F0F1A]">
       {/* Background Carousel */}
@@ -357,11 +452,13 @@ export default function LoginScreen() {
         onSignUpClick={switchToSignUp}
       />
 
-      {/* Overlay when auth is open */}
+      {/* Overlay when auth is open. Non-interactive — the sheet only closes via
+          the X button so a stray backdrop tap can't lose typed input or abort
+          an in-flight OTP / sign-up. */}
       {flow !== 'onboarding' && (
-        <Pressable
+        <View
           className="absolute inset-0 bg-[#ff92ca]/70"
-          onPress={closeAuth}
+          pointerEvents="auto"
         />
       )}
 
@@ -385,7 +482,7 @@ export default function LoginScreen() {
 
           {/* Content */}
           <View className="px-8 pb-12">
-            {/* ===== SIGN IN FLOW ===== */}
+            {/* ===== SIGN IN FLOW (phone-OTP, web parity) ===== */}
             {flow === 'signin' && (
               <>
                 {step === 1 && (
@@ -396,12 +493,25 @@ export default function LoginScreen() {
                   />
                 )}
                 {step === 2 && (
-                  <InstagramConnect
-                    onNext={handleSignInInstagramConnect}
-                    mode="signin"
-                    role={signupData.role || 'influencer'}
+                  <SignInPhone
+                    onNext={handleSignInSendOtp}
                     loading={loading}
                     error={error}
+                    phone={phone}
+                    setPhone={setPhone}
+                    mode="signin"
+                    role={signupData.role || 'influencer'}
+                  />
+                )}
+                {step === 3 && (
+                  <VerifyOTP
+                    onNext={handleSignInVerifyOtp}
+                    onResend={() => sendOtp(phone)}
+                    loading={loading}
+                    error={error}
+                    otp={otp}
+                    setOtp={setOtp}
+                    phoneNumber={formatDisplayPhone(phone)}
                   />
                 )}
               </>

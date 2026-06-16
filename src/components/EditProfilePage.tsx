@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {
+  Alert,
   View,
   Text,
   TouchableOpacity,
@@ -9,22 +10,24 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {
+  Camera,
+  Check,
   ChevronLeft,
-  User,
+  FileText,
+  Globe,
+  Instagram,
   Mail,
   MapPin,
-  FileText,
-  Instagram,
+  RotateCcw,
+  User,
   Youtube,
-  Globe,
-  Check,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
-import {
-  NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
-} from '@env';
+import {useGlobalLoading} from '../context/LoadingContext';
+import {invokeFn} from '../lib/api';
+import {pickFromLibrary} from '../lib/image-picker';
+import {uploadProfilePhoto} from '../lib/image-upload';
 
 const CATEGORY_OPTIONS = [
   'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
@@ -46,6 +49,7 @@ interface Props {
 
 const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const {profile, user, refreshProfile} = useAuth();
+  const {withLoading} = useGlobalLoading();
 
   const [name, setName] = useState(profile?.full_name || '');
   const [bio, setBio] = useState(profile?.bio || '');
@@ -57,8 +61,17 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [facebookUrl, setFacebookUrl] = useState(profile?.facebook_url || '');
   const [categories, setCategories] = useState<string[]>(profile?.categories || []);
   const [services, setServices] = useState<string[]>(profile?.services || []);
+  // service_rates from the DB comes back as Record<string, number>; the form
+  // works with strings (text inputs). Coerce on init, coerce back on save.
   const [serviceRates, setServiceRates] = useState<Record<string, string>>(
-    profile?.service_rates || {},
+    () => {
+      const raw = profile?.service_rates || {};
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        out[k] = v != null ? String(v) : '';
+      }
+      return out;
+    },
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -72,35 +85,79 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
     .toUpperCase()
     .slice(0, 2);
 
+  const handlePickPhoto = async () => {
+    if (!user?.id) return;
+    try {
+      const image = await pickFromLibrary();
+      if (!image) return;
+      await withLoading(
+        (async () => {
+          try {
+            await uploadProfilePhoto(user.id, image, 'influencer_profiles');
+            await refreshProfile();
+          } catch (err: any) {
+            Alert.alert('Upload failed', err?.message || 'Try again later.');
+          }
+        })(),
+        'Uploading photo…',
+      );
+    } catch (err: any) {
+      Alert.alert('Picker error', err?.message || 'Could not open picker.');
+    }
+  };
+
+  const handleRevertPhoto = () => {
+    if (!user?.id) return;
+    Alert.alert(
+      'Revert to Instagram photo?',
+      'Your custom upload will be replaced with the picture from your Instagram profile.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Revert',
+          style: 'destructive',
+          onPress: () =>
+            withLoading(
+              (async () => {
+                try {
+                  // The web's revertBrandLogo flag is brand-specific; the
+                  // influencer side uses a separate revertProfilePhoto flag.
+                  await invokeFn('update-profile', {
+                    userId: user.id,
+                    table: 'influencer_profiles',
+                    revertProfilePhoto: true,
+                  });
+                  await refreshProfile();
+                } catch (err: any) {
+                  Alert.alert('Failed', err?.message || 'Could not revert.');
+                }
+              })(),
+              'Reverting photo…',
+            ),
+        },
+      ],
+    );
+  };
+
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/update-profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          table: 'influencer_profiles',
-          name,
-          bio,
-          location,
-          email,
-          address,
-          tiktokUrl: tiktok,
-          youtubeUrl,
-          facebookUrl,
-          categories,
-          services,
-          serviceRates,
-        }),
+      await invokeFn('update-profile', {
+        userId: user?.id,
+        table: 'influencer_profiles',
+        name,
+        bio,
+        location,
+        email,
+        address,
+        tiktokUrl: tiktok,
+        youtubeUrl,
+        facebookUrl,
+        categories,
+        services,
+        serviceRates,
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       await refreshProfile();
       setSaved(true);
       setTimeout(() => {
@@ -108,6 +165,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
         onBack();
       }, 1200);
     } catch {
+      // Saving failed — leave the form open so the user can retry. The
+      // global loading overlay (if any) is handled by withLoading callers;
+      // here we just keep the inline button state.
     } finally {
       setSaving(false);
     }
@@ -146,22 +206,58 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Avatar */}
+        {/* Avatar (tappable for upload) */}
         <View className="items-center py-6">
+          <TouchableOpacity onPress={handlePickPhoto} activeOpacity={0.85}>
+            <View className="relative">
+              {photo ? (
+                <Image
+                  source={{uri: photo}}
+                  className="w-24 h-24 rounded-2xl"
+                  style={{borderWidth: 3, borderColor: '#F3F4F6'}}
+                />
+              ) : (
+                <LinearGradient
+                  colors={['#FF2D78', '#FF6BA1']}
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Text className="text-white text-3xl font-bold">{initials}</Text>
+                </LinearGradient>
+              )}
+              <View
+                className="absolute -bottom-1 -right-1 bg-white rounded-full"
+                style={{padding: 4}}>
+                <View
+                  style={{
+                    backgroundColor: '#E60076',
+                    padding: 6,
+                    borderRadius: 999,
+                  }}>
+                  <Camera size={12} color="#fff" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <Text className="text-sm text-gray-400 italic mt-2">
+            {handle ? `@${handle}` : 'Tap to upload'}
+          </Text>
           {photo ? (
-            <Image
-              source={{uri: photo}}
-              className="w-24 h-24 rounded-2xl"
-              style={{borderWidth: 3, borderColor: '#F3F4F6'}}
-            />
-          ) : (
-            <LinearGradient
-              colors={['#FF2D78', '#FF6BA1']}
-              style={{width: 96, height: 96, borderRadius: 16, alignItems: 'center', justifyContent: 'center'}}>
-              <Text className="text-white text-3xl font-bold">{initials}</Text>
-            </LinearGradient>
-          )}
-          <Text className="text-sm text-gray-400 italic mt-2">@{handle}</Text>
+            <TouchableOpacity
+              onPress={handleRevertPhoto}
+              className="flex-row items-center mt-1"
+              style={{gap: 4}}
+              hitSlop={6}>
+              <RotateCcw size={10} color="#94a3b8" />
+              <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Revert to Instagram
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View className="px-5" style={{gap: 16}}>

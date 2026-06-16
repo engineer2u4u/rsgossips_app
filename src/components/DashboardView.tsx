@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
+import LogoutConfirmDialog from './LogoutConfirmDialog';
 import {
   Edit2,
   CheckCircle2,
@@ -16,10 +17,13 @@ import {
   Award,
   Crown,
   Zap,
+  Hourglass,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
+import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
+import {formatINRCompact} from '../lib/influencer-stats';
 
 interface DashboardViewProps {
   onNotificationClick: () => void;
@@ -49,6 +53,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const {profile, signOut} = useAuth();
   const navigation = useNavigation();
+  const [showLogout, setShowLogout] = useState(false);
+  const {stats: campaignStats} = useInfluencerCampaigns();
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || '';
@@ -71,8 +77,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     ? currentPlan.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
     : expired ? 'Free' : 'Starter Trial';
 
-  const handleLogout = async () => {
+  const requestLogout = () => setShowLogout(true);
+  const confirmLogout = async () => {
     await signOut();
+    setShowLogout(false);
     navigation.navigate('Login' as never);
   };
 
@@ -96,7 +104,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 <Image
                   source={{uri: photo}}
                   className="w-24 h-24 rounded-xl"
-                  style={{shadowColor: '#EC4899', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6}}
+                  // `elevation` isn't on ImageStyle in RN types — but works
+                  // at runtime since the underlying view handles the cast.
+                  style={
+                    {
+                      shadowColor: '#EC4899',
+                      shadowOffset: {width: 0, height: 4},
+                      shadowOpacity: 0.2,
+                      shadowRadius: 8,
+                      elevation: 6,
+                    } as any
+                  }
                 />
                 <TouchableOpacity
                   onPress={onOpenInfo}
@@ -165,12 +183,40 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         </View>
       </View>
 
-      {/* Stats Grid 2x2 */}
+      {/* Stats Grid 2x2 — real data from useInfluencerCampaigns */}
       <View className="flex-row flex-wrap" style={{gap: 12}}>
-        <StatCard icon={CreditCard} title="Total Earnings" value="₹78,450" change="+23%" color="#10B981" bg="#FFFBF5" />
-        <StatCard icon={Clock} title="Active Campaigns" value="5" change="+2" color="#3B82F6" bg="#F0F9FF" />
-        <StatCard icon={Award} title="Completed" value="47" change="+12" color="#10B981" bg="#F0FDF4" />
-        <StatCard icon={TrendingUp} title="Success Rate" value="94%" change="+5%" color="#8B5CF6" bg="#FAF5FF" />
+        <StatCard
+          icon={CreditCard}
+          title="Total Earnings"
+          value={formatINRCompact(campaignStats.totalEarnings)}
+          change=""
+          color="#10B981"
+          bg="#FFFBF5"
+        />
+        <StatCard
+          icon={Clock}
+          title="Active Campaigns"
+          value={String(campaignStats.activeCount)}
+          change=""
+          color="#3B82F6"
+          bg="#F0F9FF"
+        />
+        <StatCard
+          icon={Award}
+          title="Completed"
+          value={String(campaignStats.completedCount)}
+          change=""
+          color="#10B981"
+          bg="#F0FDF4"
+        />
+        <StatCard
+          icon={Hourglass}
+          title="Expected Earnings"
+          value={formatINRCompact(campaignStats.expectedEarnings)}
+          change=""
+          color="#8B5CF6"
+          bg="#FAF5FF"
+        />
       </View>
 
       {/* Creator Hub */}
@@ -337,7 +383,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={handleLogout}
+          onPress={requestLogout}
           className="w-full py-4 bg-white rounded-xl flex-row items-center justify-center"
           style={{borderWidth: 2, borderColor: '#FFF1F2', gap: 8}}>
           <LogOut size={18} color="#FF2D78" />
@@ -350,6 +396,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       </View>
 
       <View className="h-20" />
+
+      <LogoutConfirmDialog
+        visible={showLogout}
+        onCancel={() => setShowLogout(false)}
+        onConfirm={confirmLogout}
+      />
     </View>
   );
 };
@@ -365,7 +417,9 @@ function StatCard({icon: Icon, title, value, change, color, bg}: {
       <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{title}</Text>
       <View className="flex-row items-baseline mt-1" style={{gap: 6}}>
         <Text className="text-xl font-black text-[#1A1A1A]">{value}</Text>
-        <Text className="text-[10px] font-bold" style={{color}}>{change}</Text>
+        {change ? (
+          <Text className="text-[10px] font-bold" style={{color}}>{change}</Text>
+        ) : null}
       </View>
     </View>
   );

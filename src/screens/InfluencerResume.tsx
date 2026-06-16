@@ -21,7 +21,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {invokeFn} from '../lib/api';
 
 function formatCount(n: number | undefined) {
   if (!n) return '0';
@@ -51,23 +51,13 @@ export default function InfluencerResume() {
       }
 
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/check-profile`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({userId: targetId}),
-          },
-        );
-        const data = await res.json();
-        if (data?.profile) {
-          setInfluencer(data.profile);
-        }
-      } catch {}
+        const data = await invokeFn<{profile?: any}>('check-profile', {
+          userId: targetId,
+        });
+        if (data?.profile) setInfluencer(data.profile);
+      } catch {
+        // Best-effort — leaves the page loading-empty on failure.
+      }
       setLoading(false);
     };
     fetchProfile();
@@ -82,20 +72,14 @@ export default function InfluencerResume() {
   const handleRegenerate = async () => {
     setRegenerating(true);
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/update-profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          table: 'influencer_profiles',
-          regenerateResume: true,
-        }),
+      await invokeFn('update-profile', {
+        userId: user?.id,
+        table: 'influencer_profiles',
+        regenerateResume: true,
       });
-    } catch {}
+    } catch {
+      // Best-effort.
+    }
     setRegenerating(false);
   };
 

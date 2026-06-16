@@ -10,6 +10,7 @@ import {
   Zap,
   ClipboardCheck,
 } from 'lucide-react-native';
+import { CARD_SHADOW } from '../theme/brand';
 
 const tools = [
   {
@@ -53,8 +54,20 @@ const tools = [
 
 export default function AiToolsGrid() {
   return (
-    <View className="w-full px-4">
-      <View className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+    <View className="w-full">
+      <View
+        style={[
+          {
+            backgroundColor: '#ffffff',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: 'rgba(25,22,43,0.06)',
+            padding: 20,
+            position: 'relative',
+            overflow: 'hidden',
+          },
+          CARD_SHADOW,
+        ]}>
         {/* HEADER */}
         <View className="flex-row justify-between items-center mb-6">
           <Text className="text-xl font-bold text-slate-900">
@@ -103,6 +116,28 @@ export default function AiToolsGrid() {
               </Animated.View>
             );
           })}
+        </View>
+
+        {/* Coming Soon overlay — blocks taps and signals these tools aren't
+            live yet. Web shows this on hover; on mobile it's always visible. */}
+        <View
+          pointerEvents="auto"
+          className="absolute inset-0 items-center justify-center"
+          style={{backgroundColor: 'rgba(255,255,255,0.72)'}}>
+          <View
+            className="px-6 py-3 rounded-2xl"
+            style={{
+              backgroundColor: '#0f172a',
+              shadowColor: '#000',
+              shadowOpacity: 0.18,
+              shadowRadius: 12,
+              shadowOffset: {width: 0, height: 6},
+              elevation: 6,
+            }}>
+            <Text className="text-white text-sm font-black uppercase tracking-widest">
+              Coming Soon
+            </Text>
+          </View>
         </View>
       </View>
     </View>

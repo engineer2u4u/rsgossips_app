@@ -77,7 +77,16 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
               <Image
                 source={{uri: photo}}
                 className="w-24 h-24 rounded-2xl"
-                style={{shadowColor: '#EC4899', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6}}
+                // elevation isn't on ImageStyle in RN types but works at runtime.
+                style={
+                  {
+                    shadowColor: '#EC4899',
+                    shadowOffset: {width: 0, height: 4},
+                    shadowOpacity: 0.2,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  } as any
+                }
               />
             ) : (
               <LinearGradient

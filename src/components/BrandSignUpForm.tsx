@@ -14,8 +14,11 @@ import {
   Building2,
   MapPin,
   BadgeCheck,
+  Check,
 } from 'lucide-react-native';
+import {useNavigation} from '@react-navigation/native';
 import {supabase} from '../utils/supabase';
+import {classifyGstPan} from '../lib/brandProfile';
 
 interface InstaProfile {
   username: string;
@@ -80,13 +83,25 @@ export default function BrandSignUpForm({
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [localError, setLocalError] = useState('');
+  const [consentAgreed, setConsentAgreed] = useState(false);
 
-  // GSTIN state
+  // GSTIN state — GST/PAN is OPTIONAL at signup (matches web).
+  // Influencers can verify it later from Profile to boost trust score.
   const [gstinLoading, setGstinLoading] = useState(false);
   const [gstinData, setGstinData] = useState<GstinData | null>(null);
   const [gstinError, setGstinError] = useState('');
 
+  const navigation = useNavigation();
   const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // Auto-focus the first OTP slot when the grid first appears (otpSent flips
+  // true) so the keyboard pops up without an extra tap. Re-focuses if the
+  // user goes back and resends.
+  useEffect(() => {
+    if (!otpSent || otpVerified) return;
+    const t = setTimeout(() => otpInputs.current[0]?.focus(), 120);
+    return () => clearTimeout(t);
+  }, [otpSent, otpVerified]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -202,6 +217,21 @@ export default function BrandSignUpForm({
     }
   };
 
+  // Backspace on an empty slot should walk focus back AND clear the digit
+  // in the previous slot. Mirrors the fix in VerifyOTP / SignUpForm.
+  const handleOtpKeyPress = (
+    e: {nativeEvent: {key: string}},
+    index: number,
+  ) => {
+    if (e.nativeEvent.key !== 'Backspace') return;
+    if (otp[index]) return;
+    if (index === 0) return;
+    const arr = otp.split('');
+    arr[index - 1] = '';
+    setOtp(arr.join(''));
+    otpInputs.current[index - 1]?.focus();
+  };
+
   const handleVerifyOtp = async () => {
     if (otp.length < 6) return;
     setVerifyLoading(true);
@@ -235,15 +265,30 @@ export default function BrandSignUpForm({
       setLocalError('Please enter your full name');
       return;
     }
-    if (!gstinData) {
-      setLocalError('Please verify your GSTIN');
-      return;
+    // GST/PAN is optional. If something was entered, validate the format
+    // even if the user didn't click "Verify" against the live GSTN lookup.
+    if (formData.gstin && !gstinData) {
+      const {valid, kind} = classifyGstPan(formData.gstin);
+      if (!valid) {
+        setGstinError(
+          kind === 'pan'
+            ? 'PAN should be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).'
+            : kind === 'gst'
+              ? 'GST should be 15 chars (e.g. 22AAAAA0000A1Z5).'
+              : 'Enter a valid GST (15 chars) or PAN (10 chars), or leave blank.',
+        );
+        return;
+      }
     }
     if (!otpVerified) {
       setLocalError('Please verify your phone number');
       return;
     }
-    onSubmit({...formData, gstinData});
+    if (!consentAgreed) {
+      setLocalError('Please accept the Brand Consent Policy to continue');
+      return;
+    }
+    onSubmit({...formData, gstin: formData.gstin || '', gstinData: gstinData as any});
   };
 
   const displayError = error || localError;
@@ -348,16 +393,17 @@ export default function BrandSignUpForm({
           </View>
         </View>
 
-        {/* GSTIN Verification */}
+        {/* GST / PAN — OPTIONAL (matches web; boosts trust score later). */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            GSTIN Number <Text className="text-red-400">*</Text>
+            GST / PAN{' '}
+            <Text className="text-slate-300 font-normal">(optional)</Text>
           </Text>
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
               <Building2 size={18} color="rgba(99,71,249,0.6)" />
               <TextInput
-                placeholder="e.g. 22AAAAA0000A1Z5"
+                placeholder="GST (15) or PAN (10) — e.g. ABCDE1234F"
                 value={formData.gstin}
                 onChangeText={handleGstinChange}
                 editable={!gstinData}
@@ -367,15 +413,11 @@ export default function BrandSignUpForm({
               />
             </View>
 
-            {!gstinData && (
+            {!gstinData && formData.gstin.length === 15 && (
               <Pressable
                 onPress={handleVerifyGstin}
-                disabled={formData.gstin.length !== 15 || gstinLoading}
-                className={`h-12 px-4 rounded-xl items-center justify-center ${
-                  formData.gstin.length !== 15
-                    ? 'bg-slate-200'
-                    : 'bg-[#9810FA]'
-                }`}>
+                disabled={gstinLoading}
+                className="h-12 px-4 rounded-xl items-center justify-center bg-[#9810FA]">
                 {gstinLoading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
@@ -395,7 +437,11 @@ export default function BrandSignUpForm({
 
           {gstinError ? (
             <Text className="text-xs text-red-500 ml-1">{gstinError}</Text>
-          ) : null}
+          ) : (
+            <Text className="text-[11px] text-slate-400 ml-1">
+              Helps boost your trust score; you can add it later in Profile.
+            </Text>
+          )}
 
           {/* GSTIN Verified Details Card */}
           {gstinData && (
@@ -496,15 +542,24 @@ export default function BrandSignUpForm({
           {/* OTP Input */}
           {otpSent && !otpVerified && (
             <View className="space-y-3 pt-2">
+              <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+                <Text className="text-[11px] text-emerald-700 text-center">
+                  Your OTP just slid into WhatsApp — say hi to{' '}
+                  <Text className="font-bold">Rgossips Media</Text>!
+                </Text>
+              </View>
               <View className="flex-row justify-center gap-1.5">
                 {[...Array(6)].map((_, i) => (
                   <TextInput
                     key={i}
-                    ref={ref => (otpInputs.current[i] = ref)}
+                    ref={ref => {
+                      otpInputs.current[i] = ref;
+                    }}
                     keyboardType="number-pad"
                     maxLength={1}
                     value={otp[i] ?? ''}
                     onChangeText={value => handleOtpChange(value, i)}
+                    onKeyPress={e => handleOtpKeyPress(e, i)}
                     className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 text-center"
                   />
                 ))}
@@ -548,12 +603,39 @@ export default function BrandSignUpForm({
           )}
         </View>
 
+        {/* Consent (mandatory) */}
+        <Pressable
+          onPress={() => setConsentAgreed(v => !v)}
+          className="flex-row items-start gap-3 px-1 py-1"
+          hitSlop={4}>
+          <View
+            className={`w-5 h-5 rounded border items-center justify-center mt-0.5 ${
+              consentAgreed
+                ? 'bg-[#6347F9] border-[#6347F9]'
+                : 'border-slate-300 bg-white'
+            }`}>
+            {consentAgreed && <Check size={14} color="white" strokeWidth={3} />}
+          </View>
+          <Text className="flex-1 text-[12px] text-slate-600 leading-snug">
+            I have read and agree to the{' '}
+            <Text
+              className="text-[#6347F9] font-bold"
+              onPress={() =>
+                (navigation as any).navigate('ConsentPolicy', {role: 'brand'})
+              }>
+              Brand Consent Policy
+            </Text>
+            , Terms of Service, Privacy Policy and Community Guidelines of
+            Recent Gossips, on behalf of the Brand I represent.
+          </Text>
+        </Pressable>
+
         {/* Submit */}
         <Pressable
           onPress={handleSubmit}
-          disabled={loading || !formData.name || !gstinData || !otpVerified}
+          disabled={loading || !formData.name || !otpVerified || !consentAgreed}
           className={`w-full h-[54px] rounded-2xl items-center justify-center flex-row ${
-            loading || !formData.name || !gstinData || !otpVerified
+            loading || !formData.name || !otpVerified || !consentAgreed
               ? 'bg-slate-200'
               : 'bg-[#9810FA]'
           }`}>
@@ -567,7 +649,7 @@ export default function BrandSignUpForm({
           ) : (
             <Text
               className={`text-base font-semibold ${
-                !formData.name || !gstinData || !otpVerified
+                !formData.name || !otpVerified || !consentAgreed
                   ? 'text-slate-400'
                   : 'text-white'
               }`}>

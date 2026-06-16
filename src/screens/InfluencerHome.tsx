@@ -1,18 +1,12 @@
-import React, {useState, useRef} from 'react';
-import {View, Text, ScrollView, Pressable} from 'react-native';
-import {TrendingUp, Star, Box, Compass, Crown} from 'lucide-react-native';
-import {useNavigation} from '@react-navigation/native';
+import React, {useRef} from 'react';
+import {View} from 'react-native';
 import ProStatusCard from '../components/ProStatuscard';
 import InstagramReconnectBanner from '../components/InstagramReconnectBanner';
 import {useAuth} from '../context/AuthContext';
-import StackedDeals from '../components/StackedDeals';
+import DealOfDayCarousel from '../components/DealOfDayCarousel';
+import QuickLinks from '../components/QuickLinks';
 import CompleteProfileCard from '../components/CompleteProfileCard';
 import AiMediaKitCard from '../components/AIMediaKitCard';
-import AiToolsGrid from '../components/AIToolsGrid';
-import CreatorsLikeYou from '../components/CreatorsLikeYou';
-import JourneyCarousel from '../components/JourneyCarousel';
-import CommunityFeed from '../components/CommunityFeed';
-import PerformanceDashboard from '../components/PerformanceDashboard';
 import BrandsCarousel from '../components/BrandsCarousel';
 import TopServices from '../components/TopServices';
 import TopPicksCarousel from '../components/TopPicksCarousel';
@@ -20,34 +14,25 @@ import StayCarousel from '../components/StayCarousel';
 import CreatorsCarouselWithLink from '../components/CreatorCarouselWithLink';
 import InfluencerLayout, {useLayoutScroll} from '../layouts/InfluencerLayout';
 
-const CATEGORIES = [
-  {id: 1, label: 'Trending', icon: TrendingUp, target: 'trending', action: 'scroll' as const},
-  {id: 2, label: 'For You', icon: Star, target: 'for-you', action: 'scroll' as const},
-  {id: 3, label: 'Brands', icon: Box, target: 'brands', action: 'navigate' as const},
-  {id: 4, label: 'Top Services', icon: Compass, target: 'top-services', action: 'scroll' as const},
-  {id: 5, label: 'Top Creators', icon: Crown, target: 'top-creators', action: 'scroll' as const},
-];
-
 function HomeContent() {
-  const navigation = useNavigation<any>();
   const layoutScroll = useLayoutScroll();
-  const [activeCategory, setActiveCategory] = useState('trending');
   const sectionYs = useRef<Record<string, number>>({});
   // AuthContext flips instagramTokenMissing when refresh-instagram returns
   // "No token stored" / "token expired". Pull those + the userId here so
   // the banner can both render and complete a re-connect via update-profile.
   const {user, instagramTokenMissing, setInstagramTokenMissing, refreshInstagram} = useAuth();
 
-  const handleCategoryPress = (cat: typeof CATEGORIES[number]) => {
-    if (cat.action === 'navigate') {
-      navigation.navigate('InfluencerSearch');
-      return;
-    }
-    setActiveCategory(cat.target);
-    const y = sectionYs.current[cat.target];
+  const scrollToSection = (key: string) => {
+    const y = sectionYs.current[key];
     if (y !== undefined && layoutScroll?.current) {
       layoutScroll.current.scrollTo({y, animated: true});
     }
+  };
+
+  const setSectionY = (key: string) => (e: any) => {
+    (e.target as any).measureInWindow((_x: number, y: number) => {
+      sectionYs.current[key] = y;
+    });
   };
 
   return (
@@ -71,99 +56,44 @@ function HomeContent() {
         />
       </View>
 
-      {/* Category Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="mt-4 px-4">
-        {CATEGORIES.map(cat => {
-          const Icon = cat.icon;
-          const isActive = activeCategory === cat.target;
+      {/* Quick Links — replaces the chip-row category filters */}
+      <QuickLinks onScroll={scrollToSection} />
 
-          return (
-            <Pressable
-              key={cat.id}
-              onPress={() => handleCategoryPress(cat)}
-              className={`flex-row items-center mr-3 px-4 py-3 rounded-2xl ${
-                isActive ? 'bg-pink-50' : 'bg-slate-100'
-              }`}>
-              <Icon size={18} color={isActive ? '#ec4899' : '#64748b'} />
-              <Text
-                className={`ml-2 text-sm font-semibold ${
-                  isActive ? 'text-pink-600' : 'text-slate-600'
-                }`}>
-                {cat.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Stacked Deals */}
+      {/* Deal of the Day */}
       <View className="mt-6">
-        <StackedDeals />
+        <DealOfDayCarousel />
       </View>
 
-      {/* Profile Cards Row */}
+      {/* Profile Cards Row — Get Your First Brand Deal → AI Media Kit.
+          AI Creator Tools removed per spec. */}
       <View className="mt-6 px-4" style={{gap: 20}}>
-        <AiMediaKitCard />
         <CompleteProfileCard />
-        <AiToolsGrid />
+        <AiMediaKitCard />
       </View>
 
-      {/* Creators Like You (Trending) */}
-      <View
-        className="mt-6"
-        onLayout={e => {
-          (e.target as any).measureInWindow((_x: number, y: number) => {
-            sectionYs.current['trending'] = y;
-          });
-        }}>
-        <CreatorsLikeYou />
-      </View>
-
-      {/* Journey Carousel (For You) */}
-      <View
-        onLayout={e => {
-          (e.target as any).measureInWindow((_x: number, y: number) => {
-            sectionYs.current['for-you'] = y;
-          });
-        }}>
-        <JourneyCarousel />
-      </View>
-
-      {/* Community Feed */}
-      <CommunityFeed />
-
-      {/* Performance Dashboard */}
-      <PerformanceDashboard />
-
-      {/* Bottom Sections */}
+      {/* Brands Carousel */}
       <BrandsCarousel />
 
-      <View
-        onLayout={e => {
-          (e.target as any).measureInWindow((_x: number, y: number) => {
-            sectionYs.current['top-services'] = y;
-          });
-        }}>
+      {/* Top Services */}
+      <View onLayout={setSectionY('top-services')}>
         <TopServices />
       </View>
 
-      <TopPicksCarousel />
+      {/* Campaigns For You */}
+      <View onLayout={setSectionY('recommended-campaigns')}>
+        <TopPicksCarousel />
+      </View>
+
+      {/* Plan Your Stay */}
       <StayCarousel />
 
-      <View
-        onLayout={e => {
-          (e.target as any).measureInWindow((_x: number, y: number) => {
-            sectionYs.current['top-creators'] = y;
-          });
-        }}>
+      {/* Top Creators */}
+      <View onLayout={setSectionY('top-creators')}>
         <CreatorsCarouselWithLink />
       </View>
 
-      {/* Bottom spacer */}
-      <View className="h-20" />
+      {/* Bottom spacer — extra to clear the floating glass nav. */}
+      <View className="h-28" />
     </>
   );
 }

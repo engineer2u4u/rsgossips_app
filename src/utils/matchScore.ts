@@ -97,7 +97,124 @@ interface Campaign {
   tags?: string[];
   platforms?: string[];
   deliverables?: string;
+  budget?: string;
   [key: string]: any;
+}
+
+// Categories adjacent enough to count as a soft, "indirect" fit. Lowercase
+// canonical names on both sides. Mirrors web utils/matchScore.js.
+const RELATED_CATEGORIES: Record<string, string[]> = {
+  'beauty & skincare': ['fashion & lifestyle', 'health, fitness & wellness'],
+  'fashion & lifestyle': ['beauty & skincare', 'home & decor'],
+  'food & beverage': ['travel & hospitality', 'health, fitness & wellness'],
+  'health, fitness & wellness': [
+    'food & beverage',
+    'beauty & skincare',
+    'sustainable & eco-conscious living',
+  ],
+  'travel & hospitality': ['food & beverage', 'automobile & mobility'],
+  'technology & gadgets': ['gaming & entertainment', 'automobile & mobility'],
+  'parenting & family': ['pet care & animals', 'home & decor'],
+  'home & decor': ['fashion & lifestyle', 'sustainable & eco-conscious living'],
+  'finance & personal finance': [
+    'entrepreneurship & business',
+    'education & career',
+  ],
+  'education & career': [
+    'entrepreneurship & business',
+    'finance & personal finance',
+  ],
+  'gaming & entertainment': ['technology & gadgets'],
+  'automobile & mobility': ['technology & gadgets', 'travel & hospitality'],
+  'entrepreneurship & business': [
+    'education & career',
+    'finance & personal finance',
+  ],
+  'sustainable & eco-conscious living': [
+    'health, fitness & wellness',
+    'home & decor',
+  ],
+  'pet care & animals': ['parenting & family'],
+};
+
+// "₹5K-15K" / "₹3,500" / "₹2.5L" → midpoint in rupees. Used to compare
+// campaign budgets to the creator's declared reel rate.
+function parseBudgetMidpoint(raw?: string): number {
+  if (!raw) return 0;
+  const toNum = (s?: string) => {
+    if (!s) return 0;
+    const cleaned = String(s)
+      .trim()
+      .toLowerCase()
+      .replace(/,/g, '')
+      .replace(/\+/g, '');
+    const num = parseFloat(cleaned);
+    if (!Number.isFinite(num)) return 0;
+    if (cleaned.endsWith('l')) return Math.round(num * 100000);
+    if (cleaned.endsWith('m')) return Math.round(num * 1000000);
+    if (cleaned.endsWith('k')) return Math.round(num * 1000);
+    return Math.round(num);
+  };
+  const parts = String(raw).replace(/₹/g, '').split(/[-–—]/);
+  const lo = toNum(parts[0]);
+  const hi = parts.length > 1 ? toNum(parts[1]) : lo;
+  if (lo && hi) return Math.round((lo + hi) / 2);
+  return lo || hi;
+}
+
+// 3 = exact, 2 = partial (substring either way), 1 = indirect (related),
+// 0 = none. Primary sort key for the Campaigns For You section.
+function bestCategoryTier(userCategories: string[], tags: string[]): 0 | 1 | 2 | 3 {
+  const u = userCategories.map(c => c.toLowerCase().trim());
+  const t = tags.map(x => String(x).toLowerCase().trim());
+  if (u.length === 0 || t.length === 0) return 0;
+
+  let best: 0 | 1 | 2 | 3 = 0;
+  for (const tag of t) {
+    for (const cat of u) {
+      if (tag === cat) return 3;
+      if (tag.includes(cat) || cat.includes(tag)) {
+        if (best < 2) best = 2;
+        continue;
+      }
+      const relOfCat = RELATED_CATEGORIES[cat] || [];
+      const relOfTag = RELATED_CATEGORIES[tag] || [];
+      if (relOfCat.includes(tag) || relOfTag.includes(cat)) {
+        if (best < 1) best = 1;
+      }
+    }
+  }
+  return best;
+}
+
+// Recommendation fit for the "Campaigns For You" section. Combines a tiered
+// category match with a budget-vs-rate check. Mirrors web utils/matchScore.js.
+export function scoreCampaignForUser(
+  profile: Profile | null,
+  campaign: Campaign,
+): {score: number; categoryTier: 0 | 1 | 2 | 3} {
+  if (!profile) return {score: 0, categoryTier: 0};
+
+  const userCategories = profile.categories || [];
+  const tags = campaign.tags || [];
+  const categoryTier = bestCategoryTier(userCategories, tags);
+
+  const CATEGORY_POINTS = {3: 65, 2: 45, 1: 28, 0: 10} as const;
+  let score: number = CATEGORY_POINTS[categoryTier];
+
+  const userRate = Number(profile?.service_rates?.reels) || 0;
+  const campaignMid = parseBudgetMidpoint(campaign.budget);
+  if (!userRate || !campaignMid) {
+    score += 20;
+  } else if (campaignMid >= userRate) {
+    score += 35;
+  } else if (campaignMid >= userRate * 0.6) {
+    score += 24;
+  } else {
+    score += 10;
+  }
+
+  return {score: Math.min(100, Math.round(score)), categoryTier};
 }
 
 export function calculateCampaignMatchScore(

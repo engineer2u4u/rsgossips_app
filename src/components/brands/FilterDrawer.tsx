@@ -1,110 +1,224 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
-import { SlidersHorizontal, X } from 'lucide-react-native';
+// Filter drawer for brand search.
+//
+// Controlled component — the parent owns the applied filter state. The
+// drawer takes a working copy on open, lets the user toggle chips with a
+// live "Apply Filters (N)" count (web commit 98ecbf4), then either applies
+// or discards.
+//
+// Filter shape matches web (`src/components/brands/FilterDrawer.jsx`):
+//   { Categories[], "Follower Count"[], "Creator Type"[], Location[] }
+// Gender / Content Language are displayed on web but not yet wired —
+// we skip them here too so we don't ship a filter that does nothing.
 
-const FILTER_OPTIONS = [
-  { label: 'Followers', options: ['< 10K', '10K - 100K', '100K - 1M', '1M+'] },
-  {
-    label: 'Platform',
-    options: ['Instagram', 'YouTube', 'Twitter', 'LinkedIn'],
-  },
-  {
-    label: 'Location',
-    options: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai'],
-  },
-  {
-    label: 'Price Range',
-    options: ['< ₹5K', '₹5K - ₹25K', '₹25K - ₹1L', '₹1L+'],
-  },
-];
+import React, {useEffect, useState} from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {Check, SlidersHorizontal, X} from 'lucide-react-native';
 
-export const FilterDrawer = () => {
+export type FilterValues = Record<string, string[]>;
+
+// Web parity: src/components/brands/FilterDrawer.jsx (filterData export).
+export const FILTER_DATA: Record<string, string[]> = {
+  Categories: [
+    'Beauty & Skincare',
+    'Fashion & Lifestyle',
+    'Food & Beverage',
+    'Health, Fitness & Wellness',
+    'Travel & Hospitality',
+    'Technology & Gadgets',
+    'Parenting & Family',
+    'Home & Decor',
+    'Finance & Personal Finance',
+    'Education & Career',
+    'Gaming & Entertainment',
+    'Automobile & Mobility',
+    'Entrepreneurship & Business',
+    'Sustainable & Eco-conscious Living',
+    'Pet Care & Animals',
+  ],
+  'Follower Count': ['0 - 10k', '10k - 50k', '50k - 100k', '100k - 500k', '500k - 1M', '1M+'],
+  'Creator Type': ['Mega', 'Macro', 'Micro', 'Nano'],
+  Location: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Remote'],
+};
+
+export const FILTER_GROUPS = Object.keys(FILTER_DATA);
+
+export const EMPTY_FILTERS: FilterValues = Object.fromEntries(
+  FILTER_GROUPS.map(k => [k, []]),
+);
+
+// Web parity: maps used by matchesFilters in src/app/brands/search/page.js.
+export const FOLLOWER_RANGES: Record<string, [number, number]> = {
+  '0 - 10k': [0, 10_000],
+  '10k - 50k': [10_000, 50_000],
+  '50k - 100k': [50_000, 100_000],
+  '100k - 500k': [100_000, 500_000],
+  '500k - 1M': [500_000, 1_000_000],
+  '1M+': [1_000_000, Infinity],
+};
+
+export const CREATOR_TYPE_RANGES: Record<string, [number, number]> = {
+  Nano: [0, 10_000],
+  Micro: [10_000, 100_000],
+  Macro: [100_000, 1_000_000],
+  Mega: [1_000_000, Infinity],
+};
+
+interface Props {
+  filters: FilterValues;
+  onApply: (next: FilterValues) => void;
+  onClear: () => void;
+  countForDraft: (draft: FilterValues) => number;
+}
+
+export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) {
   const [visible, setVisible] = useState(false);
-  const [selected, setSelected] = useState<Record<string, string[]>>({});
+  // Draft = working copy while drawer is open; only committed on Apply.
+  const [draft, setDraft] = useState<FilterValues>(filters);
+  const [activeGroup, setActiveGroup] = useState<string>(FILTER_GROUPS[0]);
 
-  const toggleOption = (group: string, option: string) => {
-    setSelected(prev => {
-      const current = prev[group] || [];
-      if (current.includes(option)) {
-        return { ...prev, [group]: current.filter(o => o !== option) };
-      }
-      return { ...prev, [group]: [...current, option] };
+  // Resync draft whenever the drawer (re-)opens.
+  useEffect(() => {
+    if (visible) {
+      setDraft(filters);
+      setActiveGroup(FILTER_GROUPS[0]);
+    }
+  }, [visible, filters]);
+
+  const matchCount = countForDraft(draft);
+  const totalActive = Object.values(filters).reduce((n, arr) => n + (arr?.length || 0), 0);
+
+  const toggle = (group: string, option: string) =>
+    setDraft(prev => {
+      const cur = prev[group] || [];
+      const next = cur.includes(option)
+        ? cur.filter(o => o !== option)
+        : [...cur, option];
+      return {...prev, [group]: next};
     });
+
+  const clearAll = () => {
+    setDraft(EMPTY_FILTERS);
   };
 
-  const isSelected = (group: string, option: string) =>
-    (selected[group] || []).includes(option);
+  const apply = () => {
+    onApply(draft);
+    setVisible(false);
+  };
 
   return (
     <>
       <Pressable
         onPress={() => setVisible(true)}
-        className="flex-row items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-full"
-      >
-        <SlidersHorizontal size={12} color="#374151" />
-        <Text className="text-[11px] font-semibold text-gray-700">Filters</Text>
+        className={`flex-row items-center border rounded-full ${
+          totalActive > 0
+            ? 'border-[#5851DB] bg-purple-50'
+            : 'border-gray-200 bg-white'
+        }`}
+        style={{paddingHorizontal: 12, paddingVertical: 6, gap: 6}}>
+        <SlidersHorizontal
+          size={12}
+          color={totalActive > 0 ? '#5851DB' : '#374151'}
+        />
+        <Text
+          className={`text-[11px] font-semibold ${
+            totalActive > 0 ? 'text-[#5851DB]' : 'text-gray-700'
+          }`}>
+          Filters{totalActive > 0 ? ` (${totalActive})` : ''}
+        </Text>
       </Pressable>
 
       <Modal
         visible={visible}
         animationType="slide"
         transparent
-        onRequestClose={() => setVisible(false)}
-      >
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl max-h-[75%] pb-8">
+        onRequestClose={() => setVisible(false)}>
+        <View style={s.scrim}>
+          <View style={s.sheet}>
             {/* Header */}
-            <View className="flex-row justify-between items-center px-6 pt-6 pb-4 border-b border-gray-100">
-              <Text className="text-lg font-bold text-gray-900">Filters</Text>
-              <Pressable onPress={() => setVisible(false)} className="p-1">
+            <View style={s.header}>
+              <Text style={s.title}>Filters</Text>
+              <Pressable onPress={() => setVisible(false)} hitSlop={8} style={{padding: 4}}>
                 <X size={20} color="#374151" />
               </Pressable>
             </View>
 
-            <ScrollView
-              className="px-6 pt-4"
-              showsVerticalScrollIndicator={false}
-            >
-              {FILTER_OPTIONS.map(group => (
-                <View key={group.label} className="mb-6">
-                  <Text className="text-sm font-bold text-gray-800 mb-3">
-                    {group.label}
-                  </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {group.options.map(option => (
-                      <Pressable
-                        key={option}
-                        onPress={() => toggleOption(group.label, option)}
-                        className={`px-4 py-2 rounded-2xl w-24 mx-auto text-center border ${
-                          isSelected(group.label, option)
-                            ? 'bg-[#4C75BE] border-[#4C75BE]'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-semibold ${
-                            isSelected(group.label, option)
-                              ? 'text-white'
-                              : 'text-gray-600'
-                          }`}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+            <View style={{flexDirection: 'row', flex: 1, minHeight: 0}}>
+              {/* Group sidebar */}
+              <ScrollView
+                style={s.sidebar}
+                contentContainerStyle={{paddingVertical: 8}}>
+                {FILTER_GROUPS.map(group => {
+                  const active = activeGroup === group;
+                  const count = (draft[group] || []).length;
+                  return (
+                    <Pressable
+                      key={group}
+                      onPress={() => setActiveGroup(group)}
+                      style={[s.groupItem, active && s.groupItemActive]}>
+                      <Text
+                        style={[
+                          s.groupItemText,
+                          active && s.groupItemTextActive,
+                        ]}>
+                        {group}
+                      </Text>
+                      {count > 0 ? (
+                        <View style={s.groupItemBadge}>
+                          <Text style={s.groupItemBadgeText}>{count}</Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
 
-            {/* Apply Button */}
-            <View className="px-6 pt-4">
+              {/* Options for active group */}
+              <ScrollView
+                style={{flex: 1}}
+                contentContainerStyle={{padding: 12, gap: 8}}>
+                {(FILTER_DATA[activeGroup] || []).map(option => {
+                  const selected = (draft[activeGroup] || []).includes(option);
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => toggle(activeGroup, option)}
+                      style={[s.optionRow, selected && s.optionRowSelected]}>
+                      <Text
+                        style={[
+                          s.optionText,
+                          selected && {color: '#5851DB', fontWeight: '700'},
+                        ]}>
+                        {option}
+                      </Text>
+                      <View style={[s.optionCheck, selected && s.optionCheckOn]}>
+                        {selected ? <Check size={12} color="white" /> : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Footer */}
+            <View style={s.footer}>
               <Pressable
-                onPress={() => setVisible(false)}
-                className="bg-[#4C75BE] py-3.5 rounded-2xl items-center"
-              >
-                <Text className="text-white font-bold text-sm">
-                  Apply Filters
+                onPress={() => {
+                  clearAll();
+                  onClear();
+                }}
+                style={[s.footerBtn, s.footerClear]}>
+                <Text style={s.footerClearText}>Clear All</Text>
+              </Pressable>
+              <Pressable onPress={apply} style={[s.footerBtn, s.footerApply]}>
+                <Text style={s.footerApplyText}>
+                  Apply Filters ({matchCount})
                 </Text>
               </Pressable>
             </View>
@@ -113,4 +227,100 @@ export const FilterDrawer = () => {
       </Modal>
     </>
   );
-};
+}
+
+const s = StyleSheet.create({
+  scrim: {flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end'},
+  sheet: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    minHeight: '60%',
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e2e8f0',
+  },
+  title: {fontSize: 17, fontWeight: '800', color: '#0f172a'},
+  sidebar: {
+    width: 140,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: '#e2e8f0',
+    backgroundColor: '#F8F9FE',
+  },
+  groupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  groupItemActive: {backgroundColor: 'white'},
+  groupItemText: {fontSize: 12, fontWeight: '600', color: '#64748b'},
+  groupItemTextActive: {color: '#5851DB', fontWeight: '800'},
+  groupItemBadge: {
+    backgroundColor: '#5851DB',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  groupItemBadgeText: {color: 'white', fontSize: 10, fontWeight: '800'},
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F8F9FE',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  optionRowSelected: {
+    backgroundColor: '#EBE9FE',
+    borderColor: '#5851DB',
+  },
+  optionText: {fontSize: 13, color: '#0f172a'},
+  optionCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionCheckOn: {backgroundColor: '#5851DB', borderColor: '#5851DB'},
+  footer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 18,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e2e8f0',
+  },
+  footerBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerClear: {borderWidth: 1, borderColor: '#e2e8f0'},
+  footerClearText: {color: '#475569', fontWeight: '700', fontSize: 13},
+  footerApply: {backgroundColor: '#5851DB'},
+  footerApplyText: {color: 'white', fontWeight: '800', fontSize: 13},
+});

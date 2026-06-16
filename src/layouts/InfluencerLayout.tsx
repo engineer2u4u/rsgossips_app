@@ -1,117 +1,176 @@
-import React, {useState, useRef, createContext, useContext} from 'react';
-import {View, SafeAreaView, Pressable, Dimensions, ScrollView, Image, Text} from 'react-native';
-import Animated, {
-  useSharedValue,
-  withTiming,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
-import {Menu, Search, Bell} from 'lucide-react-native';
-import {useNavigation} from '@react-navigation/native';
-import {useAuth} from '../context/AuthContext';
+import React, {useRef, createContext, useContext, useState, useEffect} from 'react';
+import {View, ScrollView, Image, Pressable, Text} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Bell, Headphones} from 'lucide-react-native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 
 import BottomNav from '../components/BottomNav';
-import SidebarContent from '../components/SidebarContent';
+import SupportChatModal from '../components/SupportChatModal';
+import {useAuth} from '../context/AuthContext';
+import {invokeFn} from '../lib/api';
+import {BRAND, BRAND_GRADIENT_WARM, BG} from '../theme/brand';
 
-const SIDEBAR_WIDTH = Dimensions.get('window').width * 0.75;
-
-// Context to share ScrollView ref with children
-const LayoutScrollContext = createContext<React.RefObject<ScrollView> | null>(null);
+const LayoutScrollContext = createContext<React.RefObject<ScrollView | null> | null>(null);
 export function useLayoutScroll() {
   return useContext(LayoutScrollContext);
 }
 
-export default function InfluencerLayout({children}: {children: React.ReactNode}) {
-  const [open, setOpen] = useState(false);
-  const translateX = useSharedValue(-SIDEBAR_WIDTH);
-  const navigation = useNavigation();
-  const {profile} = useAuth();
-  const scrollRef = useRef<ScrollView>(null);
+function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
+  const navigation = useNavigation<any>();
+  const {profile, user} = useAuth();
+  const initial = (profile?.full_name || 'U').trim().charAt(0).toUpperCase();
+  const avatarUrl = profile?.profile_photo_url;
+  const [unread, setUnread] = useState(0);
 
-  const toggleSidebar = () => {
-    const next = !open;
-    setOpen(next);
-    translateX.value = withTiming(next ? 0 : -SIDEBAR_WIDTH, {
-      duration: 250,
-    });
-  };
+  // Mirrors the web header: fetch all notifications via the `notifications`
+  // edge function and count the unread ones. Refresh on a 30s tick and
+  // again whenever the layout regains focus (so the badge clears the moment
+  // the user comes back from the Notifications screen).
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const fetchUnread = async () => {
+      try {
+        const data = await invokeFn<{notifications?: any[]}>(
+          'notifications',
+          {action: 'list', userId: user.id},
+        );
+        if (cancelled) return;
+        const count = (data?.notifications || []).filter(
+          (n: any) => !n.is_read,
+        ).length;
+        setUnread(count);
+      } catch {
+        // Best-effort — leave the existing count if the call fails.
+      }
+    };
+    fetchUnread();
+    const id = setInterval(fetchUnread, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [user?.id]);
 
-  const sidebarStyle = useAnimatedStyle(() => ({
-    transform: [{translateX: translateX.value}],
-  }));
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!user?.id) return;
+      invokeFn<{notifications?: any[]}>('notifications', {
+        action: 'list',
+        userId: user.id,
+      })
+        .then(data => {
+          const count = (data?.notifications || []).filter(
+            (n: any) => !n.is_read,
+          ).length;
+          setUnread(count);
+        })
+        .catch(() => {});
+    }, [user?.id]),
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* Sidebar Overlay */}
-      {open && (
-        <Pressable
-          onPress={toggleSidebar}
-          className="absolute inset-0 bg-black/40 z-[55]"
-        />
-      )}
+    <View
+      className="flex-row items-center px-4 py-3 border-b border-slate-100"
+      style={{
+        gap: 10,
+        backgroundColor: 'rgba(255,255,255,0.88)',
+      }}>
+      <Image
+        source={require('../assets/rgossipsLogo.png')}
+        style={{height: 26, width: 150, marginRight: 'auto'}}
+        resizeMode="contain"
+      />
 
-      {/* Sidebar */}
-      <Animated.View
-        style={[sidebarStyle, {width: SIDEBAR_WIDTH}]}
-        className="absolute left-0 top-0 bottom-0 bg-white z-[60] shadow-2xl">
-        <SidebarContent closeSidebar={toggleSidebar} />
-      </Animated.View>
+      <Pressable
+        onPress={() => navigation.navigate('InfluencerNotifications')}
+        className="w-10 h-10 rounded-2xl border border-slate-100 bg-white items-center justify-center relative">
+        <Bell size={19} color="#4d4960" />
+        {unread > 0 && (
+          <View
+            className="absolute items-center justify-center"
+            style={{
+              top: -5,
+              right: -5,
+              minWidth: 18,
+              height: 18,
+              paddingHorizontal: 4,
+              borderRadius: 9,
+              backgroundColor: BRAND.accent,
+              borderWidth: 2,
+              borderColor: '#fff',
+            }}>
+            <Text className="text-white text-[10px] font-black">
+              {unread > 9 ? '9+' : unread}
+            </Text>
+          </View>
+        )}
+      </Pressable>
 
-      {/* Top Navbar */}
-      <View className="h-14 flex-row items-center justify-between px-4 bg-white border-b border-slate-100 z-40">
-        <Pressable onPress={toggleSidebar} className="p-2 rounded-xl">
-          <Menu size={22} color="#334155" />
-        </Pressable>
+      <Pressable
+        onPress={onOpenSupport}
+        className="w-10 h-10 rounded-2xl border border-slate-100 bg-white items-center justify-center">
+        <Headphones size={19} color="#4d4960" />
+      </Pressable>
 
-        <View className="flex-row items-center" style={{gap: 6}}>
-          <Pressable
-            onPress={() => navigation.navigate('InfluencerSearch' as never)}
-            className="p-2 rounded-xl">
-            <Search size={20} color="#475569" />
-          </Pressable>
+      <Pressable
+        onPress={() => navigation.navigate('InfluencerProfile')}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 13,
+          overflow: 'hidden',
+          borderWidth: 2,
+          borderColor: 'rgba(210,65,143,0.45)',
+        }}>
+        {avatarUrl ? (
+          <Image source={{uri: avatarUrl}} style={{width: '100%', height: '100%'}} />
+        ) : (
+          <LinearGradient
+            colors={[...BRAND_GRADIENT_WARM]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+            <Text className="text-white font-bold text-base">{initial}</Text>
+          </LinearGradient>
+        )}
+      </Pressable>
+    </View>
+  );
+}
 
-          <Pressable
-            onPress={() => navigation.navigate('InfluencerNotifications' as never)}
-            className="p-2 rounded-xl relative">
-            <Bell size={20} color="#475569" />
-            <View className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink-500 rounded-full" />
-          </Pressable>
+export default function InfluencerLayout({children}: {children: React.ReactNode}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
 
-          <Pressable
-            onPress={() => navigation.navigate('InfluencerProfile' as never)}
-            className="ml-1">
-            {profile?.profile_photo_url ? (
-              <Image
-                source={{uri: profile.profile_photo_url}}
-                className="w-8 h-8 rounded-full"
-                style={{borderWidth: 2, borderColor: 'white'}}
-              />
-            ) : (
-              <View className="w-8 h-8 rounded-full bg-purple-100 items-center justify-center">
-                <Text className="text-purple-600 text-xs font-bold">
-                  {(profile?.full_name || 'U').charAt(0)}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-      </View>
+  return (
+    <SafeAreaView className="flex-1" style={{backgroundColor: BG.page}}>
+      <TopBar onOpenSupport={() => setSupportOpen(true)} />
 
-      {/* Scrollable Content */}
       <LayoutScrollContext.Provider value={scrollRef}>
         <ScrollView
           ref={scrollRef}
           className="flex-1"
-          contentContainerStyle={{flexGrow: 1}}
+          style={{backgroundColor: BG.page}}
+          // Pad the scroll bottom so the floating glass nav doesn't sit
+          // over the final content card.
+          contentContainerStyle={{flexGrow: 1, paddingBottom: 110}}
           showsVerticalScrollIndicator={false}>
           <View className="w-full">{children}</View>
-          <View className="h-20" />
         </ScrollView>
       </LayoutScrollContext.Provider>
 
-      {/* Bottom Nav */}
-      <View className="absolute bottom-0 left-0 right-0 z-50">
-        <BottomNav />
-      </View>
+      {/* BottomNav positions itself absolutely (floating pill) — no wrapper
+          needed here, but the SafeAreaView is the nearest non-scrolling
+          parent so it pins to the screen edge. */}
+      <BottomNav />
+
+      {/* Support decision-tree chat — mirrors web's SupportChat. */}
+      <SupportChatModal
+        visible={supportOpen}
+        onClose={() => setSupportOpen(false)}
+      />
     </SafeAreaView>
   );
 }

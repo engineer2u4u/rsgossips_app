@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,25 +6,24 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
-import {
-  Search,
-  SlidersHorizontal,
-  Activity,
-  Clock,
-  CheckCircle,
-} from 'lucide-react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Search, SlidersHorizontal} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {CampaignCard} from '../components/CampaignCard';
 import FilterModal from '../components/FilterModal';
 import BottomNav from '../components/BottomNav';
 import {useAuth} from '../context/AuthContext';
 import {calculateCampaignMatchScore} from '../utils/matchScore';
-import {NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY} from '@env';
+import {invokeFn} from '../lib/api';
+import {useRoute} from '@react-navigation/native';
 
 const TABS = ['Active', 'Applied', 'Completed'];
+const PAGE_SIZE = 10;
+const LOAD_MORE_STEP = 6;
 
 interface CampaignData {
   id: string;
@@ -32,6 +31,9 @@ interface CampaignData {
   title: string;
   brandName: string;
   status: string;
+  // The web (b5529e5) normalised influencer-side campaigns to Instagram-only.
+  // We keep `platforms` for forward-compat but filtering UI is dropped.
+  applicationStatus?: string;
   tags: string[];
   budget: string;
   deadline?: string;
@@ -39,6 +41,11 @@ interface CampaignData {
   deliverables: string;
   location: string;
   platforms: string[];
+  /** Optional banner image — list-campaigns returns one per row when the
+   *  brand uploaded a hero, used as the card cover. */
+  bannerImage?: string;
+  /** Short description shown under the title on the card. */
+  description?: string;
 }
 
 const FALLBACK_CAMPAIGNS: CampaignData[] = [
@@ -87,6 +94,13 @@ const FALLBACK_CAMPAIGNS: CampaignData[] = [
 
 export default function InfluencerCampaign() {
   const {profile, user} = useAuth();
+  const route = useRoute<any>();
+  // Optional brand-name param — coming from "Brands you'll love" tiles or
+  // any other deep link. Web's equivalent reads `?brand=` from the URL and
+  // pre-fills `selectedBrands`. Mirror that here.
+  const incomingBrandFilter: string =
+    (route.params as any)?.brandName || (route.params as any)?.brand || '';
+
   const [campaigns, setCampaigns] = useState<CampaignData[]>(FALLBACK_CAMPAIGNS);
   const [loading, setLoading] = useState(true);
 
@@ -94,26 +108,38 @@ export default function InfluencerCampaign() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [budgetRange, setBudgetRange] = useState({min: 0, max: 200000});
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(
+    incomingBrandFilter ? [incomingBrandFilter] : [],
+  );
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
+  // Pagination: render `visibleCount` cards, bump by LOAD_MORE_STEP
+  // when the user scrolls past the bottom threshold.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadingMoreRef = useRef(false);
+
+  // Re-seed the brand filter whenever the screen is reopened with a
+  // different brand param (back-and-forth navigation between Brands tiles
+  // + this screen would otherwise keep the first one's filter stuck).
   useEffect(() => {
+    if (incomingBrandFilter) {
+      setSelectedBrands([incomingBrandFilter]);
+    }
+  }, [incomingBrandFilter]);
+
+  useEffect(() => {
+    let cancelled = false;
     const fetchCampaigns = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/list-campaigns`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({influencerId: user?.id}),
-          },
-        );
-        const data = await res.json();
+        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
+          influencerId: user.id,
+        });
+        if (cancelled) return;
         if (data?.campaigns?.length) {
           setCampaigns(
             data.campaigns.map((c: any) => ({
@@ -121,8 +147,12 @@ export default function InfluencerCampaign() {
               initials: c.initials || c.title?.substring(0, 2)?.toUpperCase(),
               title: c.title || 'Campaign',
               brandName: c.brandName || 'Brand',
+              // Web's list-campaigns returns Active/Applied/Completed already
+              // computed against the user's application row.
               status: c.status || 'Active',
+              applicationStatus: c.applicationStatus,
               tags: c.tags || [],
+              // Edge function returns budget already formatted (₹X,XXX).
               budget: c.budget
                 ? typeof c.budget === 'number'
                   ? `₹${c.budget.toLocaleString('en-IN')}`
@@ -133,24 +163,55 @@ export default function InfluencerCampaign() {
               deliverables: c.deliverables || '—',
               location: c.location || 'India',
               platforms: c.platforms || ['instagram'],
+              bannerImage: c.bannerImage || c.brandLogo || '',
+              description: c.description || '',
             })),
           );
+        } else {
+          setCampaigns([]);
         }
-      } catch {
-        // Keep fallback
+      } catch (err) {
+        console.warn('list-campaigns failed:', err);
+        // Keep the fallback list so the screen isn't blank.
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchCampaigns();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
+  // Brand picker list — unique brandNames sorted alphabetically, matches
+  // web's `brandNames` memo.
+  const brandNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of campaigns) if (c.brandName) set.add(c.brandName);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [campaigns]);
+
+  // Mirrors web's filter engine in src/app/influencer/campaigns/page.js:
+  //  - tab: Completed pulls from `applicationStatus === "completed"`
+  //    (campaigns the user actually completed) rather than the brand-side
+  //    `status === "Completed"`; Active/Applied still use the campaign
+  //    status field
+  //  - search matches title OR brand name (case-insensitive substring)
+  //  - category matches when any campaign tag includes any selected cat
+  //    (loose substring, both lowercased)
+  //  - brand filter is exact `brandName` match
+  //  - budget parses digits out of the budget string; `max >= 200000` is
+  //    the "no cap" sentinel
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
-      const matchesTab = campaign.status === activeTab;
+      const matchesTab =
+        activeTab === 'Completed'
+          ? campaign.applicationStatus === 'completed'
+          : campaign.status === activeTab;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
+        campaign.title.toLowerCase().includes(q) ||
+        campaign.brandName.toLowerCase().includes(q);
       const matchesCategory =
         selectedCategories.length === 0 ||
         campaign.tags.some(t =>
@@ -158,47 +219,117 @@ export default function InfluencerCampaign() {
             t.toLowerCase().includes(c.toLowerCase()),
           ),
         );
-      const matchesPlatform =
-        selectedPlatforms.length === 0 ||
-        campaign.platforms.some(p =>
-          selectedPlatforms.map(sp => sp.toLowerCase()).includes(p.toLowerCase()),
-        );
+      const matchesBrand =
+        selectedBrands.length === 0 ||
+        selectedBrands.includes(campaign.brandName);
+      const budgetNum =
+        parseInt((campaign.budget || '').replace(/[^\d]/g, ''), 10) || 0;
+      const matchesBudget =
+        budgetNum >= budgetRange.min &&
+        (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
 
-      return matchesTab && matchesSearch && matchesCategory && matchesPlatform;
+      return (
+        matchesTab &&
+        matchesSearch &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesBudget
+      );
     });
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms]);
+  }, [
+    campaigns,
+    activeTab,
+    searchQuery,
+    selectedCategories,
+    selectedBrands,
+    budgetRange,
+  ]);
 
-  const stats = [
-    {
-      label: 'Active',
-      val: campaigns.filter(c => c.status === 'Active').length,
-      icon: Activity,
-      iconColor: '#00BA88',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Applied',
-      val: campaigns.filter(c => c.status === 'Applied').length,
-      icon: Clock,
-      iconColor: '#3B82F6',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Completed',
-      val: campaigns.filter(c => c.status === 'Completed').length,
-      icon: CheckCircle,
-      iconColor: '#10B981',
-      bg: 'bg-emerald-50',
-    },
-  ];
+  // Per-tab counts shown alongside the tab label. Numbers reflect what
+  // each tab would actually display under the current search + filter
+  // settings (all filter dimensions applied *except* the tab itself),
+  // so they always match the visible list once that tab is selected.
+  const tabCounts = useMemo<Record<string, number>>(() => {
+    const q = searchQuery.toLowerCase();
+    const matchesNonTabFilters = (campaign: CampaignData) => {
+      const matchesSearch =
+        campaign.title.toLowerCase().includes(q) ||
+        campaign.brandName.toLowerCase().includes(q);
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        campaign.tags.some(t =>
+          selectedCategories.some(c =>
+            t.toLowerCase().includes(c.toLowerCase()),
+          ),
+        );
+      const matchesBrand =
+        selectedBrands.length === 0 ||
+        selectedBrands.includes(campaign.brandName);
+      const budgetNum =
+        parseInt((campaign.budget || '').replace(/[^\d]/g, ''), 10) || 0;
+      const matchesBudget =
+        budgetNum >= budgetRange.min &&
+        (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
+      return matchesSearch && matchesCategory && matchesBrand && matchesBudget;
+    };
+    const pool = campaigns.filter(matchesNonTabFilters);
+    return {
+      Active: pool.filter(c => c.status === 'Active').length,
+      Applied: pool.filter(c => c.status === 'Applied').length,
+      Completed: pool.filter(c => c.applicationStatus === 'completed').length,
+    };
+  }, [
+    campaigns,
+    searchQuery,
+    selectedCategories,
+    selectedBrands,
+    budgetRange,
+  ]);
+
+  // Reset visible window whenever the active tab or filter inputs change
+  // so the user doesn't land on an under-populated page after switching.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [
+    activeTab,
+    searchQuery,
+    selectedCategories,
+    selectedBrands,
+    budgetRange,
+    isVerifiedOnly,
+  ]);
+
+  const visibleCampaigns = useMemo(
+    () => filteredCampaigns.slice(0, visibleCount),
+    [filteredCampaigns, visibleCount],
+  );
+  const hasMore = visibleCount < filteredCampaigns.length;
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!hasMore || loadingMoreRef.current) return;
+    const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+    if (distanceFromBottom < 240) {
+      loadingMoreRef.current = true;
+      setVisibleCount(c =>
+        Math.min(c + LOAD_MORE_STEP, filteredCampaigns.length),
+      );
+      setTimeout(() => {
+        loadingMoreRef.current = false;
+      }, 250);
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <ScrollView
-        className="flex-1 bg-white"
-        showsVerticalScrollIndicator={false}>
+        className="flex-1" style={{backgroundColor: '#F5F4F8'}}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={64}>
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           {/* Header */}
           <View className="flex-row items-center justify-between">
@@ -229,33 +360,11 @@ export default function InfluencerCampaign() {
             />
           </View>
 
-          {/* Stats Grid */}
-          <View className="flex-row" style={{gap: 12}}>
-            {stats.map(stat => {
-              const Icon = stat.icon;
-              return (
-                <View
-                  key={stat.label}
-                  className="flex-1 bg-white p-4 rounded-3xl border border-slate-50 items-center">
-                  <View
-                    className={`w-10 h-10 ${stat.bg} rounded-xl items-center justify-center mb-2`}>
-                    <Icon size={20} color={stat.iconColor} />
-                  </View>
-                  <Text className="text-lg font-black text-slate-800 leading-none">
-                    {stat.val}
-                  </Text>
-                  <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">
-                    {stat.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Tab Switcher */}
+          {/* Tab Switcher — count appears next to the label in parentheses */}
           <View className="bg-white p-1.5 rounded-2xl flex-row shadow-sm border border-slate-50" style={{gap: 4}}>
-            {TABS.map(tab =>
-              activeTab === tab ? (
+            {TABS.map(tab => {
+              const label = `${tab} (${tabCounts[tab] ?? 0})`;
+              return activeTab === tab ? (
                 <LinearGradient
                   key={tab}
                   colors={['#E60076', '#D500F9']}
@@ -263,7 +372,7 @@ export default function InfluencerCampaign() {
                   <TouchableOpacity
                     onPress={() => setActiveTab(tab)}
                     className="py-2.5 items-center">
-                    <Text className="text-xs font-bold text-white">{tab}</Text>
+                    <Text className="text-xs font-bold text-white">{label}</Text>
                   </TouchableOpacity>
                 </LinearGradient>
               ) : (
@@ -272,11 +381,11 @@ export default function InfluencerCampaign() {
                   onPress={() => setActiveTab(tab)}
                   className="flex-1 py-2.5 rounded-xl items-center">
                   <Text className="text-xs font-bold text-slate-400">
-                    {tab}
+                    {label}
                   </Text>
                 </TouchableOpacity>
-              ),
-            )}
+              );
+            })}
           </View>
 
           {/* Campaign Cards */}
@@ -289,7 +398,7 @@ export default function InfluencerCampaign() {
             </View>
           ) : (
             <View style={{gap: 16}}>
-              {filteredCampaigns.map(campaign => (
+              {visibleCampaigns.map(campaign => (
                 <CampaignCard
                   key={campaign.id}
                   campaign={campaign}
@@ -304,11 +413,18 @@ export default function InfluencerCampaign() {
                   </Text>
                 </View>
               )}
+
+              {hasMore && (
+                <View className="py-4 items-center">
+                  <ActivityIndicator size="small" color="#9810FA" />
+                </View>
+              )}
             </View>
           )}
         </View>
 
-        <View className="h-20" />
+        {/* Clears the floating glass nav pill (bottom 14/24 + height 68). */}
+        <View className="h-32" />
       </ScrollView>
 
       {/* Bottom Nav */}
@@ -324,8 +440,10 @@ export default function InfluencerCampaign() {
         setSelectedCategories={setSelectedCategories}
         budgetRange={budgetRange}
         setBudgetRange={setBudgetRange}
-        selectedPlatforms={selectedPlatforms}
-        setSelectedPlatforms={setSelectedPlatforms}
+        budgetMaxDefault={200000}
+        brands={brandNames}
+        selectedBrands={selectedBrands}
+        setSelectedBrands={setSelectedBrands}
         isVerifiedOnly={isVerifiedOnly}
         setIsVerifiedOnly={setIsVerifiedOnly}
       />
