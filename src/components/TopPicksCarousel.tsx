@@ -334,16 +334,23 @@ function CampaignCardSlide({
           </View>
         </View>
 
-        <TouchableOpacity activeOpacity={0.9} onPress={onApply}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={onApply}
+          style={{
+            borderRadius: 16,
+            paddingVertical: 14,
+            alignItems: 'center',
+            overflow: 'hidden',
+          }}
+        >
           <LinearGradient
             colors={[...BRAND_GRADIENT_WARM]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={{ borderRadius: 16, paddingVertical: 14 }}
-            className="items-center"
-          >
-            <Text className="text-white text-xs font-black">Apply Now</Text>
-          </LinearGradient>
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <Text className="text-white text-xs font-black">Apply Now</Text>
         </TouchableOpacity>
       </View>
     </View>

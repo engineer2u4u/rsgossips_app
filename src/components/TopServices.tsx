@@ -171,16 +171,24 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
               </Text>
             </View>
           </View>
-          <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onPress}
+            style={{
+              borderRadius: 16,
+              paddingHorizontal: 18,
+              paddingVertical: 10,
+              overflow: 'hidden',
+            }}>
             <LinearGradient
               colors={[...BRAND_GRADIENT_WARM]}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{borderRadius: 16, paddingHorizontal: 18, paddingVertical: 10}}>
-              <Text className="text-white text-[11px] font-black uppercase tracking-wider">
-                Get Quote
-              </Text>
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            <Text className="text-white text-[11px] font-black uppercase tracking-wider">
+              Get Quote
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

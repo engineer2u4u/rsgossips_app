@@ -32,6 +32,7 @@ import {
   Bookmark,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import ApplyCampaignForm from '../components/ApplyCampaignForm';
@@ -257,7 +258,7 @@ export default function InfluencerOfferDetail() {
   const hasApplied = !!campaign.applicationStatus;
 
   return (
-    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Image */}
         <View className="relative h-56">
@@ -594,16 +595,19 @@ export default function InfluencerOfferDetail() {
                   </View>
                 ))}
                 {/* Exclusive banner */}
-                <LinearGradient
-                  colors={['#34D399', '#10B981']}
-                  className="rounded-2xl p-4 flex-row items-center"
-                  style={{gap: 12, borderRadius: 16}}>
+                <View
+                  className="flex-row items-center"
+                  style={{gap: 12, borderRadius: 16, padding: 16, overflow: 'hidden'}}>
+                  <LinearGradient
+                    colors={['#34D399', '#10B981']}
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  />
                   <Gift size={20} color="white" />
                   <View>
                     <Text className="text-sm font-bold text-white">Exclusive Event/Rights</Text>
                     <Text className="text-[10px] text-emerald-100">Brand gets content + licensing for 6 months</Text>
                   </View>
-                </LinearGradient>
+                </View>
               </View>
             </View>
           )}
@@ -723,16 +727,19 @@ export default function InfluencerOfferDetail() {
             bottom: (Platform.OS === 'ios' ? 24 : 14) + 68 + 8,
             zIndex: 60,
           }}>
-          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowApplyForm(true)}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => setShowApplyForm(true)}
+            className="flex-row items-center justify-center"
+            style={{borderRadius: 16, height: 48, overflow: 'hidden'}}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{borderRadius: 16, height: 48}}
-              className="flex-row items-center justify-center">
-              <Text className="text-white font-bold text-sm">Apply for Campaign</Text>
-              <ChevronRight size={16} color="white" style={{marginLeft: 4}} />
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            <Text className="text-white font-bold text-sm">Apply for Campaign</Text>
+            <ChevronRight size={16} color="white" style={{marginLeft: 4}} />
           </TouchableOpacity>
         </View>
       )}
@@ -783,7 +790,7 @@ export default function InfluencerOfferDetail() {
           }}
         />
       ) : null}
-    </View>
+    </SafeAreaView>
   );
 }
 

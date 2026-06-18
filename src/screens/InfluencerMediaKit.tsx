@@ -266,17 +266,19 @@ export default function InfluencerMediaKit() {
                   )}
                 </Pressable>
               </View>
-              <TouchableOpacity onPress={handleShare}>
+              <TouchableOpacity
+                onPress={handleShare}
+                className="items-center justify-center flex-row"
+                style={{borderRadius: 12, height: 44, overflow: 'hidden'}}
+              >
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
-                  style={{borderRadius: 12, height: 44}}
-                  className="items-center justify-center flex-row"
-                >
-                  <Share2 size={16} color="white" />
-                  <Text className="text-white font-bold text-sm ml-2">
-                    Share
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                <Share2 size={16} color="white" />
+                <Text className="text-white font-bold text-sm ml-2">
+                  Share
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -294,26 +296,27 @@ export default function InfluencerMediaKit() {
               <TouchableOpacity
                 onPress={handlePublish}
                 disabled={publishing}
-                className="w-full">
+                className="w-full items-center justify-center flex-row"
+                style={{
+                  borderRadius: 12,
+                  height: 44,
+                  overflow: 'hidden',
+                  opacity: publishing ? 0.6 : 1,
+                }}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
-                  style={{
-                    borderRadius: 12,
-                    height: 44,
-                    opacity: publishing ? 0.6 : 1,
-                  }}
-                  className="items-center justify-center flex-row">
-                  {publishing && (
-                    <ActivityIndicator
-                      size="small"
-                      color="white"
-                      style={{marginRight: 8}}
-                    />
-                  )}
-                  <Text className="text-white font-bold text-sm">
-                    {publishing ? 'Publishing...' : 'Publish Media Kit'}
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                {publishing && (
+                  <ActivityIndicator
+                    size="small"
+                    color="white"
+                    style={{marginRight: 8}}
+                  />
+                )}
+                <Text className="text-white font-bold text-sm">
+                  {publishing ? 'Publishing...' : 'Publish Media Kit'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -721,33 +724,35 @@ function TemplatePicker({
           onPress={() => onSave(previewTemplate)}
           disabled={
             savingTemplate === previewTemplate || (isCapped && !previewIsLive)
-          }>
+          }
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            paddingVertical: 10,
+            borderRadius: 12,
+            overflow: 'hidden',
+            opacity:
+              savingTemplate === previewTemplate ||
+              (isCapped && !previewIsLive)
+                ? 0.6
+                : 1,
+          }}>
           <LinearGradient
             colors={['#9810FA', '#E60076']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              paddingVertical: 10,
-              borderRadius: 12,
-              opacity:
-                savingTemplate === previewTemplate ||
-                (isCapped && !previewIsLive)
-                  ? 0.6
-                  : 1,
-            }}>
-            {savingTemplate === previewTemplate && (
-              <Loader2 size={14} color="#fff" />
-            )}
-            <Text className="text-white text-xs font-bold">
-              {savingTemplate === previewTemplate
-                ? 'Saving…'
-                : `Use ${previewMeta?.label || 'this template'}`}
-            </Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          {savingTemplate === previewTemplate && (
+            <Loader2 size={14} color="#fff" />
+          )}
+          <Text className="text-white text-xs font-bold">
+            {savingTemplate === previewTemplate
+              ? 'Saving…'
+              : `Use ${previewMeta?.label || 'this template'}`}
+          </Text>
         </Pressable>
       )}
       {!hasUnsavedPreview && (

@@ -3,10 +3,12 @@
 // Web parity: src/app/influencer/services/page.js. Edge function:
 // `list-services` (empty body → all active rows).
 
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   ScrollView,
   Text,
   TextInput,
@@ -14,9 +16,10 @@ import {
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Search, SlidersHorizontal, Star} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import InfluencerLayout from '../layouts/InfluencerLayout';
+import BottomNav from '../components/BottomNav';
 import {
   fetchServices,
   formatINR,
@@ -34,6 +37,11 @@ const PRICE_BANDS: {id: PriceBandId; label: string; test: (p: number) => boolean
   {id: '15k-plus', label: '₹15K+', test: p => p >= 15000},
 ];
 
+// Match the page-size / load-step used by InfluencerDiscover (brands) and
+// InfluencerCampaign so all three list pages behave the same way.
+const PAGE_SIZE = 10;
+const LOAD_MORE_STEP = 6;
+
 export default function InfluencerServicesList() {
   const navigation = useNavigation<any>();
   const [query, setQuery] = useState('');
@@ -41,6 +49,10 @@ export default function InfluencerServicesList() {
   const [priceBand, setPriceBand] = useState<PriceBandId>('any');
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Client-side pagination — render `visibleCount` cards, bump by
+  // LOAD_MORE_STEP when the user scrolls past the bottom threshold.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,8 +96,34 @@ export default function InfluencerServicesList() {
   const hasActiveFilters =
     selectedTags.length > 0 || priceBand !== 'any' || query.trim().length > 0;
 
+  // Reset to the first page whenever the filtered list changes, so the
+  // visible window never points past the end of a freshly filtered set.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, selectedTags, priceBand, services.length]);
+
+  const visibleServices = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
+  const hasMore = visibleCount < filtered.length;
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!hasMore || loadingMoreRef.current) return;
+    const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+    if (distanceFromBottom < 240) {
+      loadingMoreRef.current = true;
+      setVisibleCount(c => Math.min(c + LOAD_MORE_STEP, filtered.length));
+      setTimeout(() => {
+        loadingMoreRef.current = false;
+      }, 250);
+    }
+  };
+
   return (
-    <InfluencerLayout>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
         {/* Header — title left + filter icon right, matching the
             brands and campaigns list pages. */}
@@ -201,8 +239,10 @@ export default function InfluencerServicesList() {
 
         {/* List */}
         <ScrollView
-          contentContainerStyle={{paddingHorizontal: 16, paddingBottom: 100, gap: 12}}
-          showsVerticalScrollIndicator={false}>
+          contentContainerStyle={{paddingHorizontal: 16, paddingBottom: 140, gap: 12}}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={64}>
           {loading ? (
             <View className="py-16 items-center">
               <ActivityIndicator color="#E60076" size="large" />
@@ -217,21 +257,33 @@ export default function InfluencerServicesList() {
               </Text>
             </View>
           ) : (
-            filtered.map(s => (
-              <ServiceCard
-                key={s.id}
-                service={s}
-                onPress={() =>
-                  navigation.navigate('InfluencerServiceDetail', {
-                    slug: s.slug || s.id,
-                  })
-                }
-              />
-            ))
+            <>
+              {visibleServices.map(s => (
+                <ServiceCard
+                  key={s.id}
+                  service={s}
+                  onPress={() =>
+                    navigation.navigate('InfluencerServiceDetail', {
+                      slug: s.slug || s.id,
+                    })
+                  }
+                />
+              ))}
+              {hasMore && (
+                <View className="py-6 items-center">
+                  <ActivityIndicator size="small" color="#9810FA" />
+                </View>
+              )}
+            </>
           )}
         </ScrollView>
       </View>
-    </InfluencerLayout>
+
+      {/* Floating Bottom Nav — same placement as Brands/Campaigns lists */}
+      <View className="absolute bottom-0 left-0 right-0">
+        <BottomNav />
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -252,7 +304,14 @@ function ServiceCard({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.9}
-      className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
+      style={{
+        shadowColor: '#19162b',
+        shadowOpacity: 0.08,
+        shadowRadius: 14,
+        shadowOffset: {width: 0, height: 6},
+        elevation: 3,
+      }}>
       {/* Hero */}
       {service.featured_image_url ? (
         <Image

@@ -1,6 +1,8 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {CheckCircle, ShieldCheck, Zap} from 'lucide-react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import {BRAND_GRADIENT_WARM} from '../theme/brand';
 
 type Brand = {
   id: string | number;
@@ -27,21 +29,6 @@ function bandForScore(score: number): string {
   if (score >= 670) return 'Good';
   if (score >= 580) return 'Fair';
   return 'Poor';
-}
-
-function trustPalette(band: string): {fg: string; bg: string; icon: string} {
-  switch (band) {
-    case 'Excellent':
-      return {fg: '#047857', bg: '#D1FAE5', icon: '#10B981'};
-    case 'Very Good':
-      return {fg: '#065F46', bg: '#ECFDF5', icon: '#34D399'};
-    case 'Good':
-      return {fg: '#92400E', bg: '#FEF3C7', icon: '#F59E0B'};
-    case 'Fair':
-      return {fg: '#9A3412', bg: '#FFEDD5', icon: '#F97316'};
-    default:
-      return {fg: '#475569', bg: '#F1F5F9', icon: '#94A3B8'};
-  }
 }
 
 interface Props {
@@ -79,12 +66,12 @@ export default function BrandCard({brand, matchScore = 0, onPress}: Props) {
 
       {/* Logo + Name */}
       <View className="items-center mb-4">
-        <View className="w-20 h-20 rounded-2xl bg-[#F8F9FD] items-center justify-center p-4 mb-4 overflow-hidden">
+        <View className="w-20 h-20 rounded-2xl bg-[#F8F9FD] items-center justify-center mb-4 overflow-hidden">
           {brand.logo ? (
             <Image
               source={{uri: brand.logo}}
               className="w-full h-full"
-              resizeMode="contain"
+              resizeMode="cover"
             />
           ) : (
             <Text className="text-2xl font-black text-slate-300">
@@ -93,8 +80,10 @@ export default function BrandCard({brand, matchScore = 0, onPress}: Props) {
           )}
         </View>
 
-        <View className="flex-row items-center justify-center" style={{gap: 4}}>
-          <Text className="text-lg font-bold text-slate-800" numberOfLines={1}>
+        <View className="flex-row items-center justify-center px-3" style={{gap: 4}}>
+          <Text
+            className="text-lg font-bold text-slate-800 flex-shrink"
+            numberOfLines={1}>
             {brand.name}
           </Text>
           {brand.isVerified && (
@@ -106,34 +95,42 @@ export default function BrandCard({brand, matchScore = 0, onPress}: Props) {
         </Text>
       </View>
 
-      {/* Footer — composite trust score */}
+      {/* Footer — composite trust score (uses app warm gradient) */}
       {(() => {
         const score =
           typeof brand.trustScore === 'number' ? brand.trustScore : null;
         const band =
           brand.trustBand || (score !== null ? bandForScore(score) : '—');
-        const palette = trustPalette(band);
         return (
-          <View
-            className="mt-2 pt-3 border-t border-slate-50 flex-row items-center justify-between rounded-xl px-2 py-1.5"
-            style={{backgroundColor: palette.bg}}>
-            <View className="flex-row items-center" style={{gap: 6}}>
-              <ShieldCheck size={14} color={palette.icon} />
-              <Text
-                className="text-[10px] font-black uppercase tracking-wider"
-                style={{color: palette.fg}}>
-                Trust
-              </Text>
-            </View>
-            <View className="flex-row items-baseline" style={{gap: 4}}>
-              <Text className="text-sm font-black" style={{color: palette.fg}}>
-                {score !== null ? score : '—'}
-              </Text>
-              <Text
-                className="text-[9px] font-bold opacity-70"
-                style={{color: palette.fg}}>
-                {band}
-              </Text>
+          <View className="mt-3">
+            <View
+              className="flex-row items-center justify-between"
+              style={{
+                borderRadius: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                overflow: 'hidden',
+              }}>
+              <LinearGradient
+                colors={[...BRAND_GRADIENT_WARM]}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <View className="flex-row items-center" style={{gap: 6}}>
+                <ShieldCheck size={14} color="#fff" />
+                <Text className="text-[10px] font-black uppercase tracking-wider text-white">
+                  Trust
+                </Text>
+              </View>
+              <View className="flex-row items-baseline" style={{gap: 4}}>
+                <Text className="text-sm font-black text-white">
+                  {score !== null ? score : '—'}
+                </Text>
+                <Text className="text-[9px] font-bold text-white opacity-80">
+                  {band}
+                </Text>
+              </View>
             </View>
           </View>
         );

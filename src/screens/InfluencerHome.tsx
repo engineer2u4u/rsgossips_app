@@ -91,9 +91,6 @@ function HomeContent() {
       <View onLayout={setSectionY('top-creators')}>
         <CreatorsCarouselWithLink />
       </View>
-
-      {/* Bottom spacer — extra to clear the floating glass nav. */}
-      <View className="h-28" />
     </>
   );
 }

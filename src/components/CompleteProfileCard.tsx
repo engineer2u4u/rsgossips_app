@@ -293,29 +293,35 @@ export default function CompleteProfileCard() {
                 </View>
 
                 {step.action && !step.completed && (
-                  <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
-                    {step.active ? (
+                  step.active ? (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={step.onPress}
+                      style={{
+                        borderRadius: 12,
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        overflow: 'hidden',
+                      }}>
                       <LinearGradient
                         colors={[...BRAND_GRADIENT_WARM]}
                         start={{x: 0, y: 0}}
                         end={{x: 1, y: 0}}
-                        style={{
-                          borderRadius: 12,
-                          paddingHorizontal: 14,
-                          paddingVertical: 6,
-                        }}>
-                        <Text className="text-white text-[11px] font-black uppercase tracking-wider">
-                          {step.action}
-                        </Text>
-                      </LinearGradient>
-                    ) : (
+                        style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                      />
+                      <Text className="text-white text-[11px] font-black uppercase tracking-wider">
+                        {step.action}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
                       <View className="px-3.5 py-1.5 rounded-xl border border-slate-200">
                         <Text className="text-slate-400 text-[11px] font-black uppercase tracking-wider">
                           {step.action}
                         </Text>
                       </View>
-                    )}
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                  )
                 )}
               </View>
 
@@ -479,24 +485,28 @@ function SetRatesModal({
             <TouchableOpacity
               onPress={handleSave}
               disabled={saving || localServices.length === 0}
-              className="flex-1">
+              style={{
+                flex: 1,
+                borderRadius: 16,
+                height: 48,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                opacity: saving || localServices.length === 0 ? 0.5 : 1,
+              }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
-                style={{
-                  borderRadius: 16,
-                  height: 48,
-                  opacity: saving || localServices.length === 0 ? 0.5 : 1,
-                }}
-                className="items-center justify-center flex-row">
-                {saving && (
-                  <ActivityIndicator color="white" size="small" style={{marginRight: 8}} />
-                )}
-                <Text className="text-white font-bold text-sm">
-                  {saving ? 'Saving...' : 'Save Rates'}
-                </Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              {saving && (
+                <ActivityIndicator color="white" size="small" style={{marginRight: 8}} />
+              )}
+              <Text className="text-white font-bold text-sm">
+                {saving ? 'Saving...' : 'Save Rates'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

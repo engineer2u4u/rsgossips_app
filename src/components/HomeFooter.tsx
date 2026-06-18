@@ -74,20 +74,24 @@ export default function HomeFooter() {
             fontSize: 13,
           }}
         />
-        <TouchableOpacity activeOpacity={0.85} onPress={handleSubscribe}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handleSubscribe}
+          style={{
+            paddingHorizontal: 18,
+            paddingVertical: 12,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}>
           <LinearGradient
             colors={[...BRAND_GRADIENT_WARM]}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={{
-              paddingHorizontal: 18,
-              paddingVertical: 12,
-              borderRadius: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Text className="text-white text-[13px] font-bold">Subscribe</Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Text className="text-white text-[13px] font-bold">Subscribe</Text>
         </TouchableOpacity>
       </View>
 

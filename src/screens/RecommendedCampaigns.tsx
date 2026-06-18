@@ -435,19 +435,22 @@ export default function RecommendedCampaigns() {
               </View>
 
               {/* Apply button */}
-              <TouchableOpacity className="w-full overflow-hidden rounded-2xl">
+              <TouchableOpacity
+                className="w-full"
+                style={{
+                  paddingVertical: 14,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                }}
+              >
                 <LinearGradient
                   colors={['#8E2DE2', '#F6339A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text className="text-white text-sm font-bold">Apply</Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <Text className="text-white text-sm font-bold">Apply</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -679,19 +682,21 @@ export default function RecommendedCampaigns() {
                       className="flex-1 text-sm font-semibold text-slate-900"
                     />
                   </View>
-                  <TouchableOpacity className="overflow-hidden rounded-xl">
+                  <TouchableOpacity
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                    }}
+                  >
                     <LinearGradient
                       colors={['#8E2DE2', '#F6339A']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                      }}
-                    >
-                      <Text className="text-white text-xs font-bold">Go</Text>
-                    </LinearGradient>
+                      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    />
+                    <Text className="text-white text-xs font-bold">Go</Text>
                   </TouchableOpacity>
                 </View>
                 <View className="flex-row flex-wrap gap-2">

@@ -129,16 +129,18 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
           </View>
 
           {/* Edit Profile Button */}
-          <TouchableOpacity className="w-full mt-4" onPress={onEditProfile}>
+          <TouchableOpacity
+            className="w-full mt-4 flex-row items-center justify-center"
+            onPress={onEditProfile}
+            style={{borderRadius: 12, height: 44, overflow: 'hidden'}}>
             <LinearGradient
               colors={['#E60076', '#FF6BA1']}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{borderRadius: 12, height: 44}}
-              className="flex-row items-center justify-center">
-              <Edit2 size={16} color="white" />
-              <Text className="text-white font-bold text-sm ml-2">Edit Profile</Text>
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            <Edit2 size={16} color="white" />
+            <Text className="text-white font-bold text-sm ml-2">Edit Profile</Text>
           </TouchableOpacity>
         </View>
         </LinearGradient>
@@ -179,13 +181,23 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
               <Text className="text-lg font-black text-[#1A1A1A]">My Work</Text>
               <Text className="text-sm text-gray-400 font-bold">{topReels.length || posts}</Text>
             </View>
-            <TouchableOpacity onPress={onAddReel}>
+            <TouchableOpacity
+              onPress={onAddReel}
+              style={{
+                borderRadius: 10,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                overflow: 'hidden',
+              }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
-                style={{borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 4}}>
-                <Plus size={14} color="white" />
-                <Text className="text-white text-xs font-bold">Add Reel</Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Plus size={14} color="white" />
+              <Text className="text-white text-xs font-bold">Add Reel</Text>
             </TouchableOpacity>
           </View>
 

@@ -25,18 +25,18 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = RGossips/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = RGossips/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = RGossips/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Bold.ttf"; path = "../assets/fonts/Cardo-Bold.ttf"; sourceTree = "<group>"; };
+		1580E6513046403DA01C8E33 /* Cardo-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Bold.ttf"; path = "../assets/fonts/Cardo-Bold.ttf"; sourceTree = "<group>"; };
 		1AFF99B4DCAC3BDAE0F549F5 /* Pods-RGossips.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RGossips.release.xcconfig"; path = "Target Support Files/Pods-RGossips/Pods-RGossips.release.xcconfig"; sourceTree = "<group>"; };
 		2D95AB286FE850FF4BA7592F /* libPods-RGossips.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RGossips.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Regular.ttf"; path = "../assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
+		2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Regular.ttf"; path = "../assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
 		52B30B5AA01BACDD9E5B0C92 /* Pods-RGossips.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RGossips.debug.xcconfig"; path = "Target Support Files/Pods-RGossips/Pods-RGossips.debug.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = RGossips/AppDelegate.swift; sourceTree = "<group>"; };
-		79990B2138184C51B702F87A /* SpaceMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Bold.ttf"; path = "../assets/fonts/SpaceMono-Bold.ttf"; sourceTree = "<group>"; };
+		79990B2138184C51B702F87A /* SpaceMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Bold.ttf"; path = "../assets/fonts/SpaceMono-Bold.ttf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = RGossips/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		DF9AA7C556A44286A86FA9BD /* Cardo-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Italic.ttf"; path = "../assets/fonts/Cardo-Italic.ttf"; sourceTree = "<group>"; };
+		DF9AA7C556A44286A86FA9BD /* Cardo-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Italic.ttf"; path = "../assets/fonts/Cardo-Italic.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "ArchivoBlack-Regular.ttf"; path = "../assets/fonts/ArchivoBlack-Regular.ttf"; sourceTree = "<group>"; };
-		FF8C5DB1D5E0403F9E092E69 /* Cardo-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Regular.ttf"; path = "../assets/fonts/Cardo-Regular.ttf"; sourceTree = "<group>"; };
+		FC33483D7BC54F6E99C462D8 /* ArchivoBlack-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "ArchivoBlack-Regular.ttf"; path = "../assets/fonts/ArchivoBlack-Regular.ttf"; sourceTree = "<group>"; };
+		FF8C5DB1D5E0403F9E092E69 /* Cardo-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Cardo-Regular.ttf"; path = "../assets/fonts/Cardo-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,7 +122,6 @@
 				2DD0535414F74A699822ED40 /* SpaceMono-Regular.ttf */,
 			);
 			name = Resources;
-			path = "";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -292,7 +291,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = U96VUH7TD6;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
@@ -310,6 +313,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgossips;
 				PRODUCT_NAME = RGossips;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Rgossips;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -324,7 +329,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = U96VUH7TD6;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
@@ -341,6 +350,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgossips;
 				PRODUCT_NAME = RGossips;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Rgossips;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

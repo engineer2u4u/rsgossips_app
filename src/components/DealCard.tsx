@@ -140,18 +140,20 @@ export default function DealCard({
             </View>
           </View>
 
-          <TouchableOpacity activeOpacity={0.9}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            className="w-full py-4 items-center shadow-lg"
+            style={{borderRadius: 16, overflow: 'hidden'}}
+          >
             <LinearGradient
               colors={['#8E2DE2', '#F6339A']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={{ borderRadius: 16 }}
-              className="w-full py-4 rounded-2xl items-center shadow-lg"
-            >
-              <Text className="text-white font-black text-xs uppercase tracking-widest">
-                Apply Now
-              </Text>
-            </LinearGradient>
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <Text className="text-white font-black text-xs uppercase tracking-widest">
+              Apply Now
+            </Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

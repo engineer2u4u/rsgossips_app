@@ -166,29 +166,31 @@ export default function AiMediaKitCard() {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => navigation.navigate('InfluencerMediaKit' as never)}
-        style={{marginTop: 16}}>
+        style={{
+          marginTop: 16,
+          borderRadius: 14,
+          paddingVertical: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          shadowColor: BRAND.accent,
+          shadowOffset: {width: 0, height: 6},
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+          elevation: 5,
+          overflow: 'hidden',
+        }}>
         <LinearGradient
           colors={[...BRAND_GRADIENT_WARM]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
-          style={{
-            borderRadius: 14,
-            paddingVertical: 14,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            shadowColor: BRAND.accent,
-            shadowOffset: {width: 0, height: 6},
-            shadowOpacity: 0.3,
-            shadowRadius: 12,
-            elevation: 5,
-          }}>
-          <Text className="text-white font-bold text-[13px] uppercase tracking-widest">
-            {profile?.media_kit_published ? 'View Media Kit' : 'Generate Media Kit'}
-          </Text>
-          <ArrowRight size={16} color="#fff" />
-        </LinearGradient>
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
+        <Text className="text-white font-bold text-[13px] uppercase tracking-widest">
+          {profile?.media_kit_published ? 'View Media Kit' : 'Generate Media Kit'}
+        </Text>
+        <ArrowRight size={16} color="#fff" />
       </TouchableOpacity>
     </Animated.View>
   );

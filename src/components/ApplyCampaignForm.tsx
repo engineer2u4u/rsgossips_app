@@ -234,16 +234,27 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                   className="flex-1 h-12 rounded-xl border border-slate-200 items-center justify-center">
                   <Text className="text-sm font-bold text-slate-600">Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleSubmit} disabled={submitting} className="flex-1">
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={submitting}
+                  style={{
+                    flex: 1,
+                    borderRadius: 12,
+                    height: 48,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    opacity: submitting ? 0.5 : 1,
+                  }}>
                   <LinearGradient
                     colors={['#9810FA', '#E60076']}
-                    style={{borderRadius: 12, height: 48, opacity: submitting ? 0.5 : 1}}
-                    className="items-center justify-center flex-row">
-                    {submitting && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
-                    <Text className="text-white text-sm font-bold">
-                      {submitting ? 'Submitting...' : 'Submit Application'}
-                    </Text>
-                  </LinearGradient>
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  />
+                  {submitting && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
+                  <Text className="text-white text-sm font-bold">
+                    {submitting ? 'Submitting...' : 'Submit Application'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>

@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft, ChevronRight, Search} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
@@ -134,7 +135,7 @@ export default function InfluencerServiceOrders() {
   }, [orders, tab, query]);
 
   return (
-    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       {/* Top bar */}
       <View
         className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100"
@@ -239,7 +240,7 @@ export default function InfluencerServiceOrders() {
           ))
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

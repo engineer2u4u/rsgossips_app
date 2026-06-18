@@ -24,6 +24,7 @@ import {
   Send,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {
@@ -94,6 +95,20 @@ function defaultDeliveryISO() {
   d.setDate(d.getDate() + 14);
   return d.toISOString().slice(0, 10);
 }
+
+function isoDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// Quick-pick chips for the delivery date so users don't have to type
+// YYYY-MM-DD by hand. Mirrors the same SLA buckets the brand-side uses.
+const DELIVERY_PRESETS: {label: string; days: number}[] = [
+  {label: 'In 1 week', days: 7},
+  {label: 'In 2 weeks', days: 14},
+  {label: 'In 1 month', days: 30},
+];
 
 const URL_RE = /^https?:\/\/\S+\.\S+/i;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -233,16 +248,18 @@ export default function InfluencerServiceQuote() {
                   index: 0,
                   routes: [{name: 'InfluencerServiceOrders'}],
                 })
-              }>
+              }
+              style={{
+                paddingHorizontal: 22,
+                paddingVertical: 12,
+                borderRadius: 16,
+                overflow: 'hidden',
+              }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
-                style={{
-                  paddingHorizontal: 22,
-                  paddingVertical: 12,
-                  borderRadius: 16,
-                }}>
-                <Text className="text-white text-sm font-black">View my orders</Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Text className="text-white text-sm font-black">View my orders</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -301,7 +318,7 @@ export default function InfluencerServiceQuote() {
   };
 
   return (
-    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       {/* Top bar */}
       <View
         className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100"
@@ -319,31 +336,40 @@ export default function InfluencerServiceQuote() {
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
         keyboardShouldPersistTaps="handled">
-        {/* Header card */}
-        <LinearGradient
-          colors={['#FFF1F2', '#FCE7F3', '#EDE9FE']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={{padding: 14, borderRadius: 16, borderWidth: 1, borderColor: '#FECDD3'}}>
-          <View className="flex-row items-center" style={{gap: 12}}>
-            <View className="w-12 h-12 rounded-xl bg-white items-center justify-center">
-              <Icon size={22} color="#E60076" />
-            </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-base font-black text-slate-900" numberOfLines={1}>
-                {service.title}
-              </Text>
-              <Text className="text-[11px] text-slate-500 mt-0.5">
-                Step 1 of 1 · Quote request
-              </Text>
-            </View>
-            <View className="bg-slate-900 px-3 py-1.5 rounded-full">
-              <Text className="text-[9px] font-black uppercase tracking-widest text-white">
-                Quote
-              </Text>
-            </View>
+        {/* Header card — padding on outer View, gradient is an absolute background fill */}
+        <View
+          className="flex-row items-center"
+          style={{
+            padding: 14,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: '#FECDD3',
+            gap: 12,
+            overflow: 'hidden',
+          }}>
+          <LinearGradient
+            colors={['#FFF1F2', '#FCE7F3', '#EDE9FE']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <View className="w-12 h-12 rounded-xl bg-white items-center justify-center">
+            <Icon size={22} color="#E60076" />
           </View>
-        </LinearGradient>
+          <View className="flex-1 min-w-0">
+            <Text className="text-base font-black text-slate-900" numberOfLines={1}>
+              {service.title}
+            </Text>
+            <Text className="text-[11px] text-slate-500 mt-0.5">
+              Step 1 of 1 · Quote request
+            </Text>
+          </View>
+          <View className="bg-slate-900 px-3 py-1.5 rounded-full">
+            <Text className="text-[9px] font-black uppercase tracking-widest text-white">
+              Quote
+            </Text>
+          </View>
+        </View>
 
         {/* Form */}
         <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 18}}>
@@ -392,33 +418,57 @@ export default function InfluencerServiceQuote() {
             </View>
           </Field>
 
-          {/* Date + Scope */}
-          <View className="flex-row" style={{gap: 12}}>
-            <View style={{flex: 1}}>
-              <Field label="Desired delivery date" hint="YYYY-MM-DD">
-                <TextInput
-                  value={deliveryDate}
-                  onChangeText={setDeliveryDate}
-                  placeholder="2026-06-15"
-                  placeholderTextColor="#cbd5e1"
-                  autoCapitalize="none"
-                  keyboardType="numbers-and-punctuation"
-                  style={s.input}
-                />
-              </Field>
+          {/* Desired delivery date — quick-pick chips above the editable input
+              so users don't have to hand-type a date. */}
+          <Field label="Desired delivery date" hint="YYYY-MM-DD">
+            <View className="flex-row flex-wrap" style={{gap: 6, marginBottom: 8}}>
+              {DELIVERY_PRESETS.map(preset => {
+                const presetIso = isoDaysFromNow(preset.days);
+                const active = deliveryDate === presetIso;
+                return (
+                  <Pressable
+                    key={preset.label}
+                    onPress={() => setDeliveryDate(presetIso)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: active ? '#C4B5FD' : '#E2E8F0',
+                      backgroundColor: active ? '#EDE9FE' : '#FFFFFF',
+                    }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '700',
+                        color: active ? '#6D28D9' : '#475569',
+                      }}>
+                      {preset.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            {scopeCfg.options.length > 0 ? (
-              <View style={{flex: 1}}>
-                <Field label={scopeCfg.label} required={scopeCfg.required}>
-                  <PickerChips
-                    value={scope}
-                    options={scopeCfg.options}
-                    onChange={setScope}
-                  />
-                </Field>
-              </View>
-            ) : null}
-          </View>
+            <TextInput
+              value={deliveryDate}
+              onChangeText={setDeliveryDate}
+              placeholder="2026-06-15"
+              placeholderTextColor="#cbd5e1"
+              autoCapitalize="none"
+              keyboardType="numbers-and-punctuation"
+              style={s.input}
+            />
+          </Field>
+
+          {scopeCfg.options.length > 0 ? (
+            <Field label={scopeCfg.label} required={scopeCfg.required}>
+              <PickerChips
+                value={scope}
+                options={scopeCfg.options}
+                onChange={setScope}
+              />
+            </Field>
+          ) : null}
 
           {/* Budget */}
           <Field label="Budget range" hint="Optional, helps us send the right quote">
@@ -474,46 +524,50 @@ export default function InfluencerServiceQuote() {
             </View>
           ) : null}
 
-          {/* Footer actions */}
-          <View className="flex-row mt-1" style={{gap: 10}}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              disabled={submitting}
-              className="flex-1 py-3 rounded-2xl border border-slate-200 items-center"
-              style={{opacity: submitting ? 0.5 : 1}}>
-              <Text className="text-sm font-black text-slate-700">Cancel</Text>
-            </TouchableOpacity>
+          {/* Footer actions — stacked: full-width submit, secondary cancel below */}
+          <View style={{gap: 10, marginTop: 4}}>
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={submitting}
-              className="flex-1"
-              style={{opacity: submitting ? 0.6 : 1}}>
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 14,
+                borderRadius: 16,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+                overflow: 'hidden',
+                opacity: submitting ? 0.6 : 1,
+              }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
-                style={{
-                  paddingVertical: 12,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}>
-                {submitting ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Send size={15} color="white" />
-                )}
-                <Text className="text-white text-sm font-black">
-                  {submitting ? 'Submitting…' : 'Submit Quote Request'}
-                </Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              {submitting ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Send size={15} color="white" />
+              )}
+              <Text
+                className="text-white text-sm font-black"
+                numberOfLines={1}>
+                {submitting ? 'Submitting…' : 'Submit Request'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              disabled={submitting}
+              className="py-3 rounded-2xl border border-slate-200 items-center"
+              style={{opacity: submitting ? 0.5 : 1}}>
+              <Text className="text-sm font-black text-slate-700">Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -558,10 +612,7 @@ function PickerChips({
   allowDeselect?: boolean;
 }) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{gap: 6}}>
+    <View className="flex-row flex-wrap" style={{gap: 6}}>
       {options.map(opt => {
         const active = value === opt;
         return (
@@ -582,7 +633,7 @@ function PickerChips({
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 

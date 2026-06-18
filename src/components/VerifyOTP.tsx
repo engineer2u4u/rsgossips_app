@@ -128,7 +128,19 @@ export default function VerifyOTP({
             value={otp[i] ?? ''}
             onChangeText={value => handleChange(value, i)}
             onKeyPress={e => handleKeyPress(e, i)}
-            className="w-12 h-14 text-lg font-bold border-2 rounded-xl border-slate-200 text-center text-slate-900"
+            className="border-2 rounded-xl border-slate-200"
+            // Sizing + font inline (not via Tailwind) so iOS doesn't inherit a
+            // 28px lineHeight from `text-lg` that fights the 56px box and
+            // makes each digit baseline-drift after autofill.
+            style={{
+              width: 48,
+              height: 56,
+              fontSize: 22,
+              fontWeight: '700',
+              textAlign: 'center',
+              padding: 0,
+              color: '#0f172a',
+            }}
           />
         ))}
       </View>

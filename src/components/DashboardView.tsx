@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
 import {
-  Edit2,
   CheckCircle2,
   TrendingUp,
   CreditCard,
@@ -18,12 +17,38 @@ import {
   Crown,
   Zap,
   Hourglass,
+  Briefcase,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
+
+// Mirrors the web useProfileCompletion hook (CompleteProfileCard.jsx).
+// Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
+function computeProfileCompletion(profile: any) {
+  const hasInstagram = !!profile?.instagram_handle;
+  const hasMediaKit = !!profile?.media_kit_published;
+  const serviceRates = profile?.service_rates || profile?.serviceRates || {};
+  const hasRates = Object.values(serviceRates).some((v: any) => v && Number(v) > 0);
+  const completed =
+    1 + // step 1: account created
+    (hasInstagram ? 1 : 0) +
+    (hasMediaKit ? 1 : 0) +
+    (hasRates ? 1 : 0) +
+    (hasRates ? 1 : 0); // step 5 mirrors step 4
+  const total = 5;
+  return {
+    completed,
+    total,
+    percent: Math.round((completed / total) * 100),
+    hasInstagram,
+    hasMediaKit,
+    hasRates,
+  };
+}
 
 interface DashboardViewProps {
   onNotificationClick: () => void;
@@ -77,6 +102,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     ? currentPlan.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
     : expired ? 'Free' : 'Starter Trial';
 
+  const completion = computeProfileCompletion(profile);
+  const openMediaKit = () => navigation.navigate('InfluencerMediaKit' as never);
+  const openServiceRequests = () =>
+    navigation.navigate('InfluencerServiceOrders' as never);
+
   const requestLogout = () => setShowLogout(true);
   const confirmLogout = async () => {
     await signOut();
@@ -100,43 +130,27 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Avatar */}
           <View className="relative mb-4">
             {photo ? (
-              <View className="relative">
-                <Image
-                  source={{uri: photo}}
-                  className="w-24 h-24 rounded-xl"
-                  // `elevation` isn't on ImageStyle in RN types — but works
-                  // at runtime since the underlying view handles the cast.
-                  style={
-                    {
-                      shadowColor: '#EC4899',
-                      shadowOffset: {width: 0, height: 4},
-                      shadowOpacity: 0.2,
-                      shadowRadius: 8,
-                      elevation: 6,
-                    } as any
-                  }
-                />
-                <TouchableOpacity
-                  onPress={onOpenInfo}
-                  className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl"
-                  style={{borderWidth: 2, borderColor: 'white'}}>
-                  <Edit2 size={12} color="white" />
-                </TouchableOpacity>
-              </View>
+              <Image
+                source={{uri: photo}}
+                className="w-24 h-24 rounded-xl"
+                // `elevation` isn't on ImageStyle in RN types — but works
+                // at runtime since the underlying view handles the cast.
+                style={
+                  {
+                    shadowColor: '#EC4899',
+                    shadowOffset: {width: 0, height: 4},
+                    shadowOpacity: 0.2,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  } as any
+                }
+              />
             ) : (
-              <View className="relative">
-                <LinearGradient
-                  colors={['#FF2D78', '#FF3B8D', '#FF6BA1']}
-                  style={{width: 96, height: 96, borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#EC4899', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6}}>
-                  <Text className="text-white text-3xl font-bold">{initials}</Text>
-                </LinearGradient>
-                <TouchableOpacity
-                  onPress={onOpenInfo}
-                  className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl"
-                  style={{borderWidth: 2, borderColor: 'white'}}>
-                  <Edit2 size={12} color="white" />
-                </TouchableOpacity>
-              </View>
+              <LinearGradient
+                colors={['#FF2D78', '#FF3B8D', '#FF6BA1']}
+                style={{width: 96, height: 96, borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#EC4899', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6}}>
+                <Text className="text-white text-3xl font-bold">{initials}</Text>
+              </LinearGradient>
             )}
             <View className="absolute -top-1 -right-1 w-5 h-5 bg-[#22C55E] rounded-full" style={{borderWidth: 3.5, borderColor: 'white'}} />
           </View>
@@ -183,6 +197,43 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         </View>
       </View>
 
+      {/* Media Kit card — shown only after the user has published a kit.
+          Mirrors the web /influencer/profile placement (above Stats Grid). */}
+      {profile?.media_kit_published && (
+        <TouchableOpacity
+          onPress={openMediaKit}
+          activeOpacity={0.85}
+          className="bg-white p-4 rounded-xl border border-gray-100 flex-row items-center"
+          style={{
+            gap: 12,
+            shadowColor: '#19162b',
+            shadowOpacity: 0.06,
+            shadowRadius: 10,
+            shadowOffset: {width: 0, height: 4},
+            elevation: 2,
+          }}>
+          <View className="w-10 h-10 rounded-xl bg-purple-50 items-center justify-center">
+            <FileText size={18} color="#8B5CF6" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-bold text-[#1A1A1A]">Media Kit</Text>
+            <Text className="text-[11px] text-gray-400 font-semibold mt-0.5">
+              View or share your published kit
+            </Text>
+          </View>
+          <ChevronRight size={16} color="#CBD5E1" />
+        </TouchableOpacity>
+      )}
+
+      {/* Profile Completion card — gradient ring + checklist of remaining steps.
+          Hidden once 100% complete; otherwise tappable items jump to the
+          relevant edit surface. */}
+      <ProfileCompletionCard
+        completion={completion}
+        onOpenInfo={onOpenInfo}
+        onOpenMediaKit={openMediaKit}
+      />
+
       {/* Stats Grid 2x2 — real data from useInfluencerCampaigns */}
       <View className="flex-row flex-wrap" style={{gap: 12}}>
         <StatCard
@@ -226,63 +277,80 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <Text className="font-black text-[#2D2D2D] text-lg">Creator Hub</Text>
         </View>
 
-        <View className="p-4 rounded-xl border border-pink-50 bg-white/50 shadow-sm" style={{gap: 12}}>
+        <View style={{gap: 12}}>
           {/* My Profile Hub Card */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={onOpenInfo}
-            className="bg-[#EFECFF] rounded-2xl p-4">
-            <View className="flex-row items-center" style={{gap: 12}}>
-              <LinearGradient
-                colors={['#8B5CF6', '#6366F1']}
-                style={{width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
-                <FileText size={18} color="white" />
-              </LinearGradient>
-              <View className="flex-1">
-                <Text className="text-sm font-bold text-[#1A1A1A]">My Profile</Text>
-                <Text className="text-[10px] text-gray-400 font-medium">View, edit and manage your profile</Text>
-              </View>
-              <ChevronRight size={16} color="#CBD5E1" />
+            className="bg-[#EFECFF] rounded-2xl p-4 flex-row items-center"
+            style={{
+              gap: 12,
+              shadowColor: '#19162b',
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              shadowOffset: {width: 0, height: 4},
+              elevation: 3,
+            }}>
+            <LinearGradient
+              colors={['#8B5CF6', '#6366F1']}
+              style={{width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
+              <FileText size={18} color="white" />
+            </LinearGradient>
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-[#1A1A1A]">My Profile</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">View, edit and manage your profile</Text>
             </View>
-            <View className="mt-4">
-              <View className="flex-row justify-between items-center mb-1.5 px-1">
-                <Text className="text-[9px] font-black text-gray-400 uppercase">Profile Complete</Text>
-                <Text className="text-[10px] font-black text-[#10B981]">80%</Text>
-              </View>
-              <View className="w-full h-2 bg-white/60 rounded-full overflow-hidden" style={{borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)'}}>
-                <View className="h-full bg-[#10B981] rounded-full" style={{width: '80%'}} />
-              </View>
-            </View>
+            <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
 
-          {/* Analytics Hub Card */}
+          {/* Campaign Analytics Hub Card */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={onOpenAnalytics}
-            className="bg-[#F0F9FF] rounded-2xl p-4">
-            <View className="flex-row items-center" style={{gap: 12}}>
-              <LinearGradient
-                colors={['#3B82F6', '#60A5FA']}
-                style={{width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
-                <BarChart3 size={18} color="white" />
-              </LinearGradient>
-              <View className="flex-1">
-                <Text className="text-sm font-bold text-[#1A1A1A]">Analytics</Text>
-                <Text className="text-[10px] text-gray-400 font-medium">Track performance and campaign insights</Text>
-              </View>
-              <ChevronRight size={16} color="#CBD5E1" />
+            className="bg-[#F0F9FF] rounded-2xl p-4 flex-row items-center"
+            style={{
+              gap: 12,
+              shadowColor: '#19162b',
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              shadowOffset: {width: 0, height: 4},
+              elevation: 3,
+            }}>
+            <LinearGradient
+              colors={['#3B82F6', '#60A5FA']}
+              style={{width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
+              <BarChart3 size={18} color="white" />
+            </LinearGradient>
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-[#1A1A1A]">Campaign Analytics</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">Track performance and campaign insights</Text>
             </View>
-            <View className="mt-4 bg-white/60 p-3 rounded-xl flex-row items-end justify-between" style={{borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)'}}>
-              <View>
-                <Text className="text-[8px] text-gray-400 font-black uppercase">Last 7 Days</Text>
-                <Text className="text-sm font-black text-gray-800">+2.4K</Text>
-              </View>
-              <View className="flex-row items-end h-8" style={{gap: 3}}>
-                {[30, 50, 40, 70, 55, 90, 80].map((h, i) => (
-                  <View key={i} className="w-1 bg-[#3B82F6] rounded-full" style={{height: `${h}%`}} />
-                ))}
-              </View>
+            <ChevronRight size={16} color="#CBD5E1" />
+          </TouchableOpacity>
+
+          {/* Service Requests Hub Card */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={openServiceRequests}
+            className="bg-[#FEF3F2] rounded-2xl p-4 flex-row items-center"
+            style={{
+              gap: 12,
+              shadowColor: '#19162b',
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              shadowOffset: {width: 0, height: 4},
+              elevation: 3,
+            }}>
+            <LinearGradient
+              colors={['#F43F5E', '#FB7185']}
+              style={{width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
+              <Briefcase size={18} color="white" />
+            </LinearGradient>
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-[#1A1A1A]">Service Requests</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">Your quote requests, orders & deliveries</Text>
             </View>
+            <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
         </View>
       </View>
@@ -348,18 +416,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('InfluencerPricing' as never)}>
+          onPress={() => navigation.navigate('InfluencerPricing' as never)}
+          className="flex-row items-center justify-center"
+          style={{borderRadius: 12, height: 44, overflow: 'hidden'}}>
           <LinearGradient
             colors={['#9810fa', '#e60076']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
-            style={{borderRadius: 12, height: 44}}
-            className="flex-row items-center justify-center">
-            <Crown size={16} color="white" />
-            <Text className="text-white text-sm font-bold ml-2">
-              {hasPaidPlan ? 'Manage Plan' : 'Upgrade Now'}
-            </Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Crown size={16} color="white" />
+          <Text className="text-white text-sm font-bold ml-2">
+            {hasPaidPlan ? 'Manage Plan' : 'Upgrade Now'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -394,8 +463,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           Recentgossips • Made for creators
         </Text>
       </View>
-
-      <View className="h-20" />
 
       <LogoutConfirmDialog
         visible={showLogout}
@@ -442,5 +509,154 @@ const SettingsItem = ({icon: Icon, title, sub, color, onPress}: {
     <ChevronRight size={18} color="#CBD5E1" />
   </TouchableOpacity>
 );
+
+// Mirrors web's ProfileCompletionCard: gradient ring + heading + 2-col
+// checklist of remaining steps. Hidden once 100% complete.
+function ProfileCompletionCard({
+  completion,
+  onOpenInfo,
+  onOpenMediaKit,
+}: {
+  completion: ReturnType<typeof computeProfileCompletion>;
+  onOpenInfo: () => void;
+  onOpenMediaKit: () => void;
+}) {
+  const {percent, completed, total, hasInstagram, hasMediaKit, hasRates} =
+    completion;
+  const isDone = percent === 100;
+
+  const RING_SIZE = 56;
+  const RING_STROKE = 5;
+  const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+  const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+  const ringOffset = RING_CIRCUMFERENCE - RING_CIRCUMFERENCE * (percent / 100);
+
+  return (
+    <View
+      className="bg-white rounded-2xl border border-gray-100 p-5"
+      style={{
+        shadowColor: '#19162b',
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 4},
+        elevation: 2,
+      }}>
+      <View className="flex-row items-center" style={{gap: 16}}>
+        <View
+          style={{width: RING_SIZE, height: RING_SIZE}}
+          className="items-center justify-center">
+          <Svg
+            width={RING_SIZE}
+            height={RING_SIZE}
+            style={{position: 'absolute', transform: [{rotate: '-90deg'}]}}>
+            <Defs>
+              <SvgLinearGradient id="completionRing" x1="0%" y1="0%" x2="100%" y2="0%">
+                <Stop offset="0%" stopColor="#9810fa" />
+                <Stop offset="100%" stopColor="#e60076" />
+              </SvgLinearGradient>
+            </Defs>
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_RADIUS}
+              stroke="#F1F5F9"
+              strokeWidth={RING_STROKE}
+              fill="transparent"
+            />
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_RADIUS}
+              stroke="url(#completionRing)"
+              strokeWidth={RING_STROKE}
+              strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+              strokeDashoffset={ringOffset}
+              strokeLinecap="round"
+              fill="transparent"
+            />
+          </Svg>
+          <Text className="text-xs font-black text-slate-800">{percent}%</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-extrabold text-[#1A1A1A]">
+            {isDone ? 'Profile complete!' : 'Profile completion'}
+          </Text>
+          <Text className="text-[11px] font-semibold text-gray-400 mt-0.5">
+            {isDone
+              ? "You're discoverable to brands."
+              : `${completed}/${total} steps done — keep going!`}
+          </Text>
+        </View>
+      </View>
+
+      {!isDone && (
+        <View className="flex-row flex-wrap mt-4" style={{gap: 8}}>
+          <ChecklistItem done label="Account created" />
+          <ChecklistItem done={hasInstagram} label="Instagram connected" onPress={onOpenInfo} />
+          <ChecklistItem done={hasMediaKit} label="Media kit published" onPress={onOpenMediaKit} />
+          <ChecklistItem done={hasRates} label="Rate card set" onPress={onOpenInfo} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Done items aren't tappable (no edit target). Pending items become buttons
+// that jump to the relevant edit surface.
+function ChecklistItem({
+  done,
+  label,
+  onPress,
+}: {
+  done?: boolean;
+  label: string;
+  onPress?: () => void;
+}) {
+  const isInteractive = !done && !!onPress;
+  const containerStyle = {
+    flexBasis: '48%' as const,
+    backgroundColor: done ? '#ECFDF5' : '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  };
+  const dotStyle = {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: done ? '#10B981' : 'transparent',
+    borderWidth: done ? 0 : 2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+  const textStyle = {
+    color: done ? '#047857' : '#64748B',
+    fontSize: 11,
+    fontWeight: '700' as const,
+    flexShrink: 1,
+  };
+  const inner = (
+    <>
+      <View style={dotStyle}>
+        {done && <CheckCircle2 size={10} color="#fff" fill="#10B981" />}
+      </View>
+      <Text style={textStyle} numberOfLines={1}>
+        {label}
+      </Text>
+    </>
+  );
+  if (isInteractive) {
+    return (
+      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={containerStyle}>
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+  return <View style={containerStyle}>{inner}</View>;
+}
 
 export default DashboardView;

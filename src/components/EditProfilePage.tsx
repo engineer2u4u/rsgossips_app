@@ -185,24 +185,35 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           </TouchableOpacity>
           <Text className="text-lg font-bold text-slate-800">Edit Profile</Text>
         </View>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
-          {saved ? (
-            <View className="flex-row items-center bg-green-50 px-4 py-2 rounded-xl" style={{gap: 4}}>
-              <Check size={16} color="#10B981" />
-              <Text className="text-sm font-bold text-green-600">Saved!</Text>
-            </View>
-          ) : (
+        {saved ? (
+          <View className="flex-row items-center bg-green-50 px-4 py-2 rounded-xl" style={{gap: 4}}>
+            <Check size={16} color="#10B981" />
+            <Text className="text-sm font-bold text-green-600">Saved!</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saving}
+            style={{
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              opacity: saving ? 0.6 : 1,
+            }}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
-              style={{borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, opacity: saving ? 0.6 : 1}}
-              className="flex-row items-center justify-center">
-              {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 6}} />}
-              <Text className="text-white text-sm font-bold">
-                {saving ? 'Saving' : 'Save'}
-              </Text>
-            </LinearGradient>
-          )}
-        </TouchableOpacity>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 6}} />}
+            <Text className="text-white text-sm font-bold">
+              {saving ? 'Saving' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -433,18 +444,29 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
 
         {/* Save Button (bottom) */}
         <View className="px-5 mt-6 mb-8">
-          <TouchableOpacity onPress={handleSave} disabled={saving} activeOpacity={0.9}>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.9}
+            style={{
+              borderRadius: 16,
+              height: 52,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              opacity: saving ? 0.6 : 1,
+            }}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{borderRadius: 16, height: 52, opacity: saving ? 0.6 : 1}}
-              className="items-center justify-center flex-row">
-              {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
-              <Text className="text-white font-bold text-base">
-                {saving ? 'Saving Changes...' : saved ? 'Saved!' : 'Save Changes'}
-              </Text>
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
+            <Text className="text-white font-bold text-base">
+              {saving ? 'Saving Changes...' : saved ? 'Saved!' : 'Save Changes'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

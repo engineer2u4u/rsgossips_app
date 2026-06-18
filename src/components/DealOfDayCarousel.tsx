@@ -154,16 +154,19 @@ function DealCard({deal}: {deal: Deal}) {
         <Text className="text-white text-2xl font-black leading-tight mb-3" numberOfLines={2}>
           {deal.title || 'Featured Campaign'}
         </Text>
-        <TouchableOpacity activeOpacity={0.9} onPress={handleApply}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleApply}
+          style={{borderRadius: 14, paddingVertical: 13, overflow: 'hidden'}}>
           <LinearGradient
             colors={[...BRAND_GRADIENT_WARM]}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={{borderRadius: 14, paddingVertical: 13}}>
-            <Text className="text-white text-center text-[13px] font-black uppercase tracking-widest">
-              Apply Now
-            </Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Text className="text-white text-center text-[13px] font-black uppercase tracking-widest">
+            Apply Now
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

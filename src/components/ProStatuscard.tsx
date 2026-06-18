@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, Image, TouchableOpacity} from 'react-native';
-import {Sparkles, ChevronRight, Crown} from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { Sparkles, ChevronRight, Crown } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,10 +8,15 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import {useAuth} from '../context/AuthContext';
-import {useNavigation} from '@react-navigation/native';
-import {invokeFn} from '../lib/api';
-import {BRAND, BRAND_GRADIENT_WARM, BRAND_GRADIENT_SOFT, CARD_SHADOW} from '../theme/brand';
+import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { invokeFn } from '../lib/api';
+import {
+  BRAND,
+  BRAND_GRADIENT_WARM,
+  BRAND_GRADIENT_SOFT,
+  CARD_SHADOW,
+} from '../theme/brand';
 
 // Sloppy substring match between campaign tags and the creator's chosen
 // categories — same pattern as web's TopPicksCarousel. "Beauty" matches
@@ -31,11 +36,13 @@ function tagsMatchCategories(
 }
 
 export default function ProStatusCard() {
-  const {profile} = useAuth();
+  const { profile } = useAuth();
   const navigation = useNavigation();
   const progress = useSharedValue(0);
   const opacity = useSharedValue(0);
-  const [matchingBrandsCount, setMatchingBrandsCount] = useState<number | null>(null);
+  const [matchingBrandsCount, setMatchingBrandsCount] = useState<number | null>(
+    null,
+  );
   const userCategories = profile?.categories || [];
 
   const createdAt = profile?.created_at
@@ -59,7 +66,8 @@ export default function ProStatusCard() {
   // Elite is the top tier — once a creator is on it there's nothing to
   // upgrade to, so the CTA hides itself.
   const isTopTierPlan = currentPlan === 'elite';
-  const billingCycle = profile?.billing_cycle === 'annual' ? 'Annual' : 'Monthly';
+  const billingCycle =
+    profile?.billing_cycle === 'annual' ? 'Annual' : 'Monthly';
 
   // Resolved plan name shown on the trial/upgrade strip — same logic as the
   // small "PLAN: …" pill in the header.
@@ -83,10 +91,10 @@ export default function ProStatusCard() {
   })();
 
   useEffect(() => {
-    opacity.value = withTiming(1, {duration: 600});
+    opacity.value = withTiming(1, { duration: 600 });
     progress.value = withDelay(
       500,
-      withTiming(trialProgress, {duration: 1000}),
+      withTiming(trialProgress, { duration: 1000 }),
     );
   }, [trialProgress]);
 
@@ -97,7 +105,10 @@ export default function ProStatusCard() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {});
+        const data = await invokeFn<{ campaigns?: any[] }>(
+          'list-campaigns',
+          {},
+        );
         if (cancelled || !Array.isArray(data?.campaigns)) return;
         const matching = data.campaigns.filter((c: any) => {
           if (c.status !== 'Active') return false;
@@ -146,26 +157,28 @@ export default function ProStatusCard() {
           width: '100%',
         },
         CARD_SHADOW,
-      ]}>
+      ]}
+    >
       {/* 1. Header: rounded-square avatar tile + greeting + plan pill */}
-      <View className="flex-row items-center" style={{gap: 12}}>
+      <View className="flex-row items-center" style={{ gap: 12 }}>
         {avatarUrl ? (
           <Image
-            source={{uri: avatarUrl}}
-            style={{width: 46, height: 46, borderRadius: 14}}
+            source={{ uri: avatarUrl }}
+            style={{ width: 46, height: 46, borderRadius: 14 }}
           />
         ) : (
           <LinearGradient
             colors={['#8b6df0', '#6a64c0']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={{
               width: 46,
               height: 46,
               borderRadius: 14,
               alignItems: 'center',
               justifyContent: 'center',
-            }}>
+            }}
+          >
             <Text className="text-white text-[19px] font-bold">
               {displayName.charAt(0).toUpperCase()}
             </Text>
@@ -181,11 +194,13 @@ export default function ProStatusCard() {
             style={{
               backgroundColor: 'rgba(106,100,192,0.13)',
               gap: 4,
-            }}>
+            }}
+          >
             <Crown size={11} color={BRAND.violet} />
             <Text
               className="text-[11px] font-bold tracking-wide"
-              style={{color: BRAND.violet}}>
+              style={{ color: BRAND.violet }}
+            >
               {planLabel} plan
             </Text>
           </View>
@@ -196,55 +211,64 @@ export default function ProStatusCard() {
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => navigation.navigate('RecommendedCampaigns' as never)}
-        style={{marginTop: 14, borderRadius: 16, overflow: 'hidden'}}>
+        style={{
+          marginTop: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+          gap: 11,
+          borderWidth: 1,
+          borderColor: 'rgba(25,22,43,0.06)',
+          borderRadius: 16,
+          overflow: 'hidden',
+        }}
+      >
         <LinearGradient
           colors={[...BRAND_GRADIENT_SOFT]}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        <View
           style={{
-            flexDirection: 'row',
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            backgroundColor: '#fff',
             alignItems: 'center',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            gap: 11,
-            borderWidth: 1,
-            borderColor: 'rgba(25,22,43,0.06)',
-            borderRadius: 16,
-          }}>
-          <View
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              backgroundColor: '#fff',
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#19162b',
-              shadowOpacity: 0.06,
-              shadowRadius: 6,
-              shadowOffset: {width: 0, height: 2},
-              elevation: 2,
-            }}>
-            <Sparkles size={18} color={BRAND.accent} />
-          </View>
+            justifyContent: 'center',
+            shadowColor: '#19162b',
+            shadowOpacity: 0.06,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 2,
+          }}
+        >
+          <Sparkles size={18} color={BRAND.accent} />
+        </View>
 
-          <Text
-            className="flex-1 text-[13.5px] font-semibold text-slate-700"
-            style={{lineHeight: 18}}>
-            <Text style={{color: BRAND.accent, fontWeight: '700'}}>
-              {matchingBrandsCount == null
-                ? '…'
-                : matchingBrandsCount === 0
-                  ? '0 brands'
-                  : `${matchingBrandsCount} brand${matchingBrandsCount === 1 ? '' : 's'}`}
-            </Text>
-            {userCategories.length > 0
-              ? ' are looking for creators in your niche'
-              : ' have active campaigns right now'}
+        <Text
+          className="flex-1 text-[13.5px] font-semibold text-slate-700"
+          style={{ lineHeight: 18 }}
+        >
+          <Text style={{ color: BRAND.accent, fontWeight: '700' }}>
+            {matchingBrandsCount == null
+              ? '…'
+              : matchingBrandsCount === 0
+                ? '0 brands'
+                : `${matchingBrandsCount} brand${matchingBrandsCount === 1 ? '' : 's'}`}
           </Text>
+          {userCategories.length > 0
+            ? ' are looking for creators in your niche'
+            : ' have active campaigns right now'}
+        </Text>
 
-          <ChevronRight size={16} color={BRAND.violet} style={{opacity: 0.7}} />
-        </LinearGradient>
+        <ChevronRight
+          size={16}
+          color={BRAND.violet}
+          style={{ opacity: 0.7 }}
+        />
       </TouchableOpacity>
 
       {/* 3. Plan strip — small ACTIVE PLAN label + inline renewal + Upgrade */}
@@ -256,15 +280,16 @@ export default function ProStatusCard() {
           borderTopWidth: 1,
           borderTopColor: 'rgba(25,22,43,0.06)',
           gap: 12,
-        }}>
+        }}
+      >
         <View className="flex-1">
-          <Text
-            className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          <Text className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
             Active Plan
           </Text>
           <Text
             className="text-[12.5px] font-semibold text-slate-700 mt-1"
-            numberOfLines={1}>
+            numberOfLines={1}
+          >
             {renewalCopy}
             <Text className="font-bold text-slate-900">{renewalDays}</Text>
           </Text>
@@ -273,13 +298,16 @@ export default function ProStatusCard() {
           {!hasPaidPlan && (
             <View
               className="h-1.5 w-full rounded-full overflow-hidden mt-2"
-              style={{backgroundColor: 'rgba(25,22,43,0.08)'}}>
+              style={{ backgroundColor: 'rgba(25,22,43,0.08)' }}
+            >
               <Animated.View style={[progressStyle]} className="h-full">
                 <LinearGradient
-                  colors={expired ? ['#F87171', '#F87171'] : [...BRAND_GRADIENT_WARM]}
-                  start={{x: 0, y: 0}}
-                  end={{x: 1, y: 0}}
-                  style={{flex: 1, borderRadius: 100}}
+                  colors={
+                    expired ? ['#F87171', '#F87171'] : [...BRAND_GRADIENT_WARM]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ flex: 1, borderRadius: 100 }}
                 />
               </Animated.View>
             </View>
@@ -289,27 +317,30 @@ export default function ProStatusCard() {
         {!isTopTierPlan && (
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('InfluencerPricing' as never)}>
+            onPress={() => navigation.navigate('InfluencerPricing' as never)}
+            style={{
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              shadowColor: BRAND.accent,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.28,
+              shadowRadius: 8,
+              elevation: 4,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              overflow: 'hidden',
+            }}
+          >
             <LinearGradient
               colors={[...BRAND_GRADIENT_WARM]}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}
-              style={{
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
-                shadowColor: BRAND.accent,
-                shadowOffset: {width: 0, height: 4},
-                shadowOpacity: 0.28,
-                shadowRadius: 8,
-                elevation: 4,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-              }}>
-              <Crown size={14} color="white" />
-              <Text className="text-white text-[13px] font-bold">Upgrade</Text>
-            </LinearGradient>
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <Crown size={14} color="white" />
+            <Text className="text-white text-[13px] font-bold">Upgrade</Text>
           </TouchableOpacity>
         )}
       </View>

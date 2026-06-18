@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import {supabase} from '../utils/supabase';
 import {formatINR} from '../lib/services';
@@ -578,7 +579,7 @@ export default function InfluencerServiceOrderDetail() {
   });
 
   return (
-    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       {/* Top bar */}
       <View
         className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100"
@@ -603,28 +604,30 @@ export default function InfluencerServiceOrderDetail() {
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
         showsVerticalScrollIndicator={false}>
-        {/* Status banner */}
-        <LinearGradient
-          colors={banner.colors}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={{borderRadius: 20, padding: 18}}>
-          <View className="flex-row items-start" style={{gap: 12}}>
-            <View
-              className="w-10 h-10 rounded-xl items-center justify-center"
-              style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-              <BannerIcon size={20} color="white" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-black text-white">
-                {banner.title}
-              </Text>
-              <Text className="text-xs text-white/85 leading-5 mt-1">
-                {banner.body}
-              </Text>
-            </View>
+        {/* Status banner — padding on the outer View, gradient as absolute bg */}
+        <View
+          className="flex-row items-start"
+          style={{borderRadius: 20, padding: 18, gap: 12, overflow: 'hidden'}}>
+          <LinearGradient
+            colors={banner.colors}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <View
+            className="w-10 h-10 rounded-xl items-center justify-center"
+            style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+            <BannerIcon size={20} color="white" />
           </View>
-        </LinearGradient>
+          <View className="flex-1">
+            <Text className="text-base font-black text-white">
+              {banner.title}
+            </Text>
+            <Text className="text-xs text-white/85 leading-5 mt-1">
+              {banner.body}
+            </Text>
+          </View>
+        </View>
 
         {/* Status meta — pill + validity */}
         <View className="flex-row" style={{gap: 8}}>
@@ -974,20 +977,24 @@ export default function InfluencerServiceOrderDetail() {
                 className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
                 <Text className="text-sm font-black text-slate-600">Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={submitDecline} className="flex-1">
+              <TouchableOpacity
+                onPress={submitDecline}
+                className="flex-1"
+                style={{
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                }}>
                 <LinearGradient
                   colors={['#F43F5E', '#E11D48']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{
-                    paddingVertical: 12,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                  }}>
-                  <Text className="text-white text-sm font-black">
-                    Confirm decline
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                <Text className="text-white text-sm font-black">
+                  Confirm decline
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1051,7 +1058,7 @@ export default function InfluencerServiceOrderDetail() {
           </View>
         ) : null}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1100,14 +1107,18 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
     return (
       <View style={{gap: 10}}>
         <View className="flex-row" style={{gap: 8}}>
-          <TouchableOpacity onPress={h.onPayAdvance} className="flex-1" activeOpacity={0.85}>
+          <TouchableOpacity
+            onPress={h.onPayAdvance}
+            className="flex-1"
+            activeOpacity={0.85}
+            style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center', overflow: 'hidden'}}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center'}}>
-              <Text className="text-white text-sm font-black">Pay advance</Text>
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            <Text className="text-white text-sm font-black">Pay advance</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={h.onCounter}
@@ -1132,14 +1143,18 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
     const revisionDisabled = (h.revsLeft ?? 0) <= 0;
     return (
       <View className="flex-row" style={{gap: 8}}>
-        <TouchableOpacity onPress={h.onPayFinal} className="flex-1" activeOpacity={0.85}>
+        <TouchableOpacity
+          onPress={h.onPayFinal}
+          className="flex-1"
+          activeOpacity={0.85}
+          style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center', overflow: 'hidden'}}>
           <LinearGradient
             colors={['#10b981', '#14B8A6']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center'}}>
-            <Text className="text-white text-sm font-black">Approve & pay final</Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Text className="text-white text-sm font-black">Approve & pay final</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={h.onRequestRevision}
@@ -1155,14 +1170,17 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
   }
   if (order.status === 'completed') {
     return (
-      <TouchableOpacity onPress={h.onLeaveReview} activeOpacity={0.85}>
+      <TouchableOpacity
+        onPress={h.onLeaveReview}
+        activeOpacity={0.85}
+        style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center', overflow: 'hidden'}}>
         <LinearGradient
           colors={['#F59E0B', '#F97316']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
-          style={{paddingVertical: 14, borderRadius: 14, alignItems: 'center'}}>
-          <Text className="text-white text-sm font-black">Leave a review</Text>
-        </LinearGradient>
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
+        <Text className="text-white text-sm font-black">Leave a review</Text>
       </TouchableOpacity>
     );
   }
@@ -1366,18 +1384,22 @@ function ReviewFormCard({
           className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
           <Text className="text-sm font-black text-slate-600">Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onSubmit} className="flex-1">
+        <TouchableOpacity
+          onPress={onSubmit}
+          className="flex-1"
+          style={{
+            paddingVertical: 12,
+            borderRadius: 14,
+            alignItems: 'center',
+            overflow: 'hidden',
+          }}>
           <LinearGradient
             colors={['#F59E0B', '#F97316']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={{
-              paddingVertical: 12,
-              borderRadius: 14,
-              alignItems: 'center',
-            }}>
-            <Text className="text-white text-sm font-black">Submit Review</Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Text className="text-white text-sm font-black">Submit Review</Text>
         </TouchableOpacity>
       </View>
     </View>

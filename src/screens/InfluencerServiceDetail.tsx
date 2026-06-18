@@ -22,6 +22,7 @@ import {
   Star,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   fetchServiceBySlug,
   formatINR,
@@ -79,7 +80,7 @@ export default function InfluencerServiceDetail() {
   const ratingAvg = Number(service.rating_avg || 0);
 
   return (
-    <View className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+    <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       {/* Top bar */}
       <View
         className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100"
@@ -263,17 +264,25 @@ export default function InfluencerServiceDetail() {
               navigation.navigate('InfluencerServiceQuote', {
                 slug: service.slug || service.id,
               })
-            }>
+            }
+            style={{
+              paddingHorizontal: 22,
+              height: 48,
+              borderRadius: 14,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
-              style={{paddingHorizontal: 22, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center'}}>
-              <Text className="text-white text-sm font-bold">Request Quote</Text>
-            </LinearGradient>
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
+            <Text className="text-white text-sm font-bold">Request Quote</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

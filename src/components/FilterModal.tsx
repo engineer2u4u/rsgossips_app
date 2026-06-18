@@ -315,17 +315,25 @@ export default function FilterModal({
               className="flex-1 h-14 rounded-2xl bg-slate-50 items-center justify-center">
               <Text className="text-sm font-bold text-slate-700">Reset</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} className="flex-1">
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                flex: 1,
+                borderRadius: 16,
+                height: 56,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
-                style={{borderRadius: 16, height: 56}}
-                className="items-center justify-center">
-                <Text className="text-white font-bold text-sm">
-                  Apply Filters
-                </Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Text className="text-white font-bold text-sm">
+                Apply Filters
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

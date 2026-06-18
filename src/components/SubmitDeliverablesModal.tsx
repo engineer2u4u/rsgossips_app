@@ -352,25 +352,25 @@ export default function SubmitDeliverablesModal({
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={!allFilled || submitting}
-            style={[styles.btn, {opacity: !allFilled || submitting ? 0.5 : 1}]}>
+            style={[styles.btn, styles.btnPrimary, {opacity: !allFilled || submitting ? 0.5 : 1}]}>
             <LinearGradient
               colors={['#9810FA', '#E60076']}
-              style={styles.gradientBtn}>
-              {submitting ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <>
-                  <Upload size={16} color="white" />
-                  <Text style={styles.btnPrimaryText}>
-                    {isLiveLinksFlow
-                      ? 'Submit Live Links'
-                      : isRevision
-                        ? 'Resubmit'
-                        : 'Submit'}
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
+              style={styles.gradientBg}
+            />
+            {submitting ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Upload size={16} color="white" />
+                <Text style={styles.btnPrimaryText}>
+                  {isLiveLinksFlow
+                    ? 'Submit Live Links'
+                    : isRevision
+                      ? 'Resubmit'
+                      : 'Submit'}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -471,12 +471,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnGhostText: {color: '#0f172a', fontSize: 14, fontWeight: '600'},
-  gradientBtn: {
-    flex: 1,
+  // Padding/layout for the primary button live on the TouchableOpacity itself
+  // (see styles.btnPrimary). The gradient is rendered as an absolute
+  // background fill so iOS measures content + padding against the touchable
+  // rather than the gradient view.
+  btnPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
+  gradientBg: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
   btnPrimaryText: {color: 'white', fontSize: 14, fontWeight: '700'},
 });

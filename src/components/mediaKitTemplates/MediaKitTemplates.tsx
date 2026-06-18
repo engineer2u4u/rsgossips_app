@@ -136,14 +136,16 @@ export function TemplateClassic({
                     <XIcon size={14} color="#64748B" />
                     <Text className="text-xs font-semibold text-slate-500">Cancel</Text>
                   </Pressable>
-                  <Pressable onPress={onBioSave}>
+                  <Pressable
+                    onPress={onBioSave}
+                    className="flex-row items-center px-3 py-1.5"
+                    style={{gap: 4, borderRadius: 8, overflow: 'hidden'}}>
                     <LinearGradient
                       colors={['#9810FA', '#E60076']}
-                      className="flex-row items-center px-3 py-1.5"
-                      style={{gap: 4, borderRadius: 8}}>
-                      <Check size={14} color="white" />
-                      <Text className="text-xs font-bold text-white">Save</Text>
-                    </LinearGradient>
+                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                    />
+                    <Check size={14} color="white" />
+                    <Text className="text-xs font-bold text-white">Save</Text>
                   </Pressable>
                 </View>
               </View>

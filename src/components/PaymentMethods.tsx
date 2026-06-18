@@ -456,17 +456,26 @@ export default function PaymentMethods({onBack}: Props) {
                 className="flex-1 h-12 rounded-2xl bg-slate-100 items-center justify-center">
                 <Text className="text-sm font-bold text-slate-600">Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleAdd} disabled={adding} className="flex-1">
+              <TouchableOpacity
+                onPress={handleAdd}
+                disabled={adding}
+                style={{
+                  flex: 1,
+                  borderRadius: 16,
+                  height: 48,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
-                  style={{borderRadius: 16, height: 48}}
-                  className="items-center justify-center">
-                  {adding ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text className="text-white font-bold text-sm">Add Method</Text>
-                  )}
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                {adding ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-sm">Add Method</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
