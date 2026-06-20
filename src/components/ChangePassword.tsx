@@ -1,5 +1,13 @@
 import React from 'react';
-import {View, Text, TouchableOpacity, ScrollView, TextInput} from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {ChevronLeft, Lock} from 'lucide-react-native';
 
 interface ChangePasswordProps {
@@ -32,10 +40,12 @@ const PasswordField = ({label, placeholder}: {label: string; placeholder: string
 
 const ChangePassword: React.FC<ChangePasswordProps> = ({onBack}) => {
   return (
-    <View className="flex-1 bg-slate-50">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-slate-50">
       <PageHeader title="Change Password" onBack={onBack} />
 
-      <ScrollView className="flex-1 px-6 pt-8">
+      <ScrollView className="flex-1 px-6 pt-8" keyboardShouldPersistTaps="handled">
         {/* Info Banner */}
         <View className="bg-[#FCE6F1] rounded-xl p-4 mb-6">
           <Text className="text-sm text-[#E60076] font-medium">
@@ -52,7 +62,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({onBack}) => {
           <Text className="text-white font-bold text-base">Update Password</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

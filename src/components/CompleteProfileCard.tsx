@@ -8,6 +8,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Check,
@@ -388,7 +390,9 @@ function SetRatesModal({
 
   return (
     <Modal visible animationType="slide" transparent>
-      <View className="flex-1 bg-black/40 justify-end">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-black/40 justify-end">
         <View className="bg-white rounded-t-[32px] max-h-[85%]">
           {/* Header */}
           <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -510,7 +514,7 @@ function SetRatesModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -8,6 +8,8 @@ import {
   Modal,
   ActivityIndicator,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   X,
@@ -100,7 +102,9 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
 
   return (
     <Modal visible={visible} animationType="slide">
-      <View className="flex-1 bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-white">
           {submitted ? (
             // Success screen
             <View className="p-8 items-center" style={{gap: 16}}>
@@ -259,7 +263,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               </View>
             </>
           )}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

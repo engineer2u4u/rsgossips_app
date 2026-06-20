@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Image,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   X,
@@ -599,7 +600,8 @@ export default function SupportChatModal({visible, onClose}: Props) {
       animationType="slide"
       transparent
       onRequestClose={onClose}>
-      <View
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end'}}>
         <View
           style={{
@@ -735,7 +737,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
             </View>
           ) : null}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

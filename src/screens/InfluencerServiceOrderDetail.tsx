@@ -11,7 +11,9 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -601,9 +603,13 @@ export default function InfluencerServiceOrderDetail() {
         </View>
       </View>
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}>
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Status banner — padding on the outer View, gradient as absolute bg */}
         <View
           className="flex-row items-start"
@@ -1058,6 +1064,7 @@ export default function InfluencerServiceOrderDetail() {
           </View>
         ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

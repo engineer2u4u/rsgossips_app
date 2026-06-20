@@ -8,7 +8,9 @@
 import React, {useState} from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,7 +62,9 @@ export function EditModal({
       animationType="slide"
       transparent
       onRequestClose={saving ? undefined : onClose}>
-      <View style={s.scrim}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={s.scrim}>
         <View style={s.sheet}>
           {/* Header */}
           <View style={s.header}>
@@ -104,7 +108,7 @@ export function EditModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

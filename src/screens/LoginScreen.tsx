@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View, Pressable, Text } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -462,26 +470,35 @@ export default function LoginScreen() {
         />
       )}
 
-      {/* Auth Drawer */}
+      {/* Auth Drawer — wrapped in KeyboardAvoidingView so the bottom sheet
+          lifts above the iOS keyboard instead of sitting behind it. The
+          inner ScrollView keeps content reachable when the keyboard plus
+          the sheet would otherwise exceed the visible window. */}
       {flow !== 'onboarding' && (
-        <View className="absolute bottom-0 w-full bg-white rounded-t-[40px] overflow-hidden">
-          {/* Loading Overlay */}
-          {loading && <LoadingSpinner message={loadingMsg} />}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{position: 'absolute', left: 0, right: 0, bottom: 0}}>
+          <View className="w-full bg-white rounded-t-[40px] overflow-hidden">
+            {/* Loading Overlay */}
+            {loading && <LoadingSpinner message={loadingMsg} />}
 
-          {/* Header with close & drag indicator */}
-          <View className="relative items-center px-8 pt-6 pb-2">
-            <View className="w-12 h-1 bg-slate-200 rounded-full mb-4" />
-            <Pressable
-              onPress={closeAuth}
-              className="absolute right-6 top-6 p-2 rounded-full"
-              hitSlop={8}
-            >
-              <X size={24} color="#64748B" />
-            </Pressable>
-          </View>
+            {/* Header with close & drag indicator */}
+            <View className="relative items-center px-8 pt-6 pb-2">
+              <View className="w-12 h-1 bg-slate-200 rounded-full mb-4" />
+              <Pressable
+                onPress={closeAuth}
+                className="absolute right-6 top-6 p-2 rounded-full"
+                hitSlop={8}
+              >
+                <X size={24} color="#64748B" />
+              </Pressable>
+            </View>
 
-          {/* Content */}
-          <View className="px-8 pb-12">
+            {/* Content */}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{paddingHorizontal: 32, paddingBottom: 48}}>
             {/* ===== SIGN IN FLOW (phone-OTP, web parity) ===== */}
             {flow === 'signin' && (
               <>
@@ -578,8 +595,9 @@ export default function LoginScreen() {
                 )}
               </>
             )}
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       )}
     </View>
   );

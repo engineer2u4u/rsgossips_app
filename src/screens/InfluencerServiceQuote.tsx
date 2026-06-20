@@ -8,6 +8,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -333,6 +335,9 @@ export default function InfluencerServiceQuote() {
         </Text>
       </View>
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}>
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
         keyboardShouldPersistTaps="handled">
@@ -567,6 +572,7 @@ export default function InfluencerServiceQuote() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

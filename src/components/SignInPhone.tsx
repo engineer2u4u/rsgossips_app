@@ -91,6 +91,7 @@ export default function SignInPhone({
             maxLength={maxLen}
             editable={!loading}
             className="flex-1 text-base"
+            style={{ lineHeight: 16 }}
           />
         </View>
       </View>

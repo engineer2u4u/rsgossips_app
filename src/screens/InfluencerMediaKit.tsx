@@ -12,6 +12,8 @@ import {
   Share,
   Clipboard,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   MapPin,
@@ -211,7 +213,10 @@ export default function InfluencerMediaKit() {
 
   return (
     <InfluencerLayout>
-      <ScrollView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}>
+      <ScrollView className="flex-1" style={{backgroundColor: '#F5F4F8'}} keyboardShouldPersistTaps="handled">
         {/* Template selector lives ABOVE the preview so it's always
             visible while the user explores layouts. */}
         <View className="px-4 pt-6 pb-3" style={{gap: 8}}>
@@ -349,6 +354,7 @@ export default function InfluencerMediaKit() {
 
         <View className="h-20" />
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Template picker modal — same UX as before, just promoted off the
           main scroll so the page above is the live preview the user is

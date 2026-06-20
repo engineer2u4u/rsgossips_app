@@ -16,7 +16,9 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -383,7 +385,9 @@ export default function PaymentMethods({onBack}: Props) {
 
       {/* Add Payment Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
-        <View className="flex-1 bg-black/40 justify-end">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1 bg-black/40 justify-end">
           <View className="bg-white rounded-t-[32px] p-6" style={{gap: 16}}>
             <View className="flex-row items-center justify-between">
               <Text className="text-lg font-bold text-slate-800">Add Payment Method</Text>
@@ -479,7 +483,7 @@ export default function PaymentMethods({onBack}: Props) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );

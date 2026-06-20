@@ -7,6 +7,8 @@ import {
   ScrollView,
   Switch,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {ChevronLeft} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -100,7 +102,9 @@ export default function FilterModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/40 justify-end">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-black/40 justify-end">
         <View className="bg-white rounded-t-[40px] max-h-[88%]">
           {/* Header */}
           <View className="flex-row justify-between items-center px-6 py-4 border-b border-slate-100">
@@ -337,7 +341,7 @@ export default function FilterModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

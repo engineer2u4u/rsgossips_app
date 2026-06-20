@@ -8,6 +8,8 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Camera,
@@ -174,7 +176,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100">
         <View className="flex-row items-center" style={{gap: 12}}>
@@ -470,7 +474,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

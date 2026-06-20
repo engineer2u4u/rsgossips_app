@@ -67,13 +67,18 @@ export function TemplateClassic({
 
   return (
     <View>
-      {/* HERO */}
-      <LinearGradient
-        colors={['#9810FA', '#E60076', '#f472b6']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
+      {/* HERO — padding/layout on the wrapper View so iOS sizes the row
+          against the touchable bounds, not against the gradient view's
+          intrinsic baseline. Gradient is an absolute background fill. */}
+      <View
         className="px-5 py-8 flex-row items-center"
-        style={{gap: 16}}>
+        style={{gap: 16, overflow: 'hidden'}}>
+        <LinearGradient
+          colors={['#9810FA', '#E60076', '#f472b6']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
         <View
           className="w-24 h-24 rounded-full overflow-hidden"
           style={{borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)'}}>
@@ -110,7 +115,7 @@ export function TemplateClassic({
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <View className="px-4 py-6" style={{gap: 16}}>
         {/* ABOUT — only template with inline bio edit */}

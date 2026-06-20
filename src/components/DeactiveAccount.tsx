@@ -16,6 +16,8 @@
 import React, {useState} from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -116,10 +118,14 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
   };
 
   return (
-    <View className="flex-1 bg-slate-50">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-slate-50">
       <PageHeader title="Deactivate Account" onBack={onBack} />
 
-      <ScrollView className="flex-1 px-6 pt-6">
+      <ScrollView
+        className="flex-1 px-6 pt-6"
+        keyboardShouldPersistTaps="handled">
         {/* Warning Banner */}
         <View className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
           <View className="flex-row items-center mb-3">
@@ -219,7 +225,7 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
           <Text className="text-slate-600 font-bold text-base">Cancel</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
