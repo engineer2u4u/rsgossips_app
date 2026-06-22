@@ -28,7 +28,10 @@ interface Profile {
   media_kit_published?: boolean;
   created_at?: string;
   updated_at?: string;
-  instagram_access_token?: string;
+  // check-profile now strips the raw access token and exposes a derived
+  // boolean instead. The actual token never reaches the client.
+  instagram_connected?: boolean;
+  instagram_token_expires_at?: string | null;
   [key: string]: any;
 }
 
@@ -81,11 +84,18 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setProfile(data.profile);
         setRole(data.role || data.profile.role || null);
 
+        // check-profile now returns a derived `instagram_connected` boolean
+        // (raw token stripped server-side). Only flag missing when the
+        // server EXPLICITLY says disconnected — `undefined` means an old
+        // API response and we'd rather under-warn than show a false
+        // banner to a connected user.
         if (
           data.profile.instagram_handle &&
-          !data.profile.instagram_access_token
+          data.profile.instagram_connected === false
         ) {
           setInstagramTokenMissing(true);
+        } else {
+          setInstagramTokenMissing(false);
         }
       } else {
         setProfile(null);

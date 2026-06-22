@@ -8,8 +8,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { X } from 'lucide-react-native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { Mail, X } from 'lucide-react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 import { supabase } from '../utils/supabase';
@@ -55,8 +56,11 @@ interface InstaProfile {
   tokenExpiresAt?: string;
 }
 
+type LoginRouteParams = { invited?: string };
+
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<{ Login: LoginRouteParams }, 'Login'>>();
   const {user: authedUser, role: authedRole, loading: authLoading} = useAuth();
 
   // If AuthContext restored a session from AsyncStorage (cold start with a
@@ -68,6 +72,79 @@ export default function LoginScreen() {
     const target = authedRole === 'brand' ? 'BrandHome' : 'InfluencerHome';
     (navigation as any).reset({index: 0, routes: [{name: target}]});
   }, [authLoading, authedUser, authedRole, navigation]);
+
+  // --- INVITATION DEEP LINK (?invited=<handle>) ---
+  // Tapping the admin email link opens the app at this screen with
+  // route.params.invited set to the brand/influencer Instagram handle.
+  // We resolve it via lookup-invitation, auto-set role + name, and jump
+  // straight to the Instagram OAuth step. No skip — IG is mandatory.
+  useEffect(() => {
+    const handle = (route.params?.invited || '').trim();
+    if (!handle) return;
+    let cancelled = false;
+    (async () => {
+      setInvitationChecking(true);
+      try {
+        const data = await invokeFn<{
+          found?: boolean;
+          role?: 'brand' | 'influencer';
+          status?: string;
+          invitation?: {
+            id: string;
+            name: string;
+            instagram_username: string;
+            logo_url: string;
+          };
+        }>('lookup-invitation', { token: handle });
+        if (cancelled) return;
+
+        if (!data?.found) {
+          setInvitationBlock({
+            kind: 'invalid',
+            title: 'Invitation link not recognised',
+            message: `We couldn't find an invitation for @${handle}. Double-check the link or sign up normally.`,
+          });
+          setFlow('signup');
+          return;
+        }
+        if (data.status && data.status !== 'pending') {
+          setInvitationBlock({
+            kind: 'claimed',
+            title: 'Invitation already used',
+            message: `This invitation for @${handle} has already been claimed. Sign in with the phone number you registered with.`,
+          });
+          setFlow('signin');
+          return;
+        }
+
+        const inv = data.invitation!;
+        setInvitation({
+          id: inv.id,
+          instagramHandle: (inv.instagram_username || handle).toLowerCase(),
+        });
+        setSignupData(prev => ({
+          ...prev,
+          role: data.role || prev.role,
+          name: inv.name || prev.name,
+        }));
+        setFlow('signup');
+        setStep(2); // → InstagramConnect (mandatory)
+      } catch (e: any) {
+        if (cancelled) return;
+        setInvitationBlock({
+          kind: 'error',
+          title: "Couldn't verify your invitation",
+          message: e?.message || 'Please try the link again or contact support.',
+        });
+        setFlow('signup');
+      } finally {
+        if (!cancelled) setInvitationChecking(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [route.params?.invited]);
 
   // --- UI & FLOW STATE ---
   // signin steps: 1=role, 2=instagram connect (auto-login)
@@ -90,7 +167,20 @@ export default function LoginScreen() {
   const [instaProfile, setInstaProfile] = useState<InstaProfile | null>(null);
 
   // --- INVITATION STATE ---
-  const [invitation, setInvitation] = useState<any>(null);
+  // Set by the ?invited=<handle> deep-link lookup. `instagramHandle` is
+  // the expected IG handle from the invitation row — used to enforce the
+  // anti-fraud check during OAuth.
+  const [invitation, setInvitation] = useState<{
+    id: string;
+    instagramHandle: string;
+  } | null>(null);
+  const [invitationBlock, setInvitationBlock] = useState<{
+    kind: 'use-link' | 'claimed' | 'invalid' | 'error';
+    title: string;
+    message: string;
+    inviteHandle?: string;
+  } | null>(null);
+  const [invitationChecking, setInvitationChecking] = useState(false);
 
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
@@ -299,7 +389,7 @@ export default function LoginScreen() {
     nextStep(); // -> step 2 (Instagram connect)
   };
 
-  const handleSignUpInstagramConnect = (profile: InstaProfile) => {
+  const handleSignUpInstagramConnect = async (profile: InstaProfile) => {
     // Refuse to advance past the Instagram step without a usable profile.
     // The InstagramConnect component already guards against this, but a
     // second check here means the row can never land with a token-only
@@ -310,6 +400,48 @@ export default function LoginScreen() {
       );
       return;
     }
+
+    // Invitation flow: the user proved invitation ownership by tapping
+    // the email link. Verify the OAuth'd handle matches the invitation
+    // (case-insensitive) — prevents claiming a brand invitation with a
+    // personal IG account by accident.
+    if (invitation?.instagramHandle) {
+      const oauthHandle = profile.username.toLowerCase();
+      if (oauthHandle !== invitation.instagramHandle) {
+        setError(
+          `This invitation is for @${invitation.instagramHandle}. ` +
+          `You connected @${profile.username}. Please reconnect with the right Instagram account.`,
+        );
+        return;
+      }
+      setInstaProfile(profile);
+      nextStep();
+      return;
+    }
+
+    // Non-invitation signup: if the OAuth'd handle matches a pending
+    // invitation we don't know about (user signed up directly instead of
+    // via the email link), bounce them to a "Use your invitation link"
+    // screen so they don't end up with a duplicate account.
+    try {
+      const data = await invokeFn<{
+        found?: boolean;
+        status?: string;
+      }>('lookup-invitation', { token: profile.username });
+      if (data?.found && data?.status === 'pending') {
+        setInstaProfile(null);
+        setInvitationBlock({
+          kind: 'use-link',
+          title: 'Use your invitation link',
+          message: `We've already pre-registered @${profile.username}. Open the invitation link we emailed you (or sign up with a different Instagram).`,
+          inviteHandle: profile.username,
+        });
+        return;
+      }
+    } catch (_) {
+      // Soft-fail — don't block sign-up on a lookup outage.
+    }
+
     setInstaProfile(profile);
     nextStep(); // -> step 3 (profile form)
   };
@@ -499,6 +631,39 @@ export default function LoginScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{paddingHorizontal: 32, paddingBottom: 48}}>
+            {/* Invitation interrupt — shown when the link is bad/used or
+                when the user signed up directly with an IG that has a
+                pending invitation. Replaces the regular flow until
+                resolved. */}
+            {invitationChecking && (
+              <View className="items-center justify-center py-12">
+                <ActivityIndicator size="large" color="#E60076" />
+                <Text className="mt-3 text-sm font-semibold text-slate-500">
+                  Checking your invitation…
+                </Text>
+              </View>
+            )}
+            {invitationBlock && !invitationChecking && (
+              <InvitationInterrupt
+                block={invitationBlock}
+                onContinueSignUp={() => {
+                  setInvitationBlock(null);
+                  setFlow('signup');
+                  setStep(1);
+                }}
+                onSwitchToSignIn={() => {
+                  setInvitationBlock(null);
+                  setFlow('signin');
+                  setStep(1);
+                }}
+                onUseInvitation={(handle) => {
+                  // Re-enter the invitation flow via route params reset.
+                  setInvitationBlock(null);
+                  (navigation as any).setParams({ invited: handle });
+                }}
+              />
+            )}
+            {!invitationChecking && !invitationBlock && (<>
             {/* ===== SIGN IN FLOW (phone-OTP, web parity) ===== */}
             {flow === 'signin' && (
               <>
@@ -595,9 +760,112 @@ export default function LoginScreen() {
                 )}
               </>
             )}
+            </>)}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      )}
+    </View>
+  );
+}
+
+// Drawer screen shown when the invitation flow can't proceed:
+//   - "use-link"  → user signed up directly with an IG that has a pending
+//                   invitation; route them to the email link instead
+//   - "claimed"   → invitation already used; bounce to sign-in
+//   - "invalid"/"error" → link broken or service hiccup; let them sign
+//                         up normally
+function InvitationInterrupt({
+  block,
+  onContinueSignUp,
+  onSwitchToSignIn,
+  onUseInvitation,
+}: {
+  block: {
+    kind: 'use-link' | 'claimed' | 'invalid' | 'error';
+    title: string;
+    message: string;
+    inviteHandle?: string;
+  };
+  onContinueSignUp: () => void;
+  onSwitchToSignIn: () => void;
+  onUseInvitation: (handle: string) => void;
+}) {
+  return (
+    <View style={{ paddingTop: 24 }}>
+      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: '#FDF2F8',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Mail size={26} color="#E60076" />
+        </View>
+      </View>
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <Text className="text-xl font-black text-slate-900 text-center">
+          {block.title}
+        </Text>
+        <Text className="text-sm text-slate-500 text-center leading-5 mt-2">
+          {block.message}
+        </Text>
+      </View>
+
+      {block.kind === 'use-link' && (
+        <Text className="text-[11px] text-slate-400 text-center leading-4 mb-4">
+          Can't find the email? Check spam, or reach out to info@rgossips.com.
+        </Text>
+      )}
+
+      {block.kind === 'claimed' ? (
+        <Pressable
+          onPress={onSwitchToSignIn}
+          style={{ borderRadius: 16, overflow: 'hidden' }}>
+          <LinearGradient
+            colors={['#9810FA', '#E60076']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ paddingVertical: 14, alignItems: 'center' }}>
+            <Text className="text-white text-sm font-black">Sign in instead</Text>
+          </LinearGradient>
+        </Pressable>
+      ) : block.kind === 'use-link' ? (
+        <View style={{ gap: 12 }}>
+          {!!block.inviteHandle && (
+            <Pressable
+              onPress={() => onUseInvitation(block.inviteHandle!)}
+              style={{ borderRadius: 16, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={['#9810FA', '#E60076']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ paddingVertical: 14, alignItems: 'center' }}>
+                <Text className="text-white text-sm font-black">
+                  Continue with my invitation →
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={onContinueSignUp}
+            className="border border-slate-200 rounded-2xl py-3 items-center">
+            <Text className="text-sm font-bold text-slate-600">
+              Sign up with a different Instagram
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          onPress={onContinueSignUp}
+          className="border border-slate-200 rounded-2xl py-3 items-center">
+          <Text className="text-sm font-bold text-slate-600">
+            Sign up with a different Instagram
+          </Text>
+        </Pressable>
       )}
     </View>
   );

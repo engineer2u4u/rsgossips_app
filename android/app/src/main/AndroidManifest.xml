@@ -37,6 +37,19 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="com.rgossips" />
         </intent-filter>
+
+        <!--
+          Admin invitation deep link — tapping `rgossips://?invited=<handle>`
+          from an email/SMS opens the app at the Login screen. React
+          Navigation's `linking` config (App.tsx) reads the `invited`
+          query param and runs the invitation flow.
+        -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="rgossips" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

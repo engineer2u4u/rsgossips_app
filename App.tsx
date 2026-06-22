@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { LinkingOptions } from '@react-navigation/native';
 import './global.css';
 import { AuthProvider } from './src/context/AuthContext';
 import { LoadingProvider } from './src/context/LoadingContext';
@@ -34,13 +35,27 @@ import RecommendedCampaigns from './src/screens/RecommendedCampaigns';
 
 const Stack = createNativeStackNavigator();
 
+// Deep-link config — admin invitation emails open
+//   rgossips://?invited=<ig-handle>
+// or the universal-link equivalent https://rgossips.com/?invited=...
+// (once App Links are verified). LoginScreen reads `route.params.invited`
+// on mount and runs the invitation flow.
+const linking: LinkingOptions<any> = {
+  prefixes: ['rgossips://', 'https://rgossips.com', 'https://www.rgossips.com'],
+  config: {
+    screens: {
+      Login: '',
+    },
+  },
+};
+
 export default function App() {
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>
       <LoadingProvider>
       <AuthProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen

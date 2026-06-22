@@ -7,6 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import BottomNav from '../components/BottomNav';
 import SupportChatModal from '../components/SupportChatModal';
+import InstagramRequiredGate from '../components/InstagramRequiredGate';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 import {BRAND, BRAND_GRADIENT_WARM, BG} from '../theme/brand';
@@ -143,6 +144,12 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
 export default function InfluencerLayout({children}: {children: React.ReactNode}) {
   const scrollRef = useRef<ScrollView>(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  const {profile} = useAuth();
+  // Instagram is a mandatory connection for influencers — gate the
+  // dashboard until profile.instagram_connected is true. `undefined`
+  // means cached/old response (don't block); explicit `false` means
+  // server confirmed no token.
+  const needsIg = !!profile && profile.instagram_connected === false;
 
   return (
     <SafeAreaView className="flex-1" style={{backgroundColor: BG.page}}>
@@ -171,6 +178,8 @@ export default function InfluencerLayout({children}: {children: React.ReactNode}
         visible={supportOpen}
         onClose={() => setSupportOpen(false)}
       />
+
+      {needsIg && <InstagramRequiredGate />}
     </SafeAreaView>
   );
 }
