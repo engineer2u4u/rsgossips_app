@@ -1,17 +1,48 @@
-import React from 'react';
-import {View, Text, Image, TouchableOpacity, ScrollView, FlatList, Dimensions} from 'react-native';
-import {ChevronLeft, Plus, Instagram, Edit2} from 'lucide-react-native';
+import React, {useEffect, useMemo, useState} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  ActivityIndicator,
+  Linking,
+} from 'react-native';
+import {ChevronLeft, Instagram, Edit2} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
+import {invokeFn} from '../lib/api';
 import BottomNav from './BottomNav';
 
 const {width} = Dimensions.get('window');
 
 interface Props {
   onBack: () => void;
-  onAddReel: () => void;
+  /** Optional now — kept so legacy callers don't break, but the Add Reel
+   *  button has been removed (the web app doesn't have one either). */
+  onAddReel?: () => void;
   onEditProfile?: () => void;
 }
+
+// Mirrors web's SUBMISSION_STATUS_BADGE. Anything else falls through to
+// no badge so we never paint an unknown status.
+const SUBMISSION_STATUS_BADGE: Record<string, {label: string; bg: string; fg: string}> = {
+  live_submitted: {label: 'Pending', bg: '#FEF3C7', fg: '#92400E'},
+  completed: {label: 'Approved', bg: '#D1FAE5', fg: '#065F46'},
+};
+
+// One card per submitted live link, derived from the user's campaigns.
+type LiveSubmission = {
+  url: string;
+  type: string;
+  label: string;
+  campaignId: string;
+  campaignTitle: string;
+  brandName: string;
+  brandLogo?: string;
+  applicationStatus: string;
+};
 
 function formatCount(n: number | undefined) {
   if (!n) return '—';
@@ -29,8 +60,8 @@ const METRIC_COLORS: Record<string, string> = {
   purple: '#8B5CF6',
 };
 
-const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}) => {
-  const {profile} = useAuth();
+const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
+  const {profile, user} = useAuth();
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || 'creator';
@@ -39,7 +70,62 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
   const following = profile?.follows_count || 0;
   const posts = profile?.media_count || 0;
   const categories = profile?.categories || [];
-  const topReels = profile?.top_reels || [];
+
+  // Web parity (D:/Development/React/RS_Gossips MyInformationDetail.jsx):
+  // My Work shows every live link the creator submitted on accepted
+  // campaigns — NOT a manually-curated reels list. Pulled from list-campaigns,
+  // flattened across c.submissionLinks, filtered to live/completed statuses.
+  const [campaignSubmissions, setCampaignSubmissions] = useState<any[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setSubmissionsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
+          influencerId: user.id,
+        });
+        if (cancelled) return;
+        setCampaignSubmissions(Array.isArray(data?.campaigns) ? data.campaigns : []);
+      } catch (e) {
+        console.warn('Failed to fetch campaign submissions:', e);
+      } finally {
+        if (!cancelled) setSubmissionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const submittedLiveLinks = useMemo<LiveSubmission[]>(() => {
+    const items: LiveSubmission[] = [];
+    for (const c of campaignSubmissions) {
+      const isLive =
+        c.applicationStatus === 'live_submitted' ||
+        c.applicationStatus === 'completed';
+      if (!isLive) continue;
+      const links = Array.isArray(c.submissionLinks) ? c.submissionLinks : [];
+      for (const l of links) {
+        if (!l?.url) continue;
+        items.push({
+          url: l.url,
+          type: l.type || 'link',
+          label: l.label || 'Live post',
+          campaignId: c.id,
+          campaignTitle: c.title || 'Campaign',
+          brandName: c.brandName || 'Brand',
+          brandLogo: c.brandLogo,
+          applicationStatus: c.applicationStatus,
+        });
+      }
+    }
+    return items;
+  }, [campaignSubmissions]);
 
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -173,61 +259,42 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
           </View>
         </View>
 
-        {/* My Work / Reels */}
+        {/* My Work — live submission links pulled from list-campaigns.
+            Mirrors web (D:/Development/React/RS_Gossips MyInformationDetail.jsx):
+            shows one card per submitted live post on an accepted campaign,
+            with the brand logo as the backdrop, the deliverable label in
+            the top-left, and the status pill (Pending / Approved) top-right. */}
         <View className="mx-5 mt-6 mb-4">
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center" style={{gap: 6}}>
-              <View className="w-1 h-5 bg-[#E60076] rounded-full" />
-              <Text className="text-lg font-black text-[#1A1A1A]">My Work</Text>
-              <Text className="text-sm text-gray-400 font-bold">{topReels.length || posts}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={onAddReel}
-              style={{
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                overflow: 'hidden',
-              }}>
-              <LinearGradient
-                colors={['#9810FA', '#E60076']}
-                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
-              />
-              <Plus size={14} color="white" />
-              <Text className="text-white text-xs font-bold">Add Reel</Text>
-            </TouchableOpacity>
+          <View className="flex-row items-center mb-4" style={{gap: 6}}>
+            <View className="w-1 h-5 bg-[#E60076] rounded-full" />
+            <Text className="text-lg font-black text-[#1A1A1A]">My Work</Text>
+            <Text className="text-sm text-gray-400 font-bold">
+              {submittedLiveLinks.length}
+            </Text>
           </View>
 
-          {/* Reel Grid */}
-          {topReels.length > 0 ? (
-            <View className="flex-row flex-wrap" style={{gap: 8}}>
-              {topReels.map((reel: any, i: number) => (
-                <View key={reel.id || i} style={{width: (width - 50) / 2}} className="h-48 rounded-2xl overflow-hidden bg-slate-100">
-                  {reel.thumbnail ? (
-                    <Image source={{uri: reel.thumbnail}} className="w-full h-full" resizeMode="cover" />
-                  ) : (
-                    <View className="w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 items-center justify-center">
-                      <Instagram size={24} color="#CBD5E1" />
-                    </View>
-                  )}
-                  {reel.category && (
-                    <View className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded-md">
-                      <Text className="text-[8px] font-bold text-white uppercase">{reel.category}</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
+          {submissionsLoading ? (
+            <View className="py-10 items-center" style={{gap: 8}}>
+              <ActivityIndicator size="small" color="#E60076" />
+              <Text className="text-xs font-bold text-gray-400">Loading…</Text>
+            </View>
+          ) : submittedLiveLinks.length === 0 ? (
+            <View className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 items-center">
+              <Text className="text-sm font-bold text-gray-500">
+                No live submissions yet.
+              </Text>
+              <Text className="text-[11px] text-gray-400 mt-1 text-center">
+                Your approved campaign live links will show up here.
+              </Text>
             </View>
           ) : (
-            <View className="flex-row" style={{gap: 8}}>
-              {[1, 2].map(i => (
-                <View key={i} style={{width: (width - 50) / 2}} className="h-48 rounded-2xl bg-slate-50 items-center justify-center border border-slate-100">
-                  <Instagram size={24} color="#CBD5E1" />
-                  <Text className="text-[10px] text-slate-300 font-bold mt-2">No content yet</Text>
-                </View>
+            <View className="flex-row flex-wrap" style={{gap: 8}}>
+              {submittedLiveLinks.map(sub => (
+                <SubmissionCard
+                  key={`${sub.campaignId}-${sub.url}`}
+                  sub={sub}
+                  size={(width - 50) / 2}
+                />
               ))}
             </View>
           )}
@@ -243,5 +310,100 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onAddReel, onEditProfile}
     </View>
   );
 };
+
+function SubmissionCard({sub, size}: {sub: LiveSubmission; size: number}) {
+  const status = SUBMISSION_STATUS_BADGE[sub.applicationStatus];
+  const initials = (sub.brandName || '?').charAt(0).toUpperCase();
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => Linking.openURL(sub.url).catch(() => {})}
+      style={{
+        width: size,
+        aspectRatio: 3 / 4,
+        borderRadius: 20,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        backgroundColor: '#F1F5F9',
+      }}>
+      {/* Backdrop — brand logo when present, else gradient + initial. */}
+      {sub.brandLogo ? (
+        <Image
+          source={{uri: sub.brandLogo}}
+          style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
+          resizeMode="cover"
+        />
+      ) : (
+        <LinearGradient
+          colors={['#6366F1', '#9810FA', '#EC4899']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={{position: 'absolute', inset: 0}}>
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-white text-5xl font-black">{initials}</Text>
+          </View>
+        </LinearGradient>
+      )}
+
+      {/* Type / label badge — top-left */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1,
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 999,
+        }}>
+        <Text className="text-[9px] font-black text-white uppercase tracking-wider">
+          {sub.label}
+        </Text>
+      </View>
+
+      {/* Status pill — top-right */}
+      {status ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 999,
+            backgroundColor: status.bg,
+          }}>
+          <Text
+            className="text-[9px] font-black uppercase tracking-wider"
+            style={{color: status.fg}}>
+            {status.label}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Brand + campaign overlay — bottom */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.9)']}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: 10,
+        }}>
+        <Text className="text-[10px] font-bold text-white/80" numberOfLines={1}>
+          {sub.brandName}
+        </Text>
+        <Text className="text-[10px] font-black text-white" numberOfLines={1}>
+          {sub.campaignTitle}
+        </Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
 
 export default MyInformationDetail;

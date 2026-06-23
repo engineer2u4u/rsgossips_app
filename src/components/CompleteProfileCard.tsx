@@ -163,7 +163,7 @@ export default function CompleteProfileCard() {
   const ringOffset = RING_CIRCUMFERENCE - RING_CIRCUMFERENCE * (completedCount / 5);
 
   return (
-    <View className="w-full mb-6">
+    <View className="w-full mb-4">
       <View
         style={[
           {
@@ -171,13 +171,13 @@ export default function CompleteProfileCard() {
             borderRadius: 24,
             borderWidth: 1,
             borderColor: 'rgba(25,22,43,0.06)',
-            padding: 20,
+            padding: 16,
           },
           CARD_SHADOW,
         ]}>
         {/* HEADER */}
-        <View className="mb-6">
-          <View className="flex-row items-center mb-5" style={{gap: 16}}>
+        <View className="mb-2">
+          <View className="flex-row items-center" style={{gap: 12}}>
             <View
               style={{width: RING_SIZE, height: RING_SIZE}}
               className="items-center justify-center">
@@ -215,123 +215,103 @@ export default function CompleteProfileCard() {
             </View>
 
             <View className="flex-1">
-              <Text className="text-[17px] font-black text-slate-900 leading-tight">
+              <Text className="text-[16px] font-black text-slate-900 leading-tight">
                 Get Your First Brand Deal
               </Text>
-              <Text className="text-xs text-slate-400 font-bold mt-0.5">
+              <Text className="text-[11px] text-slate-400 font-bold mt-0.5">
                 {completedCount}/5 steps —{' '}
-                {completedCount === 5 ? 'All done!' : 'Keep going!'}
+                {completedCount === 5 ? 'all done 🎉' : 'keep going!'}
               </Text>
             </View>
           </View>
-
-          <View className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <Animated.View style={progressStyle} className="h-full">
-              <LinearGradient
-                colors={[...BRAND_GRADIENT_WARM]}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={{flex: 1}}
-              />
-            </Animated.View>
-          </View>
         </View>
 
-        {/* STEPS */}
+        {/* STEPS — tight rows, divider between items only (no dashed
+            connector), no bottom progress bar. Mirrors the screenshot. */}
         <View>
           {steps.map((step, index) => (
-            <View key={step.id}>
-              <View
-                className={`flex-row items-center justify-between py-3.5 ${
-                  index !== steps.length - 1 ? 'border-b border-slate-50' : ''
-                }`}>
-                <View className="flex-row items-center flex-1" style={{gap: 14}}>
-                  {step.completed ? (
-                    <LinearGradient
-                      colors={[...BRAND_GRADIENT_WARM]}
-                      style={{
-                        borderRadius: 100,
-                        width: 32,
-                        height: 32,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Check size={16} color="white" strokeWidth={4} />
-                    </LinearGradient>
-                  ) : (
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 100,
-                        borderWidth: 2,
-                        borderColor: step.active ? BRAND.accent : '#e2e8f0',
-                        backgroundColor: step.active
-                          ? 'rgba(210,65,143,0.08)'
-                          : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Text
-                        className="text-[13px] font-black"
-                        style={{color: step.active ? BRAND.accent : '#94a3b8'}}>
-                        {step.id}
-                      </Text>
-                    </View>
-                  )}
-                  <View className="flex-1 pr-2">
+            <View
+              key={step.id}
+              className={`flex-row items-center justify-between py-2 ${
+                index !== steps.length - 1 ? 'border-b border-slate-50' : ''
+              }`}>
+              <View className="flex-row items-center flex-1" style={{gap: 12}}>
+                {step.completed ? (
+                  <View
+                    style={{
+                      borderRadius: 100,
+                      width: 26,
+                      height: 26,
+                      backgroundColor: '#22C55E',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                    <Check size={14} color="white" strokeWidth={4} />
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 100,
+                      borderWidth: 2,
+                      borderColor: step.active ? BRAND.accent : '#e2e8f0',
+                      backgroundColor: step.active
+                        ? 'rgba(210,65,143,0.08)'
+                        : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
                     <Text
-                      className={`font-bold text-sm ${
-                        step.completed
-                          ? 'text-slate-300 line-through'
-                          : 'text-slate-800'
-                      }`}>
-                      {step.title}
-                    </Text>
-                    <Text className="text-[11px] text-slate-400 font-semibold">
-                      {step.subtitle}
+                      className="text-[11px] font-black"
+                      style={{color: step.active ? BRAND.accent : '#94a3b8'}}>
+                      {step.id}
                     </Text>
                   </View>
-                </View>
-
-                {step.action && !step.completed && (
-                  step.active ? (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={step.onPress}
-                      style={{
-                        borderRadius: 12,
-                        paddingHorizontal: 14,
-                        paddingVertical: 6,
-                        overflow: 'hidden',
-                      }}>
-                      <LinearGradient
-                        colors={[...BRAND_GRADIENT_WARM]}
-                        start={{x: 0, y: 0}}
-                        end={{x: 1, y: 0}}
-                        style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
-                      />
-                      <Text className="text-white text-[11px] font-black uppercase tracking-wider">
-                        {step.action}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
-                      <View className="px-3.5 py-1.5 rounded-xl border border-slate-200">
-                        <Text className="text-slate-400 text-[11px] font-black uppercase tracking-wider">
-                          {step.action}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )
                 )}
+                <View className="flex-1 pr-2">
+                  <Text
+                    className={`font-bold text-[13px] ${
+                      step.completed ? 'text-slate-800' : 'text-slate-800'
+                    }`}>
+                    {step.title}
+                  </Text>
+                  <Text className="text-[10px] text-slate-400 font-semibold">
+                    {step.subtitle}
+                  </Text>
+                </View>
               </View>
 
-              {index !== steps.length - 1 && (
-                <View
-                  className="border-l-2 border-dashed border-slate-200 my-1"
-                  style={{height: 16, marginLeft: 15}}
-                />
+              {step.action && !step.completed && (
+                step.active ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={step.onPress}
+                    style={{
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 5,
+                      overflow: 'hidden',
+                    }}>
+                    <LinearGradient
+                      colors={[...BRAND_GRADIENT_WARM]}
+                      start={{x: 0, y: 0}}
+                      end={{x: 1, y: 0}}
+                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                    />
+                    <Text className="text-white text-[10px] font-black uppercase tracking-wider">
+                      {step.action}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity activeOpacity={0.8} onPress={step.onPress}>
+                    <View className="px-3 py-1.5 rounded-lg border border-slate-200">
+                      <Text className="text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                        {step.action}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )
               )}
             </View>
           ))}

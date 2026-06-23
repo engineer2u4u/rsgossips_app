@@ -240,7 +240,8 @@ export default function DealOfDayCarousel() {
         style={{width, paddingLeft: 20}}
         data={deals}
         loop
-        autoPlay={false}
+        autoPlay
+        autoPlayInterval={4500}
         scrollAnimationDuration={500}
         onSnapToItem={i => setActive(i)}
         // Don't capture vertical drags — let them bubble to the parent

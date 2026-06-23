@@ -100,13 +100,21 @@ export default function InfluencerCampaign() {
   // pre-fills `selectedBrands`. Mirror that here.
   const incomingBrandFilter: string =
     (route.params as any)?.brandName || (route.params as any)?.brand || '';
+  // "View all" on the home carousel passes the user's niche so the campaigns
+  // list opens already filtered to those categories. Defaults to none.
+  const incomingCategories: string[] = Array.isArray(
+    (route.params as any)?.categories,
+  )
+    ? (route.params as any).categories
+    : [];
 
   const [campaigns, setCampaigns] = useState<CampaignData[]>(FALLBACK_CAMPAIGNS);
   const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState('Active');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] =
+    useState<string[]>(incomingCategories);
   const [budgetRange, setBudgetRange] = useState({min: 0, max: 200000});
   const [selectedBrands, setSelectedBrands] = useState<string[]>(
     incomingBrandFilter ? [incomingBrandFilter] : [],
@@ -127,6 +135,16 @@ export default function InfluencerCampaign() {
       setSelectedBrands([incomingBrandFilter]);
     }
   }, [incomingBrandFilter]);
+
+  // Same pattern for `categories` (passed by "View all" on the home carousel
+  // for the recommended-campaigns section). Re-seed when the param changes
+  // so re-entering with a different niche doesn't keep the old filter.
+  useEffect(() => {
+    if (incomingCategories.length) {
+      setSelectedCategories(incomingCategories);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingCategories.join(',')]);
 
   useEffect(() => {
     let cancelled = false;
@@ -329,7 +347,8 @@ export default function InfluencerCampaign() {
         className="flex-1" style={{backgroundColor: '#F5F4F8'}}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
-        scrollEventThrottle={64}>
+        scrollEventThrottle={64}
+        removeClippedSubviews>
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           {/* Header */}
           <View className="flex-row items-center justify-between">

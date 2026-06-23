@@ -159,7 +159,8 @@ export default function StayCarousel() {
         style={{width, paddingLeft: 20}}
         data={DUMMY_STAYS}
         loop
-        autoPlay={false}
+        autoPlay
+        autoPlayInterval={5500}
         scrollAnimationDuration={500}
         onSnapToItem={i => setActive(i)}
         // Let vertical pans bubble to the page ScrollView so the home page

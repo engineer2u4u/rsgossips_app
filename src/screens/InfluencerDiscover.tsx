@@ -258,7 +258,8 @@ export default function InfluencerDiscover() {
         className="flex-1" style={{backgroundColor: '#F5F4F8'}}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
-        scrollEventThrottle={64}>
+        scrollEventThrottle={64}
+        removeClippedSubviews>
         {/* Header */}
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           <View className="flex-row items-center justify-between">

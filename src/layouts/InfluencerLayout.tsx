@@ -1,5 +1,5 @@
-import React, {useRef, createContext, useContext, useState, useEffect} from 'react';
-import {View, ScrollView, Image, Pressable, Text} from 'react-native';
+import React, {useRef, createContext, useContext, useState, useEffect, useCallback} from 'react';
+import {View, ScrollView, Image, Pressable, Text, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Bell, Headphones} from 'lucide-react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -141,15 +141,38 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
   );
 }
 
-export default function InfluencerLayout({children}: {children: React.ReactNode}) {
+export default function InfluencerLayout({
+  children,
+  onRefresh,
+}: {
+  children: React.ReactNode;
+  /** Optional pull-to-refresh handler. When provided, the page exposes a
+   *  native RefreshControl that runs this callback and shows the spinner
+   *  until the returned promise resolves (or 0ms for void returns). */
+  onRefresh?: () => void | Promise<void>;
+}) {
   const scrollRef = useRef<ScrollView>(null);
   const [supportOpen, setSupportOpen] = useState(false);
-  const {profile} = useAuth();
-  // Instagram is a mandatory connection for influencers — gate the
-  // dashboard until profile.instagram_connected is true. `undefined`
-  // means cached/old response (don't block); explicit `false` means
-  // server confirmed no token.
-  const needsIg = !!profile && profile.instagram_connected === false;
+  const [refreshing, setRefreshing] = useState(false);
+  const {profile, instagramTokenMissing} = useAuth();
+  // Instagram is a mandatory connection for influencers. We gate the
+  // dashboard only when BOTH signals agree: the profile flag is explicit
+  // false AND the refresh-instagram poll also reports the token missing.
+  // This stops a stale `instagram_connected: false` from check-profile
+  // from gating users whose token is in fact still valid (refresh-instagram
+  // clears instagramTokenMissing the moment it confirms the token works).
+  const needsIg =
+    !!profile && profile.instagram_connected === false && instagramTokenMissing;
+
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
 
   return (
     <SafeAreaView className="flex-1" style={{backgroundColor: BG.page}}>
@@ -163,7 +186,24 @@ export default function InfluencerLayout({children}: {children: React.ReactNode}
           // Pad the scroll bottom so the floating glass nav doesn't sit
           // over the final content card.
           contentContainerStyle={{flexGrow: 1, paddingBottom: 110}}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          // Detach off-screen views from the native hierarchy on Android —
+          // the home page has many heavy sections (multiple carousels, lists
+          // of shadowed cards) and the JS thread chokes without recycling.
+          removeClippedSubviews
+          // Drop the JS-thread scroll event spam from 60Hz to ~16Hz; the
+          // page doesn't react to per-pixel scroll position.
+          scrollEventThrottle={16}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={BRAND.accent}
+                colors={[BRAND.accent]}
+              />
+            ) : undefined
+          }>
           <View className="w-full">{children}</View>
         </ScrollView>
       </LayoutScrollContext.Provider>

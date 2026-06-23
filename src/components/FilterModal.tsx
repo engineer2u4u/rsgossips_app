@@ -115,7 +115,7 @@ export default function FilterModal({
             </TouchableOpacity>
             <Text className="text-lg font-bold text-slate-800">Filters</Text>
             <TouchableOpacity onPress={handleReset}>
-              <Text className="text-xs font-bold text-slate-400">Reset</Text>
+              <Text className="text-xs font-bold text-slate-400">Clear All</Text>
             </TouchableOpacity>
           </View>
 
@@ -317,7 +317,7 @@ export default function FilterModal({
             <TouchableOpacity
               onPress={handleReset}
               className="flex-1 h-14 rounded-2xl bg-slate-50 items-center justify-center">
-              <Text className="text-sm font-bold text-slate-700">Reset</Text>
+              <Text className="text-sm font-bold text-slate-700">Clear All</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onClose}

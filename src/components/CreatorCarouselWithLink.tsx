@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, Dimensions, Pressable} from 'react-native';
+import {View, Text, Image, Dimensions, Pressable} from 'react-native';
 import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel';
-import {ChevronLeft, ChevronRight} from 'lucide-react-native';
+import {CheckCircle2} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import CreatorCard from './CreatorCard';
 import {supabase} from '../utils/supabase';
@@ -147,50 +147,45 @@ export default function CreatorsCarouselWithLink() {
         ref={carouselRef}
         width={width}
         style={{width}}
-        height={420}
+        height={520}
         data={creators}
         loop
         autoPlay
-        autoPlayInterval={3500}
+        autoPlayInterval={4500}
         scrollAnimationDuration={900}
         onSnapToItem={index => setCurrent(index)}
         // Let vertical pans pass through to the page ScrollView.
         onConfigurePanGesture={g =>
           g.activeOffsetX([-10, 10]).failOffsetY([-5, 5])
         }
-        renderItem={({item}) => (
+        renderItem={({item, index}) => (
           <View className="items-center justify-start">
-            <CreatorCard {...item} />
+            <CreatorCard
+              {...item}
+              rank={index + 1}
+              trending={index < 3 /* top 3 get the green pill */}
+            />
           </View>
         )}
       />
 
-      {/* Nav arrows */}
-      <View className="flex-row justify-center mt-4" style={{gap: 32}}>
-        <Pressable
-          onPress={() => carouselRef.current?.prev()}
-          className="p-3 bg-white rounded-full border border-slate-100"
-          style={{
-            shadowColor: '#000',
-            shadowOpacity: 0.06,
-            shadowRadius: 6,
-            shadowOffset: {width: 0, height: 2},
-            elevation: 2,
-          }}>
-          <ChevronLeft size={20} color="#0f172a" />
-        </Pressable>
-        <Pressable
-          onPress={() => carouselRef.current?.next()}
-          className="p-3 bg-white rounded-full border border-slate-100"
-          style={{
-            shadowColor: '#000',
-            shadowOpacity: 0.06,
-            shadowRadius: 6,
-            shadowOffset: {width: 0, height: 2},
-            elevation: 2,
-          }}>
-          <ChevronRight size={20} color="#0f172a" />
-        </Pressable>
+      {/* MINI RANK ROW — top 3 creators visible at a glance under the
+          featured slide. Tapping a card scrolls the carousel to that index.
+          Mirrors the row shown in the design screenshot. */}
+      <View className="px-4 mt-4">
+        <View className="flex-row" style={{gap: 10}}>
+          {creators.slice(0, 3).map((c, i) => (
+            <MiniRankCard
+              key={`${c.name}-${i}`}
+              creator={c}
+              rank={i + 1}
+              active={current === i}
+              onPress={() =>
+                carouselRef.current?.scrollTo({index: i, animated: true})
+              }
+            />
+          ))}
+        </View>
       </View>
 
       {/* Dots */}
@@ -198,7 +193,9 @@ export default function CreatorsCarouselWithLink() {
         {creators.map((_, i) => (
           <Pressable
             key={i}
-            onPress={() => carouselRef.current?.scrollTo({index: i, animated: true})}
+            onPress={() =>
+              carouselRef.current?.scrollTo({index: i, animated: true})
+            }
             className={`h-2.5 rounded-full ${
               current === i ? 'w-10' : 'bg-gray-300 w-2.5'
             }`}>
@@ -214,5 +211,134 @@ export default function CreatorsCarouselWithLink() {
         ))}
       </View>
     </View>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Mini rank card — small version of the featured card shown in a row.
+
+function avatarTone(seed: string): [string, string] {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  const palette: [string, string][] = [
+    ['#3B82F6', '#1D4ED8'],
+    ['#EC4899', '#BE185D'],
+    ['#F59E0B', '#EA580C'],
+    ['#10B981', '#047857'],
+    ['#8B5CF6', '#6D28D9'],
+  ];
+  return palette[Math.abs(h) % palette.length];
+}
+
+function MiniRankCard({
+  creator,
+  rank,
+  active,
+  onPress,
+}: {
+  creator: Creator;
+  rank: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const initial = (creator.name || '?').trim().charAt(0).toUpperCase();
+  const [bgA, bgB] = avatarTone(creator.name || '?');
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 10,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: active ? '#FBCFE8' : '#F1F5F9',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        shadowOffset: {width: 0, height: 2},
+        elevation: 2,
+      }}>
+      {/* Rank pill — top-left */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 6,
+          left: 6,
+          width: 18,
+          height: 18,
+          borderRadius: 6,
+          backgroundColor: '#F1F5F9',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Text className="text-[10px] font-black text-slate-600">{rank}</Text>
+      </View>
+
+      {/* Small gradient-ringed avatar */}
+      <LinearGradient
+        colors={['#8B5CF6', '#FA288A', '#F59E0B']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          padding: 2.5,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 4,
+        }}>
+        {creator.image ? (
+          <Image
+            source={{uri: creator.image}}
+            style={{
+              width: 51,
+              height: 51,
+              borderRadius: 26,
+              borderWidth: 2,
+              borderColor: '#fff',
+            }}
+          />
+        ) : (
+          <LinearGradient
+            colors={[bgA, bgB]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={{
+              width: 51,
+              height: 51,
+              borderRadius: 26,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 2,
+              borderColor: '#fff',
+            }}>
+            <Text className="text-white font-black" style={{fontSize: 20}}>
+              {initial}
+            </Text>
+          </LinearGradient>
+        )}
+      </LinearGradient>
+
+      <View
+        className="flex-row items-center mt-2"
+        style={{gap: 3, maxWidth: '100%'}}>
+        <Text
+          numberOfLines={1}
+          className="text-[11px] font-black text-slate-900"
+          style={{maxWidth: 80}}>
+          {creator.name}
+        </Text>
+        {creator.verified ? (
+          <CheckCircle2 size={9} color="#d2418f" />
+        ) : null}
+      </View>
+      <Text className="text-[10px] font-bold text-slate-400 mt-0.5">
+        {creator.followers || '—'}
+      </Text>
+    </Pressable>
   );
 }

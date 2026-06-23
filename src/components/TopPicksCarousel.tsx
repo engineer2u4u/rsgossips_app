@@ -145,7 +145,13 @@ export default function RecommendedCampaigns() {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => navigation.navigate('RecommendedCampaigns')}
+          onPress={() =>
+            navigation.navigate('InfluencerCampaigns', {
+              // Pre-select the same niche filters this carousel uses, so
+              // "View all" surfaces a superset of the cards already shown.
+              categories: userCategories,
+            })
+          }
         >
           <Text className="text-sm font-bold" style={{ color: BRAND.accent }}>
             View all ›
@@ -175,7 +181,8 @@ export default function RecommendedCampaigns() {
             style={{ width, paddingLeft: 20 }}
             data={filteredOffers}
             loop={filteredOffers.length > 1}
-            autoPlay={false}
+            autoPlay={filteredOffers.length > 1}
+            autoPlayInterval={5000}
             scrollAnimationDuration={500}
             onSnapToItem={i => setActive(i)}
             // Let vertical pans pass through to the page ScrollView so the

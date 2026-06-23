@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Image, Pressable, Linking } from 'react-native';
-import { CheckCircle, Link } from 'lucide-react-native';
-import { CARD_SHADOW } from '../theme/brand';
+import {View, Text, Image, Pressable, Linking} from 'react-native';
+import {CheckCircle2, Crown, TrendingUp} from 'lucide-react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
 
 interface CreatorCardProps {
   name: string;
@@ -12,6 +13,27 @@ interface CreatorCardProps {
   following: string | number;
   bio: string;
   link: string;
+  /** Rank within "this week" — drives the pink "#N this week" badge.
+   *  Falls back to no badge when zero/undefined. */
+  rank?: number;
+  /** Whether to render the green "Trending" pill on the top-right. */
+  trending?: boolean;
+}
+
+// Deterministically pick a bright fill colour for the avatar bubble so each
+// creator has a distinct identity even when no photo loads.
+function avatarTone(seed: string): [string, string] {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  const palette: [string, string][] = [
+    ['#F59E0B', '#EA580C'], // orange (matches screenshot featured card)
+    ['#EC4899', '#BE185D'], // pink
+    ['#3B82F6', '#1D4ED8'], // blue
+    ['#10B981', '#047857'], // emerald
+    ['#8B5CF6', '#6D28D9'], // violet
+    ['#0EA5E9', '#0369A1'], // sky
+  ];
+  return palette[Math.abs(h) % palette.length];
 }
 
 export default function CreatorCard({
@@ -21,68 +43,172 @@ export default function CreatorCard({
   posts,
   followers,
   following,
-  bio,
   link,
+  rank,
+  trending = true,
 }: CreatorCardProps) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase();
+  const [bgA, bgB] = avatarTone(name || '?');
+
   return (
     <View
-      className="border border-gray-200 rounded-xl p-6 w-[280px] flex flex-col gap-4 bg-white mb-10"
-      style={CARD_SHADOW}>
-      {/* Name */}
-      <View className="flex-row items-center justify-center">
-        <Text className="text-lg font-semibold">{name}</Text>
-        {verified && (
-          <CheckCircle size={16} color="#3B82F6" style={{ marginLeft: 4 }} />
+      className="rounded-[28px] p-6 mx-5"
+      style={[
+        {backgroundColor: '#fff', borderWidth: 1, borderColor: '#F1F5F9'},
+        CARD_SHADOW,
+      ]}>
+      {/* TOP BADGES */}
+      <View
+        className="flex-row items-center justify-between"
+        style={{marginBottom: 16}}>
+        {rank ? (
+          <View
+            className="flex-row items-center px-3 py-1 rounded-full"
+            style={{backgroundColor: '#FBCFE8', gap: 4}}>
+            <Crown size={12} color="#9D174D" />
+            <Text className="text-[11px] font-black" style={{color: '#9D174D'}}>
+              #{rank} this week
+            </Text>
+          </View>
+        ) : (
+          <View />
         )}
+        {trending ? (
+          <View
+            className="flex-row items-center px-3 py-1 rounded-full"
+            style={{backgroundColor: '#D1FAE5', gap: 4}}>
+            <TrendingUp size={12} color="#047857" />
+            <Text className="text-[11px] font-black" style={{color: '#047857'}}>
+              Trending
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      {/* Gradient Border Avatar */}
-      <View className="items-center">
-        <View className="p-2 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-400">
-          <View className="bg-white rounded-full">
-            <Image source={{ uri: image }} className="w-52 h-52 rounded-full" />
-          </View>
+      {/* GRADIENT-RINGED AVATAR */}
+      <View className="items-center" style={{marginBottom: 14}}>
+        <LinearGradient
+          colors={['#8B5CF6', BRAND.accent, '#F59E0B']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            padding: 4,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          {image ? (
+            <Image
+              source={{uri: image}}
+              style={{
+                width: 132,
+                height: 132,
+                borderRadius: 66,
+                borderWidth: 3,
+                borderColor: '#fff',
+              }}
+            />
+          ) : (
+            <LinearGradient
+              colors={[bgA, bgB]}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={{
+                width: 132,
+                height: 132,
+                borderRadius: 66,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 3,
+                borderColor: '#fff',
+              }}>
+              <Text className="text-white font-black" style={{fontSize: 56}}>
+                {initial}
+              </Text>
+            </LinearGradient>
+          )}
+        </LinearGradient>
+      </View>
+
+      {/* NAME + VERIFIED */}
+      <View
+        className="flex-row items-center justify-center"
+        style={{gap: 6, marginBottom: 6}}>
+        <Text className="text-base font-black text-slate-900">{name}</Text>
+        {verified ? <CheckCircle2 size={14} color={BRAND.accent} /> : null}
+      </View>
+
+      {/* HERO FOLLOWER COUNT */}
+      <View className="items-center" style={{marginBottom: 4}}>
+        <Text
+          className="font-black"
+          style={{fontSize: 32, color: BRAND.accent, lineHeight: 36}}>
+          {followers || '—'}
+        </Text>
+        <Text
+          className="text-[10px] font-bold tracking-widest"
+          style={{color: '#94A3B8'}}>
+          FOLLOWERS
+        </Text>
+      </View>
+
+      {/* POSTS | FOLLOWING ROW */}
+      {(posts || following) ? (
+        <View
+          className="flex-row items-center justify-center"
+          style={{marginTop: 14, marginBottom: 16, gap: 28}}>
+          {posts ? (
+            <View className="items-center">
+              <Text className="text-base font-black text-slate-900">
+                {posts}
+              </Text>
+              <Text className="text-[10px] font-bold tracking-widest text-slate-400">
+                POSTS
+              </Text>
+            </View>
+          ) : null}
+          {posts && following ? (
+            <View
+              style={{
+                width: 1,
+                height: 30,
+                backgroundColor: '#E2E8F0',
+              }}
+            />
+          ) : null}
+          {following ? (
+            <View className="items-center">
+              <Text className="text-base font-black text-slate-900">
+                {following}
+              </Text>
+              <Text className="text-[10px] font-bold tracking-widest text-slate-400">
+                FOLLOWING
+              </Text>
+            </View>
+          ) : null}
         </View>
-      </View>
+      ) : null}
 
-      {/* Stats — empty values are hidden so featured_creators rows (which
-          only carry followers_label) don't render blank columns. */}
-      <View className="flex-row justify-around text-center mt-1 pb-2">
-        {!!posts && (
-          <View className="items-center">
-            <Text className="font-semibold">{posts}</Text>
-            <Text className="text-gray-500 text-xs">posts</Text>
-          </View>
-        )}
-
-        {!!followers && (
-          <View className="items-center">
-            <Text className="font-semibold">{followers}</Text>
-            <Text className="text-gray-500 text-xs">followers</Text>
-          </View>
-        )}
-
-        {!!following && (
-          <View className="items-center">
-            <Text className="font-semibold">{following}</Text>
-            <Text className="text-gray-500 text-xs">following</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Bio (optional) */}
-      {bio && <Text className="text-sm text-gray-700 text-center">{bio}</Text>}
-
-      {/* Link Button */}
-      {/* {link && (
-        <Pressable
-          onPress={() => Linking.openURL(link)}
-          className="flex-row items-center justify-center gap-2 border rounded-full px-4 py-2 mt-2"
-        >
-          <Link size={16} color="#2563EB" />
-          <Text className="text-blue-600 text-sm flex-shrink">{link}</Text>
-        </Pressable>
-      )} */}
+      {/* FOLLOW CREATOR BUTTON */}
+      <Pressable
+        onPress={() => link && Linking.openURL(link).catch(() => {})}
+        style={{borderRadius: 16, overflow: 'hidden', height: 48}}>
+        <LinearGradient
+          colors={['#FA288A', '#8B5CF6']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text className="text-white text-sm font-black tracking-widest">
+            FOLLOW CREATOR
+          </Text>
+        </LinearGradient>
+      </Pressable>
     </View>
   );
 }

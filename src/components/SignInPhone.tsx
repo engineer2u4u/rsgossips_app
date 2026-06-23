@@ -96,17 +96,16 @@ export default function SignInPhone({
         </View>
       </View>
 
-      {/* BUTTON */}
+      {/* BUTTON — matches the brand-pink "Next" button used elsewhere
+          (OnboardingCarousel) so the auth surface looks cohesive. */}
       <Pressable
         onPress={handleSubmit}
         disabled={
           loading || localPhone.length < minLen || localPhone.length > maxLen
         }
-        className={`h-[54px] rounded-2xl items-center justify-center ${
-          role === 'influencer' ? 'bg-[#9810FA]' : 'bg-[#5B3DF5]'
-        }`}
+        className="w-full bg-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"
       >
-        <Text className="text-white text-base font-semibold">
+        <Text className="text-white text-lg font-semibold">
           {loading
             ? 'Sending OTP...'
             : mode === 'signup'

@@ -46,7 +46,7 @@ function pickPlaceholder(id: string | number): string {
   return PLACEHOLDER_IMAGES[Math.abs(hash) % PLACEHOLDER_IMAGES.length];
 }
 
-export function CampaignCard({campaign, matchScore = 0}: Props) {
+function CampaignCardImpl({campaign, matchScore = 0}: Props) {
   const navigation = useNavigation<any>();
 
   const category = campaign.tags?.[0] || 'General';
@@ -200,3 +200,8 @@ export function CampaignCard({campaign, matchScore = 0}: Props) {
     </View>
   );
 }
+
+// Memoised so a parent re-render (e.g. pagination state, filter toggle)
+// only re-renders cards whose props actually changed. The campaign id is a
+// stable identity, so the default shallow compare is enough here.
+export const CampaignCard = React.memo(CampaignCardImpl);

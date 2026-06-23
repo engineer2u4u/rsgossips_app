@@ -55,15 +55,16 @@ export default function OnboardingCarousel({
 
   return (
     <View className="flex-1 bg-white items-center justify-between">
-      {/* TOP IMAGE */}
-
-      <View className="w-full items-center pt-20">
+      {/* TOP IMAGE — centered in the upper section with breathing room
+          on both edges. Renders crisp because resizeMode='contain' keeps
+          the aspect ratio and width/height are sized to the screen. */}
+      <View className="w-full flex-1 items-center justify-center px-2">
         <Image
           source={slides[current].image}
           resizeMode="contain"
           style={{
-            width: width * 0.8,
-            height: 320,
+            width: width * 0.95,
+            height: width * 1.05,
           }}
         />
       </View>

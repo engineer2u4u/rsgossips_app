@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {View} from 'react-native';
 import ProStatusCard from '../components/ProStatuscard';
 import InstagramReconnectBanner from '../components/InstagramReconnectBanner';
@@ -95,10 +95,30 @@ function HomeContent() {
   );
 }
 
-export default function HomeScreen() {
+function HomeWithRefresh() {
+  const {refreshProfile, refreshInstagram, user} = useAuth();
+  // Bumping this key forces every fetch-on-mount component (carousels,
+  // services, brands, top picks) to re-run their useEffect. Mounted as a
+  // <React.Fragment key=...> wrapper around HomeContent below.
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey(k => k + 1);
+    await Promise.allSettled([
+      refreshProfile(),
+      user?.id ? refreshInstagram(user.id) : Promise.resolve(),
+    ]);
+  }, [refreshProfile, refreshInstagram, user?.id]);
+
   return (
-    <InfluencerLayout>
-      <HomeContent />
+    <InfluencerLayout onRefresh={handleRefresh}>
+      <React.Fragment key={refreshKey}>
+        <HomeContent />
+      </React.Fragment>
     </InfluencerLayout>
   );
+}
+
+export default function HomeScreen() {
+  return <HomeWithRefresh />;
 }

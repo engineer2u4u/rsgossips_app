@@ -118,9 +118,18 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
           skipped?: boolean;
           error?: string;
         }>('refresh-instagram', {userId: uid});
-        if (data?.success && !data?.skipped) {
+        if (data?.success) {
+          // Either the server refreshed the token (skipped=false) or it
+          // confirmed the existing token is still valid (skipped=true).
+          // Both mean "IG is connected" — clear the banner. The previous
+          // branch only cleared it on a hard refresh, which left users
+          // with a stuck banner whenever check-profile returned a stale
+          // `instagram_connected: false` and refresh-instagram saw a
+          // still-valid token (no refresh needed).
           setInstagramTokenMissing(false);
-          await fetchProfile(uid);
+          if (!data?.skipped) {
+            await fetchProfile(uid);
+          }
         } else if (
           data?.error &&
           (data.error.includes('No Instagram token stored') ||

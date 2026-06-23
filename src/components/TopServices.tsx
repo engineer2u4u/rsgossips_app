@@ -10,8 +10,40 @@ import {
 import {Star} from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import {fetchServices, formatINR, iconForName, type ServiceRow} from '../lib/services';
 import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
+
+// Paints any Lucide icon with the brand warm gradient via MaskedView. The
+// mask uses the icon's stroke as the alpha channel and overlays the
+// LinearGradient as the visible fill, so the strokes pick up the pink →
+// magenta ramp instead of a flat color.
+function GradientIcon({
+  Icon,
+  size = 20,
+  strokeWidth = 1.8,
+}: {
+  Icon: React.ComponentType<any>;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  return (
+    <MaskedView
+      style={{width: size, height: size}}
+      maskElement={
+        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+          <Icon size={size} strokeWidth={strokeWidth} color="#000" />
+        </View>
+      }>
+      <LinearGradient
+        colors={[...BRAND_GRADIENT_WARM]}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={{flex: 1}}
+      />
+    </MaskedView>
+  );
+}
 
 // Tailwind class strings the web stores in `service.hero_gradient` look like
 // "from-pink-500 to-fuchsia-500". RN can't consume those, so we map a small
@@ -206,8 +238,8 @@ function ServiceRowCard({service, onPress}: {service: ServiceRow; onPress: () =>
       style={[{gap: 12}, CARD_SHADOW]}>
       <View
         className="w-14 h-14 rounded-xl items-center justify-center"
-        style={{backgroundColor: '#F8FAFC'}}>
-        <Icon size={20} strokeWidth={1.8} color="#475569" />
+        style={{backgroundColor: '#FFF1F4'}}>
+        <GradientIcon Icon={Icon} size={22} strokeWidth={1.8} />
       </View>
       <View className="flex-1">
         <Text

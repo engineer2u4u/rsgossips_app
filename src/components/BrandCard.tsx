@@ -37,7 +37,7 @@ interface Props {
   onPress?: () => void;
 }
 
-export default function BrandCard({brand, matchScore = 0, onPress}: Props) {
+function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
   const scoreColor =
     matchScore >= 80
       ? {text: 'text-emerald-500', bg: 'bg-emerald-50'}
@@ -138,3 +138,11 @@ export default function BrandCard({brand, matchScore = 0, onPress}: Props) {
     </TouchableOpacity>
   );
 }
+
+// Memoised so the brand grid doesn't re-render every card when pagination
+// state (visibleCount) changes inside InfluencerDiscover. Most props are
+// primitives / object refs that stay stable across renders; `onPress` is
+// recreated each render but its body is cheap, so the shallow compare is
+// acceptable here.
+const BrandCard = React.memo(BrandCardImpl);
+export default BrandCard;

@@ -145,15 +145,15 @@ export default function VerifyOTP({
         ))}
       </View>
 
-      {/* VERIFY BUTTON */}
+      {/* VERIFY BUTTON — matches the brand-pink Next button. */}
       <Pressable
         onPress={handleSubmit}
         disabled={loading || otp.length < 6}
-        className={`h-[54px] rounded-2xl items-center justify-center ${
-          otp.length === 6 ? 'bg-[#9810FA]' : 'bg-gray-300'
+        className={`w-full h-[58px] rounded-[20px] items-center justify-center ${
+          otp.length === 6 ? 'bg-[#FA288A]' : 'bg-gray-300'
         }`}
       >
-        <Text className="text-white text-base font-semibold">
+        <Text className="text-white text-lg font-semibold">
           {loading ? 'Verifying...' : 'Verify & Continue'}
         </Text>
       </Pressable>

@@ -559,12 +559,12 @@ export default function InfluencerOfferDetail() {
               <View style={{gap: 8}}>
                 {campaign.requirements.map((req: any, i: number) => (
                   <View key={i} className="flex-row items-center bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm" style={{gap: 12}}>
-                    <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center">
+                    <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center shrink-0">
                       <ReqIcon type={req.icon} />
                     </View>
-                    <View>
-                      <Text className="text-sm font-bold text-slate-800">{req.label}</Text>
-                      <Text className="text-[11px] text-slate-400">{req.sub}</Text>
+                    <View className="flex-1 min-w-0">
+                      <Text className="text-sm font-bold text-slate-800" numberOfLines={2}>{req.label}</Text>
+                      <Text className="text-[11px] text-slate-400" numberOfLines={1}>{req.sub}</Text>
                     </View>
                   </View>
                 ))}
