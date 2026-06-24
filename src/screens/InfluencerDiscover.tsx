@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from 'react';
+import React, {useCallback, useState, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
   StatusBar,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -141,46 +142,53 @@ export default function InfluencerDiscover() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const loadingMoreRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await invokeFn<{brands?: any[]}>('list-brands', {});
-        if (cancelled) return;
-        if (data?.brands?.length) {
-          setBrands(
-            data.brands.map((b: any) => ({
-              id: b.id || String(Math.random()),
-              name: b.name || 'Brand',
-              category: b.category || 'General',
-              // Carry through both shapes the edge function can return so
-              // the category filter can match either one (web behaviour).
-              categories: Array.isArray(b.categories) ? b.categories : [],
-              instagram: b.instagram || b.handle || '',
-              minBudget: b.minBudget || 0,
-              maxBudget: b.maxBudget || 10000,
-              isVerified: b.isVerified || false,
-              platforms: b.platforms || ['Instagram'],
-              activeCampaigns: b.activeCampaigns || 0,
-              rating: b.rating || 0,
-              followers: b.followers || '0',
-              logo: b.logo || '',
-              payout: b.payout || '—',
-              trustScore: typeof b.trustScore === 'number' ? b.trustScore : undefined,
-              trustBand: b.trustBand || undefined,
-            })),
-          );
-        }
-      } catch {
-        // Keep fallback brands.
-      } finally {
-        if (!cancelled) setLoading(false);
+  const loadBrands = useCallback(async () => {
+    try {
+      const data = await invokeFn<{brands?: any[]}>('list-brands', {});
+      if (data?.brands?.length) {
+        setBrands(
+          data.brands.map((b: any) => ({
+            id: b.id || String(Math.random()),
+            name: b.name || 'Brand',
+            category: b.category || 'General',
+            // Carry through both shapes the edge function can return so
+            // the category filter can match either one (web behaviour).
+            categories: Array.isArray(b.categories) ? b.categories : [],
+            instagram: b.instagram || b.handle || '',
+            minBudget: b.minBudget || 0,
+            maxBudget: b.maxBudget || 10000,
+            isVerified: b.isVerified || false,
+            platforms: b.platforms || ['Instagram'],
+            activeCampaigns: b.activeCampaigns || 0,
+            rating: b.rating || 0,
+            followers: b.followers || '0',
+            logo: b.logo || '',
+            payout: b.payout || '—',
+            trustScore: typeof b.trustScore === 'number' ? b.trustScore : undefined,
+            trustBand: b.trustBand || undefined,
+          })),
+        );
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      // Keep fallback brands.
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadBrands();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadBrands]);
 
   // Matches web's filter engine in src/app/influencer/brands/page.js:
   //  - search matches name OR @handle (with the leading @ stripped)
@@ -259,7 +267,15 @@ export default function InfluencerDiscover() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={64}
-        removeClippedSubviews>
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#E60076"
+            colors={['#E60076']}
+          />
+        }>
         {/* Header */}
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           <View className="flex-row items-center justify-between">

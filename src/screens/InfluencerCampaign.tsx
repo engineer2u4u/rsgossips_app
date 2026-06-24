@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from 'react';
+import React, {useCallback, useState, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
   StatusBar,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -146,60 +147,66 @@ export default function InfluencerCampaign() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingCategories.join(',')]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCampaigns = async () => {
-      if (!user?.id) {
-        setLoading(false);
-        return;
+  const loadCampaigns = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
+        influencerId: user.id,
+      });
+      if (data?.campaigns?.length) {
+        setCampaigns(
+          data.campaigns.map((c: any) => ({
+            id: c.id,
+            initials: c.initials || c.title?.substring(0, 2)?.toUpperCase(),
+            title: c.title || 'Campaign',
+            brandName: c.brandName || 'Brand',
+            // Web's list-campaigns returns Active/Applied/Completed already
+            // computed against the user's application row.
+            status: c.status || 'Active',
+            applicationStatus: c.applicationStatus,
+            tags: c.tags || [],
+            // Edge function returns budget already formatted (₹X,XXX).
+            budget: c.budget
+              ? typeof c.budget === 'number'
+                ? `₹${c.budget.toLocaleString('en-IN')}`
+                : c.budget
+              : '—',
+            deadline: c.deadline || '',
+            daysLeft: c.daysLeft ? `${c.daysLeft}d` : '',
+            deliverables: c.deliverables || '—',
+            location: c.location || 'India',
+            platforms: c.platforms || ['instagram'],
+            bannerImage: c.bannerImage || c.brandLogo || '',
+            description: c.description || '',
+          })),
+        );
+      } else {
+        setCampaigns([]);
       }
-      try {
-        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
-          influencerId: user.id,
-        });
-        if (cancelled) return;
-        if (data?.campaigns?.length) {
-          setCampaigns(
-            data.campaigns.map((c: any) => ({
-              id: c.id,
-              initials: c.initials || c.title?.substring(0, 2)?.toUpperCase(),
-              title: c.title || 'Campaign',
-              brandName: c.brandName || 'Brand',
-              // Web's list-campaigns returns Active/Applied/Completed already
-              // computed against the user's application row.
-              status: c.status || 'Active',
-              applicationStatus: c.applicationStatus,
-              tags: c.tags || [],
-              // Edge function returns budget already formatted (₹X,XXX).
-              budget: c.budget
-                ? typeof c.budget === 'number'
-                  ? `₹${c.budget.toLocaleString('en-IN')}`
-                  : c.budget
-                : '—',
-              deadline: c.deadline || '',
-              daysLeft: c.daysLeft ? `${c.daysLeft}d` : '',
-              deliverables: c.deliverables || '—',
-              location: c.location || 'India',
-              platforms: c.platforms || ['instagram'],
-              bannerImage: c.bannerImage || c.brandLogo || '',
-              description: c.description || '',
-            })),
-          );
-        } else {
-          setCampaigns([]);
-        }
-      } catch (err) {
-        console.warn('list-campaigns failed:', err);
-        // Keep the fallback list so the screen isn't blank.
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchCampaigns();
-    return () => {
-      cancelled = true;
-    };
+    } catch (err) {
+      console.warn('list-campaigns failed:', err);
+      // Keep the fallback list so the screen isn't blank.
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
+
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadCampaigns();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadCampaigns]);
 
   // Brand picker list — unique brandNames sorted alphabetically, matches
   // web's `brandNames` memo.
@@ -221,7 +228,7 @@ export default function InfluencerCampaign() {
   //  - budget parses digits out of the budget string; `max >= 200000` is
   //    the "no cap" sentinel
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(campaign => {
+    const filtered = campaigns.filter(campaign => {
       const matchesTab =
         activeTab === 'Completed'
           ? campaign.applicationStatus === 'completed'
@@ -254,6 +261,14 @@ export default function InfluencerCampaign() {
         matchesBudget
       );
     });
+    // Sort by match score descending — best-fit campaigns surface first.
+    // calculateCampaignMatchScore is pure / cheap so computing per render
+    // is fine; we'd only memoise per-campaign if the list grows past a
+    // few hundred rows.
+    return filtered
+      .map(c => ({c, score: calculateCampaignMatchScore(profile, c)}))
+      .sort((a, b) => b.score - a.score)
+      .map(({c}) => c);
   }, [
     campaigns,
     activeTab,
@@ -261,6 +276,7 @@ export default function InfluencerCampaign() {
     selectedCategories,
     selectedBrands,
     budgetRange,
+    profile,
   ]);
 
   // Per-tab counts shown alongside the tab label. Numbers reflect what
@@ -348,7 +364,15 @@ export default function InfluencerCampaign() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={64}
-        removeClippedSubviews>
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#E60076"
+            colors={['#E60076']}
+          />
+        }>
         <View className="px-4 pt-4 pb-2" style={{gap: 16}}>
           {/* Header */}
           <View className="flex-row items-center justify-between">

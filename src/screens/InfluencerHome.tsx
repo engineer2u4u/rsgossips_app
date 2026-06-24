@@ -88,7 +88,7 @@ function HomeContent() {
       <StayCarousel />
 
       {/* Top Creators */}
-      <View onLayout={setSectionY('top-creators')}>
+      <View className="mt-8" onLayout={setSectionY('top-creators')}>
         <CreatorsCarouselWithLink />
       </View>
     </>

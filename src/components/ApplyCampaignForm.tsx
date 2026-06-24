@@ -100,14 +100,25 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
     }
   };
 
+  // A fullScreen <Modal> on iOS mounts in its own native window, OUTSIDE
+  // the app's SafeAreaProvider tree — so SafeAreaView reads zero insets in
+  // there. Skipping the safe-area wrapper entirely and using a fixed
+  // paddingTop for iOS (status bar + notch ≈ 50pt on every iPhone since X)
+  // is the simplest reliable fix.
   return (
     <Modal visible={visible} animationType="slide">
+      <View
+        className="flex-1 bg-white"
+        style={{paddingTop: Platform.OS === 'ios' ? 50 : 0}}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-white">
           {submitted ? (
-            // Success screen
-            <View className="p-8 items-center" style={{gap: 16}}>
+            // Success screen — centred vertically so the confirmation
+            // doesn't read like it's clinging to the status bar.
+            <View
+              className="flex-1 items-center justify-center px-8"
+              style={{gap: 16}}>
               <View className="w-16 h-16 bg-emerald-50 rounded-full items-center justify-center">
                 <CheckCircle2 size={32} color="#10B981" />
               </View>
@@ -264,6 +275,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
             </>
           )}
       </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

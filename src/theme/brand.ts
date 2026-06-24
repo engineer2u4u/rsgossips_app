@@ -47,13 +47,13 @@ export const BG = {
   pageGrad: '#efedf5',
 } as const;
 
-// Reusable soft card shadow — diffused, slightly inky to mimic the prototype's
-// glass shadow (`0 12px 28px -18px rgba(25,22,43,.30)`). Spread the same style
-// across every home card so they all share a consistent depth.
+// Reusable soft card shadow — neutral black drop so home / campaign /
+// brand / service cards lift off the page consistently. Spread the same
+// style across every list/home card for unified depth.
 export const CARD_SHADOW = {
-  shadowColor: '#19162b',
-  shadowOpacity: 0.1,
-  shadowRadius: 18,
-  shadowOffset: {width: 0, height: 10},
-  elevation: 4,
+  shadowColor: '#000',
+  shadowOpacity: 0.18,
+  shadowRadius: 16,
+  shadowOffset: {width: 0, height: 8},
+  elevation: 6,
 } as const;

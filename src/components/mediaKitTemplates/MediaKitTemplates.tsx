@@ -13,7 +13,7 @@
 //   tracking + uppercase to suggest the editorial / brutalist vibes.
 
 import React from 'react';
-import {View, Text, Image, ScrollView, Pressable, TextInput} from 'react-native';
+import {View, Text, Image, ScrollView, Pressable, TextInput, Linking} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   Instagram,
@@ -25,6 +25,8 @@ import {
   Check,
   X as XIcon,
   ExternalLink,
+  Heart,
+  MessageCircle,
 } from 'lucide-react-native';
 import {
   readProfile,
@@ -97,18 +99,22 @@ export function TemplateClassic({
           <View className="flex-row flex-wrap mt-2" style={{gap: 6}}>
             <View
               className="flex-row items-center bg-white/90 px-3 py-1 rounded-full"
-              style={{gap: 4}}>
+              style={{gap: 4, flexShrink: 1, maxWidth: '100%'}}>
               <Camera size={12} color="#64748B" />
-              <Text className="text-[10px] font-bold text-slate-700">
+              <Text
+                className="text-[10px] font-bold text-slate-700"
+                style={{flexShrink: 1}}>
                 {p.primaryCategory}
               </Text>
             </View>
             {!!p.location && (
               <View
                 className="flex-row items-center bg-white/90 px-3 py-1 rounded-full"
-                style={{gap: 4}}>
+                style={{gap: 4, flexShrink: 1, maxWidth: '100%'}}>
                 <MapPin size={12} color="#EC4899" />
-                <Text className="text-[10px] font-bold text-slate-700">
+                <Text
+                  className="text-[10px] font-bold text-slate-700"
+                  style={{flexShrink: 1}}>
                   {p.location}
                 </Text>
               </View>
@@ -262,6 +268,12 @@ export function TemplateClassic({
           </View>
         </ClassicCard>
 
+        {p.topReels.length > 0 && (
+          <ClassicCard title="Top Content">
+            <TopContentGrid reels={p.topReels} />
+          </ClassicCard>
+        )}
+
         <View className="flex-row items-center justify-between py-4 border-t border-slate-100">
           <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Generated on RGossips
@@ -413,7 +425,12 @@ function DemoBar({label, pct, short}: {label: string; pct: number; short?: boole
           style={{width: `${Math.min(pct, 100)}%`, height: '100%', borderRadius: 100}}
         />
       </View>
-      <Text className="text-xs font-bold text-slate-500 w-10 text-right">{pct}%</Text>
+      <Text
+        numberOfLines={1}
+        className="text-xs font-bold text-slate-500 text-right"
+        style={{width: 40}}>
+        {pct}%
+      </Text>
     </View>
   );
 }
@@ -586,6 +603,12 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
           </Text>
         </View>
 
+        {p.topReels.length > 0 && (
+          <GlassPanel title="Top Content">
+            <TopContentGrid reels={p.topReels} />
+          </GlassPanel>
+        )}
+
         <Text style={{color: '#48657e', fontSize: 11, textAlign: 'center', fontWeight: '500'}}>
           Generated on RGossips
         </Text>
@@ -683,7 +706,9 @@ function GlassBar({
           }}
         />
       </View>
-      <Text style={{color: '#48657e', fontSize: 11, fontWeight: '700', width: 32, textAlign: 'right'}}>
+      <Text
+        numberOfLines={1}
+        style={{color: '#48657e', fontSize: 11, fontWeight: '700', width: 40, textAlign: 'right'}}>
         {pct}%
       </Text>
     </View>
@@ -769,15 +794,22 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
             Creator Profile
           </Text>
           <Text
+            // lineHeight bumped above fontSize so the top of ascenders
+            // (capitals + accented glyphs) isn't clipped by the parent's
+            // bounds. adjustsFontSizeToFit shrinks long single-word
+            // surnames so they don't overflow the flex-1 column.
+            adjustsFontSizeToFit
+            numberOfLines={2}
+            minimumFontScale={0.65}
             style={{
               color: ink,
               fontFamily: FONTS.SERIF_BOLD,
-              fontSize: 42,
-              lineHeight: 42,
+              fontSize: 38,
+              lineHeight: 46,
               letterSpacing: -1.2,
             }}>
             {p.name.split(' ')[0]}
-            {'\n'}
+            {p.name.includes(' ') ? '\n' : ''}
             {p.name.split(' ').slice(1).join(' ')}
           </Text>
           <Text
@@ -890,6 +922,14 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
         </View>
       ))}
 
+      {p.topReels.length > 0 && (
+        <>
+          <NoirRule line={line} />
+          <NoirSubhead text="Top Content" ink={ink} />
+          <TopContentGrid reels={p.topReels} />
+        </>
+      )}
+
       <NoirRule line={line} />
       <Text
         style={{
@@ -997,7 +1037,9 @@ function NoirBar({
           }}
         />
       </View>
-      <Text style={{color: ink, fontSize: 12, fontWeight: '800', width: 30, textAlign: 'right'}}>
+      <Text
+        numberOfLines={1}
+        style={{color: ink, fontSize: 12, fontWeight: '800', width: 40, textAlign: 'right'}}>
         {pct}%
       </Text>
     </View>
@@ -1290,6 +1332,15 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
           ))}
         </Tile>
 
+        {/* Top Content — sits in its own Tile so the bento rhythm stays
+            consistent across the column. */}
+        {p.topReels.length > 0 && (
+          <Tile>
+            {lbl('Top Content')}
+            <TopContentGrid reels={p.topReels} />
+          </Tile>
+        )}
+
         <Text style={{color: muted, fontSize: 11, textAlign: 'center', fontWeight: '700'}}>
           Generated on RGossips
         </Text>
@@ -1320,7 +1371,9 @@ function BentoBar({label, pct}: {label: string; pct: number}) {
           }}
         />
       </View>
-      <Text style={{color: '#9b857a', fontSize: 11, fontWeight: '800', width: 32, textAlign: 'right'}}>
+      <Text
+        numberOfLines={1}
+        style={{color: '#9b857a', fontSize: 11, fontWeight: '800', width: 40, textAlign: 'right'}}>
         {pct}%
       </Text>
     </View>
@@ -1649,6 +1702,15 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
           ))}
         </View>
 
+        {p.topReels.length > 0 && (
+          <View style={hardCard()}>
+            <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
+              Top Content
+            </Text>
+            <TopContentGrid reels={p.topReels} />
+          </View>
+        )}
+
         <Text
           style={{
             color: ink,
@@ -1700,11 +1762,12 @@ function BrutalBar({
         />
       </View>
       <Text
+        numberOfLines={1}
         style={{
           color: ink,
           fontFamily: FONTS.MONO_BOLD,
           fontSize: 12,
-          width: 32,
+          width: 40,
           textAlign: 'right',
         }}>
         {pct}%
@@ -1715,6 +1778,90 @@ function BrutalBar({
 
 // ─────────────────────────────────────────────────────────────────────────
 // Wrapper — picks the right template by id. Single source of truth so the
+// Shared 2-col reel grid used by every template's "Top Content" section.
+// Tapping a tile opens the Instagram permalink in the system browser.
+// Variant prop lets each template tint the meta-row icons to match its
+// palette without forking the grid layout.
+// ─────────────────────────────────────────────────────────────────────────
+type TopContentVariant = 'default' | 'light';
+function TopContentGrid({
+  reels,
+  variant = 'default',
+}: {
+  reels: any[];
+  variant?: TopContentVariant;
+}) {
+  const open = (url?: string) => {
+    if (!url) return;
+    Linking.openURL(url).catch(() => {});
+  };
+  // Limit to 6 — keeps the grid balanced (3 rows of 2) and matches the
+  // typical reel count surfaced by the AddReelFlow on web parity.
+  const items = reels.slice(0, 6);
+  const meta = variant === 'light' ? '#fff' : '#fff';
+  return (
+    <View className="flex-row flex-wrap" style={{gap: 8}}>
+      {items.map((reel: any, i: number) => {
+        const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
+        return (
+          <Pressable
+            key={reel.id || i}
+            onPress={() => open(reel.permalink)}
+            style={{
+              width: '48%',
+              aspectRatio: 4 / 5,
+              borderRadius: 12,
+              overflow: 'hidden',
+              backgroundColor: '#0f172a',
+            }}>
+            {thumb ? (
+              <Image
+                source={{uri: thumb}}
+                style={{width: '100%', height: '100%'}}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={['#EDE9FE', '#FCE7F3']}
+                style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+                <Instagram size={28} color="#C4B5FD" />
+              </LinearGradient>
+            )}
+            {/* Meta overlay — likes / comments / external-link hint */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={{position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8}}>
+              {!!reel.caption && (
+                <Text
+                  numberOfLines={2}
+                  style={{color: '#fff', fontSize: 9, fontWeight: '600', marginBottom: 4}}>
+                  {reel.caption}
+                </Text>
+              )}
+              <View className="flex-row items-center" style={{gap: 8}}>
+                <View className="flex-row items-center" style={{gap: 3}}>
+                  <Heart size={9} color={meta} fill={meta} />
+                  <Text style={{color: meta, fontSize: 9, fontWeight: '700'}}>
+                    {formatCount(reel.likes || 0)}
+                  </Text>
+                </View>
+                <View className="flex-row items-center" style={{gap: 3}}>
+                  <MessageCircle size={9} color={meta} />
+                  <Text style={{color: meta, fontSize: 9, fontWeight: '700'}}>
+                    {formatCount(reel.comments || 0)}
+                  </Text>
+                </View>
+                <ExternalLink size={9} color="rgba(255,255,255,0.55)" style={{marginLeft: 'auto'}} />
+              </View>
+            </LinearGradient>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // preview screen never has to switch on the template id itself.
 // ─────────────────────────────────────────────────────────────────────────
 export default function MediaKitPreview({

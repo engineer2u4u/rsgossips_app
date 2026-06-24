@@ -1,6 +1,7 @@
-import React, {useState, useRef} from 'react';
-import {View, ScrollView, StatusBar} from 'react-native';
+import React, {useCallback, useState, useRef} from 'react';
+import {View, ScrollView, StatusBar, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useAuth} from '../context/AuthContext';
 import DashboardView from '../components/DashboardView';
 import MyInformationDetail from '../components/MyInformationDetail';
 import AddReelFlow from '../components/AddReelFlow';
@@ -34,11 +35,22 @@ type ViewType =
 export default function InfluencerProfile() {
   const [view, setView] = useState<ViewType>('dashboard');
   const scrollRef = useRef<ScrollView>(null);
+  const {refreshProfile} = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
 
   const navigate = (next: ViewType) => {
     setView(next);
     scrollRef.current?.scrollTo({y: 0, animated: true});
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshProfile]);
 
   const showBottomNav = view === 'dashboard';
 
@@ -49,7 +61,15 @@ export default function InfluencerProfile() {
       <ScrollView
         ref={scrollRef}
         className="flex-1"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#E60076"
+            colors={['#E60076']}
+          />
+        }>
         {view === 'dashboard' && (
           <DashboardView
             onNotificationClick={() => navigate('notifications')}

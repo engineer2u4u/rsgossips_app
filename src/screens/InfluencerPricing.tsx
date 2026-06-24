@@ -27,12 +27,6 @@ import {invokeFn} from '../lib/api';
 import InfluencerLayout from '../layouts/InfluencerLayout';
 import GatewayPickerModal from '../components/GatewayPickerModal';
 import VerifyingOverlay from '../components/VerifyingOverlay';
-import {
-  PLAN_RAZORPAY_IDS,
-  PLAN_STRIPE_PRICES,
-  RAZORPAY_KEY_ID,
-  type PlanId,
-} from '../lib/plans';
 
 // Stripe Checkout success redirect URL. We send a custom-scheme origin so
 // the in-app browser (Chrome Custom Tabs on Android, ASWebAuthenticationSession
@@ -349,14 +343,11 @@ export default function InfluencerPricing() {
   };
 
   const startRazorpay = async (plan: Plan) => {
-    const razorpayPlanId =
-      PLAN_RAZORPAY_IDS[plan.id as PlanId]?.[billing];
-    if (!razorpayPlanId) {
-      throw new Error(
-        `Razorpay isn't configured for the ${plan.id} ${billing} plan yet. ` +
-          'Set NEXT_PUBLIC_RAZORPAY_PLAN_… in .env and rebuild.',
-      );
-    }
+    // Razorpay plan id is resolved server-side by the `razorpay-checkout`
+    // edge function from Supabase secrets (RAZORPAY_PLAN_<PLAN>_<CYCLE>),
+    // so the client doesn't carry its own copy. The function also returns
+    // the public key_id we use to open the sheet — same single-source-of-
+    // truth pattern the web uses against the same Supabase project.
     const contact = formatPhoneForRazorpay(profile?.phone);
     const created = await invokeFn<{
       subscription_id?: string;
@@ -364,7 +355,6 @@ export default function InfluencerPricing() {
       error?: string;
     }>('razorpay-checkout', {
       userId: user?.id,
-      planId: razorpayPlanId,
       plan: plan.id,
       cycle: billing,
       email: profile?.email || '',
@@ -413,18 +403,15 @@ export default function InfluencerPricing() {
   };
 
   const startStripe = async (plan: Plan) => {
-    const priceId = PLAN_STRIPE_PRICES[plan.id as PlanId]?.[billing];
-    if (!priceId) {
-      throw new Error(
-        `Stripe isn't configured for the ${plan.id} ${billing} plan yet. ` +
-          'Set NEXT_PUBLIC_STRIPE_PRICE_… in .env and rebuild.',
-      );
-    }
+    // Like Razorpay above — the Stripe price id is resolved server-side
+    // by the `stripe-checkout` edge function from Supabase secrets
+    // (STRIPE_PRICE_<PLAN>_<CYCLE>). The client only sends plan + cycle
+    // so subscription IDs stay consistent across web + mobile and the
+    // mobile app doesn't need rebuilding when prices change.
     const created = await invokeFn<{url?: string; error?: string}>(
       'stripe-checkout',
       {
         userId: user?.id,
-        priceId,
         plan: plan.id,
         cycle: billing,
         email: profile?.email || '',

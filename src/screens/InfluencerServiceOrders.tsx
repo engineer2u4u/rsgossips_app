@@ -8,6 +8,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -75,6 +76,7 @@ export default function InfluencerServiceOrders() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) {
@@ -104,6 +106,15 @@ export default function InfluencerServiceOrders() {
       load();
     }, [load]),
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
 
   const counts = useMemo(() => {
     const out = {all: orders.length, active: 0, completed: 0, declined: 0};
@@ -157,7 +168,15 @@ export default function InfluencerServiceOrders() {
 
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#E60076"
+            colors={['#E60076']}
+          />
+        }>
         {/* Search */}
         <View className="flex-row items-center bg-white rounded-2xl px-3 h-11 shadow-sm">
           <Search size={18} color="#94A3B8" />

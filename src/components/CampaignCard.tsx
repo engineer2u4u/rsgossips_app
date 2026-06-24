@@ -64,10 +64,13 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
     `${campaign.brandName} campaign. Created by admin.`;
   const imageUrl = campaign.bannerImage || pickPlaceholder(campaign.id);
 
+  // Shadow on an outer wrapper so the inner card can keep overflow-hidden
+  // (needed to clip the banner image to the rounded card corners) without
+  // also clipping the drop shadow itself.
   return (
+    <View style={[{borderRadius: 32, backgroundColor: '#ffffff'}, CARD_SHADOW]}>
     <View
-      className="bg-white rounded-[32px] border border-slate-100 overflow-hidden"
-      style={CARD_SHADOW}>
+      className="bg-white rounded-[32px] border border-slate-100 overflow-hidden">
       {/* Image */}
       <View className="h-56 p-3">
         <View className="flex-1 rounded-3xl overflow-hidden relative">
@@ -197,6 +200,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
           </Text>
         </TouchableOpacity>
       </View>
+    </View>
     </View>
   );
 }

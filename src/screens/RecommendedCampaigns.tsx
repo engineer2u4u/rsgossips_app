@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -140,48 +141,55 @@ export default function RecommendedCampaigns() {
   const [campaigns, setCampaigns] = useState(DUMMY_OFFERS);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
-          influencerId: user?.id,
-        });
-        if (cancelled) return;
-        if (data?.campaigns?.length) {
-          const mapped = data.campaigns
-            .filter((c: any) => c.status === 'active' || c.status === 'Active')
-            .map((c: any) => ({
-              id: c.id,
-              imageUrl:
-                c.image ||
-                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600',
-              category: c.tags?.[0] || 'General',
-              badge: 'Active',
-              match: `${Math.floor(Math.random() * 10 + 88)}% Match`,
-              brand: c.brandName || 'Brand',
-              title: c.title,
-              location: c.location || 'India',
-              desc: c.description || '',
-              pay: c.budget
-                ? typeof c.budget === 'number'
-                  ? `₹${(c.budget / 1000).toFixed(0)}k`
-                  : c.budget
-                : '₹TBD',
-              followers: c.deliverables || '10k+ Followers',
-            }));
-          if (mapped.length) setCampaigns(mapped);
-        }
-      } catch {
-        // Best-effort — keeps the dummy list visible.
-      } finally {
-        if (!cancelled) setLoading(false);
+  const loadRecommended = useCallback(async () => {
+    try {
+      const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
+        influencerId: user?.id,
+      });
+      if (data?.campaigns?.length) {
+        const mapped = data.campaigns
+          .filter((c: any) => c.status === 'active' || c.status === 'Active')
+          .map((c: any) => ({
+            id: c.id,
+            imageUrl:
+              c.image ||
+              'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600',
+            category: c.tags?.[0] || 'General',
+            badge: 'Active',
+            match: `${Math.floor(Math.random() * 10 + 88)}% Match`,
+            brand: c.brandName || 'Brand',
+            title: c.title,
+            location: c.location || 'India',
+            desc: c.description || '',
+            pay: c.budget
+              ? typeof c.budget === 'number'
+                ? `₹${(c.budget / 1000).toFixed(0)}k`
+                : c.budget
+              : '₹TBD',
+            followers: c.deliverables || '10k+ Followers',
+          }));
+        if (mapped.length) setCampaigns(mapped);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      // Best-effort — keeps the dummy list visible.
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
+
+  useEffect(() => {
+    loadRecommended();
+  }, [user?.id]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadRecommended();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadRecommended]);
 
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([
@@ -345,6 +353,14 @@ export default function RecommendedCampaigns() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, gap: 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#E60076"
+            colors={['#E60076']}
+          />
+        }
       >
         {loading ? (
           <View className="py-20 items-center" style={{gap: 12}}>

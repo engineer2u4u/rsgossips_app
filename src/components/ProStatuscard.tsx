@@ -159,31 +159,37 @@ export default function ProStatusCard() {
         CARD_SHADOW,
       ]}
     >
-      {/* 1. Header: rounded-square avatar tile + greeting + plan pill */}
+      {/* 1. Header: rounded-square avatar tile + greeting + plan pill.
+          Tapping the avatar opens the user's profile — this is the primary
+          path now that the header avatar was removed. */}
       <View className="flex-row items-center" style={{ gap: 12 }}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={{ width: 46, height: 46, borderRadius: 14 }}
-          />
-        ) : (
-          <LinearGradient
-            colors={['#8b6df0', '#6a64c0']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 14,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text className="text-white text-[19px] font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </Text>
-          </LinearGradient>
-        )}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('InfluencerProfile' as never)}
+          style={{ width: 46, height: 46, borderRadius: 14, overflow: 'hidden' }}>
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: 46, height: 46 }}
+            />
+          ) : (
+            <LinearGradient
+              colors={['#8b6df0', '#6a64c0']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                width: 46,
+                height: 46,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text className="text-white text-[19px] font-bold">
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
+          )}
+        </TouchableOpacity>
 
         <View className="flex-1">
           <Text className="text-[18px] font-bold text-slate-900 leading-tight">
@@ -207,10 +213,16 @@ export default function ProStatusCard() {
         </View>
       </View>
 
-      {/* 2. Niche row — pink-tinted gradient pill that opens recommended campaigns */}
+      {/* 2. Niche row — opens the Campaigns list with the user's categories
+          pre-applied as filters (falls back to the unfiltered list if they
+          haven't picked any categories yet). */}
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() => navigation.navigate('RecommendedCampaigns' as never)}
+        onPress={() =>
+          (navigation as any).navigate('InfluencerCampaigns', {
+            categories: userCategories,
+          })
+        }
         style={{
           marginTop: 14,
           flexDirection: 'row',

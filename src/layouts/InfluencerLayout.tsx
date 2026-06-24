@@ -3,14 +3,13 @@ import {View, ScrollView, Image, Pressable, Text, RefreshControl} from 'react-na
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Bell, Headphones} from 'lucide-react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
 
 import BottomNav from '../components/BottomNav';
 import SupportChatModal from '../components/SupportChatModal';
 import InstagramRequiredGate from '../components/InstagramRequiredGate';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
-import {BRAND, BRAND_GRADIENT_WARM, BG} from '../theme/brand';
+import {BRAND, BG} from '../theme/brand';
 
 const LayoutScrollContext = createContext<React.RefObject<ScrollView | null> | null>(null);
 export function useLayoutScroll() {
@@ -19,9 +18,7 @@ export function useLayoutScroll() {
 
 function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
   const navigation = useNavigation<any>();
-  const {profile, user} = useAuth();
-  const initial = (profile?.full_name || 'U').trim().charAt(0).toUpperCase();
-  const avatarUrl = profile?.profile_photo_url;
+  const {user} = useAuth();
   const [unread, setUnread] = useState(0);
 
   // Mirrors the web header: fetch all notifications via the `notifications`
@@ -115,28 +112,6 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
         <Headphones size={19} color="#4d4960" />
       </Pressable>
 
-      <Pressable
-        onPress={() => navigation.navigate('InfluencerProfile')}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 13,
-          overflow: 'hidden',
-          borderWidth: 2,
-          borderColor: 'rgba(210,65,143,0.45)',
-        }}>
-        {avatarUrl ? (
-          <Image source={{uri: avatarUrl}} style={{width: '100%', height: '100%'}} />
-        ) : (
-          <LinearGradient
-            colors={[...BRAND_GRADIENT_WARM]}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
-            style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-            <Text className="text-white font-bold text-base">{initial}</Text>
-          </LinearGradient>
-        )}
-      </Pressable>
     </View>
   );
 }

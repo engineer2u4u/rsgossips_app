@@ -59,6 +59,9 @@ declare module 'react-native-razorpay' {
     description?: string;
     image?: string;
     currency?: string;
+    /** Amount in the smallest currency unit (paise for INR). Required for
+     *  one-time orders; omitted when using `subscription_id`. */
+    amount?: number;
     order_id?: string;
     subscription_id?: string;
     prefill?: { email?: string; contact?: string; name?: string };

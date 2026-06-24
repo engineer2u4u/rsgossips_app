@@ -1,11 +1,13 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, Image, Dimensions, Pressable} from 'react-native';
-import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel';
-import {CheckCircle2} from 'lucide-react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, Image, Dimensions, Pressable } from 'react-native';
+import Carousel, {
+  type ICarouselInstance,
+} from 'react-native-reanimated-carousel';
+import { CheckCircle2 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import CreatorCard from './CreatorCard';
-import {supabase} from '../utils/supabase';
-import {BRAND_GRADIENT_WARM} from '../theme/brand';
+import { supabase } from '../utils/supabase';
+import { BRAND_GRADIENT_WARM } from '../theme/brand';
 
 interface Creator {
   name: string;
@@ -80,30 +82,33 @@ const fallbackCreators: Creator[] = [
 
 // SectionTitle — full logo gradient flanks. Warm half fades into the heading
 // on the left, cool half emerges on the right. Matches BrandsCarousel.
-function SectionTitle({text}: {text: string}) {
+function SectionTitle({ text }: { text: string }) {
   return (
-    <View className="w-full flex-row items-center mb-8 px-6" style={{gap: 12}}>
+    <View
+      className="w-full flex-row items-center mb-8 px-6"
+      style={{ gap: 12 }}
+    >
       <LinearGradient
         colors={['#f5907f', '#e07f9a', '#c95fa2', 'rgba(201,95,162,0)']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 0}}
-        style={{flex: 1, height: 2}}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ flex: 1, height: 2 }}
       />
       <Text className="text-base font-bold tracking-widest text-slate-600 uppercase">
         {text}
       </Text>
       <LinearGradient
         colors={['rgba(139,100,186,0)', '#8b64ba', '#6a64c0', '#5e6fc0']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 0}}
-        style={{flex: 1, height: 2}}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ flex: 1, height: 2 }}
       />
     </View>
   );
 }
 
 export default function CreatorsCarouselWithLink() {
-  const {width} = Dimensions.get('window');
+  const { width } = Dimensions.get('window');
   const [creators, setCreators] = useState<Creator[]>(fallbackCreators);
   const [current, setCurrent] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
@@ -111,13 +116,13 @@ export default function CreatorsCarouselWithLink() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const {data} = await supabase
+      const { data } = await supabase
         .from('featured_creators')
         .select(
           'username, display_name, avatar_url, followers_label, verified, instagram_url',
         )
         .eq('is_active', true)
-        .order('position', {ascending: true});
+        .order('position', { ascending: true });
       if (cancelled) return;
       if (data && data.length > 0) {
         setCreators(
@@ -140,14 +145,14 @@ export default function CreatorsCarouselWithLink() {
   }, []);
 
   return (
-    <View className="w-full py-10">
+    <View className="w-full">
       <SectionTitle text="Our Top Creators" />
 
       <Carousel
         ref={carouselRef}
         width={width}
-        style={{width}}
-        height={520}
+        style={{ width }}
+        height={400}
         data={creators}
         loop
         autoPlay
@@ -158,7 +163,7 @@ export default function CreatorsCarouselWithLink() {
         onConfigurePanGesture={g =>
           g.activeOffsetX([-10, 10]).failOffsetY([-5, 5])
         }
-        renderItem={({item, index}) => (
+        renderItem={({ item, index }) => (
           <View className="items-center justify-start">
             <CreatorCard
               {...item}
@@ -172,8 +177,8 @@ export default function CreatorsCarouselWithLink() {
       {/* MINI RANK ROW — top 3 creators visible at a glance under the
           featured slide. Tapping a card scrolls the carousel to that index.
           Mirrors the row shown in the design screenshot. */}
-      <View className="px-4 mt-4">
-        <View className="flex-row" style={{gap: 10}}>
+      <View className="px-4" style={{}}>
+        <View className="flex-row" style={{ gap: 10 }}>
           {creators.slice(0, 3).map((c, i) => (
             <MiniRankCard
               key={`${c.name}-${i}`}
@@ -181,7 +186,7 @@ export default function CreatorsCarouselWithLink() {
               rank={i + 1}
               active={current === i}
               onPress={() =>
-                carouselRef.current?.scrollTo({index: i, animated: true})
+                carouselRef.current?.scrollTo({ index: i, animated: true })
               }
             />
           ))}
@@ -189,22 +194,23 @@ export default function CreatorsCarouselWithLink() {
       </View>
 
       {/* Dots */}
-      <View className="flex-row justify-center mt-6" style={{gap: 8}}>
+      <View className="flex-row justify-center mt-6" style={{ gap: 8 }}>
         {creators.map((_, i) => (
           <Pressable
             key={i}
             onPress={() =>
-              carouselRef.current?.scrollTo({index: i, animated: true})
+              carouselRef.current?.scrollTo({ index: i, animated: true })
             }
             className={`h-2.5 rounded-full ${
               current === i ? 'w-10' : 'bg-gray-300 w-2.5'
-            }`}>
+            }`}
+          >
             {current === i ? (
               <LinearGradient
                 colors={[...BRAND_GRADIENT_WARM]}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={{flex: 1, borderRadius: 100}}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1, borderRadius: 100 }}
               />
             ) : null}
           </Pressable>
@@ -258,9 +264,10 @@ function MiniRankCard({
         shadowColor: '#000',
         shadowOpacity: 0.05,
         shadowRadius: 6,
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         elevation: 2,
-      }}>
+      }}
+    >
       {/* Rank pill — top-left */}
       <View
         style={{
@@ -273,15 +280,16 @@ function MiniRankCard({
           backgroundColor: '#F1F5F9',
           alignItems: 'center',
           justifyContent: 'center',
-        }}>
+        }}
+      >
         <Text className="text-[10px] font-black text-slate-600">{rank}</Text>
       </View>
 
       {/* Small gradient-ringed avatar */}
       <LinearGradient
         colors={['#8B5CF6', '#FA288A', '#F59E0B']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           width: 56,
           height: 56,
@@ -290,10 +298,11 @@ function MiniRankCard({
           alignItems: 'center',
           justifyContent: 'center',
           marginTop: 4,
-        }}>
+        }}
+      >
         {creator.image ? (
           <Image
-            source={{uri: creator.image}}
+            source={{ uri: creator.image }}
             style={{
               width: 51,
               height: 51,
@@ -305,8 +314,8 @@ function MiniRankCard({
         ) : (
           <LinearGradient
             colors={[bgA, bgB]}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={{
               width: 51,
               height: 51,
@@ -315,8 +324,9 @@ function MiniRankCard({
               justifyContent: 'center',
               borderWidth: 2,
               borderColor: '#fff',
-            }}>
-            <Text className="text-white font-black" style={{fontSize: 20}}>
+            }}
+          >
+            <Text className="text-white font-black" style={{ fontSize: 20 }}>
               {initial}
             </Text>
           </LinearGradient>
@@ -325,16 +335,16 @@ function MiniRankCard({
 
       <View
         className="flex-row items-center mt-2"
-        style={{gap: 3, maxWidth: '100%'}}>
+        style={{ gap: 3, maxWidth: '100%' }}
+      >
         <Text
           numberOfLines={1}
           className="text-[11px] font-black text-slate-900"
-          style={{maxWidth: 80}}>
+          style={{ maxWidth: 80 }}
+        >
           {creator.name}
         </Text>
-        {creator.verified ? (
-          <CheckCircle2 size={9} color="#d2418f" />
-        ) : null}
+        {creator.verified ? <CheckCircle2 size={9} color="#d2418f" /> : null}
       </View>
       <Text className="text-[10px] font-bold text-slate-400 mt-0.5">
         {creator.followers || '—'}

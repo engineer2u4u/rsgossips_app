@@ -364,7 +364,9 @@ export default function LoginScreen() {
       const target = (detectedRole || requestedRole) === 'brand'
         ? 'BrandHome'
         : 'InfluencerHome';
-      navigation.navigate(target as never);
+      // reset (not navigate) — clears the auth stack so swipe-back can't
+      // surface a stale BrandHome / InfluencerHome from a prior session.
+      (navigation as any).reset({index: 0, routes: [{name: target}]});
     } catch (err: any) {
       if (err instanceof OtpError && err.code === 'no_user') {
         // Backend says no account on this phone — bounce to sign-up.
@@ -499,9 +501,10 @@ export default function LoginScreen() {
       }
 
       if (signupData.role === 'brand') {
-        // Brands go straight to dashboard
+        // Brands go straight to dashboard. reset (not navigate) so the
+        // signup stack doesn't linger underneath the home screen.
         setLoadingMsg('Redirecting to dashboard...');
-        navigation.navigate('BrandHome' as never);
+        (navigation as any).reset({index: 0, routes: [{name: 'BrandHome'}]});
         return;
       }
 
@@ -552,11 +555,15 @@ export default function LoginScreen() {
         });
       }
 
-      navigation.navigate(
-        data.role === 'brand'
-          ? ('BrandHome' as never)
-          : ('InfluencerHome' as never),
-      );
+      // reset (not navigate) — same reasoning as the sign-in path. Prevents
+      // the categories/preferences screens from sitting in the back stack
+      // after the user lands on home.
+      (navigation as any).reset({
+        index: 0,
+        routes: [
+          {name: data.role === 'brand' ? 'BrandHome' : 'InfluencerHome'},
+        ],
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to complete signup');
       setLoading(false);

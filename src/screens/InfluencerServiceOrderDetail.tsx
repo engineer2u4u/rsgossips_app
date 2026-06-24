@@ -35,12 +35,14 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import RazorpayCheckout from 'react-native-razorpay';
 import {supabase} from '../utils/supabase';
 import {formatINR} from '../lib/services';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
 import {STATUS_PILL} from './InfluencerServiceOrders';
+import GatewayPickerModal from '../components/GatewayPickerModal';
 
 const STATUS_BANNER: Record<
   string,
@@ -180,7 +182,7 @@ export default function InfluencerServiceOrderDetail() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const id = route.params?.id;
-  const {user} = useAuth();
+  const {user, profile} = useAuth();
   const {withLoading} = useGlobalLoading();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -201,6 +203,11 @@ export default function InfluencerServiceOrderDetail() {
   const [declineMode, setDeclineMode] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [declineError, setDeclineError] = useState<string | null>(null);
+
+  // Gateway picker state. `pickerPhase` is null when the picker is closed,
+  // otherwise it carries which payment phase the user is about to settle.
+  // Mirrors the web's GatewayPickerModal flow on the order detail page.
+  const [pickerPhase, setPickerPhase] = useState<'advance' | 'final' | null>(null);
 
   // Review state — myReview is the existing service_reviews row when the
   // user has already submitted feedback. The form lives in reviewDraft.
@@ -316,6 +323,130 @@ export default function InfluencerServiceOrderDetail() {
     [order?.id, order?.status, user?.id, withLoading, pollForUpdate],
   );
 
+  // Razorpay path — mirrors the web's payViaGateway("razorpay", phase).
+  // Calls the dedicated `razorpay-service-checkout` edge function (the
+  // service-orders sibling of the plan-subscription `razorpay-checkout`),
+  // which mints a one-time Razorpay order and returns the key + order_id +
+  // amount in paise. We then open Razorpay's native checkout sheet via
+  // react-native-razorpay (already linked for plan payments) and poll
+  // service_orders for the webhook-driven status flip.
+  const payViaRazorpay = useCallback(
+    async (phase: 'advance' | 'final') => {
+      if (!order?.id || !user?.id) return;
+      setPayError(null);
+      await withLoading(
+        (async () => {
+          try {
+            const data = await invokeFn<{
+              key_id?: string;
+              order_id?: string;
+              amount_paise?: number;
+              currency?: string;
+              line_label?: string;
+              error?: string;
+            }>('razorpay-service-checkout', {
+              userId: user.id,
+              orderId: order.id,
+              phase,
+            });
+            if (!data?.key_id || !data?.order_id || !data?.amount_paise) {
+              throw new Error(
+                "Razorpay didn't return a checkout order — please retry.",
+              );
+            }
+
+            // Same +91-prefix prefill the web flow uses so Razorpay's
+            // country-code check on the contact field doesn't error out.
+            const phoneDigits = String(
+              (user as any)?.phone || profile?.contact_phone || '',
+            ).replace(/\D/g, '');
+            const prefillContact = phoneDigits
+              ? phoneDigits.startsWith('91')
+                ? `+${phoneDigits}`
+                : `+91${phoneDigits.slice(-10)}`
+              : undefined;
+
+            const previousStatus = order.status;
+            try {
+              await RazorpayCheckout.open({
+                key: data.key_id,
+                order_id: data.order_id,
+                amount: data.amount_paise,
+                currency: data.currency || 'INR',
+                name: 'RGossips',
+                description:
+                  data.line_label ||
+                  (phase === 'advance' ? 'Service advance' : 'Service final'),
+                prefill: {
+                  email: (user as any)?.email || profile?.email || '',
+                  contact: prefillContact,
+                  name: profile?.full_name || profile?.username || '',
+                },
+                notes: {
+                  user_id: String(user.id || ''),
+                  order_id: String(order.id),
+                  phase,
+                },
+                theme: {color: '#5851DB'},
+              });
+              // Sheet resolved → payment captured. The razorpay-webhook
+              // handler flips the row's status; poll for the change.
+              await pollForUpdate(previousStatus);
+            } catch (rzpErr: any) {
+              // code 0 / undefined → user dismissed the sheet. Treat as a
+              // silent cancel; anything else is a real payment failure.
+              if (rzpErr?.code !== 0 && rzpErr?.code !== undefined) {
+                throw new Error(
+                  rzpErr?.description || 'Razorpay payment failed.',
+                );
+              }
+            }
+          } catch (err) {
+            if (err instanceof EdgeFunctionError) {
+              setPayError(err.message);
+            } else {
+              setPayError(
+                (err as Error)?.message || 'Failed to start Razorpay payment',
+              );
+            }
+          }
+        })(),
+        phase === 'advance'
+          ? 'Opening Razorpay…'
+          : 'Opening Razorpay for final payment…',
+      );
+    },
+    [
+      order?.id,
+      order?.status,
+      user,
+      profile,
+      withLoading,
+      pollForUpdate,
+    ],
+  );
+
+  // Opens the gateway picker bottom-sheet. The actual checkout fires once
+  // the user picks Stripe or Razorpay (see handleGatewayPick).
+  const openPayPicker = useCallback((phase: 'advance' | 'final') => {
+    setPayError(null);
+    setPickerPhase(phase);
+  }, []);
+
+  const handleGatewayPick = useCallback(
+    (gateway: 'stripe' | 'razorpay') => {
+      const phase = pickerPhase;
+      setPickerPhase(null);
+      if (!phase) return;
+      if (gateway === 'razorpay') {
+        payViaRazorpay(phase);
+      } else {
+        payViaStripe(phase);
+      }
+    },
+    [pickerPhase, payViaRazorpay, payViaStripe],
+  );
+
   // Submit a revision note to request-revision. Only valid when status =
   // 'draft_ready' and there are revisions left — those guards are enforced
   // by the renderStatusActions branching above, but defended again here.
@@ -422,7 +553,12 @@ export default function InfluencerServiceOrderDetail() {
   ]);
 
   // Decline the quote outright. Same edge function as counter, different
-  // action verb. Backend bumps order → 'declined' (terminal).
+  // action verb. Backend bumps order → 'declined' (terminal). We
+  // optimistically mark the local order as 'declined' the moment the API
+  // succeeds so the decline form and the Pay/Counter action row disappear
+  // immediately, even if the follow-up refresh() is slow or returns stale
+  // rows. refresh() then runs in the background to pick up any other side
+  // effects (event log, declined_at timestamps, etc.).
   const submitDecline = useCallback(async () => {
     if (!order?.id || !user?.id) return;
     setDeclineError(null);
@@ -435,6 +571,7 @@ export default function InfluencerServiceOrderDetail() {
             action: 'decline',
             declineReason: declineReason.trim() || undefined,
           });
+          setOrder(prev => (prev ? {...prev, status: 'declined'} : prev));
           setDeclineMode(false);
           setDeclineReason('');
           await refresh();
@@ -544,8 +681,8 @@ export default function InfluencerServiceOrderDetail() {
     (order.revisions_allowed || 0) - (order.revisions_used || 0);
 
   const statusActions = renderStatusActions(order, {
-    onPayAdvance: () => payViaStripe('advance'),
-    onPayFinal: () => payViaStripe('final'),
+    onPayAdvance: () => openPayPicker('advance'),
+    onPayFinal: () => openPayPicker('final'),
     onCounter: () => {
       setCounterError(null);
       // Seed with the quoted amount so the user can edit a small delta.
@@ -1065,6 +1202,21 @@ export default function InfluencerServiceOrderDetail() {
         ) : null}
       </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Gateway picker — only rendered while user is choosing Stripe vs
+          Razorpay. Picker dismiss => null phase => modal hides. */}
+      <GatewayPickerModal
+        visible={pickerPhase !== null}
+        planLabel={
+          pickerPhase === 'advance'
+            ? 'service advance'
+            : pickerPhase === 'final'
+              ? 'final payment'
+              : ''
+        }
+        onCancel={() => setPickerPhase(null)}
+        onPick={handleGatewayPick}
+      />
     </SafeAreaView>
   );
 }

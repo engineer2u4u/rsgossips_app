@@ -1,8 +1,8 @@
 import React from 'react';
-import {View, Text, Image, Pressable, Linking} from 'react-native';
-import {CheckCircle2, Crown, TrendingUp} from 'lucide-react-native';
+import { View, Text, Image, Pressable, Linking } from 'react-native';
+import { CheckCircle2, Crown, TrendingUp } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
+import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
 
 interface CreatorCardProps {
   name: string;
@@ -52,21 +52,27 @@ export default function CreatorCard({
 
   return (
     <View
-      className="rounded-[28px] p-6 mx-5"
+      className="rounded-[28px] p-6 mx-5 w-[80%]"
       style={[
-        {backgroundColor: '#fff', borderWidth: 1, borderColor: '#F1F5F9'},
+        { backgroundColor: '#fff', borderWidth: 1, borderColor: '#F1F5F9' },
         CARD_SHADOW,
-      ]}>
+      ]}
+    >
       {/* TOP BADGES */}
       <View
         className="flex-row items-center justify-between"
-        style={{marginBottom: 16}}>
+        style={{ marginBottom: 16 }}
+      >
         {rank ? (
           <View
-            className="flex-row items-center px-3 py-1 rounded-full"
-            style={{backgroundColor: '#FBCFE8', gap: 4}}>
+            className="flex-row items-center px-3 py-1 rounded-full "
+            style={{ backgroundColor: '#FBCFE8', gap: 4 }}
+          >
             <Crown size={12} color="#9D174D" />
-            <Text className="text-[11px] font-black" style={{color: '#9D174D'}}>
+            <Text
+              className="text-[11px] font-black"
+              style={{ color: '#9D174D' }}
+            >
               #{rank} this week
             </Text>
           </View>
@@ -76,9 +82,13 @@ export default function CreatorCard({
         {trending ? (
           <View
             className="flex-row items-center px-3 py-1 rounded-full"
-            style={{backgroundColor: '#D1FAE5', gap: 4}}>
+            style={{ backgroundColor: '#D1FAE5', gap: 4 }}
+          >
             <TrendingUp size={12} color="#047857" />
-            <Text className="text-[11px] font-black" style={{color: '#047857'}}>
+            <Text
+              className="text-[11px] font-black"
+              style={{ color: '#047857' }}
+            >
               Trending
             </Text>
           </View>
@@ -86,11 +96,11 @@ export default function CreatorCard({
       </View>
 
       {/* GRADIENT-RINGED AVATAR */}
-      <View className="items-center" style={{marginBottom: 14}}>
+      <View className="items-center" style={{ marginBottom: 14 }}>
         <LinearGradient
           colors={['#8B5CF6', BRAND.accent, '#F59E0B']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{
             width: 140,
             height: 140,
@@ -98,10 +108,11 @@ export default function CreatorCard({
             padding: 4,
             alignItems: 'center',
             justifyContent: 'center',
-          }}>
+          }}
+        >
           {image ? (
             <Image
-              source={{uri: image}}
+              source={{ uri: image }}
               style={{
                 width: 132,
                 height: 132,
@@ -113,8 +124,8 @@ export default function CreatorCard({
           ) : (
             <LinearGradient
               colors={[bgA, bgB]}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{
                 width: 132,
                 height: 132,
@@ -123,8 +134,9 @@ export default function CreatorCard({
                 justifyContent: 'center',
                 borderWidth: 3,
                 borderColor: '#fff',
-              }}>
-              <Text className="text-white font-black" style={{fontSize: 56}}>
+              }}
+            >
+              <Text className="text-white font-black" style={{ fontSize: 56 }}>
                 {initial}
               </Text>
             </LinearGradient>
@@ -135,30 +147,34 @@ export default function CreatorCard({
       {/* NAME + VERIFIED */}
       <View
         className="flex-row items-center justify-center"
-        style={{gap: 6, marginBottom: 6}}>
+        style={{ gap: 6, marginBottom: 6 }}
+      >
         <Text className="text-base font-black text-slate-900">{name}</Text>
         {verified ? <CheckCircle2 size={14} color={BRAND.accent} /> : null}
       </View>
 
       {/* HERO FOLLOWER COUNT */}
-      <View className="items-center" style={{marginBottom: 4}}>
+      <View className="items-center" style={{ marginBottom: 4 }}>
         <Text
           className="font-black"
-          style={{fontSize: 32, color: BRAND.accent, lineHeight: 36}}>
+          style={{ fontSize: 32, color: BRAND.accent, lineHeight: 36 }}
+        >
           {followers || '—'}
         </Text>
         <Text
           className="text-[10px] font-bold tracking-widest"
-          style={{color: '#94A3B8'}}>
+          style={{ color: '#94A3B8' }}
+        >
           FOLLOWERS
         </Text>
       </View>
 
       {/* POSTS | FOLLOWING ROW */}
-      {(posts || following) ? (
+      {posts || following ? (
         <View
           className="flex-row items-center justify-center"
-          style={{marginTop: 14, marginBottom: 16, gap: 28}}>
+          style={{ marginTop: 14, marginBottom: 16, gap: 28 }}
+        >
           {posts ? (
             <View className="items-center">
               <Text className="text-base font-black text-slate-900">
@@ -194,16 +210,18 @@ export default function CreatorCard({
       {/* FOLLOW CREATOR BUTTON */}
       <Pressable
         onPress={() => link && Linking.openURL(link).catch(() => {})}
-        style={{borderRadius: 16, overflow: 'hidden', height: 48}}>
+        style={{ borderRadius: 16, overflow: 'hidden', height: 48 }}
+      >
         <LinearGradient
           colors={['#FA288A', '#8B5CF6']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
           style={{
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-          }}>
+          }}
+        >
           <Text className="text-white text-sm font-black tracking-widest">
             FOLLOW CREATOR
           </Text>

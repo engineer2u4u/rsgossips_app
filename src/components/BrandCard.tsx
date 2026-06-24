@@ -50,7 +50,13 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
       className="bg-white rounded-[28px] p-4 border border-slate-200"
       activeOpacity={0.7}
       onPress={onPress}
-      style={{shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4}}>
+      style={{
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 8},
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+        elevation: 6,
+      }}>
       {/* Match Score Badge */}
       {matchScore > 0 && (
         <View
