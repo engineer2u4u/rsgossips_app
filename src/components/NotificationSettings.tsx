@@ -1,32 +1,23 @@
 // Notification Preferences (persisted to public.user_preferences.notification_prefs).
 //
-// Mirrors web app src/components/NotificationSettings.jsx (commit 8aa1896).
-// The DB trigger on public.notifications uses these flags to decide which
-// notification types actually get inserted for the user, so flipping a toggle
-// here changes real delivery — not just whether the UI shows the row.
-//
-// Keys exactly match the web side. Don't rename without updating the trigger:
+// Mirrors D:/Development/React/RS_Gossips src/components/NotificationSettings.jsx
+// element-for-element: two sections (Campaign Notifications + Financial) with a
+// gradient section header and toggle rows; Save Changes button + Restore
+// defaults at the bottom. Keys exactly match the web side — don't rename
+// without updating the DB trigger that reads them.
 //   campaignUpdates · applicationStatus · deadlineReminders · paymentAlerts
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Bell,
-  ChevronLeft,
-  Clock,
-  CreditCard,
-  FileCheck,
-  RotateCcw,
-  Save,
-  Megaphone,
-} from 'lucide-react-native';
+import {Bell, ChevronLeft, RotateCcw, TrendingUp} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
@@ -49,48 +40,38 @@ const DEFAULT_PREFS: Prefs = {
   paymentAlerts: true,
 };
 
-const SECTIONS: {
+// Same labels + descriptions used on the web mobile branch — keep in sync.
+const CAMPAIGN_ROWS: {
+  key: keyof Prefs;
   title: string;
-  rows: {
-    key: keyof Prefs;
-    icon: typeof Bell;
-    label: string;
-    description: string;
-  }[];
+  description: string;
 }[] = [
   {
-    title: 'Campaigns',
-    rows: [
-      {
-        key: 'campaignUpdates',
-        icon: Megaphone,
-        label: 'Campaign Updates',
-        description: 'New matches & updates on brand campaigns',
-      },
-      {
-        key: 'applicationStatus',
-        icon: FileCheck,
-        label: 'Application Status',
-        description: 'When a brand accepts, rejects, or messages on your application',
-      },
-      {
-        key: 'deadlineReminders',
-        icon: Clock,
-        label: 'Deadline Reminders',
-        description: 'Heads-up before deliverables and submission deadlines',
-      },
-    ],
+    key: 'campaignUpdates',
+    title: 'Campaign Updates',
+    description: 'New campaigns matching your profile',
   },
   {
-    title: 'Financial',
-    rows: [
-      {
-        key: 'paymentAlerts',
-        icon: CreditCard,
-        label: 'Payment Alerts',
-        description: 'Advance + final payouts, refunds and other money events',
-      },
-    ],
+    key: 'applicationStatus',
+    title: 'Application Status',
+    description: 'Updates on your applications',
+  },
+  {
+    key: 'deadlineReminders',
+    title: 'Deadline Reminders',
+    description: 'Content submission deadlines',
+  },
+];
+
+const FINANCIAL_ROWS: {
+  key: keyof Prefs;
+  title: string;
+  description: string;
+}[] = [
+  {
+    key: 'paymentAlerts',
+    title: 'Payment Alerts',
+    description: 'Payment received notifications',
   },
 ];
 
@@ -103,43 +84,102 @@ const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
   </View>
 );
 
+function ToggleRow({
+  title,
+  description,
+  isEnabled,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  isEnabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <View
+      className="flex-row items-center justify-between"
+      style={{gap: 12, paddingVertical: 12}}>
+      <View className="flex-1" style={{gap: 2}}>
+        <Text className="text-[13px] font-black text-gray-900">{title}</Text>
+        <Text className="text-[10px] font-bold text-gray-400">{description}</Text>
+      </View>
+      <Switch
+        value={isEnabled}
+        onValueChange={onToggle}
+        trackColor={{false: '#e5e7eb', true: '#EC4899'}}
+        thumbColor="#ffffff"
+        ios_backgroundColor="#e5e7eb"
+      />
+    </View>
+  );
+}
+
+function SectionHeader({
+  title,
+  iconBg,
+  icon,
+}: {
+  title: string;
+  iconBg: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <View className="flex-row items-center px-1" style={{gap: 12}}>
+      <View
+        style={{
+          padding: 8,
+          backgroundColor: iconBg,
+          borderRadius: 12,
+        }}>
+        {icon}
+      </View>
+      <Text className="font-black text-xs uppercase tracking-wider text-gray-900">
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  shadowOffset: {width: 0, height: 4},
+  elevation: 4,
+};
+
 export default function NotificationSettings({onBack}: NotificationSettingsProps) {
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
   const [settings, setSettings] = useState<Prefs>(DEFAULT_PREFS);
-  const [original, setOriginal] = useState<Prefs>(DEFAULT_PREFS);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    setError(null);
-    const {data, error: err} = await supabase
+    const {data} = await supabase
       .from('user_preferences')
       .select('notification_prefs')
       .eq('user_id', user.id)
       .maybeSingle();
-    if (err) {
-      console.warn('user_preferences select failed:', err.message);
-      setError(err.message);
+    if (data?.notification_prefs) {
+      setSettings({...DEFAULT_PREFS, ...data.notification_prefs});
     }
-    const merged = {...DEFAULT_PREFS, ...(data?.notification_prefs || {})} as Prefs;
-    setSettings(merged);
-    setOriginal(merged);
-    setLoading(false);
+    setLoaded(true);
   }, [user?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const dirty = JSON.stringify(settings) !== JSON.stringify(original);
+  const toggleSetting = (key: keyof Prefs) =>
+    setSettings(prev => ({...prev, [key]: !prev[key]}));
 
-  const save = async () => {
+  const handleSave = async () => {
     if (!user?.id) return;
     await withLoading(
       (async () => {
-        const {error: err} = await supabase.from('user_preferences').upsert(
+        await supabase.from('user_preferences').upsert(
           {
             user_id: user.id,
             notification_prefs: settings,
@@ -147,92 +187,108 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
           },
           {onConflict: 'user_id'},
         );
-        if (err) {
-          setError(err.message);
-          return;
-        }
-        setOriginal(settings);
+        setSavedAt(Date.now());
       })(),
       'Saving preferences…',
     );
   };
 
-  const restore = () => setSettings(DEFAULT_PREFS);
+  const handleRestoreDefaults = () => setSettings(DEFAULT_PREFS);
+
+  const justSaved = savedAt > 0 && Date.now() - savedAt < 3000;
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <PageHeader title="Notifications" onBack={onBack} />
+    <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
+      <PageHeader title="Notification Settings" onBack={onBack} />
 
-      {loading ? (
+      {!loaded ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E60076" />
+          <ActivityIndicator color="#EC4899" />
         </View>
       ) : (
-        <ScrollView className="flex-1">
-          {error ? (
-            <View className="mx-4 mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <Text className="text-xs text-red-600">{error}</Text>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            padding: 20,
+            gap: 32,
+            paddingBottom: Platform.OS === 'ios' ? 140 : 120,
+          }}
+          showsVerticalScrollIndicator={false}>
+          {/* Campaign Notifications */}
+          <View style={{gap: 12}}>
+            <SectionHeader
+              title="Campaign Notifications"
+              iconBg="#EC4899"
+              icon={<TrendingUp size={18} color="#fff" />}
+            />
+            <View
+              className="bg-white border border-gray-100 rounded-xl"
+              style={[{padding: 20, gap: 8}, cardShadow]}>
+              {CAMPAIGN_ROWS.map(row => (
+                <ToggleRow
+                  key={row.key}
+                  title={row.title}
+                  description={row.description}
+                  isEnabled={settings[row.key]}
+                  onToggle={() => toggleSetting(row.key)}
+                />
+              ))}
             </View>
-          ) : null}
-
-          {SECTIONS.map(section => (
-            <View key={section.title}>
-              <Text className="px-6 pt-6 pb-3 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-                {section.title}
-              </Text>
-              <View className="mx-4 rounded-2xl overflow-hidden bg-white shadow-sm">
-                {section.rows.map(row => {
-                  const Icon = row.icon;
-                  return (
-                    <View
-                      key={row.key}
-                      className="flex-row items-center px-5 py-4 bg-white border-b border-slate-50">
-                      <View className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center mr-4">
-                        <Icon size={18} color="#E60076" />
-                      </View>
-                      <View className="flex-1 mr-3">
-                        <Text className="text-base font-medium text-slate-700">{row.label}</Text>
-                        <Text className="text-xs text-slate-400 mt-1">{row.description}</Text>
-                      </View>
-                      <Switch
-                        value={settings[row.key]}
-                        onValueChange={v =>
-                          setSettings(prev => ({...prev, [row.key]: v}))
-                        }
-                        trackColor={{false: '#e2e8f0', true: '#FCE6F1'}}
-                        thumbColor={settings[row.key] ? '#E60076' : '#94a3b8'}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
-
-          <View className="px-4 mt-8" style={{gap: 10}}>
-            <TouchableOpacity
-              onPress={save}
-              disabled={!dirty}
-              className="flex-row items-center justify-center h-12 rounded-xl"
-              style={{
-                backgroundColor: dirty ? '#E60076' : '#FCA5C7',
-                gap: 8,
-              }}>
-              <Save size={16} color="white" />
-              <Text className="text-white font-bold text-sm">
-                {dirty ? 'Save Changes' : 'No changes'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={restore}
-              className="flex-row items-center justify-center h-12 rounded-xl border border-slate-200 bg-white"
-              style={{gap: 8}}>
-              <RotateCcw size={16} color="#475569" />
-              <Text className="text-slate-600 font-semibold text-sm">Restore Defaults</Text>
-            </TouchableOpacity>
           </View>
 
-          <View className="h-12" />
+          {/* Financial */}
+          <View style={{gap: 12}}>
+            <SectionHeader
+              title="Financial"
+              iconBg="#10B981"
+              icon={<Bell size={18} color="#fff" />}
+            />
+            <View
+              className="bg-white border border-gray-100 rounded-xl"
+              style={[{padding: 20}, cardShadow]}>
+              {FINANCIAL_ROWS.map(row => (
+                <ToggleRow
+                  key={row.key}
+                  title={row.title}
+                  description={row.description}
+                  isEnabled={settings[row.key]}
+                  onToggle={() => toggleSetting(row.key)}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Restore defaults — matches web mobile branch placement */}
+          <TouchableOpacity
+            onPress={handleRestoreDefaults}
+            className="flex-row items-center justify-center rounded-xl border border-slate-200 bg-white"
+            style={{paddingVertical: 12, gap: 6}}>
+            <RotateCcw size={14} color="#64748B" />
+            <Text className="text-xs font-black text-slate-500">
+              Restore defaults
+            </Text>
+          </TouchableOpacity>
+
+          {/* Save Changes — same gradient button shape as web */}
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!user?.id}
+            style={{
+              paddingVertical: 16,
+              borderRadius: 12,
+              backgroundColor: '#EC4899',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#EC4899',
+              shadowOpacity: 0.35,
+              shadowRadius: 18,
+              shadowOffset: {width: 0, height: 8},
+              elevation: 6,
+            }}>
+            <Text className="text-white font-black text-sm">
+              {justSaved ? 'Saved ✓' : 'Save Changes'}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
     </View>

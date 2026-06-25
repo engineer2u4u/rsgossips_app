@@ -178,9 +178,12 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white">
+      className="flex-1"
+      style={{backgroundColor: '#F5F4F8'}}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100">
+      <View
+        className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
+        style={{backgroundColor: '#ffffff'}}>
         <View className="flex-row items-center" style={{gap: 12}}>
           <TouchableOpacity
             onPress={onBack}
@@ -275,7 +278,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           ) : null}
         </View>
 
-        <View className="px-5" style={{gap: 16}}>
+        <View
+          className="px-5"
+          style={{gap: Platform.OS === 'ios' ? 18 : 16}}>
           {/* Basic Info */}
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
             Basic Information
@@ -495,12 +500,34 @@ function InputGroup({
   disabled?: boolean;
   multiline?: boolean;
 }) {
+  // iOS measures TextInput intrinsic height differently from Android — the
+  // same paddingVertical renders taller on iOS, and the text sometimes sits
+  // off-centre because iOS doesn't honour textAlignVertical. Use a
+  // platform-specific padding + an explicit minHeight on single-line fields
+  // so the visible field height matches Android.
+  const padV = multiline
+    ? 14
+    : Platform.OS === 'ios'
+      ? 12
+      : 14;
+  const minH = multiline ? 100 : Platform.OS === 'ios' ? 46 : undefined;
+
   return (
     <View style={{gap: 6}}>
       <Text className="text-[10px] font-black text-gray-400 uppercase ml-1">
         {label}
       </Text>
-      <View className="relative">
+      <View
+        className="relative bg-white rounded-2xl border border-slate-100"
+        style={{
+          // Soft card shadow so each field reads as a tile against the page
+          // bg, matching the rest of the profile surfaces.
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          shadowOffset: {width: 0, height: 2},
+          elevation: 2,
+        }}>
         {icon && (
           <View className="absolute left-4 top-0 bottom-0 justify-center z-10">
             {icon}
@@ -514,12 +541,13 @@ function InputGroup({
           editable={!disabled}
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'center'}
-          className={`bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-700 ${
+          className={`text-sm font-bold text-gray-700 ${
             icon ? 'pl-12' : 'pl-5'
           } pr-5 ${disabled ? 'opacity-60' : ''}`}
           style={{
-            paddingVertical: multiline ? 16 : 14,
-            minHeight: multiline ? 100 : undefined,
+            paddingTop: padV,
+            paddingBottom: padV,
+            minHeight: minH,
           }}
         />
       </View>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -59,8 +59,27 @@ const linking: LinkingOptions<any> = {
 // AuthContext flips `user` between null and a real value.
 function RootStack() {
   const {user, loading, role} = useAuth();
+  // Safety: if check-profile is slow / fails / returns no role, don't sit on
+  // the splash forever. After 3s of waiting on role we proceed with whatever
+  // we have (defaults to influencer) so the user isn't permanently stuck.
+  const [roleTimeout, setRoleTimeout] = useState(false);
+  useEffect(() => {
+    if (!user || role) {
+      setRoleTimeout(false);
+      return;
+    }
+    const t = setTimeout(() => setRoleTimeout(true), 3000);
+    return () => clearTimeout(t);
+  }, [user, role]);
 
-  if (loading) {
+  // Keep the spinner up while we don't yet have role information for a
+  // signed-in user. Otherwise the authed Navigator mounts with role=null,
+  // initialRouteName falls through to the InfluencerHome default, and on
+  // some sign-in paths React Navigation briefly renders the first declared
+  // screen (BrandHome) before settling — which the user sees as
+  // "BrandHome flashed then InfluencerHome loaded". Holding the splash
+  // until role is known eliminates the flash entirely.
+  if (loading || (user && !role && !roleTimeout)) {
     return (
       <View
         style={{

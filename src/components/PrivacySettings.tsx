@@ -1,13 +1,15 @@
-// Privacy & Security — toggles persisted to user_preferences.privacy_prefs +
-// links to Trusted Devices / Deactivate Account / Change Password.
+// Privacy & Security — toggles persisted to user_preferences.privacy_prefs
+// plus a Trusted Devices + Deactivate Account link and a Security Tips card.
 //
-// Mirrors web app src/components/PrivacySettings.jsx (commit 8aa1896).
-// Keys exactly match the web side so the same row in user_preferences works
-// across both surfaces. Don't rename without updating the web too.
+// Mirrors D:/Development/React/RS_Gossips src/components/PrivacySettings.jsx
+// element-for-element. Keys exactly match the web side so the same row in
+// user_preferences works across both surfaces:
+//   publicProfile · showEmail
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   Switch,
   Text,
@@ -18,13 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Lock,
-  Mail,
-  Save,
-  Search,
   Shield,
+  ShieldCheck,
   Smartphone,
-  UserX,
+  UserMinus,
 } from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
@@ -34,21 +33,20 @@ interface PrivacySecurityPageProps {
   onBack: () => void;
   onTrustedDevices: () => void;
   onDeactiveAccount: () => void;
-  onPasswordChange: () => void;
+  /** Kept optional for back-compat with the existing nav graph; the link
+   *  itself isn't rendered because web's PrivacySettings has no password
+   *  change row. */
+  onPasswordChange?: () => void;
 }
 
 type Prefs = {
   publicProfile: boolean;
   showEmail: boolean;
-  searchIndexing: boolean;
-  twoFactor: boolean;
 };
 
 const DEFAULT_PREFS: Prefs = {
   publicProfile: true,
   showEmail: false,
-  searchIndexing: true,
-  twoFactor: false,
 };
 
 const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
@@ -60,113 +58,209 @@ const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
   </View>
 );
 
-const ToggleRow = ({
+function SectionHeader({
+  title,
+  iconBg,
   icon,
-  label,
+}: {
+  title: string;
+  iconBg: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <View className="flex-row items-center px-1" style={{gap: 12}}>
+      <View
+        style={{
+          padding: 8,
+          backgroundColor: iconBg,
+          borderRadius: 12,
+        }}>
+        {icon}
+      </View>
+      <Text
+        className="font-black uppercase text-gray-400"
+        style={{fontSize: 10, letterSpacing: 2}}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+function ToggleRow({
+  title,
   description,
-  value,
+  isEnabled,
   onToggle,
 }: {
-  icon: React.ReactNode;
-  label: string;
+  title: string;
   description: string;
-  value: boolean;
-  onToggle: (v: boolean) => void;
-}) => (
-  <View className="flex-row items-center px-5 py-4 bg-white border-b border-slate-50">
-    <View className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center mr-4">
-      {icon}
-    </View>
-    <View className="flex-1 mr-3">
-      <Text className="text-base font-medium text-slate-700">{label}</Text>
-      <Text className="text-xs text-slate-400 mt-1">{description}</Text>
-    </View>
-    <Switch
-      value={value}
-      onValueChange={onToggle}
-      trackColor={{false: '#e2e8f0', true: '#FCE6F1'}}
-      thumbColor={value ? '#E60076' : '#94a3b8'}
-    />
-  </View>
-);
+  isEnabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      activeOpacity={0.7}
+      className="flex-row items-center justify-between"
+      style={{gap: 12, paddingVertical: 8}}>
+      <View className="flex-1" style={{gap: 2}}>
+        <Text className="text-[13px] font-black text-gray-900">{title}</Text>
+        <Text className="text-[10px] font-bold text-gray-400">
+          {description}
+        </Text>
+      </View>
+      <Switch
+        value={isEnabled}
+        onValueChange={onToggle}
+        trackColor={{false: '#e5e7eb', true: '#EC4899'}}
+        thumbColor="#ffffff"
+        ios_backgroundColor="#e5e7eb"
+      />
+    </TouchableOpacity>
+  );
+}
 
-const LinkRow = ({
+function SecurityLink({
   icon,
-  label,
+  title,
   description,
   onPress,
-  danger,
+  isDestructive,
 }: {
   icon: React.ReactNode;
-  label: string;
+  title: string;
   description: string;
   onPress: () => void;
-  danger?: boolean;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    className="flex-row items-center px-5 py-4 bg-white border-b border-slate-50">
+  isDestructive?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className="flex-row items-center"
+      style={{gap: 14, paddingVertical: 8}}>
+      <View
+        style={{
+          padding: 10,
+          borderRadius: 12,
+          backgroundColor: isDestructive ? '#FEE2E2' : '#F3F4F6',
+        }}>
+        {icon}
+      </View>
+      <View className="flex-1">
+        <Text
+          className="text-[13px] font-black"
+          style={{color: isDestructive ? '#EF4444' : '#0F172A'}}>
+          {title}
+        </Text>
+        <Text className="text-[10px] font-bold text-gray-400">{description}</Text>
+      </View>
+      <ChevronRight size={16} color="#D1D5DB" />
+    </TouchableOpacity>
+  );
+}
+
+function SecurityTipsCard() {
+  const tips = [
+    'Use a strong, unique password',
+    'Review trusted devices regularly',
+    'Never share your password',
+  ];
+  return (
     <View
-      className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${
-        danger ? 'bg-red-50' : 'bg-[#FCE6F1]'
-      }`}>
-      {icon}
+      style={{
+        backgroundColor: '#FFF9E6',
+        borderColor: '#FFE7A1',
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 20,
+        flexDirection: 'row',
+        gap: 14,
+      }}>
+      <View
+        style={{
+          padding: 10,
+          backgroundColor: '#FBBF24',
+          borderRadius: 12,
+          alignSelf: 'flex-start',
+        }}>
+        <ShieldCheck size={20} color="#fff" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-black mb-2" style={{color: '#78350F'}}>
+          Security Tips
+        </Text>
+        <View style={{gap: 6}}>
+          {tips.map(tip => (
+            <View
+              key={tip}
+              className="flex-row items-center"
+              style={{gap: 8}}>
+              <View
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#FBBF24',
+                }}
+              />
+              <Text
+                className="text-[11px] font-bold"
+                style={{color: '#B45309', flex: 1}}>
+                {tip}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
-    <View className="flex-1">
-      <Text
-        className={`text-base font-medium ${
-          danger ? 'text-red-500' : 'text-slate-700'
-        }`}>
-        {label}
-      </Text>
-      <Text className="text-xs text-slate-400 mt-1">{description}</Text>
-    </View>
-    <ChevronRight size={18} color="#94a3b8" />
-  </TouchableOpacity>
-);
+  );
+}
+
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  shadowOffset: {width: 0, height: 4},
+  elevation: 3,
+};
 
 const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
   onBack,
   onTrustedDevices,
   onDeactiveAccount,
-  onPasswordChange,
 }) => {
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
   const [settings, setSettings] = useState<Prefs>(DEFAULT_PREFS);
-  const [original, setOriginal] = useState<Prefs>(DEFAULT_PREFS);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    setError(null);
-    const {data, error: err} = await supabase
+    const {data} = await supabase
       .from('user_preferences')
       .select('privacy_prefs')
       .eq('user_id', user.id)
       .maybeSingle();
-    if (err) {
-      console.warn('user_preferences select failed:', err.message);
-      setError(err.message);
+    if (data?.privacy_prefs) {
+      setSettings({...DEFAULT_PREFS, ...data.privacy_prefs});
     }
-    const merged = {...DEFAULT_PREFS, ...(data?.privacy_prefs || {})} as Prefs;
-    setSettings(merged);
-    setOriginal(merged);
-    setLoading(false);
+    setLoaded(true);
   }, [user?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const dirty = JSON.stringify(settings) !== JSON.stringify(original);
+  const toggleSetting = (key: keyof Prefs) =>
+    setSettings(prev => ({...prev, [key]: !prev[key]}));
 
-  const save = async () => {
+  const handleSave = async () => {
     if (!user?.id) return;
     await withLoading(
       (async () => {
-        const {error: err} = await supabase.from('user_preferences').upsert(
+        await supabase.from('user_preferences').upsert(
           {
             user_id: user.id,
             privacy_prefs: settings,
@@ -174,116 +268,109 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
           },
           {onConflict: 'user_id'},
         );
-        if (err) {
-          setError(err.message);
-          return;
-        }
-        setOriginal(settings);
+        setSavedAt(Date.now());
       })(),
       'Saving preferences…',
     );
   };
 
+  const justSaved = savedAt > 0 && Date.now() - savedAt < 3000;
+
   return (
-    <View className="flex-1 bg-slate-50">
+    <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
       <PageHeader title="Privacy & Security" onBack={onBack} />
 
-      {loading ? (
+      {!loaded ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E60076" />
+          <ActivityIndicator color="#EC4899" />
         </View>
       ) : (
-        <ScrollView className="flex-1">
-          {error ? (
-            <View className="mx-4 mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <Text className="text-xs text-red-600">{error}</Text>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            padding: 20,
+            gap: 24,
+            paddingBottom: Platform.OS === 'ios' ? 140 : 120,
+          }}
+          showsVerticalScrollIndicator={false}>
+          {/* Privacy Settings */}
+          <View style={{gap: 12}}>
+            <SectionHeader
+              title="Privacy Settings"
+              iconBg="#3B82F6"
+              icon={<Eye size={18} color="#fff" />}
+            />
+            <View
+              className="bg-white border border-gray-100"
+              style={[
+                {borderRadius: 32, padding: 24, gap: 16},
+                cardShadow,
+              ]}>
+              <ToggleRow
+                title="Public Profile"
+                description="Allow brands to find your profile"
+                isEnabled={settings.publicProfile}
+                onToggle={() => toggleSetting('publicProfile')}
+              />
+              <ToggleRow
+                title="Show Email"
+                description="Display email on public profile"
+                isEnabled={settings.showEmail}
+                onToggle={() => toggleSetting('showEmail')}
+              />
             </View>
-          ) : null}
-
-          {/* Privacy toggles */}
-          <Text className="px-6 pt-6 pb-3 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-            Privacy
-          </Text>
-          <View className="mx-4 rounded-2xl overflow-hidden bg-white shadow-sm">
-            <ToggleRow
-              icon={<Eye size={18} color="#E60076" />}
-              label="Public Profile"
-              description="Allow brands to discover your profile in search"
-              value={settings.publicProfile}
-              onToggle={v => setSettings(p => ({...p, publicProfile: v}))}
-            />
-            <ToggleRow
-              icon={<Mail size={18} color="#E60076" />}
-              label="Show Email"
-              description="Display your email to brands you've collaborated with"
-              value={settings.showEmail}
-              onToggle={v => setSettings(p => ({...p, showEmail: v}))}
-            />
-            <ToggleRow
-              icon={<Search size={18} color="#E60076" />}
-              label="Search Indexing"
-              description="Allow your public media kit to be indexed by search engines"
-              value={settings.searchIndexing}
-              onToggle={v => setSettings(p => ({...p, searchIndexing: v}))}
-            />
           </View>
 
-          {/* Security */}
-          <Text className="px-6 pt-6 pb-3 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-            Security
-          </Text>
-          <View className="mx-4 rounded-2xl overflow-hidden bg-white shadow-sm">
-            <ToggleRow
-              icon={<Shield size={18} color="#E60076" />}
-              label="Two-Factor Authentication"
-              description="Add an extra step when signing in on a new device"
-              value={settings.twoFactor}
-              onToggle={v => setSettings(p => ({...p, twoFactor: v}))}
+          {/* Security Control */}
+          <View style={{gap: 12}}>
+            <SectionHeader
+              title="Security Control"
+              iconBg="#10B981"
+              icon={<Shield size={18} color="#fff" />}
             />
-            <LinkRow
-              icon={<Lock size={18} color="#E60076" />}
-              label="Change Password"
-              description="Update your account password"
-              onPress={onPasswordChange}
-            />
-            <LinkRow
-              icon={<Smartphone size={18} color="#E60076" />}
-              label="Trusted Devices"
-              description="Manage devices currently signed in"
-              onPress={onTrustedDevices}
-            />
+            <View
+              className="bg-white border border-gray-100"
+              style={[
+                {borderRadius: 32, padding: 24, gap: 12},
+                cardShadow,
+              ]}>
+              <SecurityLink
+                icon={<Smartphone size={18} color="#6B7280" />}
+                title="Trusted Devices"
+                description="Manage your active login sessions"
+                onPress={onTrustedDevices}
+              />
+              <SecurityLink
+                icon={<UserMinus size={18} color="#EF4444" />}
+                title="Deactivate Account"
+                description="Temporarily disable your account"
+                onPress={onDeactiveAccount}
+                isDestructive
+              />
+            </View>
+            <SecurityTipsCard />
           </View>
 
-          {/* Save / restore */}
-          <View className="px-4 mt-8" style={{gap: 10}}>
-            <TouchableOpacity
-              onPress={save}
-              disabled={!dirty}
-              className="flex-row items-center justify-center h-12 rounded-xl"
-              style={{
-                backgroundColor: dirty ? '#E60076' : '#FCA5C7',
-                gap: 8,
-              }}>
-              <Save size={16} color="white" />
-              <Text className="text-white font-bold text-sm">
-                {dirty ? 'Save Changes' : 'No changes'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Danger Zone */}
-          <Text className="px-6 pt-8 pb-3 text-sm font-semibold text-red-400 uppercase tracking-wider">
-            Danger Zone
-          </Text>
-          <View className="mx-4 rounded-2xl overflow-hidden bg-white shadow-sm mb-8">
-            <LinkRow
-              icon={<UserX size={18} color="#ef4444" />}
-              label="Deactivate Account"
-              description="Temporarily disable your account"
-              onPress={onDeactiveAccount}
-              danger
-            />
-          </View>
+          {/* Save Changes */}
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!user?.id}
+            style={{
+              paddingVertical: 16,
+              borderRadius: 12,
+              backgroundColor: '#EC4899',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#EC4899',
+              shadowOpacity: 0.35,
+              shadowRadius: 18,
+              shadowOffset: {width: 0, height: 8},
+              elevation: 6,
+            }}>
+            <Text className="text-white font-black text-sm">
+              {justSaved ? 'Saved ✓' : 'Save Changes'}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
     </View>

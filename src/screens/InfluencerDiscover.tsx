@@ -198,9 +198,14 @@ export default function InfluencerDiscover() {
   //    (minBudget === 0/null) — otherwise we'd hide every brand without
   //    a price tag attached
   //  - platforms filter dropped on web; mirrored here
+  // After filtering we attach a `_matchScore` and sort descending so the
+  // most relevant brand sits at the top of the grid. Score is memoised
+  // once per render via the same calculateBrandMatchScore the cards use,
+  // so the visible BrandCard.matchScore reads the cached value rather
+  // than re-running the calculation per cell.
   const filteredBrands = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return brands.filter(brand => {
+    const passes = brands.filter(brand => {
       const name = (brand.name || '').toLowerCase();
       const ig = (brand.instagram || '').toLowerCase();
       const cats = Array.isArray(brand.categories) ? brand.categories : [];
@@ -227,7 +232,11 @@ export default function InfluencerDiscover() {
         matchesSearch && matchesCategory && matchesBudget && matchesVerified
       );
     });
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
+
+    return passes
+      .map(b => ({...b, _matchScore: calculateBrandMatchScore(profile, b)}))
+      .sort((a, b) => (b._matchScore || 0) - (a._matchScore || 0));
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile]);
 
   // Whenever the filtered list changes (filters/search toggled), snap
   // visibleCount back to the first page so we never display an empty
@@ -329,7 +338,7 @@ export default function InfluencerDiscover() {
                   <View key={brand.id} style={{width: '48%'}}>
                     <BrandCard
                       brand={brand}
-                      matchScore={calculateBrandMatchScore(profile, brand)}
+                      matchScore={(brand as any)._matchScore || 0}
                       onPress={() =>
                         navigation.navigate('InfluencerCampaigns', {
                           brandName: brand.name,

@@ -129,14 +129,9 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
                   Trust
                 </Text>
               </View>
-              <View className="flex-row items-baseline" style={{gap: 4}}>
-                <Text className="text-sm font-black text-white">
-                  {score !== null ? score : '—'}
-                </Text>
-                <Text className="text-[9px] font-bold text-white opacity-80">
-                  {band}
-                </Text>
-              </View>
+              <Text className="text-[11px] font-black text-white tracking-wide">
+                {band}
+              </Text>
             </View>
           </View>
         );

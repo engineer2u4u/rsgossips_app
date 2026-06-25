@@ -174,7 +174,15 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
           Active Sessions
         </Text>
 
-        <View className="mx-4 rounded-2xl overflow-hidden bg-white shadow-sm">
+        <View
+          className="mx-4 rounded-2xl overflow-hidden bg-white"
+          style={{
+            shadowColor: '#000',
+            shadowOpacity: 0.06,
+            shadowRadius: 10,
+            shadowOffset: {width: 0, height: 4},
+            elevation: 3,
+          }}>
           {loading ? (
             <View className="py-10 items-center">
               <ActivityIndicator color="#E60076" />

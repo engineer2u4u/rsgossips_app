@@ -265,7 +265,7 @@ export default function InfluencerServicesList() {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingBottom: 140,
-            gap: 12,
+            gap: 20,
           }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
@@ -356,26 +356,36 @@ function ServiceCard({
       activeOpacity={0.9}
       className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
     >
-      {/* Hero */}
-      {service.featured_image_url ? (
-        <Image
-          source={{ uri: service.featured_image_url }}
-          className="w-full"
-          style={{ aspectRatio: 2.4 / 1, backgroundColor: '#f1f5f9' }}
-          resizeMode="cover"
-        />
-      ) : (
-        <LinearGradient
-          colors={['#9810FA', '#E60076']}
-          style={{
-            aspectRatio: 2.4 / 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon size={48} color="rgba(255,255,255,0.85)" />
-        </LinearGradient>
-      )}
+      {/* Hero — framed in a thick white inset so the banner reads as a
+          distinct image card-within-card. The frame uses the card's own
+          white background as padding; the image clips to its own rounded
+          corners independently. */}
+      <View style={{ padding: 12, backgroundColor: '#ffffff' }}>
+        {service.featured_image_url ? (
+          <Image
+            source={{ uri: service.featured_image_url }}
+            className="w-full"
+            style={{
+              aspectRatio: 2.4 / 1,
+              backgroundColor: '#f1f5f9',
+              borderRadius: 12,
+            }}
+            resizeMode="cover"
+          />
+        ) : (
+          <LinearGradient
+            colors={['#9810FA', '#E60076']}
+            style={{
+              aspectRatio: 2.4 / 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+            }}
+          >
+            <Icon size={48} color="rgba(255,255,255,0.85)" />
+          </LinearGradient>
+        )}
+      </View>
 
       <View className="p-4" style={{ gap: 8 }}>
         <View className="flex-row items-center" style={{ gap: 6 }}>

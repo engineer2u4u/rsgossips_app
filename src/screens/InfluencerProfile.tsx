@@ -1,6 +1,7 @@
 import React, {useCallback, useState, useRef} from 'react';
-import {View, ScrollView, StatusBar, RefreshControl} from 'react-native';
+import {View, ScrollView, StatusBar, RefreshControl, BackHandler} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import DashboardView from '../components/DashboardView';
 import MyInformationDetail from '../components/MyInformationDetail';
@@ -32,6 +33,26 @@ type ViewType =
   | 'help&support'
   | 'payments';
 
+// Maps each subview to the view the user expects when they press the
+// hardware back button. Mirrors the onBack callbacks below: most subviews
+// pop back to the dashboard, but a few (password-change, trusted-devices,
+// deactivate-account) are nested under privacy, and campaign is nested
+// under analytics. Keep this in sync with the onBack handlers below.
+const BACK_PARENT: Record<string, ViewType> = {
+  'my-info': 'dashboard',
+  'add-reel': 'my-info',
+  'analytics': 'dashboard',
+  'campaign': 'analytics',
+  'edit-profile': 'dashboard',
+  'notifications': 'dashboard',
+  'privacy': 'dashboard',
+  'password-change': 'privacy',
+  'trusted-devices': 'privacy',
+  'deactivate-account': 'privacy',
+  'help&support': 'dashboard',
+  'payments': 'dashboard',
+};
+
 export default function InfluencerProfile() {
   const [view, setView] = useState<ViewType>('dashboard');
   const scrollRef = useRef<ScrollView>(null);
@@ -42,6 +63,22 @@ export default function InfluencerProfile() {
     setView(next);
     scrollRef.current?.scrollTo({y: 0, animated: true});
   };
+
+  // Hardware back: pop one level of the internal view state instead of
+  // popping the InfluencerProfile screen entirely. Returning true tells
+  // RN we've handled the event — only when we're already on the dashboard
+  // do we return false to let the navigator pop us out.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (view === 'dashboard') return false;
+        const parent = BACK_PARENT[view] || 'dashboard';
+        navigate(parent);
+        return true;
+      });
+      return () => sub.remove();
+    }, [view]),
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
