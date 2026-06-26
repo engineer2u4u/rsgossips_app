@@ -190,17 +190,11 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
         </LinearGradient>
       </View>
 
-      {/* Progress headline */}
+      {/* Progress headline — drop the wasted LinearGradient background
+          (it sat behind pink text so was never visible) and let the
+          progressHeader flow as a plain row. */}
       <View style={styles.progressHeader}>
-        <View style={styles.percentBlock}>
-          <LinearGradient
-            colors={[...BRAND_GRADIENT_WARM]}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <Text style={styles.percentText}>{percent}% complete</Text>
-        </View>
+        <Text style={styles.percentText}>{percent}% complete</Text>
         <View style={styles.headerStatusBlock}>
           <Clock size={12} color="#EC4899" />
           <Text style={styles.headerStatusText}>
@@ -415,10 +409,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  // Header
+  // Header — center the step pill against the title block so the pill
+  // doesn't visually float above the "Application Status" headline on iOS,
+  // where the eyebrow + title stack is taller than the pill.
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
   eyebrow: {
@@ -458,10 +454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-  },
-  percentBlock: {
-    overflow: 'hidden',
-    paddingHorizontal: 0,
   },
   percentText: {
     fontSize: 14,
@@ -533,6 +525,11 @@ const styles = StyleSheet.create({
   stepConnector: {
     width: 2,
     flex: 1,
+    // minHeight keeps the connector visible on iOS for idle steps, where
+    // the row height equals the 32px dot exactly and flex: 1 otherwise
+    // collapses to 0. Android rounded up by a pixel or two so it kept
+    // showing; iOS doesn't.
+    minHeight: 18,
     backgroundColor: '#E2E8F0',
     marginTop: 4,
     marginBottom: 4,

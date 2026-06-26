@@ -156,9 +156,14 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={{marginHorizontal: 20, marginTop: 8, borderRadius: 20, padding: 2}}>
-        <View className="bg-white p-6 rounded-[18px] items-center">
-          {/* Avatar */}
-          <View className="relative mb-4">
+        <View
+          className="bg-white items-center"
+          style={{paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, borderRadius: 18}}>
+          {/* Avatar — bumped bottom margin to 24px so the floating Edit2
+              corner badge (which extends ~8px below the avatar's layout
+              box via -bottom-2) clears the name properly on iOS instead
+              of squeezing into the 16px mb-4 the design was built around. */}
+          <View className="relative" style={{marginBottom: 24}}>
             {photo ? (
               <Image
                 source={{uri: photo}}
@@ -181,7 +186,12 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
                 <Text className="text-white text-3xl font-bold">{initials}</Text>
               </LinearGradient>
             )}
-            <TouchableOpacity className="absolute -bottom-2 -right-2 bg-[#1A1A1A] p-2 rounded-xl" style={{borderWidth: 2, borderColor: 'white'}}>
+            <TouchableOpacity
+              onPress={onEditProfile}
+              activeOpacity={0.85}
+              hitSlop={8}
+              className="absolute -bottom-2 -right-2 bg-[#1A1A1A] p-2 rounded-xl"
+              style={{borderWidth: 2, borderColor: 'white'}}>
               <Edit2 size={10} color="white" />
             </TouchableOpacity>
           </View>
@@ -214,11 +224,22 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
             </View>
           </View>
 
-          {/* Edit Profile Button */}
+          {/* Edit Profile Button — use a real flex gap instead of an
+              ml-2 margin so the icon + label center predictably on iOS
+              (where Text carries an implicit lineHeight that throws off
+              margin-based horizontal centering). marginTop bumped to 20
+              so the button isn't tighter to the stats row than it is to
+              the card's bottom edge. */}
           <TouchableOpacity
-            className="w-full mt-4 flex-row items-center justify-center"
+            className="w-full flex-row items-center justify-center"
             onPress={onEditProfile}
-            style={{borderRadius: 12, height: 44, overflow: 'hidden'}}>
+            style={{
+              borderRadius: 12,
+              height: 44,
+              overflow: 'hidden',
+              marginTop: 20,
+              gap: 8,
+            }}>
             <LinearGradient
               colors={['#E60076', '#FF6BA1']}
               start={{x: 0, y: 0}}
@@ -226,7 +247,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
             />
             <Edit2 size={16} color="white" />
-            <Text className="text-white font-bold text-sm ml-2">Edit Profile</Text>
+            <Text className="text-white font-bold text-sm">Edit Profile</Text>
           </TouchableOpacity>
         </View>
         </LinearGradient>
