@@ -99,7 +99,7 @@ export default function TopServices() {
   const rest = services.slice(1);
 
   return (
-    <View className="w-full py-8 px-4">
+    <View className="w-full pt-2 pb-8 px-4">
       {/* Header */}
       <View className="flex-row justify-between items-start mb-6">
         <View className="flex-1 pr-3">

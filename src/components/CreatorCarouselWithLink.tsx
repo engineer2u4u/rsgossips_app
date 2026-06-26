@@ -193,14 +193,41 @@ export default function CreatorsCarouselWithLink() {
         </View>
       </View>
 
-      {/* Dots */}
+      {/* Dots — capped at MAX_DOTS visible dots regardless of how many
+          creators we have. The window slides as `current` advances; edge
+          dots inside the window shrink so the indicator looks like it's
+          riding past hidden positions instead of restarting. */}
+      <DotPager
+        total={creators.length}
+        current={current}
+        onPick={i => carouselRef.current?.scrollTo({ index: i, animated: true })}
+      />
+    </View>
+  );
+}
+
+const MAX_DOTS = 5;
+
+function DotPager({
+  total,
+  current,
+  onPick,
+}: {
+  total: number;
+  current: number;
+  onPick: (index: number) => void;
+}) {
+  if (total <= 0) return null;
+
+  // If we have <=5 creators, render every dot as before — the window doesn't
+  // need to slide at all.
+  if (total <= MAX_DOTS) {
+    return (
       <View className="flex-row justify-center mt-6" style={{ gap: 8 }}>
-        {creators.map((_, i) => (
+        {Array.from({length: total}).map((_, i) => (
           <Pressable
             key={i}
-            onPress={() =>
-              carouselRef.current?.scrollTo({ index: i, animated: true })
-            }
+            onPress={() => onPick(i)}
             className={`h-2.5 rounded-full ${
               current === i ? 'w-10' : 'bg-gray-300 w-2.5'
             }`}
@@ -216,6 +243,48 @@ export default function CreatorsCarouselWithLink() {
           </Pressable>
         ))}
       </View>
+    );
+  }
+
+  // Sliding window — keep the active dot ~centered until we hit either
+  // edge of the full list.
+  const windowStart = Math.max(0, Math.min(current - 2, total - MAX_DOTS));
+  const indices = Array.from({length: MAX_DOTS}, (_, k) => windowStart + k);
+  const hasMoreBefore = windowStart > 0;
+  const hasMoreAfter = windowStart + MAX_DOTS < total;
+
+  return (
+    <View className="flex-row justify-center items-center mt-6" style={{ gap: 8 }}>
+      {indices.map((i, slot) => {
+        const isActive = current === i;
+        const atEdge =
+          (slot === 0 && hasMoreBefore) ||
+          (slot === MAX_DOTS - 1 && hasMoreAfter);
+        const size = atEdge ? 5 : 8;
+        return (
+          <Pressable
+            key={i}
+            onPress={() => onPick(i)}
+            style={{
+              height: isActive ? 10 : size,
+              width: isActive ? 40 : size,
+              borderRadius: 999,
+              backgroundColor: isActive ? 'transparent' : '#D1D5DB',
+              overflow: 'hidden',
+              opacity: atEdge ? 0.6 : 1,
+            }}
+          >
+            {isActive ? (
+              <LinearGradient
+                colors={[...BRAND_GRADIENT_WARM]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1, borderRadius: 100 }}
+              />
+            ) : null}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

@@ -172,10 +172,16 @@ export default function InfluencerMediaKit() {
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `Check out my media kit: ${shareUrl}`,
-        url: shareUrl,
-      });
+      // iOS treats `message` and `url` as separate components and
+      // concatenates them — passing the URL in both produced the same
+      // link twice in the share sheet. Send the description in `message`
+      // and the URL via `url` so iOS attaches it cleanly. Android ignores
+      // `url` and only uses `message`, so we keep the URL inline there.
+      await Share.share(
+        Platform.OS === 'ios'
+          ? {message: 'Check out my media kit', url: shareUrl}
+          : {message: `Check out my media kit: ${shareUrl}`},
+      );
     } catch {}
   };
 

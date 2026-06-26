@@ -167,7 +167,7 @@ export default function BrandsCarousel() {
   if (!sortedBrands.length) return null;
 
   return (
-    <View className="w-full py-10">
+    <View className="w-full pt-10 pb-2">
       <SectionTitle text="Brands You'll Love" />
 
       <Carousel

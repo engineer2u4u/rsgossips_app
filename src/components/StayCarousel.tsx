@@ -271,8 +271,10 @@ export default function StayCarousel() {
         // Let vertical pans bubble to the page ScrollView so the home page
         // keeps scrolling smoothly through this slider — same pattern Deal
         // of the Day uses.
+        // Claim horizontal pans earlier (5px) so the carousel wins before
+        // the slide's inner Apply button consumes the touch.
         onConfigurePanGesture={g =>
-          g.activeOffsetX([-10, 10]).failOffsetY([-5, 5])
+          g.activeOffsetX([-5, 5]).failOffsetY([-8, 8])
         }
         renderItem={({item}: {item: Stay}) => (
           <View style={{width: CARD_W}}>

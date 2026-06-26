@@ -36,7 +36,7 @@ function tagsMatchCategories(
 }
 
 export default function ProStatusCard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigation = useNavigation();
   const progress = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -98,27 +98,28 @@ export default function ProStatusCard() {
     );
   }, [trialProgress]);
 
-  // Count brands with active campaigns matching the creator's categories.
-  // Mirrors the web Recommended Campaigns filter so this number lines up
-  // with what the "Campaigns for you" section below actually shows.
+  // Count active campaigns matching the creator's categories. We pass
+  // influencerId so list-campaigns returns the same dataset the campaigns
+  // list page sees (it excludes campaigns the user already applied to and
+  // applies the same eligibility cuts) — without it, the home pitch and
+  // the destination tab disagreed (e.g. "20 brands looking for you" then
+  // "Active (18)"). Counting campaigns (not unique brands) also aligns
+  // with the destination tab's "Active (n)" label.
   useEffect(() => {
+    if (!user?.id) return;
     let cancelled = false;
     (async () => {
       try {
-        const data = await invokeFn<{ campaigns?: any[] }>(
-          'list-campaigns',
-          {},
-        );
+        const data = await invokeFn<{ campaigns?: any[] }>('list-campaigns', {
+          influencerId: user.id,
+        });
         if (cancelled || !Array.isArray(data?.campaigns)) return;
         const matching = data.campaigns.filter((c: any) => {
           if (c.status !== 'Active') return false;
           if (userCategories.length === 0) return true;
           return tagsMatchCategories(c.tags, userCategories);
         });
-        const brandIds = new Set(
-          matching.map((c: any) => c.brandId || c.brandName).filter(Boolean),
-        );
-        if (!cancelled) setMatchingBrandsCount(brandIds.size);
+        if (!cancelled) setMatchingBrandsCount(matching.length);
       } catch {
         if (!cancelled) setMatchingBrandsCount(0);
       }
@@ -126,7 +127,7 @@ export default function ProStatusCard() {
     return () => {
       cancelled = true;
     };
-  }, [userCategories.join('|')]);
+  }, [user?.id, userCategories.join('|')]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%`,
@@ -268,12 +269,12 @@ export default function ProStatusCard() {
             {matchingBrandsCount == null
               ? '…'
               : matchingBrandsCount === 0
-                ? '0 brands'
-                : `${matchingBrandsCount} brand${matchingBrandsCount === 1 ? '' : 's'}`}
+                ? '0 campaigns'
+                : `${matchingBrandsCount} campaign${matchingBrandsCount === 1 ? '' : 's'}`}
           </Text>
           {userCategories.length > 0
-            ? ' are looking for creators in your niche'
-            : ' have active campaigns right now'}
+            ? ' are open for creators in your niche'
+            : ' are active right now'}
         </Text>
 
         <ChevronRight

@@ -171,7 +171,8 @@ export default function CompleteProfileCard() {
             borderRadius: 24,
             borderWidth: 1,
             borderColor: 'rgba(25,22,43,0.06)',
-            padding: 16,
+            // Matches AI Media Kit card padding so the two tiles read as a pair.
+            padding: 20,
           },
           CARD_SHADOW,
         ]}>
@@ -236,39 +237,45 @@ export default function CompleteProfileCard() {
                 index !== steps.length - 1 ? 'border-b border-slate-50' : ''
               }`}>
               <View className="flex-row items-center flex-1" style={{gap: 12}}>
-                {step.completed ? (
-                  <View
-                    style={{
-                      borderRadius: 100,
-                      width: 26,
-                      height: 26,
-                      backgroundColor: '#22C55E',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    <Check size={14} color="white" strokeWidth={4} />
-                  </View>
-                ) : (
-                  <View
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 100,
-                      borderWidth: 2,
-                      borderColor: step.active ? BRAND.accent : '#e2e8f0',
-                      backgroundColor: step.active
-                        ? 'rgba(210,65,143,0.08)'
-                        : 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    <Text
-                      className="text-[11px] font-black"
-                      style={{color: step.active ? BRAND.accent : '#94a3b8'}}>
-                      {step.id}
-                    </Text>
-                  </View>
-                )}
+                {/* Tick / number wrapper — RING_SIZE wide and centered so
+                    every status circle lines up under the 100% progress
+                    ring in the header. */}
+                <View
+                  style={{width: RING_SIZE, alignItems: 'center'}}>
+                  {step.completed ? (
+                    <View
+                      style={{
+                        borderRadius: 100,
+                        width: 22,
+                        height: 22,
+                        backgroundColor: '#22C55E',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Check size={12} color="white" strokeWidth={4} />
+                    </View>
+                  ) : (
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 100,
+                        borderWidth: 2,
+                        borderColor: step.active ? BRAND.accent : '#e2e8f0',
+                        backgroundColor: step.active
+                          ? 'rgba(210,65,143,0.08)'
+                          : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Text
+                        className="text-[10px] font-black"
+                        style={{color: step.active ? BRAND.accent : '#94a3b8'}}>
+                        {step.id}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <View className="flex-1 pr-2">
                   <Text
                     className={`font-bold text-[13px] ${

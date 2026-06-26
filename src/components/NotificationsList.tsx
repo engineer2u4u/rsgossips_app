@@ -27,6 +27,7 @@ import {
   UserPlus,
   XCircle,
 } from 'lucide-react-native';
+import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 
@@ -55,14 +56,84 @@ const TYPE_STYLES: Record<string, IconBundle> = {
   app_payment: {Icon: IndianRupee, color: '#f59e0b', bg: '#FFFBEB'},
 };
 
-function parseBody(body: string | undefined): {text: string; link: string | null} {
-  if (!body) return {text: '', link: null};
+function parseBody(body: string | undefined): {
+  text: string;
+  link: string | null;
+  // Optional structured payload — most notification rows include either a
+  // campaign_id or an application_id so we can deep-link straight to the
+  // relevant detail page without parsing the link string.
+  campaignId: string | null;
+  applicationId: string | null;
+} {
+  if (!body) {
+    return {text: '', link: null, campaignId: null, applicationId: null};
+  }
   try {
     const data = JSON.parse(body);
-    return {text: data?.text || body, link: data?.link || null};
+    return {
+      text: data?.text || body,
+      link: data?.link || null,
+      campaignId: data?.campaign_id || data?.campaignId || null,
+      applicationId: data?.application_id || data?.applicationId || null,
+    };
   } catch {
-    return {text: body, link: null};
+    return {text: body, link: null, campaignId: null, applicationId: null};
   }
+}
+
+// Translate a web-style href (`/influencer/offers/abc`, `/influencer/campaigns`,
+// etc.) into a React-Navigation navigate({name, params}) tuple. Returns null
+// if the link doesn't map to a known mobile route — in that case the row
+// just marks itself read with no nav side-effect.
+function routeFromLink(
+  link: string | null,
+): {name: string; params?: any} | null {
+  if (!link) return null;
+  // Strip a leading "/" so the path starts at the segment.
+  const cleaned = link.replace(/^\/+/, '');
+  // /influencer/offers/<id>  or  /brands/campaigns/<id>
+  const offerMatch = cleaned.match(/^influencer\/offers\/([^/?#]+)/i);
+  if (offerMatch) return {name: 'InfluencerOfferDetail', params: {id: offerMatch[1]}};
+  if (/^influencer\/campaigns/i.test(cleaned)) return {name: 'InfluencerCampaigns'};
+  if (/^influencer\/profile/i.test(cleaned)) return {name: 'InfluencerProfile'};
+  if (/^influencer\/services\/orders/i.test(cleaned))
+    return {name: 'InfluencerServiceOrders'};
+  if (/^influencer\/services/i.test(cleaned)) return {name: 'InfluencerServices'};
+  if (/^influencer\/pricing/i.test(cleaned)) return {name: 'InfluencerPricing'};
+  if (/^influencer\/media-kit/i.test(cleaned))
+    return {name: 'InfluencerMediaKit'};
+  if (/^influencer$/i.test(cleaned) || /^influencer\/?$/.test(cleaned))
+    return {name: 'InfluencerHome'};
+  return null;
+}
+
+// Fallback router used when the body has no `link` string but we still
+// know the type — most notification types have an obvious target page.
+function routeFromType(
+  type: string | undefined,
+  campaignId: string | null,
+): {name: string; params?: any} | null {
+  if (!type) return null;
+  // Anything tied to a specific campaign opens that campaign's detail page
+  // when we have the id.
+  const offerTypes = [
+    'new_application',
+    'app_approved',
+    'app_rejected',
+    'app_accepted',
+    'app_completed',
+    'app_revision_needed',
+    'deliverables_submitted',
+    'live_submitted',
+    'app_payment',
+  ];
+  if (offerTypes.includes(type)) {
+    return campaignId
+      ? {name: 'InfluencerOfferDetail', params: {id: campaignId}}
+      : {name: 'InfluencerCampaigns'};
+  }
+  if (type === 'welcome') return {name: 'InfluencerHome'};
+  return null;
 }
 
 function relativeTime(iso?: string): string {
@@ -93,6 +164,7 @@ export function NotificationsList({
   emptyHint = "You'll be notified about campaign activity",
 }: Props) {
   const {user} = useAuth();
+  const navigation = useNavigation<any>();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,14 +256,29 @@ export function NotificationsList({
             bg: '#F1F5F9',
           };
           const {Icon} = style;
-          const {text} = parseBody(item.body);
+          const {text, link, campaignId} = parseBody(item.body);
           const isUnread = !item.is_read;
+          // Resolve the destination once per render. Body link wins; type +
+          // campaign-id fallback covers older notifications that don't carry
+          // an explicit link string.
+          const dest =
+            routeFromLink(link) || routeFromType(item.type, campaignId);
+          const handleTap = () => {
+            if (item.id) markRead([item.id]);
+            if (dest) {
+              try {
+                navigation.navigate(dest.name, dest.params);
+              } catch {
+                // Route not registered (e.g. brand-side stack) — silent.
+              }
+            }
+          };
           return (
             <Animated.View
               key={`${item.id || i}-${item.created_at}`}
               entering={FadeInDown.delay(Math.min(i, 8) * 40)}>
               <Pressable
-                onPress={() => item.id && markRead([item.id])}
+                onPress={handleTap}
                 style={[
                   s.row,
                   isUnread ? s.rowUnread : s.rowRead,

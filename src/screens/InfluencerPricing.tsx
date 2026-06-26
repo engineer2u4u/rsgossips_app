@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
 import {
   Check,
@@ -530,7 +531,15 @@ export default function InfluencerPricing() {
           </View>
         </View>
 
-        <View className="px-4 py-6" style={{gap: 20}}>
+        <View
+          style={{
+            // iOS renders the same numeric padding slightly tighter
+            // because of how its safe-area + font metrics combine, so
+            // give the packages section a touch more breathing room.
+            paddingHorizontal: Platform.OS === 'ios' ? 20 : 16,
+            paddingVertical: Platform.OS === 'ios' ? 28 : 24,
+            gap: Platform.OS === 'ios' ? 28 : 20,
+          }}>
           {/* Current Plan Card */}
           <View className="bg-white p-5 rounded-3xl border border-slate-100">
             <View className="flex-row items-center" style={{gap: 12}}>

@@ -182,7 +182,7 @@ export default function InfluencerServiceOrderDetail() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const id = route.params?.id;
-  const {user, profile} = useAuth();
+  const {user, profile, role} = useAuth();
   const {withLoading} = useGlobalLoading();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -197,6 +197,9 @@ export default function InfluencerServiceOrderDetail() {
   const [counterMode, setCounterMode] = useState(false);
   const [counterAmount, setCounterAmount] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
+
+  // Reclaim flow — one-click resubmit when the quote expired/declined.
+  const [reclaiming, setReclaiming] = useState(false);
   const [counterError, setCounterError] = useState<string | null>(null);
 
   // Decline state.
@@ -714,6 +717,44 @@ export default function InfluencerServiceOrderDetail() {
       setReviewError(null);
       setReviewMode(true);
     },
+    onReclaim: async () => {
+      if (!user?.id || !order?.service_slug || reclaiming) return;
+      setReclaiming(true);
+      try {
+        await invokeFn('submit-quote-request', {
+          userId: user.id,
+          userRole: role || '',
+          serviceSlug: order.service_slug,
+          description: order.description || '',
+          assetUrl: order.asset_url || '',
+          desiredDeliveryDate: order.desired_delivery_date || null,
+          scope: order.scope || null,
+          budgetRange: order.budget_range || null,
+          styleReferences: order.style_references || null,
+          notes: order.notes || null,
+        });
+        // Bounce to the orders list so the user lands on the fresh order
+        // that was just created instead of staring at the expired one.
+        Alert.alert(
+          'Quote resubmitted',
+          "We've sent a fresh request with the same brief. You'll get a notification the moment the seller replies.",
+          [
+            {
+              text: 'View my orders',
+              onPress: () => navigation.navigate('InfluencerServiceOrders'),
+            },
+          ],
+        );
+      } catch (e: any) {
+        Alert.alert(
+          "Couldn't reclaim",
+          e?.message || 'Please try again in a moment.',
+        );
+      } finally {
+        setReclaiming(false);
+      }
+    },
+    reclaiming,
     revsLeft,
   });
 
@@ -821,8 +862,17 @@ export default function InfluencerServiceOrderDetail() {
           </View>
         ) : null}
 
-        {/* Brief snapshot */}
-        {(order.description || order.scope || order.budget_range) ? (
+        {/* Brief snapshot — renders every brief field the order row has so
+            users see the exact information they submitted, not just a
+            subset (description / asset_url / scope / budget / delivery
+            date / style_references / notes). */}
+        {(order.description ||
+          order.scope ||
+          order.budget_range ||
+          order.desired_delivery_date ||
+          order.asset_url ||
+          order.style_references ||
+          order.notes) ? (
           <View
             className="bg-white rounded-2xl border border-slate-100 p-5"
             style={{gap: 10}}>
@@ -841,16 +891,73 @@ export default function InfluencerServiceOrderDetail() {
                 <Chip>Deliver by {order.desired_delivery_date}</Chip>
               ) : null}
             </View>
+
+            {/* Links — `asset_url` is the user's own page they shared, and
+                `style_references` is one or more reference links pasted into
+                the brief form. Render both as separate rows so neither
+                drops out. style_references may be a multi-URL string or a
+                comma/newline-separated list — split + render each. */}
             {order.asset_url ? (
-              <TouchableOpacity
-                onPress={() => Linking.openURL(order.asset_url!)}
-                className="flex-row items-center mt-1"
-                style={{gap: 6}}>
-                <ExternalLink size={12} color="#5851DB" />
-                <Text className="text-xs font-bold text-[#5851DB] underline" numberOfLines={1}>
-                  Your asset link
+              <View style={{gap: 4}}>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Your page
                 </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(order.asset_url!)}
+                  className="flex-row items-center"
+                  style={{gap: 6}}>
+                  <ExternalLink size={12} color="#5851DB" />
+                  <Text
+                    className="text-xs font-bold text-[#5851DB] underline flex-1"
+                    numberOfLines={1}>
+                    {order.asset_url}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {order.style_references ? (
+              <View style={{gap: 4}}>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Reference links
+                </Text>
+                {order.style_references
+                  .split(/[\n,]+/)
+                  .map(s => s.trim())
+                  .filter(Boolean)
+                  .map((ref, i) => {
+                    const isUrl = /^https?:\/\//i.test(ref);
+                    return isUrl ? (
+                      <TouchableOpacity
+                        key={`${ref}-${i}`}
+                        onPress={() => Linking.openURL(ref)}
+                        className="flex-row items-center"
+                        style={{gap: 6}}>
+                        <ExternalLink size={12} color="#5851DB" />
+                        <Text
+                          className="text-xs font-bold text-[#5851DB] underline flex-1"
+                          numberOfLines={1}>
+                          {ref}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text key={`${ref}-${i}`} className="text-xs text-slate-700">
+                        {ref}
+                      </Text>
+                    );
+                  })}
+              </View>
+            ) : null}
+
+            {order.notes ? (
+              <View style={{gap: 4}}>
+                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Additional notes
+                </Text>
+                <Text className="text-xs text-slate-700 leading-5">
+                  {order.notes}
+                </Text>
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -1167,36 +1274,63 @@ export default function InfluencerServiceOrderDetail() {
           </View>
         ) : null}
 
-        {/* Event timeline */}
+        {/* Event timeline — each event renders as a titled card with the
+            notes split into bullet pointers (by newline / pipe / period)
+            so a multi-line server note reads as a list instead of a wall. */}
         {events.length > 0 ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 14}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
               Timeline
             </Text>
-            <View style={{gap: 12}}>
-              {events.map(ev => (
-                <View
-                  key={ev.id}
-                  className="flex-row items-start"
-                  style={{gap: 12}}>
-                  <View className="w-3 h-3 rounded-full bg-pink-500 mt-1" />
-                  <View className="flex-1">
-                    <Text className="text-sm font-bold text-slate-800">
-                      {(ev.event_type || 'event').replace(/_/g, ' ')}
-                    </Text>
-                    {ev.notes ? (
-                      <Text className="text-[12px] text-slate-600 mt-0.5">
-                        {ev.notes}
+            <View style={{gap: 14}}>
+              {events.map(ev => {
+                const bullets = (ev.notes || '')
+                  .split(/[\n|·]+|(?:\. (?=[A-Z]))/)
+                  .map(s => s.trim().replace(/\.$/, ''))
+                  .filter(Boolean);
+                const title = (ev.event_type || 'event')
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, c => c.toUpperCase());
+                return (
+                  <View
+                    key={ev.id}
+                    className="flex-row items-start"
+                    style={{gap: 12}}>
+                    <View className="w-3 h-3 rounded-full bg-pink-500 mt-1.5" />
+                    <View className="flex-1">
+                      <Text className="text-sm font-bold text-slate-800">
+                        {title}
                       </Text>
-                    ) : null}
-                    {ev.occurred_at ? (
-                      <Text className="text-[10px] text-slate-400 mt-1">
-                        {new Date(ev.occurred_at).toLocaleString()}
-                      </Text>
-                    ) : null}
+                      {bullets.length > 0 ? (
+                        <View style={{gap: 4, marginTop: 4}}>
+                          {bullets.map((b, i) => (
+                            <View
+                              key={`${ev.id}-${i}`}
+                              className="flex-row"
+                              style={{gap: 6}}>
+                              <Text
+                                className="text-[12px] text-pink-500"
+                                style={{lineHeight: 18}}>
+                                •
+                              </Text>
+                              <Text
+                                className="text-[12px] text-slate-600 flex-1"
+                                style={{lineHeight: 18}}>
+                                {b}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                      {ev.occurred_at ? (
+                        <Text className="text-[10px] text-slate-400 mt-1.5">
+                          {new Date(ev.occurred_at).toLocaleString()}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         ) : null}
@@ -1258,6 +1392,8 @@ interface ActionHandlers {
   onDecline: () => void;
   onRequestRevision: () => void;
   onLeaveReview: () => void;
+  onReclaim: () => void;
+  reclaiming?: boolean;
   revsLeft?: number;
 }
 
@@ -1340,6 +1476,34 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
           style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
         />
         <Text className="text-white text-sm font-black">Leave a review</Text>
+      </TouchableOpacity>
+    );
+  }
+  // Expired or declined: one-click reclaim that resubmits the original
+  // brief verbatim via submit-quote-request. Saves the user from re-typing
+  // the description / scope / links every time the validity window lapses.
+  if (order.status === 'expired' || order.status === 'declined') {
+    return (
+      <TouchableOpacity
+        onPress={h.onReclaim}
+        activeOpacity={0.85}
+        disabled={h.reclaiming}
+        style={{
+          paddingVertical: 14,
+          borderRadius: 14,
+          alignItems: 'center',
+          overflow: 'hidden',
+          opacity: h.reclaiming ? 0.7 : 1,
+        }}>
+        <LinearGradient
+          colors={['#9810FA', '#E60076']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
+        <Text className="text-white text-sm font-black">
+          {h.reclaiming ? 'Resubmitting…' : 'Reclaim this quote'}
+        </Text>
       </TouchableOpacity>
     );
   }

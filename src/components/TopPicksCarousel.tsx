@@ -185,10 +185,12 @@ export default function RecommendedCampaigns() {
             autoPlayInterval={5000}
             scrollAnimationDuration={500}
             onSnapToItem={i => setActive(i)}
-            // Let vertical pans pass through to the page ScrollView so the
-            // home scroll keeps working through this slider.
+            // Claim horizontal pans earlier (5px instead of 10px) so the
+            // carousel wins the gesture before the slide's inner buttons
+            // (Apply Now etc.) consume the touch. Vertical pans still
+            // bubble to the page ScrollView via failOffsetY.
             onConfigurePanGesture={g =>
-              g.activeOffsetX([-10, 10]).failOffsetY([-5, 5])
+              g.activeOffsetX([-5, 5]).failOffsetY([-8, 8])
             }
             renderItem={({ item }: { item: Campaign }) => (
               <View style={{ width: CARD_W }}>

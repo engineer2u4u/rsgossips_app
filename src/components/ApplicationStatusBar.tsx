@@ -1,17 +1,14 @@
-// ApplicationStatusBar — vertical step tracker for an influencer's
-// application, plus revision/rejected banners, contextual upload CTA, and
-// the list of already-submitted links.
+// ApplicationStatusBar — collaboration tracker (rewritten per design).
 //
-// Ports the ApplicationStatusBar component inlined in web app
-// src/app/influencer/offers/[id]/page.js. Status enum:
+// Mirrors the screenshot the user shipped: a soft-white card with a
+// "YOUR COLLABORATION" eyebrow, "Application Status" title, a "Step N of 7"
+// crown pill, a percent-complete line + status text, a gradient progress
+// bar, then a numbered vertical timeline where the active step has a
+// gradient ring + an expanded copy card below it.
 //
+// Status enum is unchanged:
 //   pending → approved → submitted → accepted → live_submitted → payment → completed
-//
-// Special branches:
-//   - revision_needed: amber banner + "Resubmit Deliverables"
-//   - rejected: red banner
-//
-// Upload button only shows when status is approved | revision_needed | accepted.
+// Plus revision_needed and rejected, which both map to the "submitted" tier.
 
 import React, {useState} from 'react';
 import {
@@ -22,23 +19,16 @@ import {
   View,
 } from 'react-native';
 import {
-  CheckCircle,
+  Check,
+  Clock,
+  Crown,
   ExternalLink,
   Instagram,
   Upload,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {BRAND_GRADIENT_WARM} from '../theme/brand';
 import SubmitDeliverablesModal from './SubmitDeliverablesModal';
-
-const STATUS_STEPS = [
-  {key: 'pending', label: 'Applied'},
-  {key: 'approved', label: 'Approved'},
-  {key: 'submitted', label: 'Deliverables Submitted'},
-  {key: 'accepted', label: 'Work Accepted'},
-  {key: 'live_submitted', label: 'Live Links Submitted'},
-  {key: 'payment', label: 'Payment in Progress'},
-  {key: 'completed', label: 'Completed'},
-] as const;
 
 type Status =
   | 'pending'
@@ -57,14 +47,80 @@ interface Props {
   refetch?: () => void;
 }
 
+interface Step {
+  key: string;
+  label: string;
+  // Copy shown inside the active-step expanded card. Title + body.
+  activeTitle: string;
+  activeBody: string;
+  // Compact one-liner shown next to the % complete in the header.
+  headerStatus: string;
+}
+
+const STATUS_STEPS: Step[] = [
+  {
+    key: 'pending',
+    label: 'Applied',
+    activeTitle: 'Under review ...',
+    activeBody:
+      "Brands usually respond within 24–48 hours. We'll notify you the moment they do.",
+    headerStatus: 'Awaiting brand review',
+  },
+  {
+    key: 'approved',
+    label: 'Approved',
+    activeTitle: 'Approved — your turn!',
+    activeBody:
+      'Submit your deliverables (reels, posts or stories) from the button below.',
+    headerStatus: 'Ready to submit',
+  },
+  {
+    key: 'submitted',
+    label: 'Deliverables Submitted',
+    activeTitle: 'Brand is reviewing your work',
+    activeBody:
+      "We'll notify you the moment they accept or request a revision.",
+    headerStatus: 'Brand reviewing work',
+  },
+  {
+    key: 'accepted',
+    label: 'Work Accepted',
+    activeTitle: 'Time to go live',
+    activeBody:
+      'Post the deliverables on Instagram and paste the live links so the brand can verify them.',
+    headerStatus: 'Awaiting live links',
+  },
+  {
+    key: 'live_submitted',
+    label: 'Live Links Submitted',
+    activeTitle: 'Verifying live posts',
+    activeBody:
+      "The brand is checking the live links you submitted. You'll be paid once they confirm.",
+    headerStatus: 'Verifying live posts',
+  },
+  {
+    key: 'payment',
+    label: 'Payment in Progress',
+    activeTitle: 'Payment in progress',
+    activeBody:
+      'Your payout is on its way — funds typically reflect in your account within 7–10 business days.',
+    headerStatus: 'Payment in progress',
+  },
+  {
+    key: 'completed',
+    label: 'Completed',
+    activeTitle: 'All done 🎉',
+    activeBody:
+      "Campaign wrapped. Your earnings are released and a rating prompt is waiting for you.",
+    headerStatus: 'Campaign completed',
+  },
+];
+
 function parseRevisionPayload(raw: any): {note: string; links: string[]} {
   if (!raw) return {note: '', links: []};
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return {
-      note: parsed?.note || '',
-      links: parsed?.links || [],
-    };
+    return {note: parsed?.note || '', links: parsed?.links || []};
   } catch {
     return {note: typeof raw === 'string' ? raw : '', links: []};
   }
@@ -94,6 +150,12 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
     STATUS_STEPS.findIndex(s => s.key === effectiveStatus),
     0,
   );
+  const currentStep = STATUS_STEPS[currentStepIndex];
+
+  // Percent complete: each step is worth 1/7 of the bar. We round to the
+  // nearest integer for display so the bar and the number stay aligned.
+  const percent = Math.round(((currentStepIndex + 1) / STATUS_STEPS.length) * 100);
+
   const canUpload =
     status === 'approved' || status === 'revision_needed' || status === 'accepted';
 
@@ -109,64 +171,134 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Application Status</Text>
+      {/* Top eyebrow + step pill */}
+      <View style={styles.headerRow}>
+        <View style={{flex: 1, minWidth: 0}}>
+          <Text style={styles.eyebrow}>YOUR COLLABORATION</Text>
+          <Text style={styles.title}>Application Status</Text>
+        </View>
+        <LinearGradient
+          colors={[...BRAND_GRADIENT_WARM]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.stepPill}>
+          <Crown size={12} color="#fff" />
+          <Text style={styles.stepPillText}>
+            Step <Text style={styles.stepPillNumber}>{currentStepIndex + 1}</Text>{' '}
+            of {STATUS_STEPS.length}
+          </Text>
+        </LinearGradient>
+      </View>
 
-      {/* Vertical timeline */}
-      <View style={styles.timeline}>
-        {/* Background line */}
-        <View style={styles.timelineLineBg} />
-        {/* Filled-in progress line */}
+      {/* Progress headline */}
+      <View style={styles.progressHeader}>
+        <View style={styles.percentBlock}>
+          <LinearGradient
+            colors={[...BRAND_GRADIENT_WARM]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <Text style={styles.percentText}>{percent}% complete</Text>
+        </View>
+        <View style={styles.headerStatusBlock}>
+          <Clock size={12} color="#EC4899" />
+          <Text style={styles.headerStatusText}>
+            {currentStep.headerStatus}
+          </Text>
+        </View>
+      </View>
+
+      {/* Gradient progress bar */}
+      <View style={styles.progressBarBg}>
         <View
           style={[
-            styles.timelineLineFilled,
-            {
-              height: `${
-                Math.max(0, currentStepIndex / (STATUS_STEPS.length - 1)) * 100
-              }%`,
-            },
-          ]}
-        />
+            styles.progressBarFillWrap,
+            {width: `${percent}%`},
+          ]}>
+          <LinearGradient
+            colors={[...BRAND_GRADIENT_WARM]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </View>
+      </View>
 
+      {/* Vertical step timeline */}
+      <View style={styles.timeline}>
         {STATUS_STEPS.map((step, i) => {
           const isDone = i < currentStepIndex;
           const isCurrent = i === currentStepIndex;
+          const isLast = i === STATUS_STEPS.length - 1;
           return (
             <View key={step.key} style={styles.stepRow}>
-              <View
-                style={[
-                  styles.stepDot,
-                  isDone
-                    ? styles.stepDotDone
-                    : isCurrent
-                      ? styles.stepDotCurrent
-                      : styles.stepDotIdle,
-                ]}>
+              {/* Left rail: numbered circle + connector */}
+              <View style={styles.stepRail}>
                 {isDone ? (
-                  <CheckCircle size={12} color="white" />
+                  <LinearGradient
+                    colors={['#34D399', '#10B981']}
+                    style={styles.stepDot}>
+                    <Check size={14} color="#fff" strokeWidth={3} />
+                  </LinearGradient>
                 ) : isCurrent ? (
-                  <View style={styles.stepDotInner} />
+                  // Gradient-ringed active step — uses LinearGradient as the
+                  // ring with a white inner disc that holds the number.
+                  <LinearGradient
+                    colors={[...BRAND_GRADIENT_WARM]}
+                    style={styles.stepDotRing}>
+                    <View style={styles.stepDotInner}>
+                      <Text style={styles.stepNumberActive}>{i + 1}</Text>
+                    </View>
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.stepDot, styles.stepDotIdle]}>
+                    <Text style={styles.stepNumberIdle}>{i + 1}</Text>
+                  </View>
+                )}
+                {!isLast ? (
+                  <View
+                    style={[
+                      styles.stepConnector,
+                      isDone ? styles.stepConnectorDone : null,
+                    ]}
+                  />
                 ) : null}
               </View>
-              <Text
-                style={[
-                  styles.stepLabel,
-                  isDone
-                    ? {color: '#059669'}
-                    : isCurrent
-                      ? {color: '#0f172a'}
-                      : {color: '#94a3b8'},
-                ]}>
-                {step.label}
-              </Text>
+
+              {/* Right side: label + optional active card */}
+              <View style={{flex: 1, paddingBottom: isLast ? 0 : 12}}>
+                <Text
+                  style={[
+                    styles.stepLabel,
+                    isCurrent
+                      ? styles.stepLabelActive
+                      : isDone
+                        ? styles.stepLabelDone
+                        : styles.stepLabelIdle,
+                  ]}>
+                  {step.label}
+                </Text>
+
+                {isCurrent ? (
+                  <View style={styles.activeCard}>
+                    <View style={styles.activeCardHeader}>
+                      <View style={styles.activeDot} />
+                      <Text style={styles.activeCardTitle}>
+                        {step.activeTitle}
+                      </Text>
+                    </View>
+                    <Text style={styles.activeCardBody}>{step.activeBody}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           );
         })}
       </View>
 
-      {/* Revision banner */}
+      {/* Revision / rejected branches */}
       {isRevision ? <RevisionBanner reason={campaign?.rejectionReason} /> : null}
-
-      {/* Rejected banner */}
       {isRejected ? <RejectedBanner reason={campaign?.rejectionReason} /> : null}
 
       {/* Upload / Resubmit / Live links button */}
@@ -187,9 +319,7 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
       {/* Submitted deliverables list */}
       {submissionLinks.length > 0 ? (
         <View style={{gap: 10}}>
-          <Text style={styles.submissionsHeader}>
-            ✓ Your Submissions
-          </Text>
+          <Text style={styles.submissionsHeader}>✓ Your Submissions</Text>
           <View style={{gap: 8}}>
             {submissionLinks.map((link, i) => (
               <TouchableOpacity
@@ -272,62 +402,186 @@ function RejectedBanner({reason}: {reason: any}) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F8F9FD',
-    borderRadius: 18,
+    backgroundColor: '#fff',
+    borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#F1F5F9',
     gap: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: {width: 0, height: 6},
+    elevation: 3,
   },
-  title: {fontSize: 15, fontWeight: '800', color: '#0f172a'},
-  timeline: {paddingLeft: 28, position: 'relative'},
-  timelineLineBg: {
-    position: 'absolute',
-    left: 11,
-    top: 12,
-    bottom: 12,
-    width: 3,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 2,
+
+  // Header
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  timelineLineFilled: {
-    position: 'absolute',
-    left: 11,
-    top: 12,
-    width: 3,
-    backgroundColor: '#10b981',
-    borderRadius: 2,
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#94A3B8',
+    letterSpacing: 1.6,
   },
-  stepRow: {
+  title: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 4,
+    letterSpacing: -0.4,
+  },
+  stepPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingBottom: 18,
-    position: 'relative',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  stepPillText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  stepPillNumber: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+
+  // Progress headline
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  percentBlock: {
+    overflow: 'hidden',
+    paddingHorizontal: 0,
+  },
+  percentText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#EC4899',
+  },
+  headerStatusBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#EC4899',
+  },
+  progressBarBg: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+  },
+  progressBarFillWrap: {
+    height: '100%',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+
+  // Timeline
+  timeline: {gap: 0, marginTop: 4},
+  stepRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  stepRail: {
+    width: 32,
+    alignItems: 'center',
   },
   stepDot: {
-    position: 'absolute',
-    left: -28,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
   },
-  stepDotDone: {backgroundColor: '#10b981'},
-  stepDotCurrent: {
-    backgroundColor: '#0f172a',
-    borderWidth: 4,
-    borderColor: '#cbd5e1',
+  stepDotRing: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
   },
+  stepDotInner: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberActive: {fontSize: 12, fontWeight: '900', color: '#EC4899'},
   stepDotIdle: {
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
   },
-  stepDotInner: {width: 8, height: 8, backgroundColor: 'white', borderRadius: 4},
-  stepLabel: {fontSize: 13, fontWeight: '700'},
+  stepNumberIdle: {fontSize: 12, fontWeight: '800', color: '#94A3B8'},
+  stepConnector: {
+    width: 2,
+    flex: 1,
+    backgroundColor: '#E2E8F0',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  stepConnectorDone: {backgroundColor: '#34D399'},
+
+  stepLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    paddingTop: 6,
+  },
+  stepLabelDone: {color: '#0F172A'},
+  stepLabelActive: {color: '#0F172A'},
+  stepLabelIdle: {color: '#94A3B8'},
+
+  // Active expanded card under the live step
+  activeCard: {
+    marginTop: 10,
+    backgroundColor: '#FDF2F8',
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
+    borderRadius: 14,
+    padding: 14,
+    gap: 6,
+  },
+  activeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EC4899',
+  },
+  activeCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  activeCardBody: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    lineHeight: 18,
+  },
+
+  // Revision / rejected branches (unchanged)
   revisionBox: {
     backgroundColor: '#fef3c7',
     borderColor: '#fde68a',
@@ -377,6 +631,8 @@ const styles = StyleSheet.create({
   },
   rejectedTitle: {fontSize: 13, fontWeight: '700', color: '#b91c1c'},
   rejectedNote: {fontSize: 12, color: '#b91c1c', paddingLeft: 36, lineHeight: 18},
+
+  // Upload button + submissions list (unchanged)
   uploadBtn: {height: 48, borderRadius: 14, overflow: 'hidden'},
   uploadBtnInner: {
     flex: 1,
