@@ -30,7 +30,7 @@ import {useGlobalLoading} from '../context/LoadingContext';
 import {invokeFn} from '../lib/api';
 import {pickFromLibrary} from '../lib/image-picker';
 import {uploadProfilePhoto} from '../lib/image-upload';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 
 const CATEGORY_OPTIONS = [
   'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
@@ -79,7 +79,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const photo = cacheBustedPhotoUrl(profile);
+  const photo = useProfilePhoto();
   const handle = profile?.instagram_handle || profile?.username || '';
   const initials = (profile?.full_name || 'U')
     .split(' ')
@@ -91,7 +91,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const handlePickPhoto = async () => {
     if (!user?.id) return;
     try {
-      const image = await pickFromLibrary();
+      // crop: 'square' opens the native image-crop-picker UI with a fixed
+      // 1:1 frame so every avatar lands as a square — no skewed photos.
+      const image = await pickFromLibrary({crop: 'square', size: 800});
       if (!image) return;
       await withLoading(
         (async () => {
@@ -231,6 +233,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             <View className="relative">
               {photo ? (
                 <Image
+                  key={photo}
                   source={{uri: photo}}
                   className="w-24 h-24 rounded-2xl"
                   style={{borderWidth: 3, borderColor: '#F3F4F6'}}

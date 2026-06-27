@@ -13,7 +13,7 @@ import {ChevronLeft, Instagram, Edit2} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 
 const {width} = Dimensions.get('window');
 
@@ -65,7 +65,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || 'creator';
-  const photo = cacheBustedPhotoUrl(profile);
+  const photo = useProfilePhoto();
   const followers = profile?.followers_count || 0;
   const following = profile?.follows_count || 0;
   const posts = profile?.media_count || 0;
@@ -166,6 +166,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
           <View className="relative" style={{marginBottom: 24}}>
             {photo ? (
               <Image
+                key={photo}
                 source={{uri: photo}}
                 className="w-24 h-24 rounded-2xl"
                 // elevation isn't on ImageStyle in RN types but works at runtime.

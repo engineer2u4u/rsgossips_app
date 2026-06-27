@@ -9,7 +9,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 import {BRAND, BRAND_GRADIENT, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
 
 function formatCount(n: number | undefined) {
@@ -37,7 +37,7 @@ export default function AiMediaKitCard() {
 
   const userName = profile?.full_name || 'Creator';
   const userHandle = profile?.instagram_handle || profile?.username || 'creator';
-  const userPhoto = cacheBustedPhotoUrl(profile);
+  const userPhoto = useProfilePhoto();
 
   const stats = [
     {label: 'FOLLOWERS', value: formatCount(profile?.followers_count)},
@@ -110,6 +110,7 @@ export default function AiMediaKitCard() {
             }}>
             {userPhoto ? (
               <Image
+                key={userPhoto}
                 source={{uri: userPhoto}}
                 style={{flex: 1, borderRadius: 40}}
                 resizeMode="cover"

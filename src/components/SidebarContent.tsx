@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 
 const navLinks = [
   {label: 'Home', icon: Home, screen: 'InfluencerHome'},
@@ -30,7 +30,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
   const navigation = useNavigation();
   const route = useRoute();
   const {profile, signOut} = useAuth();
-  const profilePhoto = cacheBustedPhotoUrl(profile);
+  const profilePhoto = useProfilePhoto();
   const [showLogout, setShowLogout] = useState(false);
 
   const navigateTo = (screen: string) => {
@@ -45,6 +45,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
         <View className="flex-row items-center" style={{gap: 12}}>
           {profilePhoto ? (
             <Image
+              key={profilePhoto}
               source={{uri: profilePhoto}}
               className="w-11 h-11 rounded-full"
               style={{borderWidth: 2, borderColor: 'white'}}

@@ -25,7 +25,7 @@ import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 
 // Mirrors the web useProfileCompletion hook (CompleteProfileCard.jsx).
 // Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
@@ -84,7 +84,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || '';
-  const photo = cacheBustedPhotoUrl(profile);
+  const photo = useProfilePhoto();
   const categories = profile?.categories || [];
   const followers = profile?.followers_count || 0;
   const following = profile?.follows_count || 0;
@@ -132,6 +132,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <View className="relative mb-4">
             {photo ? (
               <Image
+                key={photo}
                 source={{uri: photo}}
                 className="w-24 h-24 rounded-xl"
                 // `elevation` isn't on ImageStyle in RN types — but works

@@ -46,6 +46,11 @@ interface AuthContextType {
   refreshInstagram: (userId?: string) => Promise<void>;
   instagramTokenMissing: boolean;
   setInstagramTokenMissing: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Bumped every time refreshProfile() runs. Used as a fallback cache
+   *  buster for the profile photo URL when the DB's updated_at column
+   *  hasn't changed (some upload edge functions only touch
+   *  profile_photo_url without bumping updated_at). */
+  photoVersion: number;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -59,6 +64,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshInstagram: async () => {},
   instagramTokenMissing: false,
   setInstagramTokenMissing: () => {},
+  photoVersion: 0,
 });
 
 export function useAuth() {
@@ -166,9 +172,16 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
   }, []);
 
+  // Bumped on every refreshProfile() so consumers can build a cache-bust
+  // query param for the profile photo. Falls back to this when the DB
+  // updated_at didn't change (the upload edge function may overwrite the
+  // storage object without touching updated_at on the profile row).
+  const [photoVersion, setPhotoVersion] = useState(0);
+
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
       await fetchProfile(user.id);
+      setPhotoVersion(v => v + 1);
     }
   }, [user, fetchProfile]);
 
@@ -273,6 +286,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         refreshInstagram,
         instagramTokenMissing,
         setInstagramTokenMissing,
+        photoVersion,
       }}>
       {children}
     </AuthContext.Provider>

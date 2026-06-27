@@ -21,7 +21,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
-import {cacheBustedPhotoUrl} from '../utils/photoUrl';
+import {useProfilePhoto} from '../utils/photoUrl';
 import {invokeFn} from '../lib/api';
 
 function formatCount(n: number | undefined) {
@@ -87,7 +87,11 @@ export default function InfluencerResume() {
   const data = influencer || profile;
   const name = data?.full_name || 'Creator';
   const handle = data?.instagram_handle || data?.username || 'creator';
-  const photo = cacheBustedPhotoUrl(data);
+  // Pass the resolved `data` profile (which can be either the logged-in
+  // user or an influencer prop) — the hook still picks up the photoVersion
+  // counter from AuthContext so uploads on the logged-in side bust the
+  // cache here too.
+  const photo = useProfilePhoto(data);
   const followers = data?.followers_count || 0;
   const engagement = data?.engagement_rate || 0;
   const categories = data?.categories || [];
