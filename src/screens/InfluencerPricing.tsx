@@ -572,51 +572,62 @@ export default function InfluencerPricing() {
             </View>
           </View>
 
-          {/* Billing Toggle */}
+          {/* Billing Toggle — explicit paddingHorizontal/paddingVertical on
+              the TouchableOpacity (instead of className-driven sizing on
+              the inner gradient) so the active and inactive pills render
+              at exactly the same height on iOS. Gradient is an absolute
+              background fill behind the label, matching the gradient-
+              button pattern used everywhere else in the app. */}
           <View className="items-center">
             <View className="flex-row bg-white rounded-full border border-slate-200 p-1">
               <TouchableOpacity
                 onPress={() => setBilling('monthly')}
-                className="overflow-hidden rounded-full">
-                {billing === 'monthly' ? (
+                style={{
+                  paddingHorizontal: 24,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  overflow: 'hidden',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                {billing === 'monthly' && (
                   <LinearGradient
                     colors={['#9810FA', '#E60076']}
-                    className="px-6 py-2.5 rounded-full">
-                    <Text className="text-sm font-bold text-white">
-                      Monthly
-                    </Text>
-                  </LinearGradient>
-                ) : (
-                  <View className="px-6 py-2.5">
-                    <Text className="text-sm font-bold text-slate-500">
-                      Monthly
-                    </Text>
-                  </View>
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  />
                 )}
+                <Text
+                  className={`text-sm font-bold ${
+                    billing === 'monthly' ? 'text-white' : 'text-slate-500'
+                  }`}>
+                  Monthly
+                </Text>
               </TouchableOpacity>
               {/* Wrap the button + the SAVE badge so the badge can sit
-                  outside the button's clipped bounds (overflow-hidden on
-                  the TouchableOpacity rounds the gradient pill but also
-                  clipped this badge previously). */}
+                  outside the button's clipped bounds. */}
               <View className="relative">
                 <TouchableOpacity
                   onPress={() => setBilling('annual')}
-                  className="overflow-hidden rounded-full">
-                  {billing === 'annual' ? (
+                  style={{
+                    paddingHorizontal: 24,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  {billing === 'annual' && (
                     <LinearGradient
                       colors={['#9810FA', '#E60076']}
-                      className="px-6 py-2.5 rounded-full">
-                      <Text className="text-sm font-bold text-white">
-                        Annual
-                      </Text>
-                    </LinearGradient>
-                  ) : (
-                    <View className="px-6 py-2.5">
-                      <Text className="text-sm font-bold text-slate-500">
-                        Annual
-                      </Text>
-                    </View>
+                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                    />
                   )}
+                  <Text
+                    className={`text-sm font-bold ${
+                      billing === 'annual' ? 'text-white' : 'text-slate-500'
+                    }`}>
+                    Annual
+                  </Text>
                 </TouchableOpacity>
                 <View
                   pointerEvents="none"
@@ -662,10 +673,20 @@ export default function InfluencerPricing() {
                 )}
 
                 {plan.popular ? (
-                  <LinearGradient
-                    colors={['#6C4DFF', '#3F2B96']}
-                    className="rounded-3xl p-6"
-                    style={{borderRadius: 24}}>
+                  // Padding lives on the wrapper View so the Pro card
+                  // sizes consistently on iOS. The LinearGradient is an
+                  // absolute background fill behind the content — same
+                  // pattern as the rest of the app's gradient surfaces.
+                  <View
+                    style={{
+                      borderRadius: 24,
+                      padding: 24,
+                      overflow: 'hidden',
+                    }}>
+                    <LinearGradient
+                      colors={['#6C4DFF', '#3F2B96']}
+                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                    />
                     <PlanCardContent
                       plan={plan}
                       isActive={isActive}
@@ -675,7 +696,7 @@ export default function InfluencerPricing() {
                       onUpgrade={() => handleUpgrade(plan)}
                       popular
                     />
-                  </LinearGradient>
+                  </View>
                 ) : (
                   <View
                     className={`rounded-3xl p-6 bg-white border ${
@@ -830,10 +851,23 @@ function PlanCardContent({
             )}
           </View>
         ) : (
-          <LinearGradient
-            colors={['#9810FA', '#E60076']}
-            style={{borderRadius: 16, height: 48}}
-            className="items-center justify-center">
+          // Upgrade / Switch Plan CTA — padding + layout on the wrapper
+          // View so the height + horizontal/vertical centering render
+          // identically on iOS. Gradient is an absolute background fill
+          // behind the label / spinner (same pattern as every other
+          // gradient button in the app).
+          <View
+            style={{
+              borderRadius: 16,
+              height: 48,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+            <LinearGradient
+              colors={['#9810FA', '#E60076']}
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
@@ -841,7 +875,7 @@ function PlanCardContent({
                 {isUpgrade ? 'Upgrade Now' : 'Switch Plan'}
               </Text>
             )}
-          </LinearGradient>
+          </View>
         )}
       </TouchableOpacity>
 

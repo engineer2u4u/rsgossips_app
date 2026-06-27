@@ -11,7 +11,7 @@
 // otherwise falls back to a placeholder distribution so the screen never
 // looks broken.
 
-import React, {useState} from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -20,8 +20,6 @@ import {
   View,
 } from 'react-native';
 import {
-  BarChart3,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Coins,
@@ -40,18 +38,15 @@ import {
   parseBudgetINR,
   type CampaignRow,
 } from '../lib/influencer-stats';
-import BottomNav from './BottomNav';
 
 interface Props {
   onBack: () => void;
-  onCampaignAnalytics: () => void;
 }
 
-const AnalyticsPage: React.FC<Props> = ({onBack, onCampaignAnalytics}) => {
+const AnalyticsPage: React.FC<Props> = ({onBack}) => {
   const {profile} = useAuth();
   const navigation = useNavigation<any>();
   const {stats, loading} = useInfluencerCampaigns();
-  const [timeRange] = useState('Last 6 Months');
 
   const followers = profile?.followers_count || 0;
   const engagement = profile?.engagement_rate || 0;
@@ -124,29 +119,6 @@ const AnalyticsPage: React.FC<Props> = ({onBack, onCampaignAnalytics}) => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Trending Up Header */}
-        <View className="px-5 mb-5">
-          <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-            Campaign Performance
-          </Text>
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center" style={{gap: 8}}>
-              <Text className="text-2xl">📈</Text>
-              <Text className="text-2xl font-black text-[#1A1A1A]">
-                {stats.completedCount > 0 ? 'Trending Up' : 'Getting Started'}
-              </Text>
-            </View>
-            <View
-              className="flex-row items-center bg-white border border-slate-200 px-3 py-2 rounded-full"
-              style={{gap: 4}}>
-              <Text className="text-xs font-semibold text-slate-600">
-                {timeRange}
-              </Text>
-              <ChevronDown size={14} color="#64748B" />
-            </View>
-          </View>
-        </View>
-
         {/* KPI grid */}
         <View className="px-5 flex-row flex-wrap" style={{gap: 10}}>
           {loading ? (
@@ -404,32 +376,18 @@ const AnalyticsPage: React.FC<Props> = ({onBack, onCampaignAnalytics}) => {
           </View>
         </View>
 
-        {/* Campaign Analytics deep-link */}
-        <TouchableOpacity
-          onPress={onCampaignAnalytics}
-          className="mx-5 mt-6 mb-8 bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex-row items-center"
-          style={{gap: 14}}>
-          <View className="w-12 h-12 bg-purple-50 rounded-xl items-center justify-center">
-            <BarChart3 size={22} color="#8B5CF6" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-sm font-bold text-[#1A1A1A]">
-              Campaign Analytics
-            </Text>
-            <Text className="text-[11px] text-gray-400 font-medium">
-              Detailed per-campaign performance
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#CBD5E1" />
-        </TouchableOpacity>
+        {/* Web parity: the analytics screen on rgossips.com is a single
+            page — the legacy "Campaign Analytics" deep-link card has been
+            removed so mobile matches the same one-screen flow. Extra
+            bottom spacer below the Audience Demographics card so it
+            doesn't end flush against the floating BottomNav. */}
 
-        <View className="h-24" />
+        <View className="h-40" />
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View className="absolute bottom-0 left-0 right-0">
-        <BottomNav />
-      </View>
+      {/* BottomNav is rendered by the parent InfluencerProfile at the
+          SafeAreaView level so it actually floats over the scroll content
+          on every subview instead of scrolling with this ScrollView. */}
     </View>
   );
 };

@@ -11,6 +11,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { invokeFn } from '../lib/api';
+import { cacheBustedPhotoUrl } from '../utils/photoUrl';
 import {
   BRAND,
   BRAND_GRADIENT_WARM,
@@ -57,7 +58,7 @@ export default function ProStatusCard() {
   const expired = trialDaysLeft === 0;
 
   const displayName = profile?.full_name || 'Creator';
-  const avatarUrl = profile?.profile_photo_url;
+  const avatarUrl = cacheBustedPhotoUrl(profile);
   const currentPlan = (profile?.subscription_plan || '').toLowerCase();
   // Mirrors web: any explicit non-empty plan other than the "free"/"trial"
   // placeholders counts as paid (including the ₹99/mo Starter tier).

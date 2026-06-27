@@ -36,6 +36,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
+import {cacheBustedPhotoUrl} from '../utils/photoUrl';
 import InfluencerLayout from '../layouts/InfluencerLayout';
 import {
   MEDIA_KIT_TEMPLATES,
@@ -109,7 +110,7 @@ export default function InfluencerMediaKit() {
   const name = profile?.full_name || 'Creator';
   const handle =
     profile?.instagram_handle || profile?.username || 'creator';
-  const photo = profile?.profile_photo_url;
+  const photo = cacheBustedPhotoUrl(profile);
   const categories = profile?.categories || [];
   const location = profile?.location || '';
   const followers = profile?.followers_count || 0;

@@ -25,6 +25,7 @@ import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
+import {cacheBustedPhotoUrl} from '../utils/photoUrl';
 
 // Mirrors the web useProfileCompletion hook (CompleteProfileCard.jsx).
 // Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
@@ -83,7 +84,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || '';
-  const photo = profile?.profile_photo_url;
+  const photo = cacheBustedPhotoUrl(profile);
   const categories = profile?.categories || [];
   const followers = profile?.followers_count || 0;
   const following = profile?.follows_count || 0;

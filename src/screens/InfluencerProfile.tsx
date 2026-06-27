@@ -7,7 +7,6 @@ import DashboardView from '../components/DashboardView';
 import MyInformationDetail from '../components/MyInformationDetail';
 import AddReelFlow from '../components/AddReelFlow';
 import AnalyticsPage from '../components/AnalyticsPage';
-import DetailedCampaignAnalytics from '../components/CampaignAnalytics';
 import EditProfilePage from '../components/EditProfilePage';
 import NotificationSettings from '../components/NotificationSettings';
 import PrivacySecurityPage from '../components/PrivacySettings';
@@ -23,7 +22,6 @@ type ViewType =
   | 'my-info'
   | 'add-reel'
   | 'analytics'
-  | 'campaign'
   | 'edit-profile'
   | 'notifications'
   | 'privacy'
@@ -36,13 +34,12 @@ type ViewType =
 // Maps each subview to the view the user expects when they press the
 // hardware back button. Mirrors the onBack callbacks below: most subviews
 // pop back to the dashboard, but a few (password-change, trusted-devices,
-// deactivate-account) are nested under privacy, and campaign is nested
-// under analytics. Keep this in sync with the onBack handlers below.
+// deactivate-account) are nested under privacy. Keep this in sync with the
+// onBack handlers below.
 const BACK_PARENT: Record<string, ViewType> = {
   'my-info': 'dashboard',
   'add-reel': 'my-info',
   'analytics': 'dashboard',
-  'campaign': 'analytics',
   'edit-profile': 'dashboard',
   'notifications': 'dashboard',
   'privacy': 'dashboard',
@@ -89,7 +86,13 @@ export default function InfluencerProfile() {
     }
   }, [refreshProfile]);
 
-  const showBottomNav = view === 'dashboard';
+  // Show the floating BottomNav on every profile subview — not just the
+  // dashboard. Subviews used to render their own absolutely-positioned
+  // BottomNav from inside this ScrollView, which made it scroll with the
+  // page content instead of staying pinned to the viewport. Now the nav
+  // lives at the SafeAreaView level (outside the ScrollView) for every
+  // view, so it actually floats.
+  const showBottomNav = true;
 
   return (
     <SafeAreaView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
@@ -133,14 +136,7 @@ export default function InfluencerProfile() {
         )}
 
         {view === 'analytics' && (
-          <AnalyticsPage
-            onCampaignAnalytics={() => navigate('campaign')}
-            onBack={() => navigate('dashboard')}
-          />
-        )}
-
-        {view === 'campaign' && (
-          <DetailedCampaignAnalytics onBack={() => navigate('analytics')} />
+          <AnalyticsPage onBack={() => navigate('dashboard')} />
         )}
 
         {view === 'edit-profile' && (

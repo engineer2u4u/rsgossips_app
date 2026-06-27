@@ -30,6 +30,7 @@ import {useGlobalLoading} from '../context/LoadingContext';
 import {invokeFn} from '../lib/api';
 import {pickFromLibrary} from '../lib/image-picker';
 import {uploadProfilePhoto} from '../lib/image-upload';
+import {cacheBustedPhotoUrl} from '../utils/photoUrl';
 
 const CATEGORY_OPTIONS = [
   'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
@@ -78,7 +79,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const photo = profile?.profile_photo_url;
+  const photo = cacheBustedPhotoUrl(profile);
   const handle = profile?.instagram_handle || profile?.username || '';
   const initials = (profile?.full_name || 'U')
     .split(' ')

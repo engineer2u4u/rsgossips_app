@@ -10,7 +10,7 @@
 //   pending → approved → submitted → accepted → live_submitted → payment → completed
 // Plus revision_needed and rejected, which both map to the "submitted" tier.
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   Linking,
   StyleSheet,
@@ -27,7 +27,7 @@ import {
   Upload,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {BRAND_GRADIENT_WARM} from '../theme/brand';
+import { BRAND_GRADIENT_WARM } from '../theme/brand';
 import SubmitDeliverablesModal from './SubmitDeliverablesModal';
 
 type Status =
@@ -111,18 +111,18 @@ const STATUS_STEPS: Step[] = [
     label: 'Completed',
     activeTitle: 'All done 🎉',
     activeBody:
-      "Campaign wrapped. Your earnings are released and a rating prompt is waiting for you.",
+      'Campaign wrapped. Your earnings are released and a rating prompt is waiting for you.',
     headerStatus: 'Campaign completed',
   },
 ];
 
-function parseRevisionPayload(raw: any): {note: string; links: string[]} {
-  if (!raw) return {note: '', links: []};
+function parseRevisionPayload(raw: any): { note: string; links: string[] } {
+  if (!raw) return { note: '', links: [] };
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return {note: parsed?.note || '', links: parsed?.links || []};
+    return { note: parsed?.note || '', links: parsed?.links || [] };
   } catch {
-    return {note: typeof raw === 'string' ? raw : '', links: []};
+    return { note: typeof raw === 'string' ? raw : '', links: [] };
   }
 }
 
@@ -130,13 +130,19 @@ function parseRejectionReason(raw: any): string {
   if (!raw) return '';
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return parsed?.note || parsed?.reason || (typeof raw === 'string' ? raw : '');
+    return (
+      parsed?.note || parsed?.reason || (typeof raw === 'string' ? raw : '')
+    );
   } catch {
     return typeof raw === 'string' ? raw : '';
   }
 }
 
-export default function ApplicationStatusBar({status, campaign, refetch}: Props) {
+export default function ApplicationStatusBar({
+  status,
+  campaign,
+  refetch,
+}: Props) {
   const [showSubmit, setShowSubmit] = useState(false);
 
   const isRevision = status === 'revision_needed';
@@ -154,10 +160,14 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
 
   // Percent complete: each step is worth 1/7 of the bar. We round to the
   // nearest integer for display so the bar and the number stay aligned.
-  const percent = Math.round(((currentStepIndex + 1) / STATUS_STEPS.length) * 100);
+  const percent = Math.round(
+    ((currentStepIndex + 1) / STATUS_STEPS.length) * 100,
+  );
 
   const canUpload =
-    status === 'approved' || status === 'revision_needed' || status === 'accepted';
+    status === 'approved' ||
+    status === 'revision_needed' ||
+    status === 'accepted';
 
   const submitLabel =
     status === 'accepted'
@@ -166,18 +176,18 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
         ? 'Resubmit Deliverables'
         : 'Upload Submission';
 
-  const submissionLinks: {type: string; label: string; url: string}[] =
+  const submissionLinks: { type: string; label: string; url: string }[] =
     campaign?.submissionLinks || [];
 
   return (
     <View style={styles.card}>
       {/* Top eyebrow + step pill */}
       <View style={styles.headerRow}>
-        <View style={{flex: 1, minWidth: 0}}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.eyebrow}>YOUR COLLABORATION</Text>
           <Text style={styles.title}>Application Status</Text>
         </View>
-        <LinearGradient
+        {/* <LinearGradient
           colors={[...BRAND_GRADIENT_WARM]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
@@ -187,7 +197,7 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
             Step <Text style={styles.stepPillNumber}>{currentStepIndex + 1}</Text>{' '}
             of {STATUS_STEPS.length}
           </Text>
-        </LinearGradient>
+        </LinearGradient> */}
       </View>
 
       {/* Progress headline — drop the wasted LinearGradient background
@@ -205,15 +215,11 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
 
       {/* Gradient progress bar */}
       <View style={styles.progressBarBg}>
-        <View
-          style={[
-            styles.progressBarFillWrap,
-            {width: `${percent}%`},
-          ]}>
+        <View style={[styles.progressBarFillWrap, { width: `${percent}%` }]}>
           <LinearGradient
             colors={[...BRAND_GRADIENT_WARM]}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={StyleSheet.absoluteFillObject}
           />
         </View>
@@ -232,7 +238,8 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
                 {isDone ? (
                   <LinearGradient
                     colors={['#34D399', '#10B981']}
-                    style={styles.stepDot}>
+                    style={styles.stepDot}
+                  >
                     <Check size={14} color="#fff" strokeWidth={3} />
                   </LinearGradient>
                 ) : isCurrent ? (
@@ -240,7 +247,8 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
                   // ring with a white inner disc that holds the number.
                   <LinearGradient
                     colors={[...BRAND_GRADIENT_WARM]}
-                    style={styles.stepDotRing}>
+                    style={styles.stepDotRing}
+                  >
                     <View style={styles.stepDotInner}>
                       <Text style={styles.stepNumberActive}>{i + 1}</Text>
                     </View>
@@ -261,7 +269,7 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
               </View>
 
               {/* Right side: label + optional active card */}
-              <View style={{flex: 1, paddingBottom: isLast ? 0 : 12}}>
+              <View style={{ flex: 1, paddingBottom: isLast ? 0 : 12 }}>
                 <Text
                   style={[
                     styles.stepLabel,
@@ -270,7 +278,8 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
                       : isDone
                         ? styles.stepLabelDone
                         : styles.stepLabelIdle,
-                  ]}>
+                  ]}
+                >
                   {step.label}
                 </Text>
 
@@ -292,18 +301,24 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
       </View>
 
       {/* Revision / rejected branches */}
-      {isRevision ? <RevisionBanner reason={campaign?.rejectionReason} /> : null}
-      {isRejected ? <RejectedBanner reason={campaign?.rejectionReason} /> : null}
+      {isRevision ? (
+        <RevisionBanner reason={campaign?.rejectionReason} />
+      ) : null}
+      {isRejected ? (
+        <RejectedBanner reason={campaign?.rejectionReason} />
+      ) : null}
 
       {/* Upload / Resubmit / Live links button */}
       {canUpload ? (
         <TouchableOpacity
           onPress={() => setShowSubmit(true)}
           activeOpacity={0.9}
-          style={styles.uploadBtn}>
+          style={styles.uploadBtn}
+        >
           <LinearGradient
             colors={['#9810FA', '#E60076']}
-            style={styles.uploadBtnInner}>
+            style={styles.uploadBtnInner}
+          >
             <Upload size={16} color="white" />
             <Text style={styles.uploadBtnText}>{submitLabel}</Text>
           </LinearGradient>
@@ -312,22 +327,26 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
 
       {/* Submitted deliverables list */}
       {submissionLinks.length > 0 ? (
-        <View style={{gap: 10}}>
+        <View style={{ gap: 10 }}>
           <Text style={styles.submissionsHeader}>✓ Your Submissions</Text>
-          <View style={{gap: 8}}>
+          <View style={{ gap: 8 }}>
             {submissionLinks.map((link, i) => (
               <TouchableOpacity
                 key={i}
                 activeOpacity={0.85}
                 onPress={() => Linking.openURL(link.url)}
-                style={styles.linkRow}>
+                style={styles.linkRow}
+              >
                 <LinearGradient
                   colors={['#FCAF45', '#E1306C', '#833AB4']}
-                  style={styles.igBadge}>
+                  style={styles.igBadge}
+                >
                   <Instagram size={14} color="white" />
                 </LinearGradient>
-                <View style={{flex: 1, minWidth: 0}}>
-                  <Text style={styles.linkLabel}>{link.label || link.type}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkLabel}>
+                    {link.label || link.type}
+                  </Text>
                   <Text style={styles.linkUrl} numberOfLines={1}>
                     {link.url}
                   </Text>
@@ -352,21 +371,21 @@ export default function ApplicationStatusBar({status, campaign, refetch}: Props)
   );
 }
 
-function RevisionBanner({reason}: {reason: any}) {
-  const {note, links} = parseRevisionPayload(reason);
+function RevisionBanner({ reason }: { reason: any }) {
+  const { note, links } = parseRevisionPayload(reason);
   return (
     <View style={styles.revisionBox}>
-      <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <View style={styles.revisionIcon}>
-          <Text style={{color: '#d97706', fontWeight: '700'}}>⟳</Text>
+          <Text style={{ color: '#d97706', fontWeight: '700' }}>⟳</Text>
         </View>
         <Text style={styles.revisionTitle}>Revision Requested</Text>
       </View>
       {note ? <Text style={styles.revisionNote}>{note}</Text> : null}
       {links.length > 0 ? (
-        <View style={{paddingLeft: 36, gap: 6}}>
+        <View style={{ paddingLeft: 36, gap: 6 }}>
           <Text style={styles.revisionListLabel}>Deliverables to revise:</Text>
-          <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 6}}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {links.map((l, i) => (
               <View key={i} style={styles.revisionChip}>
                 <Text style={styles.revisionChipText}>{l}</Text>
@@ -379,13 +398,13 @@ function RevisionBanner({reason}: {reason: any}) {
   );
 }
 
-function RejectedBanner({reason}: {reason: any}) {
+function RejectedBanner({ reason }: { reason: any }) {
   const text = parseRejectionReason(reason);
   return (
     <View style={styles.rejectedBox}>
-      <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <View style={styles.rejectedIcon}>
-          <Text style={{color: '#dc2626', fontWeight: '700'}}>✕</Text>
+          <Text style={{ color: '#dc2626', fontWeight: '700' }}>✕</Text>
         </View>
         <Text style={styles.rejectedTitle}>Application Rejected</Text>
       </View>
@@ -405,7 +424,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 14,
-    shadowOffset: {width: 0, height: 6},
+    shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
 
@@ -433,9 +452,13 @@ const styles = StyleSheet.create({
   stepPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    // Bumped gap + padding so the Crown icon and the "Step N of 7" label
+    // have breathing room on iOS, where the bolder font weights render
+    // chunkier than on Android and the original 12/6 padding read as
+    // cramped against the pill's rounded edges.
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 999,
   },
   stepPillText: {
@@ -483,7 +506,7 @@ const styles = StyleSheet.create({
   },
 
   // Timeline
-  timeline: {gap: 0, marginTop: 4},
+  timeline: { gap: 0, marginTop: 4 },
   stepRow: {
     flexDirection: 'row',
     gap: 14,
@@ -515,13 +538,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNumberActive: {fontSize: 12, fontWeight: '900', color: '#EC4899'},
+  stepNumberActive: { fontSize: 12, fontWeight: '900', color: '#EC4899' },
   stepDotIdle: {
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     backgroundColor: '#fff',
   },
-  stepNumberIdle: {fontSize: 12, fontWeight: '800', color: '#94A3B8'},
+  stepNumberIdle: { fontSize: 12, fontWeight: '800', color: '#94A3B8' },
   stepConnector: {
     width: 2,
     flex: 1,
@@ -534,16 +557,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
   },
-  stepConnectorDone: {backgroundColor: '#34D399'},
+  stepConnectorDone: { backgroundColor: '#34D399' },
 
   stepLabel: {
     fontSize: 14,
     fontWeight: '800',
     paddingTop: 6,
   },
-  stepLabelDone: {color: '#0F172A'},
-  stepLabelActive: {color: '#0F172A'},
-  stepLabelIdle: {color: '#94A3B8'},
+  stepLabelDone: { color: '#0F172A' },
+  stepLabelActive: { color: '#0F172A' },
+  stepLabelIdle: { color: '#94A3B8' },
 
   // Active expanded card under the live step
   activeCard: {
@@ -595,8 +618,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  revisionTitle: {fontSize: 13, fontWeight: '700', color: '#92400e'},
-  revisionNote: {fontSize: 12, color: '#92400e', paddingLeft: 36, lineHeight: 18},
+  revisionTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
+  revisionNote: {
+    fontSize: 12,
+    color: '#92400e',
+    paddingLeft: 36,
+    lineHeight: 18,
+  },
   revisionListLabel: {
     fontSize: 10,
     fontWeight: '700',
@@ -609,7 +637,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  revisionChipText: {fontSize: 10, fontWeight: '700', color: '#92400e'},
+  revisionChipText: { fontSize: 10, fontWeight: '700', color: '#92400e' },
   rejectedBox: {
     backgroundColor: '#fef2f2',
     borderColor: '#fecaca',
@@ -626,11 +654,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rejectedTitle: {fontSize: 13, fontWeight: '700', color: '#b91c1c'},
-  rejectedNote: {fontSize: 12, color: '#b91c1c', paddingLeft: 36, lineHeight: 18},
+  rejectedTitle: { fontSize: 13, fontWeight: '700', color: '#b91c1c' },
+  rejectedNote: {
+    fontSize: 12,
+    color: '#b91c1c',
+    paddingLeft: 36,
+    lineHeight: 18,
+  },
 
   // Upload button + submissions list (unchanged)
-  uploadBtn: {height: 48, borderRadius: 14, overflow: 'hidden'},
+  uploadBtn: { height: 48, borderRadius: 14, overflow: 'hidden' },
   uploadBtnInner: {
     flex: 1,
     flexDirection: 'row',
@@ -638,7 +671,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  uploadBtnText: {color: 'white', fontSize: 14, fontWeight: '700'},
+  uploadBtnText: { color: 'white', fontSize: 14, fontWeight: '700' },
   submissionsHeader: {
     fontSize: 11,
     fontWeight: '700',
@@ -669,5 +702,5 @@ const styles = StyleSheet.create({
     color: '#64748b',
     textTransform: 'uppercase',
   },
-  linkUrl: {fontSize: 11, fontWeight: '700', color: '#0f172a'},
+  linkUrl: { fontSize: 11, fontWeight: '700', color: '#0f172a' },
 });

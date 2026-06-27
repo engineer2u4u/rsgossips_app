@@ -162,12 +162,12 @@ export default function InfluencerLayout({
           // over the final content card.
           contentContainerStyle={{flexGrow: 1, paddingBottom: 110}}
           showsVerticalScrollIndicator={false}
-          // Detach off-screen views from the native hierarchy on Android —
-          // the home page has many heavy sections (multiple carousels, lists
-          // of shadowed cards) and the JS thread chokes without recycling.
-          removeClippedSubviews
-          // Drop the JS-thread scroll event spam from 60Hz to ~16Hz; the
-          // page doesn't react to per-pixel scroll position.
+          // NOTE: removeClippedSubviews was set on this ScrollView for
+          // Android perf, but it breaks horizontal swipe gestures inside
+          // the nested reanimated-carousels (Brands, Top Picks, Plan Your
+          // Stay) on iOS — the off-screen detachment confuses the gesture
+          // handler. Performance is still fine without it on modern
+          // devices, and gesture correctness wins.
           scrollEventThrottle={16}
           refreshControl={
             onRefresh ? (

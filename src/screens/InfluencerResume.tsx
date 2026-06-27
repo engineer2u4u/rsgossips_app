@@ -21,6 +21,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
+import {cacheBustedPhotoUrl} from '../utils/photoUrl';
 import {invokeFn} from '../lib/api';
 
 function formatCount(n: number | undefined) {
@@ -86,7 +87,7 @@ export default function InfluencerResume() {
   const data = influencer || profile;
   const name = data?.full_name || 'Creator';
   const handle = data?.instagram_handle || data?.username || 'creator';
-  const photo = data?.profile_photo_url;
+  const photo = cacheBustedPhotoUrl(data);
   const followers = data?.followers_count || 0;
   const engagement = data?.engagement_rate || 0;
   const categories = data?.categories || [];

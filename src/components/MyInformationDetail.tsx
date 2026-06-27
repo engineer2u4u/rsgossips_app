@@ -13,7 +13,7 @@ import {ChevronLeft, Instagram, Edit2} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
-import BottomNav from './BottomNav';
+import {cacheBustedPhotoUrl} from '../utils/photoUrl';
 
 const {width} = Dimensions.get('window');
 
@@ -65,7 +65,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
 
   const name = profile?.full_name || 'Creator';
   const handle = profile?.instagram_handle || profile?.username || 'creator';
-  const photo = profile?.profile_photo_url;
+  const photo = cacheBustedPhotoUrl(profile);
   const followers = profile?.followers_count || 0;
   const following = profile?.follows_count || 0;
   const posts = profile?.media_count || 0;
@@ -324,10 +324,8 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
         <View className="h-24" />
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View className="absolute bottom-0 left-0 right-0">
-        <BottomNav />
-      </View>
+      {/* BottomNav is rendered by the parent InfluencerProfile at the
+          SafeAreaView level so it actually floats on every subview. */}
     </View>
   );
 };
