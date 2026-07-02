@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronRight,
   HelpCircle,
+  Gift,
   Clock,
   Award,
   Crown,
@@ -58,6 +59,7 @@ interface DashboardViewProps {
   onOpenInfo: () => void;
   onhelpSupportClick: () => void;
   onPaymentsClick?: () => void;
+  onReferClick?: () => void;
 }
 
 function formatCount(n: number | undefined) {
@@ -76,6 +78,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenInfo,
   onhelpSupportClick,
   onPaymentsClick,
+  onReferClick,
 }) => {
   const {profile, signOut} = useAuth();
   const navigation = useNavigation();
@@ -367,6 +370,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <SettingsItem icon={Lock} title="Privacy & Security" sub="Control your data and access" color="#10B981" onPress={onPrivacyClick} />
           {onPaymentsClick && (
             <SettingsItem icon={CreditCard} title="Payment Methods" sub="Manage payout accounts" color="#F97316" onPress={onPaymentsClick} />
+          )}
+          {onReferClick && (
+            <SettingsItem icon={Gift} title="Refer & Earn" sub="Share your link, earn Reward Credits" color="#E60076" onPress={onReferClick} />
           )}
         </View>
       </View>

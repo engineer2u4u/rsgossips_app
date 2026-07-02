@@ -1,7 +1,7 @@
 import React, {useCallback, useState, useRef} from 'react';
 import {View, ScrollView, StatusBar, RefreshControl, BackHandler} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import DashboardView from '../components/DashboardView';
 import MyInformationDetail from '../components/MyInformationDetail';
@@ -51,6 +51,7 @@ const BACK_PARENT: Record<string, ViewType> = {
 };
 
 export default function InfluencerProfile() {
+  const nav = useNavigation<any>();
   const [view, setView] = useState<ViewType>('dashboard');
   const scrollRef = useRef<ScrollView>(null);
   const {refreshProfile} = useAuth();
@@ -118,6 +119,7 @@ export default function InfluencerProfile() {
             onOpenInfo={() => navigate('my-info')}
             onhelpSupportClick={() => navigate('help&support')}
             onPaymentsClick={() => navigate('payments')}
+            onReferClick={() => nav.navigate('InfluencerRefer')}
           />
         )}
 

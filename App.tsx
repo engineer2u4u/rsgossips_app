@@ -34,6 +34,7 @@ import InfluencerPricing from './src/screens/InfluencerPricing';
 import InfluencerOfferDetail from './src/screens/InfluencerOfferDetail';
 import InfluencerResume from './src/screens/InfluencerResume';
 import RecommendedCampaigns from './src/screens/RecommendedCampaigns';
+import ReferScreen from './src/screens/ReferScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -143,6 +144,7 @@ function RootStack() {
         component={InfluencerNotifications}
       />
       <Stack.Screen name="InfluencerPricing" component={InfluencerPricing} />
+      <Stack.Screen name="InfluencerRefer" component={ReferScreen} />
       <Stack.Screen
         name="InfluencerOfferDetail"
         component={InfluencerOfferDetail}

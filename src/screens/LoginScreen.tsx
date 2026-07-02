@@ -56,7 +56,7 @@ interface InstaProfile {
   tokenExpiresAt?: string;
 }
 
-type LoginRouteParams = { invited?: string };
+type LoginRouteParams = { invited?: string; ref?: string };
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -470,6 +470,11 @@ export default function LoginScreen() {
         name: formData.name || signupData.name,
         gstinData: formData.gstinData || null,
         invitationId: invitation?.id || null,
+        // Refer & Earn attribution — read once from the deep link on
+        // page load, passed straight through to create-profile. Guarded
+        // server-side against self-referral + inactive referrer, so an
+        // empty / bad code is a silent no-op.
+        referralCode: route.params?.ref || null,
       };
 
       // Add Instagram data if available
