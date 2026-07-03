@@ -475,6 +475,30 @@ export default function LoginScreen() {
         // server-side against self-referral + inactive referrer, so an
         // empty / bad code is a silent no-op.
         referralCode: route.params?.ref || null,
+        // Non-crypto stable device fingerprint for the anti-fraud
+        // attribution on the referral row. RN's Platform + Dimensions +
+        // timezone give us enough variance to flag duplicate installs
+        // on the same physical device without leaking identifying data.
+        deviceFingerprint: (() => {
+          try {
+            const {Platform, Dimensions} = require('react-native');
+            const {width, height} = Dimensions.get('screen');
+            const parts = [
+              Platform.OS || '',
+              String(Platform.Version || ''),
+              String(width),
+              String(height),
+              Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone || '',
+            ].join('|');
+            let h = 0;
+            for (let i = 0; i < parts.length; i++) {
+              h = ((h << 5) - h + parts.charCodeAt(i)) | 0;
+            }
+            return String(h >>> 0);
+          } catch {
+            return null;
+          }
+        })(),
       };
 
       // Add Instagram data if available

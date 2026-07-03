@@ -8,6 +8,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {
   Alert,
   Clipboard,
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -84,12 +85,14 @@ export default function ReferScreen() {
   const [lockedBalance, setLockedBalance] = useState(0);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [myRank, setMyRank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [profRes, availBalRes, refsRes, ledRes] = await Promise.all([
+    const [profRes, availBalRes, refsRes, ledRes, boardRes, rankRes] = await Promise.all([
       supabase
         .from('influencer_profiles')
         .select('referral_code')
@@ -116,12 +119,20 @@ export default function ReferScreen() {
         .eq('user_id', user.id)
         .order('created_at', {ascending: false})
         .limit(50),
+      // Monthly leaderboard + current user's rank on it. Both are
+      // SECURITY DEFINER RPCs so they bypass referrals RLS.
+      supabase.rpc('get_referral_leaderboard', {top_n: 10}),
+      supabase.rpc('get_my_referral_rank'),
     ]);
     setReferralCode(profRes.data?.referral_code || '');
     setAvailableBalance(availBalRes.data?.available_balance || 0);
     setLockedBalance(availBalRes.data?.locked_balance || 0);
     setReferrals((refsRes.data as Referral[]) || []);
     setLedger((ledRes.data as LedgerRow[]) || []);
+    setLeaderboard(Array.isArray(boardRes.data) ? boardRes.data : []);
+    setMyRank(
+      Array.isArray(rankRes.data) && rankRes.data[0] ? rankRes.data[0] : null,
+    );
     setLoading(false);
   }, [user?.id]);
 
@@ -346,6 +357,107 @@ export default function ReferScreen() {
                 within 7 days. Auto-expires 90 days after credit.
               </Text>
             </View>
+
+            {/* Monthly leaderboard — self-hides when nobody qualified
+                this month yet. */}
+            {leaderboard.length > 0 ? (
+              <View
+                className="bg-white rounded-3xl border border-slate-100 p-5"
+                style={CARD_SHADOW}>
+                <View
+                  className="flex-row items-center justify-between mb-2"
+                  style={{gap: 8}}>
+                  <Text className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                    Top referrers this month
+                  </Text>
+                  {myRank ? (
+                    <View
+                      style={{
+                        backgroundColor: '#F1F5F9',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
+                      }}>
+                      <Text className="text-[11px] font-black text-slate-700">
+                        You: #{myRank.rank}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                {leaderboard.map(row => {
+                  const isMe = user?.id === row.referrer_id;
+                  return (
+                    <View
+                      key={row.referrer_id}
+                      className="flex-row items-center py-3 border-b border-slate-100"
+                      style={{
+                        gap: 10,
+                        backgroundColor: isMe ? '#FDF2F8' : 'transparent',
+                        marginHorizontal: isMe ? -20 : 0,
+                        paddingHorizontal: isMe ? 20 : 0,
+                      }}>
+                      <Text
+                        className="text-[13px] font-black text-slate-500"
+                        style={{width: 28, textAlign: 'center'}}>
+                        #{row.rank}
+                      </Text>
+                      {row.profile_photo_url ? (
+                        <Image
+                          source={{uri: row.profile_photo_url}}
+                          style={{width: 32, height: 32, borderRadius: 16}}
+                        />
+                      ) : (
+                        <View
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: '#F1F5F9',
+                          }}
+                        />
+                      )}
+                      <View className="flex-1">
+                        <View
+                          className="flex-row items-center"
+                          style={{gap: 4}}>
+                          <Text
+                            className="text-[13px] font-bold text-slate-900"
+                            numberOfLines={1}>
+                            {row.full_name || row.username || 'Unknown'}
+                          </Text>
+                          {isMe ? (
+                            <Text
+                              className="text-[10px] font-black"
+                              style={{color: BRAND.accent}}>
+                              YOU
+                            </Text>
+                          ) : null}
+                        </View>
+                        <Text
+                          className="text-[11px] text-slate-400"
+                          numberOfLines={1}>
+                          {row.instagram_handle
+                            ? `@${row.instagram_handle}`
+                            : '—'}
+                        </Text>
+                      </View>
+                      <View style={{alignItems: 'flex-end'}}>
+                        <Text className="text-sm font-black text-emerald-600">
+                          {row.rc_earned} RC
+                        </Text>
+                        <Text className="text-[10px] text-slate-400">
+                          {row.rewarded_count} referral
+                          {row.rewarded_count === 1 ? '' : 's'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                <Text className="text-[11px] text-slate-400 mt-2 leading-4">
+                  Resets on the 1st of each month (IST).
+                </Text>
+              </View>
+            ) : null}
 
             {/* Referrals list */}
             <View

@@ -25,9 +25,16 @@ import InAppBrowser from 'react-native-inappbrowser-reborn';
 import RazorpayCheckout from 'react-native-razorpay';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
+import {supabase} from '../utils/supabase';
 import InfluencerLayout from '../layouts/InfluencerLayout';
 import GatewayPickerModal from '../components/GatewayPickerModal';
 import VerifyingOverlay from '../components/VerifyingOverlay';
+import {
+  PLAN_PRICING,
+  PLAN_RAZORPAY_IDS,
+  PLAN_STRIPE_PRICES,
+  type PlanId,
+} from '../lib/plans';
 
 // Stripe Checkout success redirect URL. We send a custom-scheme origin so
 // the in-app browser (Chrome Custom Tabs on Android, ASWebAuthenticationSession
@@ -269,6 +276,37 @@ export default function InfluencerPricing() {
   // True while we poll the profile after a successful payment, waiting
   // for the webhook to flip subscription_plan on the row.
   const [verifying, setVerifying] = useState(false);
+  // Refer & Earn Phase 2 — spendable RC + apply-at-checkout toggle. Same
+  // shape + behaviour as the web pricing page. Reads only the available
+  // (unlocked + unexpired) balance, since that's the only figure that
+  // can actually be spent.
+  const [availableRc, setAvailableRc] = useState(0);
+  const [applyRc, setApplyRc] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setAvailableRc(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const {data} = await supabase
+          .from('v_reward_credits_available_balance')
+          .select('available_balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!cancelled) setAvailableRc(data?.available_balance || 0);
+      } catch {
+        if (!cancelled) setAvailableRc(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Re-run after a successful upgrade so the toggle reflects the
+    // newly-reduced balance.
+  }, [user?.id, successPlan]);
 
   // refreshProfile gets a new reference every time AuthContext re-renders
   // (which happens *because* we call it during polling). Stashing it in
@@ -344,11 +382,19 @@ export default function InfluencerPricing() {
   };
 
   const startRazorpay = async (plan: Plan) => {
-    // Razorpay plan id is resolved server-side by the `razorpay-checkout`
-    // edge function from Supabase secrets (RAZORPAY_PLAN_<PLAN>_<CYCLE>),
-    // so the client doesn't carry its own copy. The function also returns
-    // the public key_id we use to open the sheet — same single-source-of-
-    // truth pattern the web uses against the same Supabase project.
+    // Send the actual razorpay plan id — the edge function no longer
+    // resolves it from env, unlike the earlier assumption in this file.
+    const razorpayPlanId =
+      PLAN_RAZORPAY_IDS[plan.id as PlanId]?.[billing];
+    if (!razorpayPlanId) {
+      throw new Error(
+        `Razorpay isn't configured for the ${plan.id} ${billing} plan. Set NEXT_PUBLIC_RAZORPAY_PLAN_${plan.id.toUpperCase()}_${billing.toUpperCase()} in .env and rebuild.`,
+      );
+    }
+    const planPriceRupees =
+      billing === 'annual'
+        ? PLAN_PRICING[plan.id as PlanId]?.annual
+        : PLAN_PRICING[plan.id as PlanId]?.monthly;
     const contact = formatPhoneForRazorpay(profile?.phone);
     const created = await invokeFn<{
       subscription_id?: string;
@@ -356,11 +402,14 @@ export default function InfluencerPricing() {
       error?: string;
     }>('razorpay-checkout', {
       userId: user?.id,
+      planId: razorpayPlanId,
       plan: plan.id,
       cycle: billing,
       email: profile?.email || '',
       name: profile?.full_name || '',
       contact,
+      applyRc: applyRc && availableRc > 0,
+      planPriceRupees,
     });
     if (created?.error) throw new Error(created.error);
     if (!created?.subscription_id || !created?.key_id) {
@@ -404,19 +453,27 @@ export default function InfluencerPricing() {
   };
 
   const startStripe = async (plan: Plan) => {
-    // Like Razorpay above — the Stripe price id is resolved server-side
-    // by the `stripe-checkout` edge function from Supabase secrets
-    // (STRIPE_PRICE_<PLAN>_<CYCLE>). The client only sends plan + cycle
-    // so subscription IDs stay consistent across web + mobile and the
-    // mobile app doesn't need rebuilding when prices change.
+    const priceId = PLAN_STRIPE_PRICES[plan.id as PlanId]?.[billing];
+    if (!priceId) {
+      throw new Error(
+        `Stripe isn't configured for the ${plan.id} ${billing} plan. Set NEXT_PUBLIC_STRIPE_PRICE_${plan.id.toUpperCase()}_${billing.toUpperCase()} in .env and rebuild.`,
+      );
+    }
+    const planPriceRupees =
+      billing === 'annual'
+        ? PLAN_PRICING[plan.id as PlanId]?.annual
+        : PLAN_PRICING[plan.id as PlanId]?.monthly;
     const created = await invokeFn<{url?: string; error?: string}>(
       'stripe-checkout',
       {
         userId: user?.id,
+        priceId,
         plan: plan.id,
         cycle: billing,
         email: profile?.email || '',
         origin: STRIPE_RETURN_ORIGIN,
+        applyRc: applyRc && availableRc > 0,
+        planPriceRupees,
       },
     );
     if (created?.error) throw new Error(created.error);
@@ -648,6 +705,39 @@ export default function InfluencerPricing() {
               </View>
             </View>
           </View>
+
+          {/* RC redemption toggle — same server-side cap (50% of plan price
+              + capped at available balance) as the web pricing page. */}
+          {availableRc > 0 && (
+            <Pressable
+              onPress={() => setApplyRc(v => !v)}
+              className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-3 mt-4 self-center"
+              style={{gap: 12}}>
+              <View
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
+                  borderWidth: 1.5,
+                  borderColor: applyRc ? '#5851DB' : '#CBD5E1',
+                  backgroundColor: applyRc ? '#5851DB' : 'white',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                {applyRc && <Check size={12} color="white" />}
+              </View>
+              <Text className="text-[13px] font-semibold text-slate-700">
+                Apply my{' '}
+                <Text className="text-[#5851DB] font-black">
+                  {availableRc} RC
+                </Text>{' '}
+                at checkout{'  '}
+                <Text className="text-[10px] text-slate-400 font-normal">
+                  (up to 50% off first invoice)
+                </Text>
+              </Text>
+            </Pressable>
+          )}
 
           {/* Plan Cards */}
           {currentPlans.map(plan => {

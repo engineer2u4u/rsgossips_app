@@ -13,6 +13,7 @@ import TopPicksCarousel from '../components/TopPicksCarousel';
 import StayCarousel from '../components/StayCarousel';
 import CreatorsCarouselWithLink from '../components/CreatorCarouselWithLink';
 import InfluencerLayout, {useLayoutScroll} from '../layouts/InfluencerLayout';
+import ReferBalanceCard from '../components/ReferBalanceCard';
 
 function HomeContent() {
   const layoutScroll = useLayoutScroll();
@@ -54,6 +55,11 @@ function HomeContent() {
             if (user?.id) refreshInstagram(user.id);
           }}
         />
+      </View>
+
+      {/* Refer & Earn wallet strip — self-hides when balance is 0. */}
+      <View className="mt-4 px-4">
+        <ReferBalanceCard />
       </View>
 
       {/* Quick Links — replaces the chip-row category filters */}
