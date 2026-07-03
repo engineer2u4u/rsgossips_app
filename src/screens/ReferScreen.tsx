@@ -36,6 +36,7 @@ const STATUS_PILL: Record<string, {label: string; bg: string; fg: string}> = {
 
 const REASON_LABEL: Record<string, string> = {
   REFERRAL_EARN: 'Referral reward',
+  WELCOME_BONUS: 'Welcome bonus',
   MILESTONE_BONUS: 'Milestone bonus',
   LEADERBOARD: 'Leaderboard prize',
   REDEMPTION: 'Applied to subscription',
@@ -69,6 +70,7 @@ type LedgerRow = {
   reason: string;
   balance_after: number;
   expires_at: string | null;
+  unlocks_at: string | null;
   created_at: string;
   note: string | null;
 };
@@ -78,7 +80,8 @@ export default function ReferScreen() {
   const {user, profile, loading: authLoading} = useAuth();
 
   const [referralCode, setReferralCode] = useState('');
-  const [balance, setBalance] = useState(0);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [lockedBalance, setLockedBalance] = useState(0);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,15 +89,15 @@ export default function ReferScreen() {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [profRes, balRes, refsRes, ledRes] = await Promise.all([
+    const [profRes, availBalRes, refsRes, ledRes] = await Promise.all([
       supabase
         .from('influencer_profiles')
         .select('referral_code')
         .eq('influencer_id', user.id)
         .maybeSingle(),
       supabase
-        .from('v_reward_credits_balance')
-        .select('balance')
+        .from('v_reward_credits_available_balance')
+        .select('available_balance, locked_balance')
         .eq('user_id', user.id)
         .maybeSingle(),
       supabase
@@ -108,14 +111,15 @@ export default function ReferScreen() {
       supabase
         .from('reward_credits_ledger')
         .select(
-          'id, delta_rc, reason, balance_after, expires_at, created_at, note',
+          'id, delta_rc, reason, balance_after, expires_at, unlocks_at, created_at, note',
         )
         .eq('user_id', user.id)
         .order('created_at', {ascending: false})
         .limit(50),
     ]);
     setReferralCode(profRes.data?.referral_code || '');
-    setBalance(balRes.data?.balance || 0);
+    setAvailableBalance(availBalRes.data?.available_balance || 0);
+    setLockedBalance(availBalRes.data?.locked_balance || 0);
     setReferrals((refsRes.data as Referral[]) || []);
     setLedger((ledRes.data as LedgerRow[]) || []);
     setLoading(false);
@@ -234,16 +238,37 @@ export default function ReferScreen() {
                 end={{x: 1, y: 1}}
                 style={{padding: 24}}>
                 <Text className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">
-                  RC balance
+                  Available RC
                 </Text>
                 <Text className="text-white text-4xl font-black mt-1">
-                  {balance}
+                  {availableBalance}
                 </Text>
                 <Text className="text-white text-xs opacity-80 mt-1">
-                  ₹{balance} discount available
+                  ₹{availableBalance} redeemable at checkout
                 </Text>
+                {lockedBalance > 0 ? (
+                  <View
+                    className="flex-row items-center mt-3"
+                    style={{
+                      alignSelf: 'flex-start',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      gap: 6,
+                    }}>
+                    <Text className="text-white text-[9px] font-black uppercase tracking-widest opacity-90">
+                      Locked
+                    </Text>
+                    <Text className="text-white text-[11px] font-black">
+                      +{lockedBalance} RC
+                    </Text>
+                  </View>
+                ) : null}
                 <Text className="text-white text-[11px] opacity-70 mt-4">
-                  Redeem up to 50% of any plan price at checkout.
+                  {lockedBalance > 0
+                    ? 'Your welcome bonus unlocks 30 days after signup. Referral rewards are spendable immediately.'
+                    : 'Redeem up to 50% of any plan price at checkout.'}
                 </Text>
               </LinearGradient>
             </View>
@@ -393,31 +418,57 @@ export default function ReferScreen() {
                   Wallet is empty.
                 </Text>
               ) : (
-                ledger.map(row => (
-                  <View
-                    key={row.id}
-                    className="flex-row items-center py-3 border-b border-slate-100"
-                    style={{gap: 10}}>
-                    <View className="flex-1">
-                      <Text className="text-[13px] font-bold text-slate-900">
-                        {REASON_LABEL[row.reason] || row.reason}
-                      </Text>
-                      <Text className="text-[11px] text-slate-400">
-                        {formatDate(row.created_at)}
-                        {row.expires_at && row.delta_rc > 0
-                          ? ` · expires ${formatDate(row.expires_at)}`
-                          : ''}
-                        {row.note ? ` · ${row.note}` : ''}
+                ledger.map(row => {
+                  const isLocked =
+                    row.unlocks_at &&
+                    new Date(row.unlocks_at).getTime() > Date.now() &&
+                    row.delta_rc > 0;
+                  return (
+                    <View
+                      key={row.id}
+                      className="flex-row items-center py-3 border-b border-slate-100"
+                      style={{gap: 10}}>
+                      <View className="flex-1">
+                        <View
+                          className="flex-row items-center"
+                          style={{gap: 6, flexWrap: 'wrap'}}>
+                          <Text className="text-[13px] font-bold text-slate-900">
+                            {REASON_LABEL[row.reason] || row.reason}
+                          </Text>
+                          {isLocked ? (
+                            <View
+                              style={{
+                                backgroundColor: '#FEF3C7',
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                borderRadius: 3,
+                              }}>
+                              <Text
+                                className="text-[9px] font-black uppercase tracking-wider"
+                                style={{color: '#B45309'}}>
+                                Locked
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text className="text-[11px] text-slate-400">
+                          {formatDate(row.created_at)}
+                          {isLocked ? ` · unlocks ${formatDate(row.unlocks_at)}` : ''}
+                          {row.expires_at && row.delta_rc > 0
+                            ? ` · expires ${formatDate(row.expires_at)}`
+                            : ''}
+                          {row.note ? ` · ${row.note}` : ''}
+                        </Text>
+                      </View>
+                      <Text
+                        className="text-sm font-black"
+                        style={{color: row.delta_rc > 0 ? '#059669' : '#64748B'}}>
+                        {row.delta_rc > 0 ? '+' : ''}
+                        {row.delta_rc}
                       </Text>
                     </View>
-                    <Text
-                      className="text-sm font-black"
-                      style={{color: row.delta_rc > 0 ? '#059669' : '#64748B'}}>
-                      {row.delta_rc > 0 ? '+' : ''}
-                      {row.delta_rc}
-                    </Text>
-                  </View>
-                ))
+                  );
+                })
               )}
             </View>
           </>
