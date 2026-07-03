@@ -46,6 +46,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {supabase} from '../utils/supabase';
+import {invokeFn} from '../lib/api';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
 
@@ -842,33 +843,38 @@ function AddPaymentModal({
     }
     setSaving(true);
     setError('');
+    // Route through the same edge function the web uses (see
+    // supabase/functions/register-payout-method). It:
+    //   1) creates/reuses a RazorpayX Contact for this user,
+    //   2) registers the UPI/bank as a Fund Account,
+    //   3) runs a name-match validation,
+    //   4) inserts payment_methods with all required NOT NULL columns.
+    // Bypassing it with a direct `insert` used to silently fail whenever
+    // an NOT NULL column (like validation_status) or an RLS check was
+    // missing — the user saw a no-op button.
     const payload =
       type === 'upi'
-        ? {
-            user_id: user.id,
-            type: 'upi',
-            upi_id: trimmedUpi,
-            is_primary: isFirstMethod,
-          }
+        ? {type: 'upi', upi_id: trimmedUpi, label: 'UPI'}
         : {
-            user_id: user.id,
             type: 'bank',
-            account_holder_name: holderName.trim(),
             bank_name: bankName.trim(),
             account_number: accountNumber.trim(),
             ifsc: ifsc.trim().toUpperCase(),
-            is_primary: isFirstMethod,
+            account_holder_name: holderName.trim(),
+            label: 'Bank Account',
           };
-    const {error: insertErr} = await supabase
-      .from('payment_methods')
-      .insert(payload);
-    setSaving(false);
-    if (insertErr) {
-      setError(insertErr.message);
-      return;
+    try {
+      await invokeFn('register-payout-method', payload);
+      reset();
+      onSaved();
+    } catch (e: any) {
+      setError(
+        e?.message ||
+          'Could not save this payment method. Please try again.',
+      );
+    } finally {
+      setSaving(false);
     }
-    reset();
-    onSaved();
   };
 
   return (
