@@ -67,30 +67,9 @@ export async function invokeFn<T = any>(
 ): Promise<T> {
   const method = options.method || 'POST';
   const token = await getAuthToken();
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   let url = `${SUPABASE_URL}/functions/v1/${name}`;
-
-  // Hook caller's signal onto our timeout-driven AbortController so either can
-  // cancel the request. Without a timeout the RN fetch polyfill can hang
-  // indefinitely on a dropped connection, which is what was leaving the
-  // "Checking your number…" loader stuck on flaky networks.
-  const controller = new AbortController();
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  if (options.signal) {
-    if (options.signal.aborted) controller.abort();
-    else options.signal.addEventListener('abort', () => controller.abort());
-  }
-
-  const init: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-    },
-    signal: controller.signal,
-  };
 
   if (method === 'GET') {
     const params = new URLSearchParams();
@@ -99,25 +78,60 @@ export async function invokeFn<T = any>(
     }
     const qs = params.toString();
     if (qs) url += `?${qs}`;
-  } else {
-    init.body = JSON.stringify(body);
   }
 
-  let res: Response;
-  try {
-    res = await fetch(url, init);
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    if (err?.name === 'AbortError') {
-      throw new EdgeFunctionError(
-        `Request to "${name}" timed out. Check your connection and try again.`,
-        408,
-        null,
-      );
+  // Hook caller's signal onto our timeout-driven AbortController so either can
+  // cancel the request. Without a timeout the RN fetch polyfill can hang
+  // indefinitely on a dropped connection, which is what was leaving the
+  // "Checking your number…" loader stuck on flaky networks.
+  const doFetch = async (authToken: string): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    if (options.signal) {
+      if (options.signal.aborted) controller.abort();
+      else options.signal.addEventListener('abort', () => controller.abort());
     }
-    throw err;
+    const init: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${authToken}`,
+      },
+      signal: controller.signal,
+    };
+    if (method !== 'GET') {
+      init.body = JSON.stringify(body);
+    }
+    try {
+      return await fetch(url, init);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new EdgeFunctionError(
+          `Request to "${name}" timed out. Check your connection and try again.`,
+          408,
+          null,
+        );
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  let res = await doFetch(token);
+
+  // getAuthToken's 3s race can lose to a slow AsyncStorage read and send the
+  // anon key for a user who IS signed in — auth-required functions then 401
+  // ("unauthorized") even though the session is fine. Retry once with a
+  // fully-awaited session before surfacing the error; a 401'd request had no
+  // server-side effect, so the retry is safe.
+  if (res.status === 401 && token === SUPABASE_ANON_KEY) {
+    const session = await safeGetSession().catch(() => null);
+    if (session?.access_token) {
+      res = await doFetch(session.access_token);
+    }
   }
-  clearTimeout(timeoutId);
 
   let parsed: any = null;
   try {

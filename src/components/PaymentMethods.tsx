@@ -29,9 +29,7 @@ import {
 import {
   AlertTriangle,
   Building2,
-  Check,
   ChevronLeft,
-  Clock,
   CreditCard,
   Download,
   ExternalLink,
@@ -64,7 +62,9 @@ type PaymentMethod = {
   ifsc?: string | null;
   account_holder_name?: string | null;
   is_primary: boolean;
-  validation_status?: 'pending' | 'success' | 'failed';
+  // 'success' for UPI, 'manual' for bank (admin verifies at payout time) —
+  // set by the register-payout-method edge function.
+  validation_status?: 'pending' | 'success' | 'failed' | 'manual';
   validation_failure_reason?: string | null;
 };
 
@@ -134,10 +134,35 @@ function formatDate(input: number | string | null | undefined): string {
   });
 }
 
+// NPCI's published VPA spec: <username>@<handle>. Username starts with
+// alphanumeric, allows ./_/-, 2–50 chars. Handle starts with alpha, allows
+// alphanumeric + dot, 2–30 chars. Total commonly < 50 chars.
+// Mirrors the web's validateUpiId and the register-payout-method edge
+// function's server-side check, so anything that passes here won't bounce
+// with a generic server error after a round trip.
+// Returns null when valid, or a human-readable reason string.
+function validateUpiId(raw: string): string | null {
+  const id = (raw || '').trim();
+  if (!id) return 'UPI ID is required.';
+  if (id.length > 50) return 'UPI ID is too long.';
+  const at = id.indexOf('@');
+  if (at < 0 || id.indexOf('@', at + 1) !== -1) {
+    return 'Must contain exactly one @ symbol.';
+  }
+  const [userPart, handle] = id.split('@');
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,49}$/.test(userPart)) {
+    return 'The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.';
+  }
+  if (!/^[a-zA-Z][a-zA-Z0-9.]{1,29}$/.test(handle)) {
+    return 'The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl.';
+  }
+  return null;
+}
+
 function ValidationChip({
   status,
 }: {
-  status?: 'pending' | 'success' | 'failed';
+  status?: 'pending' | 'success' | 'failed' | 'manual';
 }) {
   if (status === 'success') {
     return (
@@ -286,14 +311,24 @@ export default function PaymentMethods({onBack}: Props) {
     if (!user?.id) return;
     await withLoading(
       (async () => {
-        await supabase
+        // supabase-js resolves failed writes (RLS/constraint) instead of
+        // throwing — an unchecked result here is a silent no-op button while
+        // payouts keep targeting the old primary. Check both updates.
+        const {error: clearErr} = await supabase
           .from('payment_methods')
           .update({is_primary: false})
           .eq('user_id', user.id);
-        await supabase
-          .from('payment_methods')
-          .update({is_primary: true, updated_at: new Date().toISOString()})
-          .eq('id', id);
+        if (clearErr) {
+          Alert.alert('Could not update primary', clearErr.message);
+        } else {
+          const {error: setErr} = await supabase
+            .from('payment_methods')
+            .update({is_primary: true, updated_at: new Date().toISOString()})
+            .eq('id', id);
+          if (setErr) {
+            Alert.alert('Could not update primary', setErr.message);
+          }
+        }
         await fetchMethods();
       })(),
       'Updating primary…',
@@ -314,8 +349,37 @@ export default function PaymentMethods({onBack}: Props) {
           onPress: () =>
             withLoading(
               (async () => {
-                await supabase.from('payment_methods').delete().eq('id', m.id);
-                setMethods(prev => prev.filter(x => x.id !== m.id));
+                const {error: delErr} = await supabase
+                  .from('payment_methods')
+                  .delete()
+                  .eq('id', m.id);
+                if (delErr) {
+                  // Don't touch local state on failure — optimistically
+                  // hiding the row would show a "deleted" method that
+                  // reappears on the next fetch.
+                  Alert.alert('Could not remove', delErr.message);
+                  return;
+                }
+                // Deleting the primary must not leave zero primaries —
+                // payouts target the primary method and the edge function
+                // only auto-primaries a user's very first method.
+                const remaining = methods.filter(x => x.id !== m.id);
+                if (m.is_primary && remaining.length > 0) {
+                  const {error: promoteErr} = await supabase
+                    .from('payment_methods')
+                    .update({
+                      is_primary: true,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', remaining[0].id);
+                  if (promoteErr) {
+                    Alert.alert(
+                      'Removed, but no primary is set',
+                      'Pick a primary payment method from the list.',
+                    );
+                  }
+                }
+                await fetchMethods();
               })(),
               'Removing…',
             ),
@@ -621,7 +685,6 @@ export default function PaymentMethods({onBack}: Props) {
           fetchMethods();
           fetchEarnings();
         }}
-        isFirstMethod={methods.length === 0}
       />
     </View>
   );
@@ -797,12 +860,10 @@ function AddPaymentModal({
   visible,
   onClose,
   onSaved,
-  isFirstMethod,
 }: {
   visible: boolean;
   onClose: () => void;
   onSaved: () => void;
-  isFirstMethod: boolean;
 }) {
   const {user} = useAuth();
   const [type, setType] = useState<'upi' | 'bank'>('upi');
@@ -827,31 +888,38 @@ function AddPaymentModal({
   const handleSubmit = async () => {
     if (!user?.id || saving) return;
     const trimmedUpi = upiId.trim();
+    // Match the server's checks exactly (register-payout-method rejects with
+    // a terse 400 otherwise): full NPCI VPA for UPI, 9–18 digit account
+    // number and 11-char IFSC for bank.
     if (type === 'upi') {
-      if (!trimmedUpi.includes('@')) {
-        setError('Enter a valid UPI ID (e.g. you@bank).');
+      const upiErr = validateUpiId(trimmedUpi);
+      if (upiErr) {
+        setError(upiErr);
         return;
       }
-    } else if (
-      !holderName.trim() ||
-      !bankName.trim() ||
-      accountNumber.trim().length < 6 ||
-      ifsc.trim().length < 6
-    ) {
-      setError('Fill in every field to add the bank account.');
-      return;
+    } else {
+      if (!holderName.trim() || !bankName.trim()) {
+        setError('Fill in every field to add the bank account.');
+        return;
+      }
+      if (!/^[0-9]{9,18}$/.test(accountNumber.trim())) {
+        setError('Account number should be 9–18 digits.');
+        return;
+      }
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase())) {
+        setError('Enter the full 11-character IFSC (e.g. HDFC0001234).');
+        return;
+      }
     }
     setSaving(true);
     setError('');
     // Route through the same edge function the web uses (see
-    // supabase/functions/register-payout-method). It:
-    //   1) creates/reuses a RazorpayX Contact for this user,
-    //   2) registers the UPI/bank as a Fund Account,
-    //   3) runs a name-match validation,
-    //   4) inserts payment_methods with all required NOT NULL columns.
-    // Bypassing it with a direct `insert` used to silently fail whenever
-    // an NOT NULL column (like validation_status) or an RLS check was
-    // missing — the user saw a no-op button.
+    // supabase/functions/register-payout-method). It validates the payload
+    // server-side, inserts payment_methods with every NOT NULL column
+    // populated, and auto-primaries the user's first method. Payouts are
+    // manual — it makes no RazorpayX calls. Bypassing it with a direct
+    // `insert` used to silently fail whenever a NOT NULL column or an RLS
+    // check was missing — the user saw a no-op button.
     const payload =
       type === 'upi'
         ? {type: 'upi', upi_id: trimmedUpi, label: 'UPI'}
@@ -864,13 +932,19 @@ function AddPaymentModal({
             label: 'Bank Account',
           };
     try {
-      await invokeFn('register-payout-method', payload);
+      // The edge function runs several sequential DB calls and has no
+      // idempotency check — a client abort while it still completes
+      // server-side means a retry duplicates the method. Give it more
+      // headroom than invokeFn's 20s default.
+      await invokeFn('register-payout-method', payload, {timeoutMs: 45000});
       reset();
       onSaved();
     } catch (e: any) {
       setError(
-        e?.message ||
-          'Could not save this payment method. Please try again.',
+        e?.status === 408
+          ? 'The request timed out, but the method may still have been saved. Close this and check your list before retrying.'
+          : e?.message ||
+              'Could not save this payment method. Please try again.',
       );
     } finally {
       setSaving(false);
@@ -919,7 +993,12 @@ function AddPaymentModal({
                 return (
                   <TouchableOpacity
                     key={opt.key}
-                    onPress={() => setType(opt.key)}
+                    onPress={() => {
+                      setType(opt.key);
+                      // A validation error from the other form must not
+                      // linger under this one.
+                      setError('');
+                    }}
                     style={{
                       flex: 1,
                       alignItems: 'center',
@@ -978,7 +1057,7 @@ function AddPaymentModal({
                   [
                     {label: 'Account Holder Name', value: holderName, set: setHolderName, ph: 'Full name as per bank', auto: 'words' as const},
                     {label: 'Bank Name', value: bankName, set: setBankName, ph: 'e.g. HDFC Bank', auto: 'words' as const},
-                    {label: 'Account Number', value: accountNumber, set: (v: string) => setAccountNumber(v.replace(/\D/g, '').slice(0, 20)), ph: 'Enter account number', auto: 'none' as const, keyboard: 'numeric' as const},
+                    {label: 'Account Number', value: accountNumber, set: (v: string) => setAccountNumber(v.replace(/\D/g, '').slice(0, 18)), ph: 'Enter account number', auto: 'none' as const, keyboard: 'numeric' as const},
                     {label: 'IFSC Code', value: ifsc, set: (v: string) => setIfsc(v.toUpperCase().slice(0, 11)), ph: 'e.g. HDFC0001234', auto: 'characters' as const},
                   ] as const
                 ).map(f => (
