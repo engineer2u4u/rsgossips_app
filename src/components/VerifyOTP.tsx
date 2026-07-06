@@ -11,6 +11,10 @@ interface Props {
   phoneNumber?: string;
 }
 
+// Matches the server-side cooldown in the OTP sender (60s per phone) —
+// a 30s UI timer let users hit Resend while the backend still refused.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 export default function VerifyOTP({
   onNext,
   onResend,
@@ -20,7 +24,7 @@ export default function VerifyOTP({
   setOtp = () => {},
   phoneNumber = '+91 98765 43210',
 }: Props) {
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(RESEND_COOLDOWN_SECONDS);
   const inputs = useRef<Array<TextInput | null>>([]);
 
   // Auto-focus the first slot on mount so the keyboard pops up immediately
@@ -44,13 +48,13 @@ export default function VerifyOTP({
 
   const handleResend = async () => {
     if (!onResend) {
-      setTimer(30);
+      setTimer(RESEND_COOLDOWN_SECONDS);
       return;
     }
     try {
       await onResend();
     } finally {
-      setTimer(30);
+      setTimer(RESEND_COOLDOWN_SECONDS);
     }
   };
 
@@ -171,7 +175,7 @@ export default function VerifyOTP({
           <Text className="text-sm text-slate-400 font-medium">
             Resend code in{' '}
             <Text className="text-[#6347F9] font-bold">
-              0:{timer < 10 ? `0${timer}` : timer}
+              {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
             </Text>
           </Text>
         ) : (

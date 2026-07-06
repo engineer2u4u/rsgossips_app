@@ -237,6 +237,19 @@ export default function LoginScreen() {
     setPhone(`+${formattedPhone}`);
   };
 
+  // Resend from the sign-in verify step. The bare `() => sendOtp(phone)`
+  // this replaces swallowed rejections — when the backend refused with
+  // "Too many OTP requests for this number. Try again in an hour." the
+  // user saw nothing. Surface the failure through the shared error state.
+  const handleResendOtp = async (phoneNumber: string) => {
+    setError('');
+    try {
+      await sendOtp(phoneNumber);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to resend OTP');
+    }
+  };
+
   // --- SHARED: Verify OTP & create session ---
   // mode="signin" makes the backend refuse to auto-create a user — sign-in
   // shouldn't silently spin up accounts. Backend returns { error: 'no_user' }
@@ -724,7 +737,7 @@ export default function LoginScreen() {
                 {step === 3 && (
                   <VerifyOTP
                     onNext={handleSignInVerifyOtp}
-                    onResend={() => sendOtp(phone)}
+                    onResend={() => handleResendOtp(phone)}
                     loading={loading}
                     error={error}
                     otp={otp}

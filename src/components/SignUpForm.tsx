@@ -105,7 +105,7 @@ export default function SignUpForm({
       }
       await onSendOtp(formData.phone);
       setOtpSent(true);
-      setTimer(30);
+      setTimer(60);
     } catch (err: any) {
       setLocalError(err.message || 'Failed to send OTP');
     } finally {
@@ -160,7 +160,7 @@ export default function SignUpForm({
     setLocalError('');
     try {
       await onResendOtp(formData.phone);
-      setTimer(30);
+      setTimer(60);
       setOtp('');
     } catch (err: any) {
       setLocalError(err.message || 'Failed to resend OTP');
@@ -351,7 +351,7 @@ export default function SignUpForm({
                   <Text className="text-xs text-slate-400">
                     Resend in{' '}
                     <Text className="text-[#6347F9] font-bold">
-                      0:{timer < 10 ? `0${timer}` : timer}
+                      {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
                     </Text>
                   </Text>
                 ) : (
