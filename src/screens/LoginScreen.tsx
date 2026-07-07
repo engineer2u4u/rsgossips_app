@@ -273,6 +273,14 @@ export default function LoginScreen() {
       throw new OtpError(data.error, data.message || data.error);
     }
 
+    // Sign-up (Option A): the verifier only PROVES phone ownership now — no
+    // auth user, no session yet. create-profile mints both atomically at
+    // form submit. Nothing to stash here.
+    if (mode === 'signup') {
+      return data; // { success, phoneVerified, phone }
+    }
+
+    // Sign-in: verifier still returns a live session + user.
     setPendingSession(data.session);
     setAuthUserId(data.user.id);
     return data;
@@ -468,16 +476,14 @@ export default function LoginScreen() {
     setError('');
 
     try {
-      const userId = authUserId;
-      if (!userId)
-        throw new Error('No user found. Please verify your phone number.');
-
       const storagePhone = phone.replace(/\D/g, '').slice(-10);
       const table =
         signupData.role === 'brand' ? 'brand_profiles' : 'influencer_profiles';
 
+      // Option A: no userId yet — create-profile creates the auth user AND
+      // the profile atomically, keyed off the phone proof minted at OTP
+      // verify, and returns the new userId + a session.
       const createBody: any = {
-        userId,
         table,
         phone: storagePhone,
         name: formData.name || signupData.name,
@@ -534,11 +540,19 @@ export default function LoginScreen() {
       if (createError) throw new Error(createError.message);
       if (createResult?.error) throw new Error(createResult.error);
 
-      if (pendingSession) {
+      // create-profile now returns the freshly-created userId + session.
+      const newUserId = createResult?.userId;
+      const newSession = createResult?.session;
+      if (!newUserId)
+        throw new Error('Account creation did not complete. Please try again.');
+      setAuthUserId(newUserId);
+
+      if (newSession?.access_token) {
+        setPendingSession(newSession);
         setLoadingMsg('Setting up your session...');
         await supabase.auth.setSession({
-          access_token: pendingSession.access_token,
-          refresh_token: pendingSession.refresh_token,
+          access_token: newSession.access_token,
+          refresh_token: newSession.refresh_token,
         });
       }
 
