@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   ScrollView,
   TextInput,
   Image,
@@ -57,6 +58,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [name, setName] = useState(profile?.full_name || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [location, setLocation] = useState(profile?.location || '');
+  // Gender — powers the brand-side Gender filter. Previously only
+  // settable by admins; creators can now maintain it themselves.
+  const [gender, setGender] = useState(profile?.gender || '');
   const [email, setEmail] = useState(profile?.email || '');
   const [address, setAddress] = useState(profile?.address || '');
   const [tiktok, setTiktok] = useState(profile?.tiktok_url || '');
@@ -154,6 +158,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
         name,
         bio,
         location,
+        gender,
         email,
         address,
         tiktokUrl: tiktok,
@@ -318,6 +323,42 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             placeholder="City, Country"
             icon={<MapPin size={16} color="#9810FA" />}
           />
+
+          {/* Gender — chip row (RN has no native select). Tapping the
+              active chip again clears the selection. */}
+          <View style={{gap: 8}}>
+            <Text className="text-[10px] font-black text-gray-400 uppercase ml-1">
+              Gender
+            </Text>
+            <View className="flex-row flex-wrap" style={{gap: 8}}>
+              {[
+                {value: 'male', label: 'Male'},
+                {value: 'female', label: 'Female'},
+                {value: 'non_binary', label: 'Non-binary'},
+                {value: 'prefer_not_to_say', label: 'Prefer not to say'},
+              ].map(opt => {
+                const active = gender === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setGender(active ? '' : opt.value)}
+                    className={`px-4 py-2.5 rounded-full border ${
+                      active
+                        ? 'bg-purple-500 border-purple-500'
+                        : 'bg-white border-gray-200'
+                    }`}>
+                    <Text
+                      className={`text-xs font-black ${
+                        active ? 'text-white' : 'text-gray-600'
+                      }`}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
           <InputGroup
             label="Phone"
             value={profile?.phone || ''}
