@@ -144,6 +144,30 @@ export default function ReferScreen() {
     !!profile?.subscription_plan && profile.subscription_plan !== 'trial';
   const shareUrl = referralCode ? `https://rgossips.com/?ref=${referralCode}` : '';
 
+  // Self-heal a missing code (mirrors web): subscriptions that predate
+  // the Refer & Earn deploy, or admin-comped plans that never touched a
+  // payment gateway, have an active plan but a NULL referral_code —
+  // which rendered a blank share link. Server re-verifies eligibility.
+  useEffect(() => {
+    if (loading || !isSubscribed || referralCode || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const {data} = await supabase.functions.invoke('ensure-referral-code', {
+          body: {},
+        });
+        if (!cancelled && (data as any)?.referralCode) {
+          setReferralCode((data as any).referralCode);
+        }
+      } catch {
+        /* next visit retries */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, isSubscribed, referralCode, user?.id]);
+
   const copyLink = () => {
     if (!shareUrl) return;
     Clipboard.setString(shareUrl);
