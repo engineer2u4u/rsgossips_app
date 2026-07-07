@@ -328,6 +328,19 @@ export default function InfluencerPricing() {
   );
   const expired = daysLeft === 0;
 
+  // Renewal approximation for paid plans (mirrors ProStatuscard + web
+  // getPlanRenewalInfo): assume the sub renews cycleDays after the last
+  // profile update. Stand-in until current_period_end is surfaced.
+  const isPaidPlan =
+    !!currentPlan && currentPlan !== 'free' && currentPlan !== 'trial';
+  const renewalDaysLeft = (() => {
+    if (!isPaidPlan || !profile?.updated_at) return null;
+    const cycleDays = profile?.billing_cycle === 'annual' ? 365 : 30;
+    const start = new Date(profile.updated_at).getTime();
+    const elapsed = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24));
+    return Math.max(0, cycleDays - elapsed);
+  })();
+
   const currentPlans = PLANS[billing];
 
   // Step 1 — user taps Upgrade on a plan card. Open the gateway picker.
@@ -381,6 +394,65 @@ export default function InfluencerPricing() {
     setVerifying(false);
   };
 
+  // Post-payment: reconcile + show success with an Open Invoice action.
+  //
+  // The webhook is the normal source of truth for flipping subscription_plan,
+  // but if it's disabled/dropped the plan never updates and prior subs never
+  // cancel. reconcile-subscription is the cross-gateway safety net — it asks
+  // both Stripe + Razorpay what the user actually has, sets the profile to
+  // match, and cancels every other live sub. Idempotent, so it's a no-op when
+  // the webhook already did its job. Mirrors the web pricing page.
+  const finishSuccess = async (planId: string) => {
+    let keptSubId: string | null = null;
+    try {
+      const r = await invokeFn<{subscription_id?: string}>(
+        'reconcile-subscription',
+        {},
+      );
+      keptSubId = r?.subscription_id || null;
+      await refreshProfileRef.current?.();
+    } catch (e) {
+      console.warn('reconcile fallback failed:', e);
+    }
+    setSuccessPlan(planId);
+
+    // Fetch the invoice link (works for both gateways) and offer to open it.
+    let invoiceUrl: string | null = null;
+    try {
+      const hist = await invokeFn<{invoices?: any[]}>('subscription-history', {
+        userId: user?.id,
+      });
+      const invoices = Array.isArray(hist?.invoices) ? hist!.invoices! : [];
+      const forSub = keptSubId
+        ? invoices.filter(i => i.subscription_id === keptSubId)
+        : [];
+      const pool = (forSub.length ? forSub : invoices)
+        .slice()
+        .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+      const inv = pool.find(i => i.status === 'paid') || pool[0];
+      invoiceUrl = inv ? inv.hosted_url || inv.pdf_url || null : null;
+    } catch (e) {
+      console.warn('invoice link fetch failed:', e);
+    }
+
+    const label = planId
+      .replace('_', ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+    const buttons: any[] = [];
+    if (invoiceUrl) {
+      buttons.push({
+        text: 'Open Invoice',
+        onPress: () => Linking.openURL(invoiceUrl as string).catch(() => {}),
+      });
+    }
+    buttons.push({text: 'Done', style: 'cancel'});
+    Alert.alert(
+      `You're on ${label} 🎉`,
+      'Payment received and your plan is live.',
+      buttons,
+    );
+  };
+
   const startRazorpay = async (plan: Plan) => {
     // Send the actual razorpay plan id — the edge function no longer
     // resolves it from env, unlike the earlier assumption in this file.
@@ -400,6 +472,7 @@ export default function InfluencerPricing() {
       subscription_id?: string;
       key_id?: string;
       error?: string;
+      already_active?: boolean;
     }>('razorpay-checkout', {
       userId: user?.id,
       planId: razorpayPlanId,
@@ -414,6 +487,15 @@ export default function InfluencerPricing() {
     if (created?.error) throw new Error(created.error);
     if (!created?.subscription_id || !created?.key_id) {
       throw new Error("Razorpay didn't return a subscription / key.");
+    }
+
+    // Idempotency: the server found this plan is ALREADY active for the user
+    // (a prior successful checkout). Don't reopen the sheet — that would
+    // collect a second charge. Just verify + reconcile.
+    if (created.already_active) {
+      await runVerify();
+      await finishSuccess(plan.id);
+      return;
     }
 
     // Razorpay's native checkout sheet. Success / failure come back as a
@@ -438,10 +520,9 @@ export default function InfluencerPricing() {
         },
         theme: {color: '#5851DB'},
       });
-      // Promise resolved → payment succeeded → start the post-payment
-      // poll loop.
+      // Promise resolved → payment succeeded → poll then reconcile.
       await runVerify();
-      setSuccessPlan(plan.id);
+      await finishSuccess(plan.id);
     } catch (err: any) {
       // Razorpay error codes — 0 / undefined typically means the user
       // dismissed the sheet without paying; treat that as a silent
@@ -544,7 +625,7 @@ export default function InfluencerPricing() {
         const u = new URL(result.url);
         if (u.searchParams.get('success') === '1') {
           await runVerify();
-          setSuccessPlan(plan.id);
+          await finishSuccess(plan.id);
         }
         // canceled=1 or anything else: user backed out; no-op.
       } catch {
@@ -617,6 +698,14 @@ export default function InfluencerPricing() {
                       CURRENT
                     </Text>
                   </View>
+                  {renewalDaysLeft != null && (
+                    <View className="bg-blue-50 px-2 py-0.5 rounded-full">
+                      <Text className="text-[10px] font-bold text-blue-700">
+                        Renews in {renewalDaysLeft}{' '}
+                        {renewalDaysLeft === 1 ? 'day' : 'days'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <Text className="text-sm text-slate-500 mt-0.5">
                   {currentPlan === 'free'
