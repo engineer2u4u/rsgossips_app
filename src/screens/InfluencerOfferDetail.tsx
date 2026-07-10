@@ -255,7 +255,14 @@ export default function InfluencerOfferDetail() {
   const isActive = campaign.status === 'Active';
   const isApplied = campaign.status === 'Applied';
   const isCompleted = campaign.status === 'Completed';
-  const hasApplied = !!campaign.applicationStatus;
+  // A withdrawn/rejected application sends the campaign back to Active and is
+  // re-appliable, so it must NOT count as "already applied" — otherwise the
+  // apply button stays hidden and the dead status timeline shows. Only
+  // non-terminal statuses count as a live application.
+  const hasApplied =
+    !!campaign.applicationStatus &&
+    campaign.applicationStatus !== 'withdrawn' &&
+    campaign.applicationStatus !== 'rejected';
 
   return (
     <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>

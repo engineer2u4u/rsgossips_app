@@ -377,22 +377,6 @@ export default function InfluencerPricing() {
     }
   };
 
-  // After payment succeeds we poll the profile for up to 12s so the
-  // banner / plan card updates the moment the webhook lands. Identical
-  // pattern + ceiling to the web pricing page.
-  const runVerify = async () => {
-    setVerifying(true);
-    const deadline = Date.now() + 12_000;
-    while (Date.now() < deadline) {
-      try {
-        await refreshProfileRef.current?.();
-      } catch (e) {
-        console.warn('refreshProfile during verify failed:', e);
-      }
-      await new Promise(r => setTimeout(r, 1500));
-    }
-    setVerifying(false);
-  };
 
   // Post-payment: reconcile + show success with an Open Invoice action.
   //
@@ -402,18 +386,41 @@ export default function InfluencerPricing() {
   // both Stripe + Razorpay what the user actually has, sets the profile to
   // match, and cancels every other live sub. Idempotent, so it's a no-op when
   // the webhook already did its job. Mirrors the web pricing page.
-  const finishSuccess = async (planId: string) => {
+  const finishSuccess = async (
+    planId: string,
+    hint?: {preferSubscriptionId?: string; preferGateway?: 'stripe' | 'razorpay'},
+  ) => {
+    // reconcile is authoritative and fast: when we pass the just-paid sub id
+    // it verifies that sub directly against the gateway, so we don't need the
+    // old fixed 12s poll (that was the slow loader). Retry only if the new
+    // sub isn't visible yet — Razorpay activates asynchronously. Attempt 0
+    // runs immediately, so the happy path is ~1s.
+    setVerifying(true);
     let keptSubId: string | null = null;
+    let reconciled = false;
+    for (let attempt = 0; attempt < 4 && !reconciled; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1200));
+      try {
+        const r = await invokeFn<{subscription_id?: string; reconciled?: boolean}>(
+          'reconcile-subscription',
+          {
+            preferSubscriptionId: hint?.preferSubscriptionId || undefined,
+            preferGateway: hint?.preferGateway || undefined,
+            preferPlan: planId,
+          },
+        );
+        if (r?.reconciled) reconciled = true;
+        keptSubId = r?.subscription_id || keptSubId;
+      } catch (e) {
+        console.warn('reconcile attempt failed:', e);
+      }
+    }
     try {
-      const r = await invokeFn<{subscription_id?: string}>(
-        'reconcile-subscription',
-        {},
-      );
-      keptSubId = r?.subscription_id || null;
       await refreshProfileRef.current?.();
     } catch (e) {
-      console.warn('reconcile fallback failed:', e);
+      console.warn('refreshProfile after reconcile failed:', e);
     }
+    setVerifying(false);
     setSuccessPlan(planId);
 
     // Fetch the invoice link (works for both gateways) and offer to open it.
@@ -493,8 +500,10 @@ export default function InfluencerPricing() {
     // (a prior successful checkout). Don't reopen the sheet — that would
     // collect a second charge. Just verify + reconcile.
     if (created.already_active) {
-      await runVerify();
-      await finishSuccess(plan.id);
+      await finishSuccess(plan.id, {
+        preferSubscriptionId: created.subscription_id,
+        preferGateway: 'razorpay',
+      });
       return;
     }
 
@@ -520,9 +529,11 @@ export default function InfluencerPricing() {
         },
         theme: {color: '#5851DB'},
       });
-      // Promise resolved → payment succeeded → poll then reconcile.
-      await runVerify();
-      await finishSuccess(plan.id);
+      // Promise resolved → payment succeeded → reconcile (owns the overlay).
+      await finishSuccess(plan.id, {
+        preferSubscriptionId: created.subscription_id,
+        preferGateway: 'razorpay',
+      });
     } catch (err: any) {
       // Razorpay error codes — 0 / undefined typically means the user
       // dismissed the sheet without paying; treat that as a silent
@@ -624,15 +635,16 @@ export default function InfluencerPricing() {
       try {
         const u = new URL(result.url);
         if (u.searchParams.get('success') === '1') {
-          await runVerify();
-          await finishSuccess(plan.id);
+          // Stripe: the client doesn't have the sub id at success time (only
+          // the checkout session), so pass the gateway only — reconcile falls
+          // back to newest active+paid, which is fine as Stripe activates fast.
+          await finishSuccess(plan.id, {preferGateway: 'stripe'});
         }
         // canceled=1 or anything else: user backed out; no-op.
       } catch {
-        // URL parse failed — be safe and still kick off a verify in case
-        // the redirect did happen; worst case the row didn't change and
-        // the banner stays where it was.
-        await runVerify();
+        // URL parse failed — be safe and still reconcile in case the redirect
+        // did happen; worst case it's a no-op and the banner stays put.
+        await finishSuccess(plan.id, {preferGateway: 'stripe'});
       }
     }
   };

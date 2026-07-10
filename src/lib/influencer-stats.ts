@@ -31,6 +31,27 @@ export function parseBudgetINR(s: unknown): number {
   return digits ? parseInt(digits, 10) : 0;
 }
 
+// What a completed campaign actually earned = the negotiated/paid rate
+// (finalAgreedRate stamped at escrow, else the brand's offered rate). The
+// campaign's listed `budget` can differ from what was negotiated + paid, so
+// earnings must use this — falling back to the listed budget only when no
+// rate is present.
+export function earnedAmountINR(c: any): number {
+  const final = Number(c?.finalAgreedRate) || 0;
+  if (final > 0) return final;
+  const offered = Number(c?.brandOfferedRate) || 0;
+  if (offered > 0) return offered;
+  return parseBudgetINR(c?.budget);
+}
+
+// COMMITTED amount for "expected earnings" — only money the creator is
+// actually in line to receive (a negotiated/agreed rate). NO listed-budget
+// fallback, so a still-pending application (no accepted offer) doesn't
+// inflate expected earnings. Completed campaigns are excluded upstream.
+export function committedAmountINR(c: any): number {
+  return Number(c?.finalAgreedRate) || Number(c?.brandOfferedRate) || 0;
+}
+
 // 1,23,456 → "₹1.23L" (Indian-style large-number formatting).
 export function formatINRCompact(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return '₹0';
@@ -54,6 +75,8 @@ export type CampaignRow = {
   title?: string;
   applicationStatus?: string;
   budget?: string | number;
+  finalAgreedRate?: number;
+  brandOfferedRate?: number;
   brandName?: string;
   brandLogo?: string;
   tags?: string[];
@@ -118,11 +141,13 @@ export function computeInfluencerStats(campaigns: CampaignRow[]): InfluencerStat
   );
 
   const totalEarnings = completed.reduce(
-    (s, c) => s + parseBudgetINR(c.budget),
+    (s, c) => s + earnedAmountINR(c),
     0,
   );
+  // Expected = money still to be received (in-flight), committed amounts only
+  // — never completed (not in `active`) and never a pending app's budget.
   const expectedEarnings = active.reduce(
-    (s, c) => s + parseBudgetINR(c.budget),
+    (s, c) => s + committedAmountINR(c),
     0,
   );
 
@@ -136,7 +161,7 @@ export function computeInfluencerStats(campaigns: CampaignRow[]): InfluencerStat
       const d = new Date(ref);
       return isFinite(d.getTime()) && d >= thisMonthStart;
     })
-    .reduce((s, c) => s + parseBudgetINR(c.budget), 0);
+    .reduce((s, c) => s + earnedAmountINR(c), 0);
 
   // Last 6 months earnings buckets, oldest → newest.
   const months: {key: string; label: string; value: number}[] = [];
@@ -155,7 +180,7 @@ export function computeInfluencerStats(campaigns: CampaignRow[]): InfluencerStat
     if (!isFinite(d.getTime())) return;
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const m = months.find(x => x.key === key);
-    if (m) m.value += parseBudgetINR(c.budget);
+    if (m) m.value += earnedAmountINR(c);
   });
 
   // Trend = last two months % change.
@@ -174,7 +199,7 @@ export function computeInfluencerStats(campaigns: CampaignRow[]): InfluencerStat
     const cat = (c.tags && c.tags[0]) || 'Other';
     const cur = catMap.get(cat) || {name: cat, count: 0, total: 0};
     cur.count += 1;
-    cur.total += parseBudgetINR(c.budget);
+    cur.total += earnedAmountINR(c);
     catMap.set(cat, cur);
   });
   const earningsByCategory = [...catMap.values()]

@@ -35,7 +35,7 @@ import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {
   formatCountCompact,
   formatINRCompact,
-  parseBudgetINR,
+  earnedAmountINR,
   type CampaignRow,
 } from '../lib/influencer-stats';
 
@@ -404,7 +404,7 @@ function RecentRow({
   onPress: () => void;
 }) {
   const completed = c.applicationStatus === 'completed';
-  const earnings = completed ? parseBudgetINR(c.budget) : 0;
+  const earnings = completed ? earnedAmountINR(c) : 0;
 
   // Real per-campaign metrics from refresh-application-metrics, with the
   // influencer-level engagement rate as a fallback when no live links have
