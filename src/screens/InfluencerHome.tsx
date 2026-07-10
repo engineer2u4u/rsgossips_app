@@ -14,6 +14,7 @@ import StayCarousel from '../components/StayCarousel';
 import CreatorsCarouselWithLink from '../components/CreatorCarouselWithLink';
 import InfluencerLayout, {useLayoutScroll} from '../layouts/InfluencerLayout';
 import ReferBalanceCard from '../components/ReferBalanceCard';
+import WelcomeRewardModal from '../components/WelcomeRewardModal';
 
 function HomeContent() {
   const layoutScroll = useLayoutScroll();
@@ -56,6 +57,9 @@ function HomeContent() {
           }}
         />
       </View>
+
+      {/* First-time welcome-reward celebration for new signups. */}
+      <WelcomeRewardModal />
 
       {/* Refer & Earn wallet strip — self-hides when balance is 0. */}
       <View className="mt-4 px-4">

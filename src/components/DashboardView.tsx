@@ -24,6 +24,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
+import {supabase} from '../utils/supabase';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
 import {useProfilePhoto} from '../utils/photoUrl';
@@ -229,6 +230,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <ChevronRight size={16} color="#CBD5E1" />
         </TouchableOpacity>
       )}
+
+      {/* Reward Credits — above Profile Completion */}
+      <RewardCreditsCard />
 
       {/* Profile Completion card — gradient ring + checklist of remaining steps.
           Hidden once 100% complete; otherwise tappable items jump to the
@@ -517,6 +521,76 @@ const SettingsItem = ({icon: Icon, title, sub, color, onPress}: {
     <ChevronRight size={18} color="#CBD5E1" />
   </TouchableOpacity>
 );
+
+// Reward Credits summary on the profile (above Profile Completion). Stays
+// visible even when the balance is only the still-locked welcome bonus.
+function RewardCreditsCard() {
+  const {user} = useAuth();
+  const navigation = useNavigation<any>();
+  const [avail, setAvail] = useState(0);
+  const [locked, setLocked] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const {data} = await supabase
+          .from('v_reward_credits_available_balance')
+          .select('available_balance, locked_balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setAvail(data?.available_balance || 0);
+        setLocked(data?.locked_balance || 0);
+      } catch {
+        /* silent */
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  if (!loaded || (avail <= 0 && locked <= 0)) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => navigation.navigate('Refer')}
+      className="flex-row items-center bg-white rounded-2xl border border-slate-100 px-4 py-3"
+      style={{gap: 12}}>
+      <LinearGradient
+        colors={['#9810FA', '#E60076']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={{width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center'}}>
+        <Gift size={20} color="white" />
+      </LinearGradient>
+      <View className="flex-1">
+        <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          Reward Credits
+        </Text>
+        <View className="flex-row items-baseline" style={{gap: 8}}>
+          <Text className="text-xl font-black text-slate-900">
+            {avail} <Text className="text-xs font-bold text-slate-400">available</Text>
+          </Text>
+          {locked > 0 ? (
+            <View style={{backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3}}>
+              <Text className="text-[9px] font-black uppercase tracking-wider" style={{color: '#B45309'}}>
+                +{locked} locked
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+      <ChevronRight size={18} color="#CBD5E1" />
+    </TouchableOpacity>
+  );
+}
 
 // Mirrors web's ProfileCompletionCard: gradient ring + heading + 2-col
 // checklist of remaining steps. Hidden once 100% complete.

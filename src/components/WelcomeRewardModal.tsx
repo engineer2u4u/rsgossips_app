@@ -1,0 +1,236 @@
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Modal,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {useAuth} from '../context/AuthContext';
+import {supabase} from '../utils/supabase';
+import {BRAND_GRADIENT_WARM} from '../theme/brand';
+
+// First-time welcome-reward celebration for new influencer signups. On
+// signup, create-profile grants 50 RC (locked 30 days) + 50% off the first
+// subscription. Instead of a quiet "+50 locked" wallet strip, we pop a
+// celebratory modal ONCE — tracked in AsyncStorage per user.
+//
+// Trigger: user has the still-locked 50 RC welcome bonus (locked ≥ 50,
+// nothing available yet — the fresh-signup fingerprint) AND hasn't seen it.
+const SEEN_KEY = (uid: string) => `rg_welcome_reward_seen_v1_${uid}`;
+
+const {height: SCREEN_H, width: SCREEN_W} = Dimensions.get('window');
+const CONFETTI_COLORS = ['#9810FA', '#E60076', '#F59E0B', '#22C55E', '#3B82F6', '#EC4899'];
+
+export default function WelcomeRewardModal() {
+  const navigation = useNavigation<any>();
+  const {user} = useAuth();
+  const [open, setOpen] = useState(false);
+
+  // Entrance + float animation drivers.
+  const cardScale = useRef(new Animated.Value(0.8)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const giftFloat = useRef(new Animated.Value(0)).current;
+  // One Animated.Value per confetti piece (drives its fall).
+  const confetti = useRef(
+    Array.from({length: 26}).map((_, i) => ({
+      v: new Animated.Value(0),
+      left: Math.round((((i * 9301 + 49297) % 233280) / 233280) * SCREEN_W),
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      size: 7 + ((i * 7) % 8),
+      delay: (i % 10) * 90,
+      dur: 2400 + ((i * 613) % 1800),
+      round: i % 3 === 0,
+    })),
+  ).current;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const seen = await AsyncStorage.getItem(SEEN_KEY(user.id));
+        if (seen || cancelled) return;
+        const {data} = await supabase
+          .from('v_reward_credits_available_balance')
+          .select('available_balance, locked_balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        const avail = data?.available_balance || 0;
+        const locked = data?.locked_balance || 0;
+        if (locked >= 50 && avail <= 0) setOpen(true);
+      } catch {
+        /* silent — home shouldn't fail on a wallet lookup */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Kick off animations when the modal opens.
+  useEffect(() => {
+    if (!open) return;
+    Animated.parallel([
+      Animated.spring(cardScale, {toValue: 1, friction: 6, tension: 120, useNativeDriver: true}),
+      Animated.timing(cardOpacity, {toValue: 1, duration: 220, useNativeDriver: true}),
+    ]).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(giftFloat, {toValue: -8, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true}),
+        Animated.timing(giftFloat, {toValue: 0, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true}),
+      ]),
+    ).start();
+
+    confetti.forEach(c => {
+      c.v.setValue(0);
+      Animated.timing(c.v, {
+        toValue: 1,
+        duration: c.dur,
+        delay: c.delay,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [open, cardScale, cardOpacity, giftFloat, confetti]);
+
+  const dismiss = async (goToRefer: boolean) => {
+    try {
+      if (user?.id) await AsyncStorage.setItem(SEEN_KEY(user.id), '1');
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+    if (goToRefer) navigation.navigate('Refer');
+  };
+
+  return (
+    <Modal visible={open} transparent animationType="fade" onRequestClose={() => {}}>
+      <Pressable
+        onPress={() => {}}
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(20, 6, 40, 0.62)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+        }}>
+        {/* Confetti */}
+        <View pointerEvents="none" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden'}}>
+          {confetti.map((c, i) => (
+            <Animated.View
+              key={i}
+              style={{
+                position: 'absolute',
+                left: c.left,
+                width: c.size,
+                height: c.size * 0.42,
+                backgroundColor: c.color,
+                borderRadius: c.round ? 999 : 2,
+                opacity: c.v.interpolate({inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0.6]}),
+                transform: [
+                  {translateY: c.v.interpolate({inputRange: [0, 1], outputRange: [-30, SCREEN_H + 30]})},
+                  {rotate: c.v.interpolate({inputRange: [0, 1], outputRange: ['0deg', '720deg']})},
+                ],
+              }}
+            />
+          ))}
+        </View>
+
+        {/* Card */}
+        <Pressable onPress={() => {}} style={{width: '100%', maxWidth: 380}}>
+          <Animated.View
+            style={{
+              opacity: cardOpacity,
+              transform: [{scale: cardScale}],
+              borderRadius: 32,
+              overflow: 'hidden',
+              backgroundColor: '#FBF7FF',
+              shadowColor: '#000',
+              shadowOpacity: 0.35,
+              shadowRadius: 30,
+              shadowOffset: {width: 0, height: 20},
+              elevation: 16,
+            }}>
+            {/* Gradient header with the gift */}
+            <LinearGradient
+              colors={['#9810FA', '#E60076']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={{paddingTop: 28, paddingBottom: 22, paddingHorizontal: 24, alignItems: 'center'}}>
+              <View
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  marginBottom: 8,
+                }}>
+                <Text className="text-[11px] font-black uppercase tracking-widest text-white">
+                  Your Reward
+                </Text>
+              </View>
+              <Animated.Text style={{fontSize: 78, transform: [{translateY: giftFloat}]}}>🎁</Animated.Text>
+              <Text style={{position: 'absolute', left: 40, top: 44, fontSize: 18}}>✨</Text>
+              <Text style={{position: 'absolute', right: 44, top: 56, fontSize: 16}}>⭐</Text>
+              <Text style={{position: 'absolute', left: 54, bottom: 26, fontSize: 16}}>💜</Text>
+            </LinearGradient>
+
+            {/* Body */}
+            <View style={{paddingHorizontal: 24, paddingTop: 18, paddingBottom: 22}}>
+              <Text className="text-[22px] font-black text-slate-900 text-center">
+                Congratulations! 🎉
+              </Text>
+              <Text className="text-[13px] font-medium text-slate-500 text-center" style={{marginTop: 6, lineHeight: 19}}>
+                You&apos;ve been awarded a welcome reward for joining RGossips.
+              </Text>
+
+              {/* Reward rows */}
+              <View style={{marginTop: 16, gap: 8}}>
+                <View
+                  className="flex-row items-center rounded-2xl"
+                  style={{gap: 12, padding: 12, backgroundColor: 'rgba(152,16,250,0.06)', borderWidth: 1, borderColor: 'rgba(152,16,250,0.15)'}}>
+                  <LinearGradient
+                    colors={['#9810FA', '#E60076']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={{width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
+                    <Text className="text-white text-xs font-black">RC</Text>
+                  </LinearGradient>
+                  <View style={{flex: 1}}>
+                    <Text className="text-[13px] font-black text-slate-900">50 Reward Credits</Text>
+                    <Text className="text-[11px] font-medium text-slate-500" style={{lineHeight: 15}}>
+                      Your welcome bonus — unlocks 1 month after signup, then redeem on your subscription.
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* CTA */}
+              <Pressable onPress={() => dismiss(true)} style={{marginTop: 20}}>
+                <LinearGradient
+                  colors={['#9810FA', '#E60076']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 0}}
+                  style={{paddingVertical: 15, borderRadius: 16, alignItems: 'center'}}>
+                  <Text className="text-white text-sm font-black">Claim Your Reward</Text>
+                </LinearGradient>
+              </Pressable>
+              <Pressable onPress={() => dismiss(false)} style={{marginTop: 8, paddingVertical: 6}}>
+                <Text className="text-[12px] font-bold text-slate-400 text-center">Maybe later</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
