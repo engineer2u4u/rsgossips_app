@@ -142,7 +142,7 @@ export default function ReferScreen() {
 
   const isSubscribed =
     !!profile?.subscription_plan && profile.subscription_plan !== 'trial';
-  const shareUrl = referralCode ? `https://rgossips.com/?ref=${referralCode}` : '';
+  const shareUrl = referralCode ? `https://rgossips.com/login?ref=${referralCode}` : '';
 
   // Self-heal a missing code (mirrors web): subscriptions that predate
   // the Refer & Earn deploy, or admin-comped plans that never touched a
