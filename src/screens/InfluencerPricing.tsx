@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Platform,
+  Image,
 } from 'react-native';
 import {
   Check,
@@ -282,21 +283,31 @@ export default function InfluencerPricing() {
   // can actually be spent.
   const [availableRc, setAvailableRc] = useState(0);
   const [applyRc, setApplyRc] = useState(false);
+  // Referrer identity while the 50%-off first-subscription is still available —
+  // drives the visible "gifted by <name>" banner. null once they've subscribed.
+  const [referralDiscount, setReferralDiscount] = useState<any>(null);
 
   useEffect(() => {
     if (!user?.id) {
       setAvailableRc(0);
+      setReferralDiscount(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const {data} = await supabase
-          .from('v_reward_credits_available_balance')
-          .select('available_balance')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (!cancelled) setAvailableRc(data?.available_balance || 0);
+        const [{data}, {data: refData}] = await Promise.all([
+          supabase
+            .from('v_reward_credits_available_balance')
+            .select('available_balance')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase.rpc('get_my_referrer'),
+        ]);
+        if (cancelled) return;
+        setAvailableRc(data?.available_balance || 0);
+        const ref = Array.isArray(refData) ? refData[0] : refData;
+        setReferralDiscount(ref && (ref.referrer_name || ref.referrer_username) ? ref : null);
       } catch {
         if (!cancelled) setAvailableRc(0);
       }
@@ -807,9 +818,85 @@ export default function InfluencerPricing() {
             </View>
           </View>
 
+          {/* Referral 50%-off — visible while this referred creator still has
+              the first-subscription discount. Applies automatically at checkout
+              (takes precedence over RC on that first invoice). */}
+          {referralDiscount && (
+            <View
+              className="flex-row items-center rounded-2xl px-4 py-3 mt-4 self-center"
+              style={{
+                gap: 12,
+                borderWidth: 1,
+                borderColor: '#FBCFE8',
+                backgroundColor: '#FDF4FF',
+                maxWidth: 360,
+              }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  backgroundColor: '#22C55E',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text className="text-white text-base font-black">%</Text>
+              </View>
+              <View style={{flex: 1}}>
+                <Text className="text-[13px] font-black text-slate-900">
+                  50% off your first subscription 🎉
+                </Text>
+                <View
+                  className="flex-row items-center flex-wrap"
+                  style={{gap: 5, marginTop: 2}}>
+                  <Text className="text-[11px] font-medium text-slate-500">
+                    Gifted by
+                  </Text>
+                  {referralDiscount.referrer_photo ? (
+                    <Image
+                      source={{uri: referralDiscount.referrer_photo}}
+                      style={{width: 16, height: 16, borderRadius: 8}}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        backgroundColor: '#E60076',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Text style={{color: 'white', fontSize: 8, fontWeight: '900'}}>
+                        {(
+                          referralDiscount.referrer_name ||
+                          referralDiscount.referrer_username ||
+                          '?'
+                        )
+                          .charAt(0)
+                          .toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text
+                    className="text-[11px] font-black text-slate-800"
+                    numberOfLines={1}>
+                    {referralDiscount.referrer_name ||
+                      `@${referralDiscount.referrer_username}`}
+                  </Text>
+                  <Text className="text-[10px] font-normal text-slate-400">
+                    · auto-applied at checkout
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {/* RC redemption toggle — same server-side cap (50% of plan price
-              + capped at available balance) as the web pricing page. */}
-          {availableRc > 0 && (
+              + capped at available balance) as the web pricing page. Hidden
+              while the referral 50%-off is active (it wins on the first
+              invoice; the RC stays in the wallet for later). */}
+          {availableRc > 0 && !referralDiscount && (
             <Pressable
               onPress={() => setApplyRc(v => !v)}
               className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-3 mt-4 self-center"

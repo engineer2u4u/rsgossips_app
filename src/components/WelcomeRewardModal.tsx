@@ -3,6 +3,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Image,
   Modal,
   Pressable,
   Text,
@@ -32,6 +33,7 @@ export default function WelcomeRewardModal() {
   const navigation = useNavigation<any>();
   const {user} = useAuth();
   const [open, setOpen] = useState(false);
+  const [referrer, setReferrer] = useState<any>(null);
 
   // Entrance + float animation drivers.
   const cardScale = useRef(new Animated.Value(0.8)).current;
@@ -57,14 +59,19 @@ export default function WelcomeRewardModal() {
       try {
         const seen = await AsyncStorage.getItem(SEEN_KEY(user.id));
         if (seen || cancelled) return;
-        const {data} = await supabase
-          .from('v_reward_credits_available_balance')
-          .select('available_balance, locked_balance')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const [{data}, {data: refData}] = await Promise.all([
+          supabase
+            .from('v_reward_credits_available_balance')
+            .select('available_balance, locked_balance')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase.rpc('get_my_referrer'),
+        ]);
         if (cancelled) return;
         const avail = data?.available_balance || 0;
         const locked = data?.locked_balance || 0;
+        const ref = Array.isArray(refData) ? refData[0] : refData;
+        if (ref && (ref.referrer_name || ref.referrer_username)) setReferrer(ref);
         if (locked >= 50 && avail <= 0) setOpen(true);
       } catch {
         /* silent — home shouldn't fail on a wallet lookup */
@@ -212,6 +219,38 @@ export default function WelcomeRewardModal() {
                     </Text>
                   </View>
                 </View>
+
+                {/* Referral gift — only when this signup came via a referral. */}
+                {referrer ? (
+                  <View
+                    className="flex-row items-center rounded-2xl"
+                    style={{gap: 12, padding: 12, backgroundColor: 'rgba(236,72,153,0.06)', borderWidth: 1, borderColor: 'rgba(236,72,153,0.15)'}}>
+                    <View style={{width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#22C55E'}}>
+                      <Text className="text-white text-base font-black">%</Text>
+                    </View>
+                    <View style={{flex: 1}}>
+                      <Text className="text-[13px] font-black text-slate-900">50% off your first subscription</Text>
+                      <View className="flex-row items-center" style={{gap: 5, marginTop: 2}}>
+                        <Text className="text-[11px] font-medium text-slate-500">Gifted by</Text>
+                        {referrer.referrer_photo ? (
+                          <Image
+                            source={{uri: referrer.referrer_photo}}
+                            style={{width: 16, height: 16, borderRadius: 8}}
+                          />
+                        ) : (
+                          <View style={{width: 16, height: 16, borderRadius: 8, backgroundColor: '#E60076', alignItems: 'center', justifyContent: 'center'}}>
+                            <Text style={{color: 'white', fontSize: 8, fontWeight: '900'}}>
+                              {(referrer.referrer_name || referrer.referrer_username || '?').charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <Text className="text-[11px] font-black text-slate-800" numberOfLines={1}>
+                          {referrer.referrer_name || `@${referrer.referrer_username}`}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
               </View>
 
               {/* CTA */}
