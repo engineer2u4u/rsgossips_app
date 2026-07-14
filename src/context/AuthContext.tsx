@@ -106,8 +106,20 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       } else {
         setProfile(null);
         setRole(null);
+        // Profile gone but the session is still live → the account was removed
+        // (e.g. admin deletion). A signed-in user always has a profile
+        // (create-profile issues the session only after writing it), so sign
+        // out rather than let the stale JWT linger until it expires —
+        // onAuthStateChange then routes back to login.
+        try {
+          const session = await safeGetSession();
+          if (session?.user) await supabase.auth.signOut();
+        } catch {
+          /* best-effort */
+        }
       }
     } catch (err) {
+      // Transient error (network / edge fn) — do NOT sign out; just clear.
       console.error('Failed to fetch profile:', err);
       setProfile(null);
       setRole(null);
