@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { LinkingOptions } from '@react-navigation/native';
 import './global.css';
+import './src/i18n'; // initialise i18next (side effect) before any screen renders
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LoadingProvider } from './src/context/LoadingContext';
 import LoginScreen from './src/screens/LoginScreen';

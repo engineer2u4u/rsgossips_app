@@ -1,0 +1,22 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Try again",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "language": {
+    "label": "Language",
+    "english": "English"
+  },
+  "verifyingOverlay": {
+    "title": "Payment received",
+    "subtitle": "Syncing your new plan…",
+    "hint": "This usually takes a couple of seconds."
+  }
+}

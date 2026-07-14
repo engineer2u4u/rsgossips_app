@@ -1,5 +1,6 @@
 import React from 'react';
 import {Modal, View, Text, ActivityIndicator} from 'react-native';
+import {useTranslation} from 'react-i18next';
 
 /**
  * Full-screen lock while we wait for the webhook to flip subscription_plan
@@ -10,6 +11,7 @@ import {Modal, View, Text, ActivityIndicator} from 'react-native';
  * screen including the status bar / nav bar areas.
  */
 export default function VerifyingOverlay({visible}: {visible: boolean}) {
+  const {t} = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -23,13 +25,13 @@ export default function VerifyingOverlay({visible}: {visible: boolean}) {
         <ActivityIndicator size="large" color="#9810FA" />
         <View className="items-center px-8" style={{gap: 4}}>
           <Text className="text-lg font-black text-slate-900">
-            Payment received
+            {t('verifyingOverlay.title')}
           </Text>
           <Text className="text-sm font-semibold text-slate-500">
-            Syncing your new plan…
+            {t('verifyingOverlay.subtitle')}
           </Text>
           <Text className="text-[11px] font-semibold text-slate-400 mt-3">
-            This usually takes a couple of seconds.
+            {t('verifyingOverlay.hint')}
           </Text>
         </View>
       </View>
