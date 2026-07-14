@@ -392,8 +392,21 @@ export default function InfluencerServiceOrderDetail() {
                 },
                 theme: {color: '#5851DB'},
               });
-              // Sheet resolved → payment captured. The razorpay-webhook
-              // handler flips the row's status; poll for the change.
+              // Sheet resolved → payment captured. The razorpay-webhook is
+              // the normal source of truth for the status flip, but it may be
+              // disabled — verify server-side so the status changes without it
+              // (mirrors reconcile-subscription). Best-effort; pollForUpdate
+              // then reflects the change.
+              try {
+                await invokeFn('verify-service-payment', {
+                  userId: user.id,
+                  orderId: order.id,
+                  phase,
+                  razorpayOrderId: data.order_id,
+                });
+              } catch {
+                /* non-fatal — pollForUpdate / webhook will catch up */
+              }
               await pollForUpdate(previousStatus);
             } catch (rzpErr: any) {
               // code 0 / undefined → user dismissed the sheet. Treat as a
