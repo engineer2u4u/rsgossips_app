@@ -29,6 +29,7 @@ import {
   TrendingUp,
 } from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
@@ -44,6 +45,7 @@ interface Props {
 }
 
 const AnalyticsPage: React.FC<Props> = ({onBack}) => {
+  const {t} = useTranslation();
   const {profile} = useAuth();
   const navigation = useNavigation<any>();
   const {stats, loading} = useInfluencerCampaigns();
@@ -63,39 +65,44 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
   const kpis = [
     {
       icon: Coins,
-      label: 'Total Earnings',
+      label: t('AnalyticsPage.totalEarnings'),
       value: formatINRCompact(stats.totalEarnings),
       sub:
         stats.earningsThisMonth > 0
-          ? `+${formatINRCompact(stats.earningsThisMonth)} this month`
-          : 'No earnings this month',
+          ? t('AnalyticsPage.earningsThisMonth', {
+              amount: formatINRCompact(stats.earningsThisMonth),
+            })
+          : t('AnalyticsPage.noEarningsThisMonth'),
       bg: '#F0FDF4',
       iconBg: '#10B981',
       color: '#10B981',
     },
     {
       icon: Eye,
-      label: 'Total Reach',
+      label: t('AnalyticsPage.totalReach'),
       value: formatCountCompact(totalReach),
-      sub: `across ${stats.myCount} ${stats.myCount === 1 ? 'campaign' : 'campaigns'}`,
+      sub: t('AnalyticsPage.reachAcross', {count: stats.myCount}),
       bg: '#FDF2F8',
       iconBg: '#EC4899',
       color: '#EC4899',
     },
     {
       icon: Heart,
-      label: 'Avg Engagement',
+      label: t('AnalyticsPage.avgEngagement'),
       value: `${(engagement || 0).toFixed(1)}%`,
-      sub: 'on your Instagram',
+      sub: t('AnalyticsPage.onYourInstagram'),
       bg: '#FAF5FF',
       iconBg: '#8B5CF6',
       color: '#8B5CF6',
     },
     {
       icon: Star,
-      label: 'Brand Rating',
+      label: t('AnalyticsPage.brandRating'),
       value: '—',
-      sub: stats.completedCount === 0 ? 'No reviews yet' : 'Coming soon',
+      sub:
+        stats.completedCount === 0
+          ? t('AnalyticsPage.noReviewsYet')
+          : t('AnalyticsPage.comingSoon'),
       bg: '#FFFBEB',
       iconBg: '#F59E0B',
       color: '#F59E0B',
@@ -115,7 +122,9 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
           className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center">
           <ChevronLeft size={20} color="#E60076" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-slate-800">Analytics</Text>
+        <Text className="text-lg font-bold text-slate-800">
+          {t('AnalyticsPage.title')}
+        </Text>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -161,10 +170,10 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
           <View className="flex-row items-center justify-between mb-2">
             <View>
               <Text className="text-base font-black text-[#1A1A1A]">
-                Earnings over time
+                {t('AnalyticsPage.earningsOverTime')}
               </Text>
               <Text className="text-[10px] text-gray-400">
-                last 6 months on RGossips
+                {t('AnalyticsPage.last6Months')}
               </Text>
             </View>
             {stats.earningsTrend !== null ? (
@@ -214,7 +223,7 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
           ) : (
             <View className="h-32 items-center justify-center">
               <Text className="text-xs text-gray-400">
-                No completed campaigns yet
+                {t('AnalyticsPage.noCompletedCampaigns')}
               </Text>
             </View>
           )}
@@ -225,12 +234,14 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
           <View className="mx-5 mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-base font-black text-[#1A1A1A]">
-                Brands you've worked with
+                {t('AnalyticsPage.brandsWorkedWith')}
               </Text>
               <Text className="text-[10px] text-gray-400 font-semibold">
-                {stats.brands.length} total
+                {t('AnalyticsPage.brandsTotal', {count: stats.brands.length})}
                 {stats.repeatBrandCount > 0
-                  ? ` · ${stats.repeatBrandCount} repeat`
+                  ? t('AnalyticsPage.brandsRepeat', {
+                      count: stats.repeatBrandCount,
+                    })
                   : ''}
               </Text>
             </View>
@@ -263,21 +274,19 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
         <View className="mx-5 mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <View className="mb-3">
             <Text className="text-base font-black text-[#1A1A1A]">
-              Recent campaigns
+              {t('AnalyticsPage.recentCampaigns')}
             </Text>
             <Text className="text-[10px] text-gray-400">
               {stats.recent.length === 0
-                ? 'no campaigns yet'
-                : `your latest ${stats.recent.length} campaign${
-                    stats.recent.length === 1 ? '' : 's'
-                  }`}
+                ? t('AnalyticsPage.noCampaignsYet')
+                : t('AnalyticsPage.recentCount', {count: stats.recent.length})}
             </Text>
           </View>
 
           {stats.recent.length === 0 ? (
             <View className="py-6 items-center">
               <Text className="text-xs text-gray-400">
-                Apply to a campaign to see it here.
+                {t('AnalyticsPage.applyToSeeHere')}
               </Text>
             </View>
           ) : (
@@ -299,34 +308,34 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
         {/* Demographics — uses profile.audience_demographics when present */}
         <View className="mx-5 mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <Text className="text-base font-black text-[#1A1A1A] mb-4">
-            Audience Demographics
+            {t('AnalyticsPage.audienceDemographics')}
           </Text>
 
           <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Gender Distribution
+            {t('AnalyticsPage.genderDistribution')}
           </Text>
           <View style={{gap: 8}}>
             {[
               {
-                label: 'Female',
+                key: 'female',
                 pct: profile?.audience_demographics?.gender?.female || 62,
                 color: '#A855F7',
               },
               {
-                label: 'Male',
+                key: 'male',
                 pct: profile?.audience_demographics?.gender?.male || 35,
                 color: '#3B82F6',
               },
               {
-                label: 'Other',
+                key: 'other',
                 pct: profile?.audience_demographics?.gender?.other || 3,
                 color: '#F59E0B',
               },
             ].map(g => (
-              <View key={g.label}>
+              <View key={g.key}>
                 <View className="flex-row justify-between mb-1">
                   <Text className="text-xs font-semibold text-slate-600">
-                    {g.label}
+                    {t(`AnalyticsPage.gender.${g.key}`)}
                   </Text>
                   <Text className="text-xs font-bold text-slate-800">
                     {g.pct}%
@@ -343,7 +352,7 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
           </View>
 
           <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-5 mb-3">
-            Age Distribution
+            {t('AnalyticsPage.ageDistribution')}
           </Text>
           <View style={{gap: 8}}>
             {(profile?.audience_demographics?.ageRanges || [
@@ -403,6 +412,7 @@ function RecentRow({
   engagementPct: number;
   onPress: () => void;
 }) {
+  const {t} = useTranslation();
   const completed = c.applicationStatus === 'completed';
   const earnings = completed ? earnedAmountINR(c) : 0;
 
@@ -418,10 +428,10 @@ function RecentRow({
   const statusText = completed ? 'text-blue-700' : 'text-pink-700';
   const statusLabel =
     completed
-      ? 'Completed'
+      ? t('AnalyticsPage.statusCompleted')
       : c.applicationStatus
         ? c.applicationStatus.replace(/_/g, ' ')
-        : 'Active';
+        : t('AnalyticsPage.statusActive');
 
   return (
     <TouchableOpacity
@@ -433,13 +443,13 @@ function RecentRow({
         <Text
           className="text-sm font-bold text-[#1A1A2E]"
           numberOfLines={1}>
-          {c.title || 'Untitled campaign'}
+          {c.title || t('AnalyticsPage.untitledCampaign')}
         </Text>
         <View className="flex-row items-center mt-1" style={{gap: 6}}>
           <Text
             className="text-[10px] font-semibold text-gray-500"
             numberOfLines={1}>
-            {c.brandName || 'Brand'}
+            {c.brandName || t('AnalyticsPage.brandFallback')}
           </Text>
           <View
             className={`${statusBg} px-2 py-0.5 rounded-md`}>
@@ -452,7 +462,7 @@ function RecentRow({
         <View className="flex-row mt-2" style={{gap: 12}}>
           <View>
             <Text className="text-[9px] font-bold text-gray-400 uppercase">
-              Reach
+              {t('AnalyticsPage.reach')}
             </Text>
             <Text className="text-xs font-bold text-slate-800">
               {reach > 0 ? formatCountCompact(reach) : '—'}
@@ -460,7 +470,7 @@ function RecentRow({
           </View>
           <View>
             <Text className="text-[9px] font-bold text-gray-400 uppercase">
-              Engagement
+              {t('AnalyticsPage.engagement')}
             </Text>
             <Text className="text-xs font-bold text-slate-800">
               {rowEngagement > 0 ? `${rowEngagement.toFixed(1)}%` : '—'}
@@ -468,7 +478,7 @@ function RecentRow({
           </View>
           <View>
             <Text className="text-[9px] font-bold text-gray-400 uppercase">
-              Earnings
+              {t('AnalyticsPage.earnings')}
             </Text>
             <Text className="text-xs font-bold text-pink-600">
               {earnings > 0 ? formatINRCompact(earnings) : '—'}

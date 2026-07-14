@@ -3,16 +3,17 @@ import { View, Text, Pressable, Platform } from 'react-native';
 import { Home, Briefcase, User, Compass, Sparkles } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { BRAND, BRAND_GRADIENT_WARM } from '../theme/brand';
 
 // Alerts are reachable from the bell icon in the top bar, so they no longer
 // take up a slot in the bottom nav.
 const navItems = [
-  { label: 'Home', icon: Home, screen: 'InfluencerHome' },
-  { label: 'Brands', icon: Compass, screen: 'InfluencerSearch' },
-  { label: 'Campaigns', icon: Briefcase, screen: 'InfluencerCampaigns' },
-  { label: 'Services', icon: Sparkles, screen: 'InfluencerServices' },
-  { label: 'Profile', icon: User, screen: 'InfluencerProfile' },
+  { key: 'home', icon: Home, screen: 'InfluencerHome' },
+  { key: 'brands', icon: Compass, screen: 'InfluencerSearch' },
+  { key: 'campaigns', icon: Briefcase, screen: 'InfluencerCampaigns' },
+  { key: 'services', icon: Sparkles, screen: 'InfluencerServices' },
+  { key: 'profile', icon: User, screen: 'InfluencerProfile' },
 ];
 
 /**
@@ -30,6 +31,7 @@ const navItems = [
 const BottomNav = () => {
   const navigation = useNavigation<any>();
   const route = useRoute();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -82,7 +84,7 @@ const BottomNav = () => {
 
             return (
               <Pressable
-                key={item.label}
+                key={item.key}
                 onPress={() => navigation.navigate(item.screen)}
                 className="flex-1 items-center justify-center"
                 style={{ paddingVertical: 4 }}
@@ -125,7 +127,7 @@ const BottomNav = () => {
                   className="text-[10.5px] mt-0.5 font-bold"
                   style={{ color: isActive ? BRAND.accent : '#908ca1' }}
                 >
-                  {item.label}
+                  {t(`BottomNav.nav.${item.key}`)}
                 </Text>
               </Pressable>
             );

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {Sparkles, MapPin} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {BRAND, BRAND_GRADIENT_WARM} from '../theme/brand';
@@ -27,8 +28,6 @@ interface Stay {
 }
 
 const {width} = Dimensions.get('window');
-
-const DEFAULT_TITLE = 'Plan your stay with us';
 
 // Fallback shown while list-featured-campaigns (section: "stay") has no
 // active rows — mirrors the web FALLBACK_STAYS.
@@ -84,6 +83,7 @@ const FALLBACK_STAYS: Stay[] = [
 // the title + short description + Apply gradient button anchored to the
 // bottom. Tap anywhere on the card → open the offer detail (mirrors web).
 function StayCard({stay}: {stay: Stay}) {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const openOffer = () =>
     navigation.navigate('InfluencerOfferDetail', {id: stay.id});
@@ -124,7 +124,7 @@ function StayCard({stay}: {stay: Stay}) {
             className="text-white text-[10px] font-black uppercase tracking-widest"
             numberOfLines={1}
             style={{flexShrink: 1}}>
-            {stay.brandName || stay.priceType || 'Featured'}
+            {stay.brandName || stay.priceType || t('StayCarousel.featured')}
           </Text>
         </View>
         {!!stay.location && (
@@ -166,7 +166,7 @@ function StayCard({stay}: {stay: Stay}) {
             style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
           />
           <Text className="text-white text-center text-[13px] font-black uppercase tracking-widest">
-            Apply Now
+            {t('StayCarousel.applyNow')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -175,10 +175,11 @@ function StayCard({stay}: {stay: Stay}) {
 }
 
 export default function StayCarousel() {
+  const {t} = useTranslation();
   const carouselRef = useRef<ICarouselInstance>(null);
   const [active, setActive] = useState(0);
   const [stays, setStays] = useState<Stay[]>([]);
-  const [sectionTitle, setSectionTitle] = useState(DEFAULT_TITLE);
+  const [sectionTitle, setSectionTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const CARD_W = width - 56;
 
@@ -199,7 +200,7 @@ export default function StayCarousel() {
           setStays(
             data.campaigns.map((c: any) => ({
               id: c.id,
-              displayTitle: c.title || 'Featured Stay',
+              displayTitle: c.title || t('StayCarousel.featuredStay'),
               brandName: c.brandName || '',
               // Trimmed to ~60 chars so it fits the two-line description
               // under the title without wrapping further. Falls back to
@@ -207,7 +208,7 @@ export default function StayCarousel() {
               description:
                 (c.description || '').slice(0, 60) ||
                 c.category ||
-                'Brand Collab',
+                t('StayCarousel.brandCollab'),
               location: c.location || '',
               imageUrl: c.bannerImage || c.brandLogo || '',
               priceType: c.priceType || '',
@@ -239,7 +240,7 @@ export default function StayCarousel() {
         style={{height: 380}}>
         <ActivityIndicator size="large" color={BRAND.accent} />
         <Text className="mt-3 text-sm font-medium text-slate-400">
-          Finding your next stay…
+          {t('StayCarousel.loading')}
         </Text>
       </View>
     );
@@ -253,7 +254,7 @@ export default function StayCarousel() {
         <Text
           className="text-xl font-black text-slate-900 tracking-tight"
           numberOfLines={1}>
-          {sectionTitle}
+          {sectionTitle || t('StayCarousel.defaultTitle')}
         </Text>
       </View>
 

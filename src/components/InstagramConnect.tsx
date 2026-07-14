@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import {Instagram, CheckCircle2, X} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {WebView} from 'react-native-webview';
 import {supabase} from '../utils/supabase';
@@ -48,6 +49,7 @@ export default function InstagramConnect({
   loading: externalLoading = false,
   error: externalError = '',
 }: Props) {
+  const {t} = useTranslation();
   const [connecting, setConnecting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [profile, setProfile] = useState<InstaProfile | null>(null);
@@ -78,9 +80,7 @@ export default function InstagramConnect({
       // username) is the exact half-connected state that broke the next
       // sign-in. Refuse it here so the UI never lands in that state.
       if (!data?.profile?.username) {
-        throw new Error(
-          "Instagram didn't return your username. Please reconnect Instagram.",
-        );
+        throw new Error(t('InstagramConnect.errorNoUsername'));
       }
 
       setProfile({
@@ -89,7 +89,7 @@ export default function InstagramConnect({
         tokenExpiresAt: data.tokenExpiresAt,
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to connect Instagram');
+      setError(err.message || t('InstagramConnect.errorConnectFailed'));
     } finally {
       setConnecting(false);
     }
@@ -117,11 +117,11 @@ export default function InstagramConnect({
         } else if (errorParam) {
           setError(
             urlObj.searchParams.get('error_description')?.replace(/\+/g, ' ') ||
-              'Instagram connection was denied',
+              t('InstagramConnect.errorConnectionDenied'),
           );
         }
       } catch {
-        setError('Failed to process Instagram response');
+        setError(t('InstagramConnect.errorProcessResponse'));
       }
     }
   };
@@ -147,8 +147,12 @@ export default function InstagramConnect({
 
         if (isSignIn) {
           if (source && source !== role) {
+            const roleLabel =
+              source === 'brand'
+                ? t('InstagramConnect.roleBrand')
+                : t('InstagramConnect.roleInfluencer');
             setError(
-              `This Instagram is registered as ${source === 'brand' ? 'a Brand' : 'an Influencer'}. Please sign in as ${source === 'brand' ? 'a Brand' : 'an Influencer'} instead.`,
+              t('InstagramConnect.errorRegisteredAsSignIn', {role: roleLabel}),
             );
             setChecking(false);
             return;
@@ -156,12 +160,12 @@ export default function InstagramConnect({
         } else {
           const sourceLabel =
             source === 'brand'
-              ? 'a Brand'
+              ? t('InstagramConnect.roleBrand')
               : source === 'influencer'
-                ? 'an Influencer'
-                : 'another account';
+                ? t('InstagramConnect.roleInfluencer')
+                : t('InstagramConnect.roleOther');
           setError(
-            `This Instagram is already registered as ${sourceLabel}. Please sign in instead.`,
+            t('InstagramConnect.errorAlreadyRegistered', {source: sourceLabel}),
           );
           setChecking(false);
           return;
@@ -170,7 +174,7 @@ export default function InstagramConnect({
 
       onNext(profile);
     } catch (err: any) {
-      setError(err.message || 'Failed to verify Instagram');
+      setError(err.message || t('InstagramConnect.errorVerifyFailed'));
     } finally {
       setChecking(false);
     }
@@ -181,12 +185,14 @@ export default function InstagramConnect({
       {/* Header */}
       <View className="items-center mb-2">
         <Text className="text-2xl font-bold text-slate-900">
-          {isSignIn ? 'Sign In with Instagram' : 'Connect Instagram'}
+          {isSignIn
+            ? t('InstagramConnect.headerSignIn')
+            : t('InstagramConnect.headerConnect')}
         </Text>
         <Text className="text-slate-500 text-sm text-center mt-2">
           {isSignIn
-            ? 'Connect your Instagram to sign in to your account'
-            : 'Link your Instagram to unlock brand collaborations & build your media kit'}
+            ? t('InstagramConnect.subtitleSignIn')
+            : t('InstagramConnect.subtitleConnect')}
         </Text>
       </View>
 
@@ -226,14 +232,14 @@ export default function InstagramConnect({
               <>
                 <ActivityIndicator size="small" color="#E1306C" />
                 <Text className="text-slate-500 text-sm font-semibold">
-                  Connecting...
+                  {t('InstagramConnect.connecting')}
                 </Text>
               </>
             ) : (
               <>
                 <Instagram size={20} color="#E1306C" />
                 <Text className="text-sm font-semibold text-[#E1306C]">
-                  Connect with Instagram
+                  {t('InstagramConnect.connectButton')}
                 </Text>
               </>
             )}
@@ -270,11 +276,11 @@ export default function InstagramConnect({
                 @{profile.username}
               </Text>
               <Text className="text-xs text-slate-500 mt-0.5">
-                {formatCount(profile.followersCount)} followers
-                {' · '}
-                {formatCount(profile.followsCount)} following
-                {' · '}
-                {formatCount(profile.mediaCount)} posts
+                {t('InstagramConnect.profileStats', {
+                  followers: formatCount(profile.followersCount),
+                  following: formatCount(profile.followsCount),
+                  posts: formatCount(profile.mediaCount),
+                })}
               </Text>
             </View>
 
@@ -304,14 +310,16 @@ export default function InstagramConnect({
             <>
               <ActivityIndicator size="small" color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                Verifying...
+                {t('InstagramConnect.verifying')}
               </Text>
             </>
           ) : externalLoading ? (
             <>
               <ActivityIndicator size="small" color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                {isSignIn ? 'Signing in...' : 'Continue'}
+                {isSignIn
+                  ? t('InstagramConnect.signingIn')
+                  : t('InstagramConnect.continue')}
               </Text>
             </>
           ) : (
@@ -319,14 +327,16 @@ export default function InstagramConnect({
               className={`text-base font-semibold ${
                 !profile ? 'text-slate-400' : 'text-white'
               }`}>
-              {isSignIn ? 'Sign In' : 'Continue'}
+              {isSignIn
+                ? t('InstagramConnect.signIn')
+                : t('InstagramConnect.continue')}
             </Text>
           )}
         </Pressable>
 
         {!profile && (
           <Text className="text-center text-[11px] text-slate-400 mt-3">
-            Instagram connection is required to proceed
+            {t('InstagramConnect.connectionRequired')}
           </Text>
         )}
       </View>
@@ -346,7 +356,7 @@ export default function InstagramConnect({
               <X size={20} color="#475569" />
             </Pressable>
             <Text className="text-sm font-bold text-slate-800">
-              Connect Instagram
+              {t('InstagramConnect.headerConnect')}
             </Text>
             <View className="w-10" />
           </View>
@@ -360,7 +370,7 @@ export default function InstagramConnect({
               <View className="absolute inset-0 items-center justify-center bg-white">
                 <ActivityIndicator size="large" color="#E1306C" />
                 <Text className="text-sm text-slate-500 mt-3">
-                  Loading Instagram...
+                  {t('InstagramConnect.loadingInstagram')}
                 </Text>
               </View>
             )}

@@ -8,19 +8,24 @@ import {
   Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {BRAND_GRADIENT_WARM} from '../theme/brand';
 
 // Dark footer with newsletter signup + Platform / Legal columns + trust line.
 // Mirrors the offline-prototype's `Footer` component.
 export default function HomeFooter() {
+  const {t} = useTranslation();
   const [email, setEmail] = useState('');
 
   const handleSubscribe = () => {
     if (!email.trim()) {
-      Alert.alert('Subscribe', 'Enter an email first.');
+      Alert.alert(t('HomeFooter.subscribeTitle'), t('HomeFooter.enterEmailFirst'));
       return;
     }
-    Alert.alert('Subscribed', `We'll send tips to ${email.trim()}.`);
+    Alert.alert(
+      t('HomeFooter.subscribedTitle'),
+      t('HomeFooter.subscribedMessage', {email: email.trim()}),
+    );
     setEmail('');
   };
 
@@ -45,19 +50,18 @@ export default function HomeFooter() {
           lineHeight: 20,
           marginBottom: 20,
         }}>
-        The all-in-one influencer campaign platform connecting brands with
-        verified creators globally.
+        {t('HomeFooter.tagline')}
       </Text>
 
       <Text className="text-white text-[13px] font-semibold mb-2.5">
-        Get influencer marketing tips — weekly in your inbox
+        {t('HomeFooter.newsletterPrompt')}
       </Text>
 
       <View className="flex-row mb-6" style={{gap: 8}}>
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="Enter your email"
+          placeholder={t('HomeFooter.emailPlaceholder')}
           placeholderTextColor="rgba(255,255,255,0.45)"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -91,7 +95,9 @@ export default function HomeFooter() {
             end={{x: 1, y: 0}}
             style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
           />
-          <Text className="text-white text-[13px] font-bold">Subscribe</Text>
+          <Text className="text-white text-[13px] font-bold">
+            {t('HomeFooter.subscribe')}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -106,11 +112,11 @@ export default function HomeFooter() {
               textTransform: 'uppercase',
               marginBottom: 12,
             }}>
-            Platform
+            {t('HomeFooter.platform')}
           </Text>
-          <Text style={footerLink}>For Brands</Text>
-          <Text style={footerLink}>For Influencers</Text>
-          <Text style={footerLink}>Pricing</Text>
+          <Text style={footerLink}>{t('HomeFooter.forBrands')}</Text>
+          <Text style={footerLink}>{t('HomeFooter.forInfluencers')}</Text>
+          <Text style={footerLink}>{t('HomeFooter.pricing')}</Text>
         </View>
         <View className="flex-1">
           <Text
@@ -122,10 +128,10 @@ export default function HomeFooter() {
               textTransform: 'uppercase',
               marginBottom: 12,
             }}>
-            Legal
+            {t('HomeFooter.legal')}
           </Text>
-          <Text style={footerLink}>Influencer Consent Policy</Text>
-          <Text style={footerLink}>Brand Consent Policy</Text>
+          <Text style={footerLink}>{t('HomeFooter.influencerConsentPolicy')}</Text>
+          <Text style={footerLink}>{t('HomeFooter.brandConsentPolicy')}</Text>
         </View>
       </View>
 
@@ -142,7 +148,7 @@ export default function HomeFooter() {
             color: 'rgba(255,255,255,0.5)',
             textAlign: 'center',
           }}>
-          5,000+ brands · 200,000+ creators · ISO 27001 certified
+          {t('HomeFooter.trustLine')}
         </Text>
       </View>
     </View>

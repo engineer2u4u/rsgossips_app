@@ -5,6 +5,7 @@ import Carousel, {
 } from 'react-native-reanimated-carousel';
 import { CheckCircle2 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import CreatorCard from './CreatorCard';
 import { supabase } from '../utils/supabase';
 import { BRAND_GRADIENT_WARM } from '../theme/brand';
@@ -108,6 +109,7 @@ function SectionTitle({ text }: { text: string }) {
 }
 
 export default function CreatorsCarouselWithLink() {
+  const { t } = useTranslation();
   const { width } = Dimensions.get('window');
   const [creators, setCreators] = useState<Creator[]>(fallbackCreators);
   const [current, setCurrent] = useState(0);
@@ -146,7 +148,7 @@ export default function CreatorsCarouselWithLink() {
 
   return (
     <View className="w-full">
-      <SectionTitle text="Our Top Creators" />
+      <SectionTitle text={t('CreatorCarouselWithLink.sectionTitle')} />
 
       <Carousel
         ref={carouselRef}

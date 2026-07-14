@@ -14,19 +14,21 @@ import {
   X,
 } from 'lucide-react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {useProfilePhoto} from '../utils/photoUrl';
 
 const navLinks = [
-  {label: 'Home', icon: Home, screen: 'InfluencerHome'},
-  {label: 'Brands', icon: Search, screen: 'InfluencerSearch'},
-  {label: 'Campaigns', icon: Briefcase, screen: 'InfluencerCampaigns'},
-  {label: 'Chats', icon: MessageSquare, screen: 'InfluencerChats', badge: 3},
-  {label: 'Notifications', icon: Bell, screen: 'InfluencerNotifications', dot: true},
-  {label: 'Profile', icon: User, screen: 'InfluencerProfile'},
+  {key: 'home', label: 'Home', icon: Home, screen: 'InfluencerHome'},
+  {key: 'brands', label: 'Brands', icon: Search, screen: 'InfluencerSearch'},
+  {key: 'campaigns', label: 'Campaigns', icon: Briefcase, screen: 'InfluencerCampaigns'},
+  {key: 'chats', label: 'Chats', icon: MessageSquare, screen: 'InfluencerChats', badge: 3},
+  {key: 'notifications', label: 'Notifications', icon: Bell, screen: 'InfluencerNotifications', dot: true},
+  {key: 'profile', label: 'Profile', icon: User, screen: 'InfluencerProfile'},
 ];
 
 export default function SidebarContent({closeSidebar}: {closeSidebar: () => void}) {
+  const {t} = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const {profile, signOut} = useAuth();
@@ -59,12 +61,12 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
           )}
           <View>
             <Text className="text-sm font-bold text-slate-800">
-              {profile?.full_name || 'User'}
+              {profile?.full_name || t('SidebarContent.userFallback')}
             </Text>
             <Text className="text-[11px] text-emerald-600 font-semibold">
               {profile?.subscription_plan === 'free'
-                ? 'Free Trial'
-                : 'Pro Member'}
+                ? t('SidebarContent.freeTrial')
+                : t('SidebarContent.proMember')}
             </Text>
           </View>
         </View>
@@ -98,7 +100,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
                 className={`text-sm flex-1 ${
                   isActive ? 'font-bold text-pink-600' : 'font-medium text-slate-600'
                 }`}>
-                {item.label}
+                {t(`SidebarContent.nav.${item.key}`)}
               </Text>
               {item.badge && (
                 <View className="bg-pink-500 w-5 h-5 rounded-full items-center justify-center">
@@ -121,7 +123,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
           className="flex-row items-center px-4 py-3 rounded-xl"
           style={{gap: 12}}>
           <Settings size={20} color="#475569" />
-          <Text className="text-sm font-medium text-slate-600">Settings</Text>
+          <Text className="text-sm font-medium text-slate-600">{t('SidebarContent.settings')}</Text>
         </Pressable>
 
         <Pressable
@@ -130,7 +132,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
           style={{gap: 12}}>
           <HelpCircle size={20} color="#475569" />
           <Text className="text-sm font-medium text-slate-600">
-            Help & Support
+            {t('SidebarContent.helpSupport')}
           </Text>
         </Pressable>
       </View>
@@ -142,7 +144,7 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
           className="flex-row items-center px-4 py-3 rounded-xl"
           style={{gap: 12}}>
           <LogOut size={20} color="#EF4444" />
-          <Text className="text-sm font-semibold text-red-500">Log Out</Text>
+          <Text className="text-sm font-semibold text-red-500">{t('SidebarContent.logOut')}</Text>
         </Pressable>
       </View>
 

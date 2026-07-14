@@ -22,6 +22,8 @@ import {
   Tablet,
   Trash2,
 } from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
+import type {TFunction} from 'i18next';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
 import {getCurrentDeviceId} from '../utils/device-session';
@@ -47,18 +49,18 @@ function pickIcon(name: string | null | undefined, ua: string | null | undefined
   return Monitor;
 }
 
-function relativeTime(iso: string | null): string {
-  if (!iso) return 'Unknown';
+function relativeTime(iso: string | null, t: TFunction): string {
+  if (!iso) return t('TrustedDevices.unknown');
   const ts = new Date(iso).getTime();
-  if (!isFinite(ts)) return 'Unknown';
+  if (!isFinite(ts)) return t('TrustedDevices.unknown');
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Active now';
-  if (mins < 60) return `Active ${mins} min ago`;
+  if (mins < 1) return t('TrustedDevices.activeNow');
+  if (mins < 60) return t('TrustedDevices.activeMinAgo', {count: mins});
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Active ${hours} hr ago`;
+  if (hours < 24) return t('TrustedDevices.activeHrAgo', {count: hours});
   const days = Math.floor(hours / 24);
-  if (days < 30) return `Active ${days} day${days > 1 ? 's' : ''} ago`;
+  if (days < 30) return t('TrustedDevices.activeDaysAgo', {count: days});
   return new Date(iso).toLocaleDateString();
 }
 
@@ -72,6 +74,7 @@ const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
 );
 
 export default function TrustedDevices({onBack}: TrustedDevicesProps) {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
   const [devices, setDevices] = useState<DeviceRow[]>([]);
@@ -110,14 +113,18 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
   const revoke = (row: DeviceRow) => {
     const isCurrent = row.device_id === currentId;
     Alert.alert(
-      isCurrent ? 'Sign out of this device?' : 'Remove this device?',
       isCurrent
-        ? "You'll be signed out immediately."
-        : `${row.device_name || 'This device'} will be signed out within a minute.`,
+        ? t('TrustedDevices.signOutThisDeviceTitle')
+        : t('TrustedDevices.removeThisDeviceTitle'),
+      isCurrent
+        ? t('TrustedDevices.signOutImmediately')
+        : t('TrustedDevices.deviceSignedOutSoon', {
+            device: row.device_name || t('TrustedDevices.thisDevice'),
+          }),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('TrustedDevices.cancel'), style: 'cancel'},
         {
-          text: isCurrent ? 'Sign out' : 'Remove',
+          text: isCurrent ? t('TrustedDevices.signOut') : t('TrustedDevices.remove'),
           style: 'destructive',
           onPress: () =>
             withLoading(
@@ -129,7 +136,9 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
                   await load();
                 }
               })(),
-              isCurrent ? 'Signing out…' : 'Removing device…',
+              isCurrent
+                ? t('TrustedDevices.signingOut')
+                : t('TrustedDevices.removingDevice'),
             ),
         },
       ],
@@ -141,12 +150,12 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
     const others = devices.filter(d => d.device_id !== currentId);
     if (others.length === 0) return;
     Alert.alert(
-      'Sign out of all other devices?',
-      `${others.length} device${others.length > 1 ? 's' : ''} will be signed out within a minute.`,
+      t('TrustedDevices.signOutAllOthersTitle'),
+      t('TrustedDevices.devicesSignedOutSoon', {count: others.length}),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('TrustedDevices.cancel'), style: 'cancel'},
         {
-          text: 'Sign out',
+          text: t('TrustedDevices.signOut'),
           style: 'destructive',
           onPress: () =>
             withLoading(
@@ -158,7 +167,7 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
                   .neq('device_id', currentId);
                 await load();
               })(),
-              'Signing out other devices…',
+              t('TrustedDevices.signingOutOthers'),
             ),
         },
       ],
@@ -167,11 +176,11 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <PageHeader title="Trusted Devices" onBack={onBack} />
+      <PageHeader title={t('TrustedDevices.title')} onBack={onBack} />
 
       <ScrollView className="flex-1">
         <Text className="px-6 pt-6 pb-3 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-          Active Sessions
+          {t('TrustedDevices.activeSessions')}
         </Text>
 
         <View
@@ -194,7 +203,7 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
           ) : devices.length === 0 ? (
             <View className="px-5 py-6">
               <Text className="text-sm text-slate-400 text-center">
-                No active sessions found.
+                {t('TrustedDevices.noActiveSessions')}
               </Text>
             </View>
           ) : (
@@ -211,18 +220,20 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
                   <View className="flex-1">
                     <View className="flex-row items-center">
                       <Text className="text-base font-medium text-slate-700">
-                        {d.device_name || 'Unknown device'}
+                        {d.device_name || t('TrustedDevices.unknownDevice')}
                       </Text>
                       {isCurrent && (
                         <View className="ml-2 px-2 py-0.5 rounded-full bg-green-100">
-                          <Text className="text-xs font-semibold text-green-600">Current</Text>
+                          <Text className="text-xs font-semibold text-green-600">
+                            {t('TrustedDevices.current')}
+                          </Text>
                         </View>
                       )}
                     </View>
                     <Text className="text-xs text-slate-400 mt-1" numberOfLines={1}>
                       {d.user_agent || '—'}
                     </Text>
-                    <Text className="text-xs text-slate-400">{relativeTime(d.last_active_at)}</Text>
+                    <Text className="text-xs text-slate-400">{relativeTime(d.last_active_at, t)}</Text>
                   </View>
                   <TouchableOpacity onPress={() => revoke(d)} className="p-2" hitSlop={4}>
                     <Trash2 size={18} color="#ef4444" />
@@ -239,7 +250,7 @@ export default function TrustedDevices({onBack}: TrustedDevicesProps) {
             className="flex-row items-center justify-center mx-6 mt-8 py-4 rounded-xl border-2 border-red-200 bg-red-50">
             <Trash2 size={18} color="#ef4444" />
             <Text className="text-red-500 font-bold text-base ml-2">
-              Sign out of all other devices
+              {t('TrustedDevices.signOutAllOthers')}
             </Text>
           </TouchableOpacity>
         )}

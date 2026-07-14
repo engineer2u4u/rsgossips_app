@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   Check,
   CheckCircle2,
@@ -179,6 +180,7 @@ type EventRow = {
 };
 
 export default function InfluencerServiceOrderDetail() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const id = route.params?.id;
@@ -286,7 +288,9 @@ export default function InfluencerServiceOrderDetail() {
               {userId: user.id, orderId: order.id, phase},
             );
             if (!data?.url) {
-              throw new Error('No checkout URL returned');
+              throw new Error(
+                t('ScreensInfluencerServiceOrderDetail.errors.noCheckoutUrl'),
+              );
             }
             // Open Stripe Checkout in the in-app browser. The same library
             // handles the Instagram OAuth flow, so we know it works on this
@@ -316,11 +320,16 @@ export default function InfluencerServiceOrderDetail() {
             if (err instanceof EdgeFunctionError) {
               setPayError(err.message);
             } else {
-              setPayError((err as Error)?.message || 'Failed to start payment');
+              setPayError(
+                (err as Error)?.message ||
+                  t('ScreensInfluencerServiceOrderDetail.errors.failedStartPayment'),
+              );
             }
           }
         })(),
-        phase === 'advance' ? 'Opening Stripe…' : 'Opening Stripe for final payment…',
+        phase === 'advance'
+          ? t('ScreensInfluencerServiceOrderDetail.loading.openingStripe')
+          : t('ScreensInfluencerServiceOrderDetail.loading.openingStripeFinal'),
       );
     },
     [order?.id, order?.status, user?.id, withLoading, pollForUpdate],
@@ -354,7 +363,7 @@ export default function InfluencerServiceOrderDetail() {
             });
             if (!data?.key_id || !data?.order_id || !data?.amount_paise) {
               throw new Error(
-                "Razorpay didn't return a checkout order — please retry.",
+                t('ScreensInfluencerServiceOrderDetail.errors.razorpayNoOrder'),
               );
             }
 
@@ -413,7 +422,8 @@ export default function InfluencerServiceOrderDetail() {
               // silent cancel; anything else is a real payment failure.
               if (rzpErr?.code !== 0 && rzpErr?.code !== undefined) {
                 throw new Error(
-                  rzpErr?.description || 'Razorpay payment failed.',
+                  rzpErr?.description ||
+                    t('ScreensInfluencerServiceOrderDetail.errors.razorpayFailed'),
                 );
               }
             }
@@ -422,14 +432,15 @@ export default function InfluencerServiceOrderDetail() {
               setPayError(err.message);
             } else {
               setPayError(
-                (err as Error)?.message || 'Failed to start Razorpay payment',
+                (err as Error)?.message ||
+                  t('ScreensInfluencerServiceOrderDetail.errors.failedStartRazorpay'),
               );
             }
           }
         })(),
         phase === 'advance'
-          ? 'Opening Razorpay…'
-          : 'Opening Razorpay for final payment…',
+          ? t('ScreensInfluencerServiceOrderDetail.loading.openingRazorpay')
+          : t('ScreensInfluencerServiceOrderDetail.loading.openingRazorpayFinal'),
       );
     },
     [
@@ -444,10 +455,15 @@ export default function InfluencerServiceOrderDetail() {
 
   // Opens the gateway picker bottom-sheet. The actual checkout fires once
   // the user picks Stripe or Razorpay (see handleGatewayPick).
-  const openPayPicker = useCallback((phase: 'advance' | 'final') => {
-    setPayError(null);
-    setPickerPhase(phase);
-  }, []);
+  const openPayPicker = useCallback(
+    (phase: 'advance' | 'final') => {
+      setPayError(null);
+      // Razorpay is the only enabled gateway — skip the picker and pay
+      // directly. Restore `setPickerPhase(phase)` to bring the picker back.
+      payViaRazorpay(phase);
+    },
+    [payViaRazorpay],
+  );
 
   const handleGatewayPick = useCallback(
     (gateway: 'stripe' | 'razorpay') => {
@@ -471,7 +487,9 @@ export default function InfluencerServiceOrderDetail() {
     setRevisionError(null);
     const note = revisionNote.trim();
     if (note.length < 5) {
-      setRevisionError('Please give the team a bit more detail (min 5 chars).');
+      setRevisionError(
+        t('ScreensInfluencerServiceOrderDetail.errors.revisionMinDetail'),
+      );
       return;
     }
     await withLoading(
@@ -490,12 +508,13 @@ export default function InfluencerServiceOrderDetail() {
             setRevisionError(err.message);
           } else {
             setRevisionError(
-              (err as Error)?.message || 'Failed to send revision',
+              (err as Error)?.message ||
+                t('ScreensInfluencerServiceOrderDetail.errors.failedSendRevision'),
             );
           }
         }
       })(),
-      'Sending revision…',
+      t('ScreensInfluencerServiceOrderDetail.loading.sendingRevision'),
     );
   }, [order?.id, user?.id, revisionNote, withLoading, refresh]);
 
@@ -530,7 +549,9 @@ export default function InfluencerServiceOrderDetail() {
     setCounterError(null);
     const amount = parseInt(counterAmount.replace(/[^\d]/g, ''), 10);
     if (!amount || amount <= 0) {
-      setCounterError('Enter a counter amount in ₹.');
+      setCounterError(
+        t('ScreensInfluencerServiceOrderDetail.errors.enterCounterAmount'),
+      );
       return;
     }
     await withLoading(
@@ -552,12 +573,13 @@ export default function InfluencerServiceOrderDetail() {
             setCounterError(err.message);
           } else {
             setCounterError(
-              (err as Error)?.message || 'Failed to send counter-offer',
+              (err as Error)?.message ||
+                t('ScreensInfluencerServiceOrderDetail.errors.failedSendCounter'),
             );
           }
         }
       })(),
-      'Sending counter-offer…',
+      t('ScreensInfluencerServiceOrderDetail.loading.sendingCounter'),
     );
   }, [
     order?.id,
@@ -596,12 +618,13 @@ export default function InfluencerServiceOrderDetail() {
             setDeclineError(err.message);
           } else {
             setDeclineError(
-              (err as Error)?.message || 'Failed to decline quote',
+              (err as Error)?.message ||
+                t('ScreensInfluencerServiceOrderDetail.errors.failedDecline'),
             );
           }
         }
       })(),
-      'Declining quote…',
+      t('ScreensInfluencerServiceOrderDetail.loading.decliningQuote'),
     );
   }, [order?.id, user?.id, declineReason, withLoading, refresh]);
 
@@ -628,19 +651,20 @@ export default function InfluencerServiceOrderDetail() {
             setReviewError(err.message);
           } else {
             setReviewError(
-              (err as Error)?.message || 'Failed to submit review',
+              (err as Error)?.message ||
+                t('ScreensInfluencerServiceOrderDetail.errors.failedSubmitReview'),
             );
           }
         }
       })(),
-      'Submitting review…',
+      t('ScreensInfluencerServiceOrderDetail.loading.submittingReview'),
     );
   }, [order?.id, user?.id, reviewDraft, withLoading, refresh]);
 
   const validityRemaining = useMemo(() => {
     if (!order?.quote_valid_until) return null;
     const ms = new Date(order.quote_valid_until).getTime() - Date.now();
-    if (ms <= 0) return 'Expired';
+    if (ms <= 0) return t('ScreensInfluencerServiceOrderDetail.expired');
     const d = Math.floor(ms / 86_400_000);
     const h = Math.floor((ms % 86_400_000) / 3_600_000);
     return `${d}d ${h}h`;
@@ -671,15 +695,20 @@ export default function InfluencerServiceOrderDetail() {
           padding: 24,
           gap: 10,
         }}>
-        <Text className="text-base font-bold text-slate-600">Order not found</Text>
+        <Text className="text-base font-bold text-slate-600">
+          {t('ScreensInfluencerServiceOrderDetail.orderNotFound')}
+        </Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text className="text-sm font-bold text-pink-500">← Back</Text>
+          <Text className="text-sm font-bold text-pink-500">
+            {t('ScreensInfluencerServiceOrderDetail.back')}
+          </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const banner = STATUS_BANNER[order.status] || STATUS_BANNER.pending_quote;
+  const bannerKey = STATUS_BANNER[order.status] ? order.status : 'pending_quote';
+  const banner = STATUS_BANNER[bannerKey];
   const pill = STATUS_PILL[order.status] || {
     label: order.status,
     bg: 'bg-slate-100',
@@ -714,8 +743,8 @@ export default function InfluencerServiceOrderDetail() {
     onRequestRevision: () => {
       if (revsLeft <= 0) {
         Alert.alert(
-          'No revisions left',
-          "You've used all your revision rounds. Reach out via support for further changes.",
+          t('ScreensInfluencerServiceOrderDetail.alerts.noRevisionsTitle'),
+          t('ScreensInfluencerServiceOrderDetail.alerts.noRevisionsBody'),
         );
         return;
       }
@@ -749,19 +778,20 @@ export default function InfluencerServiceOrderDetail() {
         // Bounce to the orders list so the user lands on the fresh order
         // that was just created instead of staring at the expired one.
         Alert.alert(
-          'Quote resubmitted',
-          "We've sent a fresh request with the same brief. You'll get a notification the moment the seller replies.",
+          t('ScreensInfluencerServiceOrderDetail.alerts.quoteResubmittedTitle'),
+          t('ScreensInfluencerServiceOrderDetail.alerts.quoteResubmittedBody'),
           [
             {
-              text: 'View my orders',
+              text: t('ScreensInfluencerServiceOrderDetail.alerts.viewMyOrders'),
               onPress: () => navigation.navigate('InfluencerServiceOrders'),
             },
           ],
         );
       } catch (e: any) {
         Alert.alert(
-          "Couldn't reclaim",
-          e?.message || 'Please try again in a moment.',
+          t('ScreensInfluencerServiceOrderDetail.alerts.reclaimFailedTitle'),
+          e?.message ||
+            t('ScreensInfluencerServiceOrderDetail.alerts.reclaimFailedBody'),
         );
       } finally {
         setReclaiming(false);
@@ -769,7 +799,7 @@ export default function InfluencerServiceOrderDetail() {
     },
     reclaiming,
     revsLeft,
-  });
+  }, t);
 
   return (
     <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
@@ -784,7 +814,8 @@ export default function InfluencerServiceOrderDetail() {
         </TouchableOpacity>
         <View className="flex-1 min-w-0">
           <Text className="text-base font-bold text-slate-800" numberOfLines={1}>
-            {order.service_title || 'Service order'}
+            {order.service_title ||
+              t('ScreensInfluencerServiceOrderDetail.serviceOrderFallback')}
           </Text>
           {order.order_number ? (
             <Text className="text-[10px] font-mono text-slate-400">
@@ -818,10 +849,10 @@ export default function InfluencerServiceOrderDetail() {
           </View>
           <View className="flex-1">
             <Text className="text-base font-black text-white">
-              {banner.title}
+              {t(`ScreensInfluencerServiceOrderDetail.banner.${bannerKey}.title`)}
             </Text>
             <Text className="text-xs text-white/85 leading-5 mt-1">
-              {banner.body}
+              {t(`ScreensInfluencerServiceOrderDetail.banner.${bannerKey}.body`)}
             </Text>
           </View>
         </View>
@@ -837,7 +868,9 @@ export default function InfluencerServiceOrderDetail() {
             <View className="bg-white border border-slate-200 px-3 py-1.5 rounded-full flex-row items-center" style={{gap: 4}}>
               <Clock size={11} color="#64748b" />
               <Text className="text-[10px] font-bold text-slate-600">
-                Valid for {validityRemaining}
+                {t('ScreensInfluencerServiceOrderDetail.validFor', {
+                  time: validityRemaining,
+                })}
               </Text>
             </View>
           ) : null}
@@ -847,27 +880,41 @@ export default function InfluencerServiceOrderDetail() {
         {total > 0 || order.quoted_amount ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 10}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Quote summary
+              {t('ScreensInfluencerServiceOrderDetail.quoteSummary')}
             </Text>
             <View style={{gap: 6}}>
               {order.quoted_amount ? (
-                <Row label="Quoted amount" value={formatINR(order.quoted_amount)} />
+                <Row
+                  label={t('ScreensInfluencerServiceOrderDetail.quotedAmount')}
+                  value={formatINR(order.quoted_amount)}
+                />
               ) : null}
               {order.counter_amount ? (
-                <Row label="Your counter" value={formatINR(order.counter_amount)} />
+                <Row
+                  label={t('ScreensInfluencerServiceOrderDetail.yourCounter')}
+                  value={formatINR(order.counter_amount)}
+                />
               ) : null}
               {total > 0 ? (
-                <Row label="Total" value={formatINR(total)} highlight />
+                <Row
+                  label={t('ScreensInfluencerServiceOrderDetail.total')}
+                  value={formatINR(total)}
+                  highlight
+                />
               ) : null}
               {advance > 0 ? (
                 <Row
-                  label={`Advance (${order.advance_pct || 50}%)`}
+                  label={t('ScreensInfluencerServiceOrderDetail.advanceLabel', {
+                    pct: order.advance_pct || 50,
+                  })}
                   value={formatINR(advance)}
                 />
               ) : null}
               {advance > 0 && total > 0 ? (
                 <Row
-                  label={`On delivery (${100 - (order.advance_pct || 50)}%)`}
+                  label={t('ScreensInfluencerServiceOrderDetail.onDeliveryLabel', {
+                    pct: 100 - (order.advance_pct || 50),
+                  })}
                   value={formatINR(total - advance)}
                 />
               ) : null}
@@ -890,7 +937,7 @@ export default function InfluencerServiceOrderDetail() {
             className="bg-white rounded-2xl border border-slate-100 p-5"
             style={{gap: 10}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Your brief
+              {t('ScreensInfluencerServiceOrderDetail.yourBrief')}
             </Text>
             {order.description ? (
               <Text className="text-sm text-slate-700 leading-5">
@@ -901,7 +948,11 @@ export default function InfluencerServiceOrderDetail() {
               {order.scope ? <Chip>{order.scope}</Chip> : null}
               {order.budget_range ? <Chip>{order.budget_range}</Chip> : null}
               {order.desired_delivery_date ? (
-                <Chip>Deliver by {order.desired_delivery_date}</Chip>
+                <Chip>
+                  {t('ScreensInfluencerServiceOrderDetail.deliverBy', {
+                    date: order.desired_delivery_date,
+                  })}
+                </Chip>
               ) : null}
             </View>
 
@@ -913,7 +964,7 @@ export default function InfluencerServiceOrderDetail() {
             {order.asset_url ? (
               <View style={{gap: 4}}>
                 <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Your page
+                  {t('ScreensInfluencerServiceOrderDetail.yourPage')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => Linking.openURL(order.asset_url!)}
@@ -932,7 +983,7 @@ export default function InfluencerServiceOrderDetail() {
             {order.style_references ? (
               <View style={{gap: 4}}>
                 <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Reference links
+                  {t('ScreensInfluencerServiceOrderDetail.referenceLinks')}
                 </Text>
                 {order.style_references
                   .split(/[\n,]+/)
@@ -965,7 +1016,7 @@ export default function InfluencerServiceOrderDetail() {
             {order.notes ? (
               <View style={{gap: 4}}>
                 <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Additional notes
+                  {t('ScreensInfluencerServiceOrderDetail.additionalNotes')}
                 </Text>
                 <Text className="text-xs text-slate-700 leading-5">
                   {order.notes}
@@ -982,7 +1033,7 @@ export default function InfluencerServiceOrderDetail() {
         ) ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 8}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Latest draft
+              {t('ScreensInfluencerServiceOrderDetail.latestDraft')}
             </Text>
             <TouchableOpacity
               onPress={() => Linking.openURL(order.draft_url!)}
@@ -993,7 +1044,7 @@ export default function InfluencerServiceOrderDetail() {
                 <ExternalLink size={16} color="#5851DB" />
               </View>
               <Text className="text-sm font-bold text-slate-800 flex-1">
-                Open draft
+                {t('ScreensInfluencerServiceOrderDetail.openDraft')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1004,7 +1055,7 @@ export default function InfluencerServiceOrderDetail() {
         order.final_files.length > 0 ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 8}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Final files
+              {t('ScreensInfluencerServiceOrderDetail.finalFiles')}
             </Text>
             <View style={{gap: 6}}>
               {order.final_files.map((f, i) => (
@@ -1018,7 +1069,10 @@ export default function InfluencerServiceOrderDetail() {
                     <ExternalLink size={14} color="#10b981" />
                   </View>
                   <Text className="text-sm font-bold text-slate-800 flex-1" numberOfLines={1}>
-                    {f.label || `Final file ${i + 1}`}
+                    {f.label ||
+                      t('ScreensInfluencerServiceOrderDetail.finalFileFallback', {
+                        n: i + 1,
+                      })}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -1034,17 +1088,21 @@ export default function InfluencerServiceOrderDetail() {
         {order.status === 'draft_ready' && revisionMode ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-4" style={{gap: 10}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Request a revision
+              {t('ScreensInfluencerServiceOrderDetail.revisionPrompt.title')}
             </Text>
             <Text className="text-[12px] text-slate-500 leading-5">
               {revsLeft > 0
-                ? `Use one of your ${revsLeft} revision${revsLeft === 1 ? '' : 's'} to request changes. No additional payment required.`
-                : "You've used all your revision rounds."}
+                ? t('ScreensInfluencerServiceOrderDetail.revisionPrompt.hint', {
+                    count: revsLeft,
+                  })
+                : t('ScreensInfluencerServiceOrderDetail.revisionPrompt.none')}
             </Text>
             <TextInput
               value={revisionNote}
               onChangeText={setRevisionNote}
-              placeholder="Be specific — which parts need to change?"
+              placeholder={t(
+                'ScreensInfluencerServiceOrderDetail.revisionPrompt.placeholder',
+              )}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={4}
@@ -1074,7 +1132,9 @@ export default function InfluencerServiceOrderDetail() {
                   setRevisionError(null);
                 }}
                 className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
-                <Text className="text-sm font-black text-slate-600">Cancel</Text>
+                <Text className="text-sm font-black text-slate-600">
+                  {t('ScreensInfluencerServiceOrderDetail.cancel')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={submitRevision}
@@ -1093,7 +1153,7 @@ export default function InfluencerServiceOrderDetail() {
                     alignItems: 'center',
                   }}>
                   <Text className="text-white text-sm font-black">
-                    Send revision
+                    {t('ScreensInfluencerServiceOrderDetail.revisionPrompt.send')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -1108,20 +1168,21 @@ export default function InfluencerServiceOrderDetail() {
             className="bg-white rounded-2xl border border-slate-100 p-4"
             style={{gap: 10}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Send a counter-offer
+              {t('ScreensInfluencerServiceOrderDetail.counter.title')}
             </Text>
             <Text className="text-[12px] text-slate-500 leading-5">
-              Propose a new total for this order. The team will review and
-              either accept or counter back.
+              {t('ScreensInfluencerServiceOrderDetail.counter.desc')}
             </Text>
             <View style={{gap: 4}}>
               <Text className="text-[10px] font-bold text-slate-400 uppercase">
-                Your counter (₹)
+                {t('ScreensInfluencerServiceOrderDetail.counter.amountLabel')}
               </Text>
               <TextInput
                 value={counterAmount}
                 onChangeText={v => setCounterAmount(v.replace(/[^\d]/g, ''))}
-                placeholder="e.g. 12000"
+                placeholder={t(
+                  'ScreensInfluencerServiceOrderDetail.counter.amountPlaceholder',
+                )}
                 placeholderTextColor="#cbd5e1"
                 keyboardType="number-pad"
                 style={{
@@ -1139,7 +1200,9 @@ export default function InfluencerServiceOrderDetail() {
             <TextInput
               value={counterMessage}
               onChangeText={setCounterMessage}
-              placeholder="Why does this price work better for you? (optional)"
+              placeholder={t(
+                'ScreensInfluencerServiceOrderDetail.counter.messagePlaceholder',
+              )}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={3}
@@ -1168,7 +1231,9 @@ export default function InfluencerServiceOrderDetail() {
                   setCounterError(null);
                 }}
                 className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
-                <Text className="text-sm font-black text-slate-600">Cancel</Text>
+                <Text className="text-sm font-black text-slate-600">
+                  {t('ScreensInfluencerServiceOrderDetail.cancel')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={submitCounter}
@@ -1184,7 +1249,7 @@ export default function InfluencerServiceOrderDetail() {
                     alignItems: 'center',
                   }}>
                   <Text className="text-white text-sm font-black">
-                    Send counter
+                    {t('ScreensInfluencerServiceOrderDetail.counter.send')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -1199,16 +1264,17 @@ export default function InfluencerServiceOrderDetail() {
             className="bg-white rounded-2xl border border-slate-100 p-4"
             style={{gap: 10}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Decline this quote
+              {t('ScreensInfluencerServiceOrderDetail.decline.title')}
             </Text>
             <Text className="text-[12px] text-slate-500 leading-5">
-              The team will be notified and this order will be closed. You can
-              submit a fresh brief any time.
+              {t('ScreensInfluencerServiceOrderDetail.decline.desc')}
             </Text>
             <TextInput
               value={declineReason}
               onChangeText={setDeclineReason}
-              placeholder="Optional — short reason"
+              placeholder={t(
+                'ScreensInfluencerServiceOrderDetail.decline.reasonPlaceholder',
+              )}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={3}
@@ -1238,7 +1304,9 @@ export default function InfluencerServiceOrderDetail() {
                   setDeclineError(null);
                 }}
                 className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
-                <Text className="text-sm font-black text-slate-600">Cancel</Text>
+                <Text className="text-sm font-black text-slate-600">
+                  {t('ScreensInfluencerServiceOrderDetail.cancel')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={submitDecline}
@@ -1256,7 +1324,7 @@ export default function InfluencerServiceOrderDetail() {
                   style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
                 />
                 <Text className="text-white text-sm font-black">
-                  Confirm decline
+                  {t('ScreensInfluencerServiceOrderDetail.decline.confirm')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1293,7 +1361,7 @@ export default function InfluencerServiceOrderDetail() {
         {events.length > 0 ? (
           <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 14}}>
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Timeline
+              {t('ScreensInfluencerServiceOrderDetail.timeline')}
             </Text>
             <View style={{gap: 14}}>
               {events.map(ev => {
@@ -1356,9 +1424,9 @@ export default function InfluencerServiceOrderDetail() {
         visible={pickerPhase !== null}
         planLabel={
           pickerPhase === 'advance'
-            ? 'service advance'
+            ? t('ScreensInfluencerServiceOrderDetail.gateway.serviceAdvance')
             : pickerPhase === 'final'
-              ? 'final payment'
+              ? t('ScreensInfluencerServiceOrderDetail.gateway.finalPayment')
               : ''
         }
         onCancel={() => setPickerPhase(null)}
@@ -1410,7 +1478,11 @@ interface ActionHandlers {
   revsLeft?: number;
 }
 
-function renderStatusActions(order: Order, h: ActionHandlers) {
+function renderStatusActions(
+  order: Order,
+  h: ActionHandlers,
+  t: (key: string, opts?: any) => string,
+) {
   if (order.status === 'quoted' || order.status === 'accepted') {
     return (
       <View style={{gap: 10}}>
@@ -1426,12 +1498,16 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
               end={{x: 1, y: 0}}
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
             />
-            <Text className="text-white text-sm font-black">Pay advance</Text>
+            <Text className="text-white text-sm font-black">
+              {t('ScreensInfluencerServiceOrderDetail.actions.payAdvance')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={h.onCounter}
             className="px-4 py-3 rounded-2xl border border-slate-200 bg-white items-center justify-center">
-            <Text className="text-slate-700 text-xs font-black">Counter</Text>
+            <Text className="text-slate-700 text-xs font-black">
+              {t('ScreensInfluencerServiceOrderDetail.actions.counter')}
+            </Text>
           </TouchableOpacity>
         </View>
         {order.status === 'quoted' ? (
@@ -1440,7 +1516,7 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
             className="items-center py-1"
             hitSlop={8}>
             <Text className="text-[12px] font-semibold text-slate-400">
-              Decline this quote
+              {t('ScreensInfluencerServiceOrderDetail.actions.declineQuote')}
             </Text>
           </TouchableOpacity>
         ) : null}
@@ -1462,7 +1538,9 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
             end={{x: 1, y: 0}}
             style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
           />
-          <Text className="text-white text-sm font-black">Approve & pay final</Text>
+          <Text className="text-white text-sm font-black">
+            {t('ScreensInfluencerServiceOrderDetail.actions.approvePayFinal')}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={h.onRequestRevision}
@@ -1470,7 +1548,8 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
           style={{opacity: revisionDisabled ? 0.5 : 1}}
           className="px-4 py-3 rounded-2xl border border-amber-200 bg-amber-50 items-center justify-center">
           <Text className="text-amber-700 text-xs font-black">
-            Revision{h.revsLeft != null ? ` (${h.revsLeft})` : ''}
+            {t('ScreensInfluencerServiceOrderDetail.actions.revision')}
+            {h.revsLeft != null ? ` (${h.revsLeft})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1488,7 +1567,9 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
           end={{x: 1, y: 0}}
           style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
         />
-        <Text className="text-white text-sm font-black">Leave a review</Text>
+        <Text className="text-white text-sm font-black">
+          {t('ScreensInfluencerServiceOrderDetail.actions.leaveReview')}
+        </Text>
       </TouchableOpacity>
     );
   }
@@ -1515,7 +1596,9 @@ function renderStatusActions(order: Order, h: ActionHandlers) {
           style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
         />
         <Text className="text-white text-sm font-black">
-          {h.reclaiming ? 'Resubmitting…' : 'Reclaim this quote'}
+          {h.reclaiming
+            ? t('ScreensInfluencerServiceOrderDetail.actions.resubmitting')
+            : t('ScreensInfluencerServiceOrderDetail.actions.reclaim')}
         </Text>
       </TouchableOpacity>
     );
@@ -1576,10 +1659,11 @@ function SubAxis({
 }
 
 function ReviewSummary({review}: {review: ServiceReview}) {
+  const {t} = useTranslation();
   return (
     <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 12}}>
       <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
-        Review submitted
+        {t('ScreensInfluencerServiceOrderDetail.review.submitted')}
       </Text>
       <View className="flex-row items-baseline" style={{gap: 8}}>
         <Text className="text-2xl font-black text-slate-900">
@@ -1588,29 +1672,37 @@ function ReviewSummary({review}: {review: ServiceReview}) {
         <Text className="text-base font-bold text-amber-500">★</Text>
       </View>
       <Text className="text-[12px] text-slate-500">
-        Thanks for the feedback — it helps other creators discover the service.
+        {t('ScreensInfluencerServiceOrderDetail.review.thanks')}
       </Text>
       <View className="flex-row flex-wrap" style={{gap: 12}}>
         <View style={{minWidth: '45%'}}>
-          <Text className="text-[10px] font-bold text-slate-400 uppercase">Quality</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase">
+            {t('ScreensInfluencerServiceOrderDetail.review.quality')}
+          </Text>
           <Text className="text-[13px] font-black text-slate-700 mt-0.5">
             {review.quality ? `${review.quality} ★` : '—'}
           </Text>
         </View>
         <View style={{minWidth: '45%'}}>
-          <Text className="text-[10px] font-bold text-slate-400 uppercase">Communication</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase">
+            {t('ScreensInfluencerServiceOrderDetail.review.communication')}
+          </Text>
           <Text className="text-[13px] font-black text-slate-700 mt-0.5">
             {review.communication ? `${review.communication} ★` : '—'}
           </Text>
         </View>
         <View style={{minWidth: '45%'}}>
-          <Text className="text-[10px] font-bold text-slate-400 uppercase">On-time delivery</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase">
+            {t('ScreensInfluencerServiceOrderDetail.review.onTimeDelivery')}
+          </Text>
           <Text className="text-[13px] font-black text-slate-700 mt-0.5">
             {review.on_time_delivery ? `${review.on_time_delivery} ★` : '—'}
           </Text>
         </View>
         <View style={{minWidth: '45%'}}>
-          <Text className="text-[10px] font-bold text-slate-400 uppercase">Value for money</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase">
+            {t('ScreensInfluencerServiceOrderDetail.review.valueForMoney')}
+          </Text>
           <Text className="text-[13px] font-black text-slate-700 mt-0.5">
             {review.value_for_money ? `${review.value_for_money} ★` : '—'}
           </Text>
@@ -1636,20 +1728,23 @@ function ReviewFormCard({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
+  const {t} = useTranslation();
   return (
     <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 12}}>
       <View>
         <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Rate your experience
+          {t('ScreensInfluencerServiceOrderDetail.review.rateExperience')}
         </Text>
         <Text className="text-[11px] text-pink-500 mt-0.5">
-          Help others discover the best RGossips services
+          {t('ScreensInfluencerServiceOrderDetail.review.helpOthers')}
         </Text>
       </View>
 
       <View className="items-center" style={{gap: 6}}>
         <Text className="text-[11px] text-slate-500">
-          Tap to rate ({draft.overall} star{draft.overall === 1 ? '' : 's'} selected)
+          {t('ScreensInfluencerServiceOrderDetail.review.ratePrompt', {
+            count: draft.overall,
+          })}
         </Text>
         <StarRow
           value={draft.overall}
@@ -1660,8 +1755,10 @@ function ReviewFormCard({
 
       <TextInput
         value={draft.text}
-        onChangeText={t => setDraft(d => ({...d, text: t}))}
-        placeholder="Share your experience… (optional)"
+        onChangeText={val => setDraft(d => ({...d, text: val}))}
+        placeholder={t(
+          'ScreensInfluencerServiceOrderDetail.review.sharePlaceholder',
+        )}
         placeholderTextColor="#cbd5e1"
         multiline
         numberOfLines={3}
@@ -1682,28 +1779,28 @@ function ReviewFormCard({
       <View className="flex-row flex-wrap" style={{gap: 12}}>
         <View style={{minWidth: '45%', flex: 1}}>
           <SubAxis
-            label="Quality"
+            label={t('ScreensInfluencerServiceOrderDetail.review.quality')}
             value={draft.quality}
             onChange={n => setDraft(d => ({...d, quality: n}))}
           />
         </View>
         <View style={{minWidth: '45%', flex: 1}}>
           <SubAxis
-            label="Communication"
+            label={t('ScreensInfluencerServiceOrderDetail.review.communication')}
             value={draft.communication}
             onChange={n => setDraft(d => ({...d, communication: n}))}
           />
         </View>
         <View style={{minWidth: '45%', flex: 1}}>
           <SubAxis
-            label="On-time delivery"
+            label={t('ScreensInfluencerServiceOrderDetail.review.onTimeDelivery')}
             value={draft.on_time_delivery}
             onChange={n => setDraft(d => ({...d, on_time_delivery: n}))}
           />
         </View>
         <View style={{minWidth: '45%', flex: 1}}>
           <SubAxis
-            label="Value for money"
+            label={t('ScreensInfluencerServiceOrderDetail.review.valueForMoney')}
             value={draft.value_for_money}
             onChange={n => setDraft(d => ({...d, value_for_money: n}))}
           />
@@ -1718,7 +1815,9 @@ function ReviewFormCard({
         <TouchableOpacity
           onPress={onCancel}
           className="flex-1 py-3 rounded-2xl border border-slate-200 items-center">
-          <Text className="text-sm font-black text-slate-600">Cancel</Text>
+          <Text className="text-sm font-black text-slate-600">
+            {t('ScreensInfluencerServiceOrderDetail.cancel')}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onSubmit}
@@ -1735,7 +1834,9 @@ function ReviewFormCard({
             end={{x: 1, y: 0}}
             style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
           />
-          <Text className="text-white text-sm font-black">Submit Review</Text>
+          <Text className="text-white text-sm font-black">
+            {t('ScreensInfluencerServiceOrderDetail.review.submit')}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

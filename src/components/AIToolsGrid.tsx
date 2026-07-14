@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import {
   Type,
@@ -14,45 +15,40 @@ import { CARD_SHADOW } from '../theme/brand';
 
 const tools = [
   {
-    title: 'Captions',
+    key: 'captions',
     icon: Type,
     color: '#f97316',
-    status: 'Try free →',
     active: true,
   },
   {
-    title: 'Hashtags',
+    key: 'hashtags',
     icon: Hash,
     color: '#3b82f6',
-    status: '0/50',
   },
   {
-    title: 'Scripts',
+    key: 'scripts',
     icon: FileText,
     color: '#f59e0b',
-    status: '0/50',
   },
   {
-    title: 'Rate Card',
+    key: 'rateCard',
     icon: BarChart3,
     color: '#10b981',
-    status: 'Generate',
   },
   {
-    title: 'Hook Ideas',
+    key: 'hookIdeas',
     icon: Zap,
     color: '#f43f5e',
-    status: '0/50',
   },
   {
-    title: 'Brief Helper',
+    key: 'briefHelper',
     icon: ClipboardCheck,
     color: '#6366f1',
-    status: '0/50',
   },
 ];
 
 export default function AiToolsGrid() {
+  const { t } = useTranslation();
   return (
     <View className="w-full">
       <View
@@ -71,11 +67,12 @@ export default function AiToolsGrid() {
         {/* HEADER */}
         <View className="flex-row justify-between items-center mb-6">
           <Text className="text-xl font-bold text-slate-900">
-            AI Creator Tools
+            {t('AIToolsGrid.header')}
           </Text>
 
           <Text className="text-xs text-slate-400">
-            <Text className="text-slate-600">0/50 used</Text> • all free
+            <Text className="text-slate-600">{t('AIToolsGrid.usedCount')}</Text>
+            {t('AIToolsGrid.allFree')}
           </Text>
         </View>
 
@@ -102,7 +99,7 @@ export default function AiToolsGrid() {
                   </View>
 
                   <Text className="font-semibold text-slate-800 text-sm">
-                    {tool.title}
+                    {t(`AIToolsGrid.tools.${tool.key}.title`)}
                   </Text>
 
                   <Text
@@ -110,7 +107,7 @@ export default function AiToolsGrid() {
                       tool.active ? 'text-orange-600' : 'text-slate-400'
                     }`}
                   >
-                    {tool.status}
+                    {t(`AIToolsGrid.tools.${tool.key}.status`)}
                   </Text>
                 </Pressable>
               </Animated.View>
@@ -135,7 +132,7 @@ export default function AiToolsGrid() {
               elevation: 6,
             }}>
             <Text className="text-white text-sm font-black uppercase tracking-widest">
-              Coming Soon
+              {t('AIToolsGrid.comingSoon')}
             </Text>
           </View>
         </View>

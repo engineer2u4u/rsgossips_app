@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {Bell, ChevronLeft, RotateCcw, TrendingUp} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
@@ -41,39 +42,14 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 // Same labels + descriptions used on the web mobile branch — keep in sync.
-const CAMPAIGN_ROWS: {
-  key: keyof Prefs;
-  title: string;
-  description: string;
-}[] = [
-  {
-    key: 'campaignUpdates',
-    title: 'Campaign Updates',
-    description: 'New campaigns matching your profile',
-  },
-  {
-    key: 'applicationStatus',
-    title: 'Application Status',
-    description: 'Updates on your applications',
-  },
-  {
-    key: 'deadlineReminders',
-    title: 'Deadline Reminders',
-    description: 'Content submission deadlines',
-  },
+// Labels/descriptions resolved at render via t(`NotificationSettings.rows.${key}.*`).
+const CAMPAIGN_ROWS: {key: keyof Prefs}[] = [
+  {key: 'campaignUpdates'},
+  {key: 'applicationStatus'},
+  {key: 'deadlineReminders'},
 ];
 
-const FINANCIAL_ROWS: {
-  key: keyof Prefs;
-  title: string;
-  description: string;
-}[] = [
-  {
-    key: 'paymentAlerts',
-    title: 'Payment Alerts',
-    description: 'Payment received notifications',
-  },
-];
+const FINANCIAL_ROWS: {key: keyof Prefs}[] = [{key: 'paymentAlerts'}];
 
 const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
   <View className="flex-row items-center gap-4 px-6 py-4 bg-white border-b border-slate-100">
@@ -149,6 +125,7 @@ const cardShadow = {
 };
 
 export default function NotificationSettings({onBack}: NotificationSettingsProps) {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
   const [settings, setSettings] = useState<Prefs>(DEFAULT_PREFS);
@@ -189,7 +166,7 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
         );
         setSavedAt(Date.now());
       })(),
-      'Saving preferences…',
+      t('NotificationSettings.saving'),
     );
   };
 
@@ -199,7 +176,7 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
 
   return (
     <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
-      <PageHeader title="Notification Settings" onBack={onBack} />
+      <PageHeader title={t('NotificationSettings.header.title')} onBack={onBack} />
 
       {!loaded ? (
         <View className="flex-1 items-center justify-center">
@@ -217,7 +194,7 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
           {/* Campaign Notifications */}
           <View style={{gap: 12}}>
             <SectionHeader
-              title="Campaign Notifications"
+              title={t('NotificationSettings.section.campaign')}
               iconBg="#EC4899"
               icon={<TrendingUp size={18} color="#fff" />}
             />
@@ -227,8 +204,10 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
               {CAMPAIGN_ROWS.map(row => (
                 <ToggleRow
                   key={row.key}
-                  title={row.title}
-                  description={row.description}
+                  title={t(`NotificationSettings.rows.${row.key}.title`)}
+                  description={t(
+                    `NotificationSettings.rows.${row.key}.description`,
+                  )}
                   isEnabled={settings[row.key]}
                   onToggle={() => toggleSetting(row.key)}
                 />
@@ -239,7 +218,7 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
           {/* Financial */}
           <View style={{gap: 12}}>
             <SectionHeader
-              title="Financial"
+              title={t('NotificationSettings.section.financial')}
               iconBg="#10B981"
               icon={<Bell size={18} color="#fff" />}
             />
@@ -249,8 +228,10 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
               {FINANCIAL_ROWS.map(row => (
                 <ToggleRow
                   key={row.key}
-                  title={row.title}
-                  description={row.description}
+                  title={t(`NotificationSettings.rows.${row.key}.title`)}
+                  description={t(
+                    `NotificationSettings.rows.${row.key}.description`,
+                  )}
                   isEnabled={settings[row.key]}
                   onToggle={() => toggleSetting(row.key)}
                 />
@@ -265,7 +246,7 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
             style={{paddingVertical: 12, gap: 6}}>
             <RotateCcw size={14} color="#64748B" />
             <Text className="text-xs font-black text-slate-500">
-              Restore defaults
+              {t('NotificationSettings.restoreDefaults')}
             </Text>
           </TouchableOpacity>
 
@@ -286,7 +267,9 @@ export default function NotificationSettings({onBack}: NotificationSettingsProps
               elevation: 6,
             }}>
             <Text className="text-white font-black text-sm">
-              {justSaved ? 'Saved ✓' : 'Save Changes'}
+              {justSaved
+                ? t('NotificationSettings.saved')
+                : t('NotificationSettings.save')}
             </Text>
           </TouchableOpacity>
         </ScrollView>

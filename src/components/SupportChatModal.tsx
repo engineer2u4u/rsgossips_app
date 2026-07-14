@@ -31,6 +31,7 @@ import {useAuth} from '../context/AuthContext';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
 import {BRAND_GRADIENT_WARM} from '../theme/brand';
+import {useTranslation} from 'react-i18next';
 
 // ── Decision tree (identical to web) ──────────────────────────────────────
 
@@ -258,39 +259,39 @@ const findLabel = (id: string): string => {
 };
 
 // Per-campaign issue prompts (mirrors web).
-const ISSUE_OPTIONS = (campaign: any): TreeNode[] => {
+const ISSUE_OPTIONS = (campaign: any, t: any): TreeNode[] => {
   const status = campaign.applicationStatus;
-  const brand = campaign.brandName || 'the brand';
+  const brand = campaign.brandName || t('SupportChatModal.fallbackBrand');
   return [
     {
       id: 'issue_no_response',
       label: "Brand hasn't responded",
       response:
         status === 'pending'
-          ? `Your application is still Pending with ${brand}. If it's been over 5–7 days since you applied, request a callback and we'll nudge them.`
-          : `Your application status is "${status}". If you're waiting on something specific, request a callback so we can chase ${brand} for you.`,
+          ? t('SupportChatModal.tree.issue_no_response.responsePending', {brand})
+          : t('SupportChatModal.tree.issue_no_response.responseOther', {brand, status}),
     },
     {
       id: 'issue_payment',
       label: 'Payment is delayed',
       response:
         status === 'completed'
-          ? `${brand} has marked this campaign Completed. Payment usually reflects within 7–10 business days. If 14+ business days have passed, request a callback.`
+          ? t('SupportChatModal.tree.issue_payment.responseCompleted', {brand})
           : status === 'payment'
-            ? `${brand} has released payment. It typically takes 7–10 business days to land. If it's been longer, request a callback.`
-            : `Payments only release after the brand approves your live links. Current status: "${status}". Once it moves to Payment, the 7–10 day clock starts.`,
+            ? t('SupportChatModal.tree.issue_payment.responsePayment', {brand})
+            : t('SupportChatModal.tree.issue_payment.responseOther', {status}),
     },
     {
       id: 'issue_deliverables',
       label: 'Submit / update deliverables',
       response:
         status === 'approved'
-          ? `Open the campaign detail page — you'll see a Submit Deliverables button now that ${brand} has approved you.`
+          ? t('SupportChatModal.tree.issue_deliverables.responseApproved', {brand})
           : status === 'revision_needed'
-            ? `${brand} has asked for a revision. Open the campaign detail page to see exactly which deliverables need re-uploading.`
+            ? t('SupportChatModal.tree.issue_deliverables.responseRevision', {brand})
             : status === 'accepted'
-              ? `Now's the time to post the live content and paste the live links inside the campaign detail page.`
-              : `Deliverables can only be submitted from the Approved or Accepted state. Your current status is "${status}".`,
+              ? t('SupportChatModal.tree.issue_deliverables.responseAccepted')
+              : t('SupportChatModal.tree.issue_deliverables.responseOther', {status}),
       link: {href: 'InfluencerOfferDetail', label: 'Open this campaign'},
     },
     {
@@ -298,8 +299,8 @@ const ISSUE_OPTIONS = (campaign: any): TreeNode[] => {
       label: 'Why was I rejected / removed?',
       response:
         status === 'rejected'
-          ? `${brand} declined your application — usually for fit, timing, or audience match. The campaign goes back to Active so you can apply to a different one. Your monthly application cap isn't impacted.`
-          : `Your application status is "${status}", not rejected. Take another look at the campaign detail page to see the latest update from ${brand}.`,
+          ? t('SupportChatModal.tree.issue_rejected.responseRejected', {brand})
+          : t('SupportChatModal.tree.issue_rejected.responseOther', {brand, status}),
       link: {href: 'InfluencerOfferDetail', label: 'Open this campaign'},
     },
     {id: 'issue_callback', label: 'Talk to a human about this', action: 'callback'},
@@ -313,6 +314,15 @@ const TIME_OPTIONS = [
   'Tomorrow evening',
   'Anytime',
 ];
+
+// Stored value (English) → i18n slug for display only.
+const TIME_SLUGS: Record<string, string> = {
+  'Today afternoon': 'todayAfternoon',
+  'Today evening': 'todayEvening',
+  'Tomorrow morning': 'tomorrowMorning',
+  'Tomorrow evening': 'tomorrowEvening',
+  Anytime: 'anytime',
+};
 
 const STATUS_STYLES: Record<string, {bg: string; fg: string}> = {
   pending: {bg: '#FFFBEB', fg: '#92400E'},
@@ -350,6 +360,8 @@ interface Props {
 export default function SupportChatModal({visible, onClose}: Props) {
   const navigation = useNavigation<any>();
   const {user, profile, role} = useAuth() as any;
+  const {t} = useTranslation();
+  const nodeLabel = (n: TreeNode) => t(`SupportChatModal.tree.${n.id}.label`);
 
   const [path, setPath] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -362,9 +374,11 @@ export default function SupportChatModal({visible, onClose}: Props) {
 
   const greeting = useMemo(() => {
     const name =
-      profile?.full_name?.split(' ')[0] || profile?.username || 'there';
-    return `Hi ${name}! 👋 What can I help you with today?`;
-  }, [profile]);
+      profile?.full_name?.split(' ')[0] ||
+      profile?.username ||
+      t('SupportChatModal.fallbackName');
+    return t('SupportChatModal.greeting', {name});
+  }, [profile, t]);
 
   // Reset on open
   useEffect(() => {
@@ -411,14 +425,14 @@ export default function SupportChatModal({visible, onClose}: Props) {
     setCallbackOpen(true);
     setMessages(prev => [
       ...prev,
-      {role: 'bot', text: "Tell us how to reach you and we'll call back."},
+      {role: 'bot', text: t('SupportChatModal.callbackIntro')},
     ]);
   };
 
   const handleListActive = async () => {
     setMessages(prev => [
       ...prev,
-      {role: 'bot', text: 'Pulling your active campaigns…', typing: true},
+      {role: 'bot', text: t('SupportChatModal.pullingActive'), typing: true},
     ]);
     const list = await ensureCampaigns();
     const active = list.filter(
@@ -432,14 +446,17 @@ export default function SupportChatModal({visible, onClose}: Props) {
       if (active.length === 0) {
         next.push({
           role: 'bot',
-          text: "You don't have any active campaigns right now. Browse open ones from the Campaigns tab.",
-          link: {href: 'InfluencerCampaigns', label: 'Open Campaigns'},
+          text: t('SupportChatModal.noActive'),
+          link: {
+            href: 'InfluencerCampaigns',
+            label: t('SupportChatModal.openCampaigns'),
+          },
           followUp: true,
         });
       } else {
         next.push({
           role: 'bot',
-          text: `You have ${active.length} active campaign${active.length === 1 ? '' : 's'}. Tap one to open it.`,
+          text: t('SupportChatModal.activeCount', {count: active.length}),
           campaigns: active,
           campaignAction: 'open',
         });
@@ -451,7 +468,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
   const handleListForIssue = async () => {
     setMessages(prev => [
       ...prev,
-      {role: 'bot', text: 'Pulling your campaigns…', typing: true},
+      {role: 'bot', text: t('SupportChatModal.pullingCampaigns'), typing: true},
     ]);
     const list = await ensureCampaigns();
     setMessages(prev => {
@@ -459,14 +476,17 @@ export default function SupportChatModal({visible, onClose}: Props) {
       if (list.length === 0) {
         next.push({
           role: 'bot',
-          text: "You haven't applied to any campaigns yet, so there's nothing to flag here.",
-          link: {href: 'InfluencerCampaigns', label: 'Browse Campaigns'},
+          text: t('SupportChatModal.noApplied'),
+          link: {
+            href: 'InfluencerCampaigns',
+            label: t('SupportChatModal.browseCampaigns'),
+          },
           followUp: true,
         });
       } else {
         next.push({
           role: 'bot',
-          text: "Pick the campaign you're having trouble with:",
+          text: t('SupportChatModal.pickTrouble'),
           campaigns: list,
           campaignAction: 'issue',
         });
@@ -481,29 +501,32 @@ export default function SupportChatModal({visible, onClose}: Props) {
       {role: 'user', text: campaign.title},
       {
         role: 'bot',
-        text: `Got it — what's going on with "${campaign.title}"?`,
+        text: t('SupportChatModal.issuePrompt', {title: campaign.title}),
         campaignContext: campaign,
-        options: ISSUE_OPTIONS(campaign),
+        options: ISSUE_OPTIONS(campaign, t),
       },
     ]);
   };
 
   const handlePickIssueOption = (campaign: any, opt: TreeNode) => {
     if (opt.action === 'callback') {
-      setMessages(prev => [...prev, {role: 'user', text: opt.label}]);
+      setMessages(prev => [...prev, {role: 'user', text: nodeLabel(opt)}]);
       openCallback(`${campaign.brandName || ''} · ${campaign.title}`);
       return;
     }
     setMessages(prev => [
       ...prev,
-      {role: 'user', text: opt.label},
+      {role: 'user', text: nodeLabel(opt)},
       {
         role: 'bot',
         text: opt.response || '',
         // Embed campaign id into the link payload so the screen handler can
         // route to the right detail.
         link: opt.link
-          ? {...opt.link, href: `${opt.link.href}::${campaign.id}`}
+          ? {
+              href: `${opt.link.href}::${campaign.id}`,
+              label: t(`SupportChatModal.tree.${opt.id}.linkLabel`),
+            }
           : undefined,
         followUp: true,
       },
@@ -512,22 +535,22 @@ export default function SupportChatModal({visible, onClose}: Props) {
 
   const handlePick = (node: TreeNode) => {
     if (node.action === 'callback') {
-      setMessages(prev => [...prev, {role: 'user', text: node.label}]);
+      setMessages(prev => [...prev, {role: 'user', text: nodeLabel(node)}]);
       openCallback();
       return;
     }
     if (node.action === 'list_active') {
-      setMessages(prev => [...prev, {role: 'user', text: node.label}]);
+      setMessages(prev => [...prev, {role: 'user', text: nodeLabel(node)}]);
       handleListActive();
       return;
     }
     if (node.action === 'list_for_issue') {
-      setMessages(prev => [...prev, {role: 'user', text: node.label}]);
+      setMessages(prev => [...prev, {role: 'user', text: nodeLabel(node)}]);
       handleListForIssue();
       return;
     }
 
-    setMessages(prev => [...prev, {role: 'user', text: node.label}]);
+    setMessages(prev => [...prev, {role: 'user', text: nodeLabel(node)}]);
 
     if (node.children?.length) {
       setPath(p => [...p, node.id]);
@@ -535,14 +558,24 @@ export default function SupportChatModal({visible, onClose}: Props) {
         ...prev,
         {
           role: 'bot',
-          text: node.description || 'Pick the closest match:',
+          text: node.description || t('SupportChatModal.pickClosest'),
           options: node.children,
         },
       ]);
     } else if (node.response) {
       setMessages(prev => [
         ...prev,
-        {role: 'bot', text: node.response!, link: node.link, followUp: true},
+        {
+          role: 'bot',
+          text: t(`SupportChatModal.tree.${node.id}.response`),
+          link: node.link
+            ? {
+                href: node.link.href,
+                label: t(`SupportChatModal.tree.${node.id}.linkLabel`),
+              }
+            : undefined,
+          followUp: true,
+        },
       ]);
     }
   };
@@ -554,10 +587,13 @@ export default function SupportChatModal({visible, onClose}: Props) {
     const parent = findNode(newPath);
     setMessages(prev => [
       ...prev,
-      {role: 'user', text: '← Back'},
+      {role: 'user', text: t('SupportChatModal.backLabel')},
       {
         role: 'bot',
-        text: parent.id === 'root' ? greeting : 'Pick the closest match:',
+        text:
+          parent.id === 'root'
+            ? greeting
+            : t('SupportChatModal.pickClosest'),
         options: parent.children,
       },
     ]);
@@ -577,7 +613,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
       ...prev,
       {
         role: 'bot',
-        text: 'Got it ✓ Our team will call back during the time you picked.',
+        text: t('SupportChatModal.callbackDone'),
       },
     ]);
   };
@@ -647,7 +683,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
                   }}
                 />
                 <Text className="text-[11px] font-semibold text-emerald-600">
-                  Online · usually replies instantly
+                  {t('SupportChatModal.header.online')}
                 </Text>
               </View>
             </View>
@@ -676,7 +712,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
                 onRequestCallback={() => {
                   setMessages(prev => [
                     ...prev,
-                    {role: 'user', text: 'Request a callback'},
+                    {role: 'user', text: t('SupportChatModal.requestCallback')},
                   ]);
                   openCallback();
                 }}
@@ -687,7 +723,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
               <View className="flex-row items-center px-2" style={{gap: 8}}>
                 <ActivityIndicator size="small" color="#94A3B8" />
                 <Text className="text-[11px] text-slate-400">
-                  Loading campaigns…
+                  {t('SupportChatModal.loadingCampaigns')}
                 </Text>
               </View>
             ) : null}
@@ -716,7 +752,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
                 onPress={() => {
                   setMessages(prev => [
                     ...prev,
-                    {role: 'user', text: 'Request a callback'},
+                    {role: 'user', text: t('SupportChatModal.requestCallback')},
                   ]);
                   openCallback();
                 }}
@@ -731,7 +767,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
                 }}>
                 <Phone size={14} color="#fff" />
                 <Text className="text-white text-sm font-bold">
-                  Request a callback
+                  {t('SupportChatModal.requestCallback')}
                 </Text>
               </Pressable>
             </View>
@@ -761,6 +797,7 @@ function Bubble({
   onPickCampaignForIssue: (c: any) => void;
   onPickIssueOption: (c: any, o: TreeNode) => void;
 }) {
+  const {t} = useTranslation();
   const isBot = message.role === 'bot';
 
   return (
@@ -883,7 +920,7 @@ function Bubble({
                   backgroundColor: '#fff',
                 }}>
                 <Text className="text-[12px] font-semibold text-slate-700">
-                  {opt.label}
+                  {t(`SupportChatModal.tree.${opt.id}.label`)}
                 </Text>
               </Pressable>
             ))}
@@ -905,7 +942,7 @@ function Bubble({
                 borderColor: '#E2E8F0',
               }}>
               <Text className="text-[11px] font-bold text-slate-500">
-                Ask another question
+                {t('SupportChatModal.askAnother')}
               </Text>
             </Pressable>
             <Pressable
@@ -919,7 +956,7 @@ function Bubble({
                 borderColor: '#FBCFE8',
               }}>
               <Text className="text-[11px] font-bold text-pink-600">
-                Talk to a human
+                {t('SupportChatModal.talkHuman')}
               </Text>
             </Pressable>
           </View>
@@ -998,6 +1035,7 @@ function CallbackForm({
   onSubmitted: () => void;
   onCancel: () => void;
 }) {
+  const {t} = useTranslation();
   const defaultPhone = (
     profile?.contact_phone ||
     profile?.phone ||
@@ -1031,13 +1069,13 @@ function CallbackForm({
 
   const handleSubmit = async () => {
     if (!user?.id) {
-      setError('Please sign in first.');
+      setError(t('SupportChatModal.callback.errSignIn'));
       return;
     }
     const normalized = normalizePhone(phone);
     const digitsOnly = normalized.replace(/\D/g, '');
     if (digitsOnly.length < 8 || digitsOnly.length > 15) {
-      setError('Enter a valid phone number with country code.');
+      setError(t('SupportChatModal.callback.errPhone'));
       return;
     }
     setSubmitting(true);
@@ -1056,7 +1094,7 @@ function CallbackForm({
       setDone(true);
       setTimeout(() => onSubmitted(), 600);
     } catch (e: any) {
-      setError(e.message || 'Failed to submit');
+      setError(e.message || t('SupportChatModal.callback.errSubmit'));
     } finally {
       setSubmitting(false);
     }
@@ -1078,10 +1116,13 @@ function CallbackForm({
         <CheckCircle2 size={20} color="#10B981" />
         <View>
           <Text className="text-sm font-black text-emerald-700">
-            Callback requested
+            {t('SupportChatModal.callback.doneTitle')}
           </Text>
           <Text className="text-[11px] text-emerald-600">
-            We'll call {phone} {time.toLowerCase()}.
+            {t('SupportChatModal.callback.doneMessage', {
+              phone,
+              time: t(`SupportChatModal.time.${TIME_SLUGS[time]}`).toLowerCase(),
+            })}
           </Text>
         </View>
       </View>
@@ -1113,11 +1154,13 @@ function CallbackForm({
 
       <View>
         <Text className="text-[10px] font-black text-slate-400 uppercase mb-1">
-          Phone
+          {t('SupportChatModal.callback.phone')}
         </Text>
         <TextInput
           value={phone}
-          onChangeText={t => setPhone(t.replace(/[^\d+\s-]/g, '').slice(0, 20))}
+          onChangeText={val =>
+            setPhone(val.replace(/[^\d+\s-]/g, '').slice(0, 20))
+          }
           placeholder="+91 98765 43210"
           placeholderTextColor="#cbd5e1"
           keyboardType="phone-pad"
@@ -1132,21 +1175,21 @@ function CallbackForm({
           }}
         />
         <Text className="text-[10px] text-slate-400 mt-1">
-          Include country code (e.g. +91 for India)
+          {t('SupportChatModal.callback.countryCodeHint')}
         </Text>
       </View>
 
       <View>
         <Text className="text-[10px] font-black text-slate-400 uppercase mb-1">
-          Best time to call
+          {t('SupportChatModal.callback.bestTime')}
         </Text>
         <View className="flex-row flex-wrap" style={{gap: 6}}>
-          {TIME_OPTIONS.map(t => {
-            const active = time === t;
+          {TIME_OPTIONS.map(slot => {
+            const active = time === slot;
             return (
               <Pressable
-                key={t}
-                onPress={() => setTime(t)}
+                key={slot}
+                onPress={() => setTime(slot)}
                 style={{
                   paddingHorizontal: 10,
                   paddingVertical: 6,
@@ -1161,7 +1204,7 @@ function CallbackForm({
                     fontWeight: '700',
                     color: active ? '#fff' : '#475569',
                   }}>
-                  {t}
+                  {t(`SupportChatModal.time.${TIME_SLUGS[slot]}`)}
                 </Text>
               </Pressable>
             );
@@ -1171,12 +1214,12 @@ function CallbackForm({
 
       <View>
         <Text className="text-[10px] font-black text-slate-400 uppercase mb-1">
-          Anything we should know? (optional)
+          {t('SupportChatModal.callback.notesLabel')}
         </Text>
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          placeholder="What's the issue?"
+          placeholder={t('SupportChatModal.callback.notesPlaceholder')}
           placeholderTextColor="#cbd5e1"
           multiline
           numberOfLines={3}
@@ -1212,7 +1255,9 @@ function CallbackForm({
             justifyContent: 'center',
             opacity: submitting ? 0.5 : 1,
           }}>
-          <Text className="text-sm font-bold text-slate-600">Cancel</Text>
+          <Text className="text-sm font-bold text-slate-600">
+            {t('SupportChatModal.callback.cancel')}
+          </Text>
         </Pressable>
         <Pressable
           onPress={handleSubmit}
@@ -1237,7 +1282,9 @@ function CallbackForm({
             }}>
             {submitting ? <ActivityIndicator size="small" color="#fff" /> : null}
             <Text className="text-white text-sm font-bold">
-              {submitting ? 'Sending…' : 'Request callback'}
+              {submitting
+                ? t('SupportChatModal.callback.sending')
+                : t('SupportChatModal.callback.submit')}
             </Text>
           </LinearGradient>
         </Pressable>

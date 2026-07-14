@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, Pressable } from 'react-native';
 import { UserPlus } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const recentlyConnected = [
   {
@@ -42,16 +43,17 @@ const recentlyConnected = [
 ];
 
 export const RecentlyConnected = () => {
+  const { t } = useTranslation();
   return (
     <View className="w-full px-4 py-6">
       {/* Header */}
       <View className="mb-6">
         <Text className="text-xl font-bold text-[#1C115A]">
-          Influencers Recently Connected
+          {t('RecentlyConnected.title')}
         </Text>
 
         <Text className="text-slate-500 text-sm">
-          Direct connects happening right now
+          {t('RecentlyConnected.subtitle')}
         </Text>
       </View>
 
@@ -94,7 +96,9 @@ export const RecentlyConnected = () => {
             <Pressable className="w-full flex-row items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-50">
               <UserPlus size={14} color="#1C115A" />
 
-              <Text className="text-[#1C115A] text-xs font-bold">Connect</Text>
+              <Text className="text-[#1C115A] text-xs font-bold">
+                {t('RecentlyConnected.connect')}
+              </Text>
             </Pressable>
           </View>
         ))}

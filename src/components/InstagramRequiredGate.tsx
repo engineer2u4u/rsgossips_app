@@ -9,6 +9,7 @@ import {
 import { Instagram } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../utils/supabase';
 import { invokeFn } from '../lib/api';
@@ -26,6 +27,7 @@ import {
 // `profile.instagram_connected` (from check-profile) is the truth signal.
 
 export default function InstagramRequiredGate() {
+  const { t } = useTranslation();
   const { user, profile, role, refreshProfile, refreshInstagram } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +44,7 @@ export default function InstagramRequiredGate() {
 
     try {
       if (!(await InAppBrowser.isAvailable())) {
-        throw new Error('In-app browser not available on this device');
+        throw new Error(t('InstagramRequiredGate.errorNoBrowser'));
       }
       const result = await InAppBrowser.openAuth(authUrl, redirectUri, {
         ephemeralWebSession: true,
@@ -59,12 +61,12 @@ export default function InstagramRequiredGate() {
       const url = new URL(result.url);
       const code = url.searchParams.get('code');
       if (!code) {
-        throw new Error('Instagram returned no code');
+        throw new Error(t('InstagramRequiredGate.errorNoCode'));
       }
 
       await exchangeCode(code.replace(/#_$/, ''));
     } catch (err: any) {
-      setError(err?.message || 'Failed to open Instagram');
+      setError(err?.message || t('InstagramRequiredGate.errorOpenFailed'));
       setConnecting(false);
     }
   };
@@ -114,7 +116,7 @@ export default function InstagramRequiredGate() {
         }
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to connect Instagram');
+      setError(err?.message || t('InstagramRequiredGate.errorConnectFailed'));
     } finally {
       setConnecting(false);
     }
@@ -122,12 +124,12 @@ export default function InstagramRequiredGate() {
 
   const headline =
     role === 'brand'
-      ? 'Connect your Instagram to access your brand dashboard'
-      : 'Connect your Instagram to access your creator dashboard';
+      ? t('InstagramRequiredGate.headlineBrand')
+      : t('InstagramRequiredGate.headlineCreator');
   const subtitle =
     role === 'brand'
-      ? 'We use your verified Instagram to display your logo and content to creators discovering your brand.'
-      : 'Brands match campaigns based on your real follower count and engagement. Connect to unlock deals.';
+      ? t('InstagramRequiredGate.subtitleBrand')
+      : t('InstagramRequiredGate.subtitleCreator');
 
   if (!profile) return null;
 
@@ -201,14 +203,14 @@ export default function InstagramRequiredGate() {
                 <>
                   <ActivityIndicator size="small" color="white" />
                   <Text className="text-white text-sm font-black">
-                    Connecting…
+                    {t('InstagramRequiredGate.connecting')}
                   </Text>
                 </>
               ) : (
                 <>
                   <Instagram size={18} color="white" />
                   <Text className="text-white text-sm font-black">
-                    Connect Instagram
+                    {t('InstagramRequiredGate.connectButton')}
                   </Text>
                 </>
               )}
@@ -220,8 +222,7 @@ export default function InstagramRequiredGate() {
           )}
 
           <Text className="text-[11px] text-slate-400 text-center leading-4">
-            We never post on your behalf. We read your handle, follower count,
-            and recent media to power matching.
+            {t('InstagramRequiredGate.disclaimer')}
           </Text>
         </View>
       </View>

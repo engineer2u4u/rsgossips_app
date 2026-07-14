@@ -9,6 +9,7 @@ import React, {useMemo} from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute, type RouteProp} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {WebView} from 'react-native-webview';
 import {ArrowLeft} from 'lucide-react-native';
 import {consentHtml as brandConsent} from '../lib/consent-brand';
@@ -45,6 +46,7 @@ const PAGE_CSS = `
 `;
 
 export default function ConsentPolicyScreen() {
+  const {t} = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<ConsentRoute>();
   const role = route.params?.role || 'influencer';
@@ -55,7 +57,9 @@ export default function ConsentPolicyScreen() {
   }, [role]);
 
   const title =
-    role === 'brand' ? 'Brand Consent Policy' : 'Influencer Consent Policy';
+    role === 'brand'
+      ? t('ScreensConsentPolicyScreen.brandTitle')
+      : t('ScreensConsentPolicyScreen.influencerTitle');
 
   return (
     <SafeAreaView style={styles.safe}>

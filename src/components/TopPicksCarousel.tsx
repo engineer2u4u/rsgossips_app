@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { MapPin, DollarSign, Users } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import Carousel, {
   type ICarouselInstance,
 } from 'react-native-reanimated-carousel';
@@ -45,6 +46,7 @@ interface Campaign {
 }
 
 export default function RecommendedCampaigns() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { profile, user } = useAuth();
   const [allCampaigns, setAllCampaigns] = useState<any[]>([]);
@@ -105,26 +107,30 @@ export default function RecommendedCampaigns() {
       id: c.id,
       imageUrl:
         c.bannerImage || PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
-      category: c.tags?.[0] || 'General',
+      category: c.tags?.[0] || t('TopPicksCarousel.categoryGeneral'),
       badge:
-        c.daysLeft && parseInt(c.daysLeft, 10) <= 7 ? 'Ending Soon' : 'Active',
+        c.daysLeft && parseInt(c.daysLeft, 10) <= 7
+          ? t('TopPicksCarousel.badgeEndingSoon')
+          : t('TopPicksCarousel.badgeActive'),
       match: score,
-      brand: c.brandName || 'Brand',
+      brand: c.brandName || t('TopPicksCarousel.brandFallback'),
       title: c.title,
-      location: c.location || 'Pan India',
+      location: c.location || t('TopPicksCarousel.locationFallback'),
       desc:
-        c.description?.slice(0, 70) || 'Apply to collaborate with this brand.',
-      pay: c.budget || '₹TBD',
-      req: c.deliverables || 'Not specified',
+        c.description?.slice(0, 70) || t('TopPicksCarousel.descFallback'),
+      pay: c.budget || t('TopPicksCarousel.payFallback'),
+      req: c.deliverables || t('TopPicksCarousel.reqFallback'),
     }));
   }, [allCampaigns, userCategories, profile]);
 
   const subtitle =
     userCategories.length > 0
-      ? `Matched to your niche — ${userCategories.slice(0, 3).join(', ')}${
-          userCategories.length > 3 ? ` +${userCategories.length - 3}` : ''
-        }`
-      : 'Opportunities matched to your creator profile';
+      ? t('TopPicksCarousel.subtitleMatched', {
+          niche: `${userCategories.slice(0, 3).join(', ')}${
+            userCategories.length > 3 ? ` +${userCategories.length - 3}` : ''
+          }`,
+        })
+      : t('TopPicksCarousel.subtitleDefault');
 
   // Card width tracks the Deal-of-the-Day carousel so the two sliders line
   // up visually. CARD_W is the actual card width; the carousel width adds
@@ -138,7 +144,7 @@ export default function RecommendedCampaigns() {
       <View className="px-5 mb-6 flex-row justify-between items-start">
         <View className="flex-1 pr-3">
           <Text className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-            Campaigns for you
+            {t('TopPicksCarousel.headerTitle')}
           </Text>
           <Text className="text-xs text-slate-400 font-medium mt-1">
             {subtitle}
@@ -154,7 +160,7 @@ export default function RecommendedCampaigns() {
           }
         >
           <Text className="text-sm font-bold" style={{ color: BRAND.accent }}>
-            View all ›
+            {t('TopPicksCarousel.viewAll')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -163,13 +169,13 @@ export default function RecommendedCampaigns() {
         <View className="py-16 items-center" style={{ gap: 8 }}>
           <ActivityIndicator size="large" color={BRAND.accent} />
           <Text className="text-sm font-bold text-slate-400">
-            Loading campaigns...
+            {t('TopPicksCarousel.loading')}
           </Text>
         </View>
       ) : filteredOffers.length === 0 ? (
         <View className="mx-4 py-16 bg-slate-50 rounded-3xl items-center">
           <Text className="text-sm font-bold text-slate-400">
-            No matching campaigns yet
+            {t('TopPicksCarousel.empty')}
           </Text>
         </View>
       ) : (
@@ -237,6 +243,7 @@ function CampaignCardSlide({
   item: Campaign;
   onApply: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View
       className="bg-white rounded-[32px] border border-slate-100 overflow-hidden mr-3"
@@ -277,7 +284,7 @@ function CampaignCardSlide({
               }}
             >
               <Text className="text-white text-[10px] font-black">
-                {item.match}% match
+                {t('TopPicksCarousel.matchPercent', { match: item.match })}
               </Text>
             </View>
           )}
@@ -320,7 +327,7 @@ function CampaignCardSlide({
             <View className="flex-row items-center mb-1" style={{ gap: 4 }}>
               <DollarSign size={10} color="#22C55E" />
               <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Pay
+                {t('TopPicksCarousel.pay')}
               </Text>
             </View>
             <Text className="text-xs font-black text-slate-800">
@@ -331,7 +338,7 @@ function CampaignCardSlide({
             <View className="flex-row items-center mb-1" style={{ gap: 4 }}>
               <Users size={10} color="#3B82F6" />
               <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Req
+                {t('TopPicksCarousel.req')}
               </Text>
             </View>
             <Text
@@ -359,7 +366,9 @@ function CampaignCardSlide({
             end={{ x: 1, y: 0 }}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          <Text className="text-white text-xs font-black">Apply Now</Text>
+          <Text className="text-white text-xs font-black">
+            {t('TopPicksCarousel.applyNow')}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

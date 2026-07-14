@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import {ChevronDown, Plus, Search, SlidersHorizontal} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 import BrandsLayout from '../layouts/BrandLayout';
 import {TrustSection} from '../components/TrustSection';
@@ -83,6 +84,7 @@ function matchesFilters(inf: SearchInfluencer, f: FilterValues, q: string) {
 }
 
 export default function BrandSearch() {
+  const {t} = useTranslation();
   const [influencers, setInfluencers] = useState<SearchInfluencer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function BrandSearch() {
       } catch (err: any) {
         if (cancelled) return;
         console.warn('list-influencers failed:', err);
-        setError(err?.message || 'Failed to load influencers');
+        setError(err?.message || t('ScreensBrandSearch.loadError'));
         setInfluencers([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -155,8 +157,12 @@ export default function BrandSearch() {
         className="w-full px-6 pt-12 pb-10 rounded-b-[40px]">
         <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-2xl font-bold text-white">Search</Text>
-            <Text className="text-blue-200 text-xs">The influencer directory</Text>
+            <Text className="text-2xl font-bold text-white">
+              {t('ScreensBrandSearch.title')}
+            </Text>
+            <Text className="text-blue-200 text-xs">
+              {t('ScreensBrandSearch.subtitle')}
+            </Text>
           </View>
           <View className="flex-row" style={{gap: 8}}>
             <Pressable className="p-2 bg-white/10 rounded-lg">
@@ -170,7 +176,7 @@ export default function BrandSearch() {
           <TextInput
             value={searchText}
             onChangeText={setSearchText}
-            placeholder='Enter Creator by "Username"'
+            placeholder={t('ScreensBrandSearch.searchPlaceholder')}
             placeholderTextColor="#d1d5db"
             autoCapitalize="none"
             className="flex-1 ml-2 text-sm text-gray-800"
@@ -214,7 +220,9 @@ export default function BrandSearch() {
               className={`text-[11px] font-semibold ${
                 sort ? 'text-[#5851DB]' : 'text-gray-700'
               }`}>
-              {sort || 'Sort by'}
+              {sort
+                ? t(`ScreensBrandSearch.sortOptions.${sort}`)
+                : t('ScreensBrandSearch.sortBy')}
             </Text>
             <ChevronDown
               size={12}
@@ -243,7 +251,7 @@ export default function BrandSearch() {
                       className={`text-[12px] ${
                         active ? 'text-[#5851DB] font-bold' : 'text-gray-700'
                       }`}>
-                      {opt}
+                      {t(`ScreensBrandSearch.sortOptions.${opt}`)}
                     </Text>
                   </Pressable>
                 );
@@ -256,7 +264,7 @@ export default function BrandSearch() {
                   }}
                   className="px-4 py-3 border-t border-gray-100">
                   <Text className="text-[12px] text-red-500 font-bold">
-                    Clear sort
+                    {t('ScreensBrandSearch.clearSort')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -266,7 +274,9 @@ export default function BrandSearch() {
 
         <View style={{flex: 1, alignItems: 'flex-end'}}>
           <Text className="text-[11px] text-gray-400 font-semibold">
-            {loading ? '…' : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}
+            {loading
+              ? '…'
+              : t('ScreensBrandSearch.resultCount', {count: filtered.length})}
           </Text>
         </View>
       </View>
@@ -283,16 +293,16 @@ export default function BrandSearch() {
               {error}
             </Text>
             <Text className="text-xs text-gray-400">
-              Try again later or check your network.
+              {t('ScreensBrandSearch.errorHint')}
             </Text>
           </View>
         ) : filtered.length === 0 ? (
           <View className="px-6 py-12 items-center" style={{gap: 6}}>
             <Text className="text-sm font-semibold text-gray-700">
-              No influencers match these filters
+              {t('ScreensBrandSearch.noMatchTitle')}
             </Text>
             <Text className="text-xs text-gray-400 text-center">
-              Try removing a filter or clearing the search box.
+              {t('ScreensBrandSearch.noMatchHint')}
             </Text>
           </View>
         ) : (

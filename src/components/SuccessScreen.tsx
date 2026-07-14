@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Image, Animated } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onNext: () => void;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function SuccessScreen({ onNext, loading = false }: Props) {
+  const { t } = useTranslation();
   const scale = useRef(new Animated.Value(0.5)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -50,12 +52,11 @@ export default function SuccessScreen({ onNext, loading = false }: Props) {
       {/* Text */}
       <View className="items-center space-y-3 px-4">
         <Text className="text-2xl font-bold text-slate-900">
-          You're All Set!
+          {t('SuccessScreen.title')}
         </Text>
 
         <Text className="text-sm text-slate-500 text-center">
-          Your profile is ready. Now let's verify your phone number to start
-          closing deals.
+          {t('SuccessScreen.subtitle')}
         </Text>
       </View>
 
@@ -67,7 +68,7 @@ export default function SuccessScreen({ onNext, loading = false }: Props) {
           className="h-[54px] rounded-2xl bg-[#9810FA] items-center justify-center"
         >
           <Text className="text-white font-semibold text-base">
-            {loading ? 'Creating Account...' : 'Start Using Platform'}
+            {loading ? t('SuccessScreen.creating') : t('SuccessScreen.cta')}
           </Text>
         </Pressable>
       </View>

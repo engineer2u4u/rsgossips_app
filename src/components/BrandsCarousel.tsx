@@ -3,6 +3,7 @@ import {View, Text, Image, Dimensions, Pressable} from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
 import {BRAND_GRADIENT} from '../theme/brand';
@@ -111,6 +112,7 @@ function BrandLogo({logo, name}: {logo: string; name: string}) {
 
 export default function BrandsCarousel() {
   const navigation = useNavigation<any>();
+  const {t} = useTranslation();
   const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
 
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function BrandsCarousel() {
 
   return (
     <View className="w-full pt-10 pb-2">
-      <SectionTitle text="Brands You'll Love" />
+      <SectionTitle text={t('BrandsCarousel.sectionTitle')} />
 
       <Carousel
         loop

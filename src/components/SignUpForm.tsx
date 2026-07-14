@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {User, CheckCircle2, Check} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 
@@ -57,6 +58,7 @@ export default function SignUpForm({
   const [localError, setLocalError] = useState('');
   const [consentAgreed, setConsentAgreed] = useState(false);
 
+  const {t} = useTranslation();
   const navigation = useNavigation();
   const otpInputs = useRef<Array<TextInput | null>>([]);
 
@@ -97,9 +99,7 @@ export default function SignUpForm({
         {body: {phone: formData.phone}},
       );
       if (uniqueCheck?.conflicts?.includes('phone')) {
-        setLocalError(
-          'This phone number is already registered. Please sign in instead.',
-        );
+        setLocalError(t('SignUpForm.phoneAlreadyRegistered'));
         setOtpLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export default function SignUpForm({
       setOtpSent(true);
       setTimer(60);
     } catch (err: any) {
-      setLocalError(err.message || 'Failed to send OTP');
+      setLocalError(err.message || t('SignUpForm.failedSendOtp'));
     } finally {
       setOtpLoading(false);
     }
@@ -149,7 +149,7 @@ export default function SignUpForm({
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err: any) {
-      setLocalError(err.message || 'Invalid OTP');
+      setLocalError(err.message || t('SignUpForm.invalidOtp'));
     } finally {
       setVerifyLoading(false);
     }
@@ -163,7 +163,7 @@ export default function SignUpForm({
       setTimer(60);
       setOtp('');
     } catch (err: any) {
-      setLocalError(err.message || 'Failed to resend OTP');
+      setLocalError(err.message || t('SignUpForm.failedResendOtp'));
     } finally {
       setOtpLoading(false);
     }
@@ -171,15 +171,15 @@ export default function SignUpForm({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError('Please enter your full name');
+      setLocalError(t('SignUpForm.enterFullName'));
       return;
     }
     if (!otpVerified) {
-      setLocalError('Please verify your phone number');
+      setLocalError(t('SignUpForm.verifyPhone'));
       return;
     }
     if (!consentAgreed) {
-      setLocalError('Please accept the Influencer Consent Policy to continue');
+      setLocalError(t('SignUpForm.acceptConsent'));
       return;
     }
     onSubmit({...formData});
@@ -193,10 +193,10 @@ export default function SignUpForm({
         {/* Header */}
         <View className="items-center space-y-2">
           <Text className="text-2xl font-bold text-slate-900">
-            Create Account
+            {t('SignUpForm.title')}
           </Text>
           <Text className="text-sm text-slate-500">
-            Fill in your details to get started
+            {t('SignUpForm.subtitle')}
           </Text>
         </View>
 
@@ -232,7 +232,7 @@ export default function SignUpForm({
                 @{instagramProfile.username}
               </Text>
               <Text className="text-[10px] text-slate-400">
-                Instagram connected
+                {t('SignUpForm.instagramConnected')}
               </Text>
             </View>
             <CheckCircle2 size={18} color="#22C55E" />
@@ -242,12 +242,12 @@ export default function SignUpForm({
         {/* Full Name */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            Full Name
+            {t('SignUpForm.fullNameLabel')}
           </Text>
           <View className="flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
             <User size={18} color="rgba(99,71,249,0.6)" />
             <TextInput
-              placeholder="Your full name"
+              placeholder={t('SignUpForm.fullNamePlaceholder')}
               value={formData.name}
               onChangeText={v => setFormData(prev => ({...prev, name: v}))}
               className="flex-1 ml-3 text-base"
@@ -258,7 +258,7 @@ export default function SignUpForm({
         {/* Phone + OTP */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            Mobile Number
+            {t('SignUpForm.mobileNumberLabel')}
           </Text>
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl h-12">
@@ -269,7 +269,7 @@ export default function SignUpForm({
               </View>
               <TextInput
                 keyboardType="phone-pad"
-                placeholder="Enter phone number"
+                placeholder={t('SignUpForm.phonePlaceholder')}
                 value={formData.phone}
                 onChangeText={handlePhoneChange}
                 editable={!otpVerified}
@@ -289,7 +289,7 @@ export default function SignUpForm({
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className="text-white text-sm font-semibold">
-                    Send OTP
+                    {t('SignUpForm.sendOtp')}
                   </Text>
                 )}
               </Pressable>
@@ -307,8 +307,9 @@ export default function SignUpForm({
             <View className="space-y-3 pt-2">
               <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                 <Text className="text-[11px] text-emerald-700 text-center">
-                  Your OTP just slid into WhatsApp — say hi to{' '}
-                  <Text className="font-bold">Rgossips Media</Text>!
+                  {t('SignUpForm.otpWhatsappPrefix')}{' '}
+                  <Text className="font-bold">Rgossips Media</Text>
+                  {t('SignUpForm.otpWhatsappSuffix')}
                 </Text>
               </View>
               <View className="flex-row justify-center gap-1.5">
@@ -343,13 +344,13 @@ export default function SignUpForm({
                     />
                   )}
                   <Text className="text-white text-sm font-semibold">
-                    Verify
+                    {t('SignUpForm.verify')}
                   </Text>
                 </Pressable>
 
                 {timer > 0 ? (
                   <Text className="text-xs text-slate-400">
-                    Resend in{' '}
+                    {t('SignUpForm.resendIn')}{' '}
                     <Text className="text-[#6347F9] font-bold">
                       {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
                     </Text>
@@ -357,7 +358,7 @@ export default function SignUpForm({
                 ) : (
                   <Pressable onPress={handleResend}>
                     <Text className="text-xs text-[#6347F9] font-bold">
-                      Resend OTP
+                      {t('SignUpForm.resendOtp')}
                     </Text>
                   </Pressable>
                 )}
@@ -380,7 +381,7 @@ export default function SignUpForm({
             {consentAgreed && <Check size={14} color="white" strokeWidth={3} />}
           </View>
           <Text className="flex-1 text-[12px] text-slate-600 leading-snug">
-            I have read and agree to the{' '}
+            {t('SignUpForm.consentPrefix')}{' '}
             <Text
               className="text-[#6347F9] font-bold"
               onPress={() =>
@@ -388,10 +389,9 @@ export default function SignUpForm({
                   role: 'influencer',
                 })
               }>
-              Influencer Consent Policy
+              {t('SignUpForm.consentLink')}
             </Text>
-            , Terms of Service, Privacy Policy and Community Guidelines of
-            Recent Gossips.
+            {t('SignUpForm.consentSuffix')}
           </Text>
         </Pressable>
 
@@ -408,7 +408,7 @@ export default function SignUpForm({
             <>
               <ActivityIndicator size="small" color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                Creating account...
+                {t('SignUpForm.creatingAccount')}
               </Text>
             </>
           ) : (
@@ -418,7 +418,7 @@ export default function SignUpForm({
                   ? 'text-slate-400'
                   : 'text-white'
               }`}>
-              Create Account
+              {t('SignUpForm.title')}
             </Text>
           )}
         </Pressable>

@@ -6,24 +6,25 @@
 // create-campaign form). Emojis are eye candy, no semantic meaning.
 
 import React from 'react';
+import {useTranslation} from 'react-i18next';
 import {Pressable, ScrollView, Text, View} from 'react-native';
 
 const CATEGORIES = [
-  {label: 'Beauty & Skincare', short: 'Beauty', emoji: '💄'},
-  {label: 'Fashion & Lifestyle', short: 'Fashion', emoji: '👗'},
-  {label: 'Food & Beverage', short: 'Food', emoji: '🍕'},
-  {label: 'Health, Fitness & Wellness', short: 'Fitness', emoji: '🏋️'},
-  {label: 'Travel & Hospitality', short: 'Travel', emoji: '✈️'},
-  {label: 'Technology & Gadgets', short: 'Tech', emoji: '💻'},
-  {label: 'Parenting & Family', short: 'Family', emoji: '👨‍👩‍👧'},
-  {label: 'Home & Decor', short: 'Home', emoji: '🏠'},
-  {label: 'Finance & Personal Finance', short: 'Finance', emoji: '📈'},
-  {label: 'Education & Career', short: 'Education', emoji: '🎓'},
-  {label: 'Gaming & Entertainment', short: 'Gaming', emoji: '🎮'},
-  {label: 'Automobile & Mobility', short: 'Auto', emoji: '🚗'},
-  {label: 'Entrepreneurship & Business', short: 'Business', emoji: '💼'},
-  {label: 'Sustainable & Eco-conscious Living', short: 'Eco', emoji: '🌱'},
-  {label: 'Pet Care & Animals', short: 'Pets', emoji: '🐾'},
+  {label: 'Beauty & Skincare', short: 'Beauty', emoji: '💄', key: 'beauty'},
+  {label: 'Fashion & Lifestyle', short: 'Fashion', emoji: '👗', key: 'fashion'},
+  {label: 'Food & Beverage', short: 'Food', emoji: '🍕', key: 'food'},
+  {label: 'Health, Fitness & Wellness', short: 'Fitness', emoji: '🏋️', key: 'fitness'},
+  {label: 'Travel & Hospitality', short: 'Travel', emoji: '✈️', key: 'travel'},
+  {label: 'Technology & Gadgets', short: 'Tech', emoji: '💻', key: 'tech'},
+  {label: 'Parenting & Family', short: 'Family', emoji: '👨‍👩‍👧', key: 'family'},
+  {label: 'Home & Decor', short: 'Home', emoji: '🏠', key: 'home'},
+  {label: 'Finance & Personal Finance', short: 'Finance', emoji: '📈', key: 'finance'},
+  {label: 'Education & Career', short: 'Education', emoji: '🎓', key: 'education'},
+  {label: 'Gaming & Entertainment', short: 'Gaming', emoji: '🎮', key: 'gaming'},
+  {label: 'Automobile & Mobility', short: 'Auto', emoji: '🚗', key: 'auto'},
+  {label: 'Entrepreneurship & Business', short: 'Business', emoji: '💼', key: 'business'},
+  {label: 'Sustainable & Eco-conscious Living', short: 'Eco', emoji: '🌱', key: 'eco'},
+  {label: 'Pet Care & Animals', short: 'Pets', emoji: '🐾', key: 'pets'},
 ] as const;
 
 interface Props {
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export function CategoryFilters({value, onChange}: Props) {
+  const {t} = useTranslation();
   const allActive = value.length === 0;
 
   const toggle = (label: string) => {
@@ -59,7 +61,7 @@ export function CategoryFilters({value, onChange}: Props) {
             className={`text-xs font-semibold ${
               allActive ? 'text-white' : 'text-gray-600'
             }`}>
-            All
+            {t('BrandsCategoryFilters.all')}
           </Text>
         </Pressable>
 
@@ -78,7 +80,7 @@ export function CategoryFilters({value, onChange}: Props) {
                 className={`text-xs font-semibold ${
                   active ? 'text-white' : 'text-gray-600'
                 }`}>
-                {cat.short}
+                {t(`BrandsCategoryFilters.category.${cat.key}`)}
               </Text>
             </Pressable>
           );

@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity } from 'react-native';
 import { Search, Zap, ChevronDown } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 export function BrandNavbar() {
+  const { t } = useTranslation();
   return (
     <View
       style={{
@@ -50,7 +52,7 @@ export function BrandNavbar() {
         <Search size={16} color="#9ca3af" />
 
         <TextInput
-          placeholder="Search creators, campaigns..."
+          placeholder={t('BrandNavbar.searchPlaceholder')}
           placeholderTextColor="#9ca3af"
           style={{
             flex: 1,
@@ -75,7 +77,7 @@ export function BrandNavbar() {
           }}
         >
           <Zap size={14} color="white" />
-          <Text style={{ color: 'white', fontSize: 12 }}>Trust: 10%</Text>
+          <Text style={{ color: 'white', fontSize: 12 }}>{t('BrandNavbar.trust', { percent: 10 })}</Text>
         </View>
 
         {/* Invite Button */}
@@ -87,7 +89,7 @@ export function BrandNavbar() {
             borderRadius: 8,
           }}
         >
-          <Text style={{ color: 'white', fontSize: 12 }}>Invite ₹2500 +</Text>
+          <Text style={{ color: 'white', fontSize: 12 }}>{t('BrandNavbar.invite')}</Text>
         </TouchableOpacity>
 
         {/* Avatar */}

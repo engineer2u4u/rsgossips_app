@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {Star} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -65,6 +66,7 @@ function gradientColors(g?: string): [string, string] {
 }
 
 export default function TopServices() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,16 +106,16 @@ export default function TopServices() {
       <View className="flex-row justify-between items-start mb-6">
         <View className="flex-1 pr-3">
           <Text className="text-xl font-black text-slate-900 uppercase tracking-tight">
-            Top Services
+            {t('TopServices.title')}
           </Text>
           <Text className="text-xs text-slate-400 font-medium mt-1">
-            Professional marketing services to grow your brand
+            {t('TopServices.subtitle')}
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => navigation.navigate('InfluencerServices')}>
           <Text className="font-bold text-xs" style={{color: BRAND.accent}}>
-            View All ›
+            {t('TopServices.viewAll')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -132,6 +134,7 @@ export default function TopServices() {
 }
 
 function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => void}) {
+  const {t} = useTranslation();
   const Icon = iconForName(service.icon_name);
   const hasImage = !!service.featured_image_url;
   const [g1, g2] = gradientColors(service.hero_gradient);
@@ -162,7 +165,7 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
         <View className="absolute top-4 left-4 flex-row" style={{gap: 6}}>
           <View className="bg-white/90 px-3 py-1 rounded-full flex-row items-center" style={{gap: 4}}>
             <Text className="text-pink-500 text-[10px] font-black">⚡</Text>
-            <Text className="text-[10px] font-black text-slate-800">TOP RATED</Text>
+            <Text className="text-[10px] font-black text-slate-800">{t('TopServices.topRated')}</Text>
           </View>
           {!!service.tag && (
             <View className="bg-slate-900/70 px-3 py-1 rounded-full">
@@ -187,7 +190,7 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
         <View className="pt-3 border-t border-slate-100 flex-row items-end justify-between">
           <View>
             <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Starting at
+              {t('TopServices.startingAt')}
             </Text>
             <Text className="text-2xl font-black text-slate-900 leading-tight">
               {formatINR(service.price_starting)}
@@ -198,7 +201,7 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
                 {Number(service.rating_avg || 0).toFixed(1)}
                 <Text className="text-slate-400 font-bold">
                   {' '}
-                  ({service.reviews_count || 0} reviews)
+                  {t('TopServices.reviewsCount', {count: service.reviews_count || 0})}
                 </Text>
               </Text>
             </View>
@@ -219,7 +222,7 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
             />
             <Text className="text-white text-[11px] font-black uppercase tracking-wider">
-              Get Quote
+              {t('TopServices.getQuote')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -229,6 +232,7 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
 }
 
 function ServiceRowCard({service, onPress}: {service: ServiceRow; onPress: () => void}) {
+  const {t} = useTranslation();
   const Icon = iconForName(service.icon_name);
   return (
     <TouchableOpacity
@@ -267,14 +271,14 @@ function ServiceRowCard({service, onPress}: {service: ServiceRow; onPress: () =>
           </View>
           <View className="bg-emerald-50 px-1.5 py-0.5 rounded">
             <Text className="text-emerald-700 text-[9px] font-black uppercase tracking-wider">
-              Available
+              {t('TopServices.available')}
             </Text>
           </View>
         </View>
       </View>
       <View className="items-end">
         <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-          From
+          {t('TopServices.from')}
         </Text>
         <Text className="text-base font-black text-slate-900 leading-tight">
           {formatINR(service.price_starting)}

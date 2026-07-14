@@ -28,6 +28,7 @@ import {
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import {invokeFn} from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -124,20 +125,21 @@ const BUDGET_RANGES = [
 const CONTENT_TYPES = ['Posts', 'Reels', 'Shorts', 'Stories', 'Videos'];
 
 const SORT_OPTIONS = [
-  { label: 'Recommended', sub: '' },
-  { label: 'Most Engagement', sub: '' },
-  { label: 'Highest Followers', sub: '' },
-  { label: 'Lowest Collaboration Cost', sub: 'Cheapest to work with' },
-  { label: 'Highest Collaboration Cost', sub: 'Biggest deal first' },
-  { label: 'New Creators', sub: '' },
-  { label: 'Nearby Creators', sub: '' },
+  { key: 'recommended', hasSub: false },
+  { key: 'mostEngagement', hasSub: false },
+  { key: 'highestFollowers', hasSub: false },
+  { key: 'lowestCost', hasSub: true },
+  { key: 'highestCost', hasSub: true },
+  { key: 'newCreators', hasSub: false },
+  { key: 'nearbyCreators', hasSub: false },
 ];
 
 export default function RecommendedCampaigns() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const {user} = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSort, setSelectedSort] = useState('Recommended');
+  const [selectedSort, setSelectedSort] = useState('recommended');
   const [campaigns, setCampaigns] = useState(DUMMY_OFFERS);
   const [loading, setLoading] = useState(true);
 
@@ -241,7 +243,7 @@ export default function RecommendedCampaigns() {
             <ChevronLeft size={22} color="#1e293b" />
           </TouchableOpacity>
           <Text className="text-base font-bold text-slate-900">
-            Recommended
+            {t('ScreensRecommendedCampaigns.headerTitle')}
           </Text>
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
@@ -288,7 +290,7 @@ export default function RecommendedCampaigns() {
           <View className="flex-row items-center gap-2 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
             <Search size={16} color="#94a3b8" />
             <TextInput
-              placeholder="Search campaigns or brands..."
+              placeholder={t('ScreensRecommendedCampaigns.searchPlaceholder')}
               placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -309,7 +311,7 @@ export default function RecommendedCampaigns() {
             className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 mr-2"
           >
             <ArrowUpDown size={12} color="#475569" />
-            <Text className="text-xs font-semibold text-slate-600">Sort</Text>
+            <Text className="text-xs font-semibold text-slate-600">{t('ScreensRecommendedCampaigns.pills.sort')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -317,7 +319,7 @@ export default function RecommendedCampaigns() {
             className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 mr-2"
           >
             <SlidersHorizontal size={12} color="#475569" />
-            <Text className="text-xs font-semibold text-slate-600">Filter</Text>
+            <Text className="text-xs font-semibold text-slate-600">{t('ScreensRecommendedCampaigns.pills.filter')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -325,7 +327,7 @@ export default function RecommendedCampaigns() {
             className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 mr-2"
           >
             <DollarSign size={12} color="#475569" />
-            <Text className="text-xs font-semibold text-slate-600">Budget</Text>
+            <Text className="text-xs font-semibold text-slate-600">{t('ScreensRecommendedCampaigns.pills.budget')}</Text>
             {(budgetMin || budgetMax) ? (
               <View className="w-1.5 h-1.5 rounded-full bg-pink-500" />
             ) : null}
@@ -336,7 +338,7 @@ export default function RecommendedCampaigns() {
             className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200"
           >
             <Text className="text-xs font-semibold text-slate-600">
-              Platform
+              {t('ScreensRecommendedCampaigns.platform')}
             </Text>
             {selectedPlatforms.length > 0 ? (
               <View className="bg-pink-500 w-4 h-4 rounded-full items-center justify-center">
@@ -365,7 +367,7 @@ export default function RecommendedCampaigns() {
         {loading ? (
           <View className="py-20 items-center" style={{gap: 12}}>
             <ActivityIndicator size="large" color="#9810FA" />
-            <Text className="text-sm font-bold text-slate-400">Loading campaigns...</Text>
+            <Text className="text-sm font-bold text-slate-400">{t('ScreensRecommendedCampaigns.loading')}</Text>
           </View>
         ) : null}
         {!loading && campaigns.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.brand.toLowerCase().includes(searchQuery.toLowerCase())).map((item, index) => (
@@ -466,7 +468,7 @@ export default function RecommendedCampaigns() {
                   end={{ x: 1, y: 0 }}
                   style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
-                <Text className="text-white text-sm font-bold">Apply</Text>
+                <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -492,7 +494,7 @@ export default function RecommendedCampaigns() {
                 <ChevronLeft size={20} color="#1e293b" />
               </TouchableOpacity>
               <Text className="text-lg font-bold text-slate-900">
-                Sort Influencers
+                {t('ScreensRecommendedCampaigns.sortModalTitle')}
               </Text>
               <View className="w-9" />
             </View>
@@ -501,35 +503,35 @@ export default function RecommendedCampaigns() {
             <View className="px-5 pb-2">
               {SORT_OPTIONS.map(option => (
                 <TouchableOpacity
-                  key={option.label}
-                  onPress={() => setSelectedSort(option.label)}
+                  key={option.key}
+                  onPress={() => setSelectedSort(option.key)}
                   className="flex-row items-center justify-between py-3.5 px-1 border-b border-slate-50"
                 >
                   <View className="flex-row items-center gap-3">
                     <View
                       className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-                        selectedSort === option.label
+                        selectedSort === option.key
                           ? 'border-pink-500 bg-pink-500'
                           : 'border-slate-300'
                       }`}
                     >
-                      {selectedSort === option.label && (
+                      {selectedSort === option.key && (
                         <Check size={12} color="white" />
                       )}
                     </View>
                     <View>
                       <Text
                         className={`text-sm font-semibold ${
-                          selectedSort === option.label
+                          selectedSort === option.key
                             ? 'text-slate-900'
                             : 'text-slate-600'
                         }`}
                       >
-                        {option.label}
+                        {t(`ScreensRecommendedCampaigns.sortOptions.${option.key}.label`)}
                       </Text>
-                      {option.sub ? (
+                      {option.hasSub ? (
                         <Text className="text-[11px] text-slate-400">
-                          {option.sub}
+                          {t(`ScreensRecommendedCampaigns.sortOptions.${option.key}.sub`)}
                         </Text>
                       ) : null}
                     </View>
@@ -544,7 +546,7 @@ export default function RecommendedCampaigns() {
                 onPress={() => setShowSortModal(false)}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
               >
-                <Text className="text-sm font-bold text-slate-600">Cancel</Text>
+                <Text className="text-sm font-bold text-slate-600">{t('ScreensRecommendedCampaigns.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowSortModal(false)}
@@ -560,7 +562,7 @@ export default function RecommendedCampaigns() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text className="text-white text-sm font-bold">Apply</Text>
+                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -585,7 +587,7 @@ export default function RecommendedCampaigns() {
               >
                 <ChevronLeft size={20} color="#1e293b" />
               </TouchableOpacity>
-              <Text className="text-lg font-bold text-slate-900">Filters</Text>
+              <Text className="text-lg font-bold text-slate-900">{t('ScreensRecommendedCampaigns.filtersTitle')}</Text>
               <View className="w-9" />
             </View>
 
@@ -593,7 +595,7 @@ export default function RecommendedCampaigns() {
               {/* Category */}
               <View className="mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Category
+                  {t('ScreensRecommendedCampaigns.sections.category')}
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {CATEGORIES.map(cat => (
@@ -638,7 +640,7 @@ export default function RecommendedCampaigns() {
               {/* Platform */}
               <View className="mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Platform
+                  {t('ScreensRecommendedCampaigns.platform')}
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {PLATFORMS.map(platform => (
@@ -672,13 +674,13 @@ export default function RecommendedCampaigns() {
               {/* Budget Range */}
               <View className="mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Budget Range
+                  {t('ScreensRecommendedCampaigns.budgetRange')}
                 </Text>
                 <View className="flex-row items-center gap-3 mb-3">
                   <View className="flex-1 flex-row items-center gap-2 border border-slate-200 rounded-xl px-3 py-2.5">
                     <Text className="text-xs text-slate-400">₹</Text>
                     <TextInput
-                      placeholder="Min"
+                      placeholder={t('ScreensRecommendedCampaigns.minPlaceholder')}
                       placeholderTextColor="#94a3b8"
                       value={budgetMin}
                       onChangeText={setBudgetMin}
@@ -690,7 +692,7 @@ export default function RecommendedCampaigns() {
                   <View className="flex-1 flex-row items-center gap-2 border border-slate-200 rounded-xl px-3 py-2.5">
                     <Text className="text-xs text-slate-400">₹</Text>
                     <TextInput
-                      placeholder="Max"
+                      placeholder={t('ScreensRecommendedCampaigns.maxPlaceholder')}
                       placeholderTextColor="#94a3b8"
                       value={budgetMax}
                       onChangeText={setBudgetMax}
@@ -712,7 +714,7 @@ export default function RecommendedCampaigns() {
                       end={{ x: 1, y: 0 }}
                       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                     />
-                    <Text className="text-white text-xs font-bold">Go</Text>
+                    <Text className="text-white text-xs font-bold">{t('ScreensRecommendedCampaigns.go')}</Text>
                   </TouchableOpacity>
                 </View>
                 <View className="flex-row flex-wrap gap-2">
@@ -732,7 +734,7 @@ export default function RecommendedCampaigns() {
               {/* Content Type */}
               <View className="mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Content Type
+                  {t('ScreensRecommendedCampaigns.sections.contentType')}
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {CONTENT_TYPES.map(type => (
@@ -781,7 +783,7 @@ export default function RecommendedCampaigns() {
                 onPress={resetFilters}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
               >
-                <Text className="text-sm font-bold text-slate-600">Reset</Text>
+                <Text className="text-sm font-bold text-slate-600">{t('ScreensRecommendedCampaigns.reset')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowFilterModal(false)}
@@ -798,7 +800,7 @@ export default function RecommendedCampaigns() {
                   }}
                 >
                   <Text className="text-white text-sm font-bold">
-                    Apply Filters
+                    {t('ScreensRecommendedCampaigns.applyFilters')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -825,7 +827,7 @@ export default function RecommendedCampaigns() {
                 <ChevronLeft size={20} color="#1e293b" />
               </TouchableOpacity>
               <Text className="text-lg font-bold text-slate-900">
-                Budget Range
+                {t('ScreensRecommendedCampaigns.budgetRange')}
               </Text>
               <View className="w-9" />
             </View>
@@ -835,7 +837,7 @@ export default function RecommendedCampaigns() {
                 <View className="flex-1 flex-row items-center gap-2 border border-slate-200 rounded-xl px-3 py-2.5">
                   <Text className="text-xs text-slate-400">₹</Text>
                   <TextInput
-                    placeholder="Min"
+                    placeholder={t('ScreensRecommendedCampaigns.minPlaceholder')}
                     placeholderTextColor="#94a3b8"
                     value={budgetMin}
                     onChangeText={setBudgetMin}
@@ -847,7 +849,7 @@ export default function RecommendedCampaigns() {
                 <View className="flex-1 flex-row items-center gap-2 border border-slate-200 rounded-xl px-3 py-2.5">
                   <Text className="text-xs text-slate-400">₹</Text>
                   <TextInput
-                    placeholder="Max"
+                    placeholder={t('ScreensRecommendedCampaigns.maxPlaceholder')}
                     placeholderTextColor="#94a3b8"
                     value={budgetMax}
                     onChangeText={setBudgetMax}
@@ -879,7 +881,7 @@ export default function RecommendedCampaigns() {
                 }}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
               >
-                <Text className="text-sm font-bold text-slate-600">Reset</Text>
+                <Text className="text-sm font-bold text-slate-600">{t('ScreensRecommendedCampaigns.reset')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowBudgetModal(false)}
@@ -895,7 +897,7 @@ export default function RecommendedCampaigns() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text className="text-white text-sm font-bold">Apply</Text>
+                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -920,7 +922,7 @@ export default function RecommendedCampaigns() {
               >
                 <ChevronLeft size={20} color="#1e293b" />
               </TouchableOpacity>
-              <Text className="text-lg font-bold text-slate-900">Platform</Text>
+              <Text className="text-lg font-bold text-slate-900">{t('ScreensRecommendedCampaigns.platform')}</Text>
               <View className="w-9" />
             </View>
 
@@ -960,7 +962,7 @@ export default function RecommendedCampaigns() {
                 onPress={() => setSelectedPlatforms([])}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
               >
-                <Text className="text-sm font-bold text-slate-600">Reset</Text>
+                <Text className="text-sm font-bold text-slate-600">{t('ScreensRecommendedCampaigns.reset')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowPlatformModal(false)}
@@ -976,7 +978,7 @@ export default function RecommendedCampaigns() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text className="text-white text-sm font-bold">Apply</Text>
+                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>

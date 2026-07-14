@@ -27,6 +27,7 @@ import {
   Upload,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { BRAND_GRADIENT_WARM } from '../theme/brand';
 import SubmitDeliverablesModal from './SubmitDeliverablesModal';
 
@@ -48,72 +49,20 @@ interface Props {
 }
 
 interface Step {
+  // Stable logic key. All user-facing copy (label, active-card title/body,
+  // header one-liner) is resolved via i18n at render — see
+  // ApplicationStatusBar.steps.<key>.* in the translation catalog.
   key: string;
-  label: string;
-  // Copy shown inside the active-step expanded card. Title + body.
-  activeTitle: string;
-  activeBody: string;
-  // Compact one-liner shown next to the % complete in the header.
-  headerStatus: string;
 }
 
 const STATUS_STEPS: Step[] = [
-  {
-    key: 'pending',
-    label: 'Applied',
-    activeTitle: 'Under review ...',
-    activeBody:
-      "Brands usually respond within 24–48 hours. We'll notify you the moment they do.",
-    headerStatus: 'Awaiting brand review',
-  },
-  {
-    key: 'approved',
-    label: 'Approved',
-    activeTitle: 'Approved — your turn!',
-    activeBody:
-      'Submit your deliverables (reels, posts or stories) from the button below.',
-    headerStatus: 'Ready to submit',
-  },
-  {
-    key: 'submitted',
-    label: 'Deliverables Submitted',
-    activeTitle: 'Brand is reviewing your work',
-    activeBody:
-      "We'll notify you the moment they accept or request a revision.",
-    headerStatus: 'Brand reviewing work',
-  },
-  {
-    key: 'accepted',
-    label: 'Work Accepted',
-    activeTitle: 'Time to go live',
-    activeBody:
-      'Post the deliverables on Instagram and paste the live links so the brand can verify them.',
-    headerStatus: 'Awaiting live links',
-  },
-  {
-    key: 'live_submitted',
-    label: 'Live Links Submitted',
-    activeTitle: 'Verifying live posts',
-    activeBody:
-      "The brand is checking the live links you submitted. You'll be paid once they confirm.",
-    headerStatus: 'Verifying live posts',
-  },
-  {
-    key: 'payment',
-    label: 'Payment in Progress',
-    activeTitle: 'Payment in progress',
-    activeBody:
-      'Your payout is on its way — funds typically reflect in your account within 7–10 business days.',
-    headerStatus: 'Payment in progress',
-  },
-  {
-    key: 'completed',
-    label: 'Completed',
-    activeTitle: 'All done 🎉',
-    activeBody:
-      'Campaign wrapped. Your earnings are released and a rating prompt is waiting for you.',
-    headerStatus: 'Campaign completed',
-  },
+  { key: 'pending' },
+  { key: 'approved' },
+  { key: 'submitted' },
+  { key: 'accepted' },
+  { key: 'live_submitted' },
+  { key: 'payment' },
+  { key: 'completed' },
 ];
 
 function parseRevisionPayload(raw: any): { note: string; links: string[] } {
@@ -143,6 +92,7 @@ export default function ApplicationStatusBar({
   campaign,
   refetch,
 }: Props) {
+  const { t } = useTranslation();
   const [showSubmit, setShowSubmit] = useState(false);
 
   const isRevision = status === 'revision_needed';
@@ -171,10 +121,10 @@ export default function ApplicationStatusBar({
 
   const submitLabel =
     status === 'accepted'
-      ? 'Submit Live Links'
+      ? t('ApplicationStatusBar.submitLiveLinks')
       : isRevision
-        ? 'Resubmit Deliverables'
-        : 'Upload Submission';
+        ? t('ApplicationStatusBar.resubmitDeliverables')
+        : t('ApplicationStatusBar.uploadSubmission');
 
   const submissionLinks: { type: string; label: string; url: string }[] =
     campaign?.submissionLinks || [];
@@ -184,8 +134,10 @@ export default function ApplicationStatusBar({
       {/* Top eyebrow + step pill */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.eyebrow}>YOUR COLLABORATION</Text>
-          <Text style={styles.title}>Application Status</Text>
+          <Text style={styles.eyebrow}>
+            {t('ApplicationStatusBar.eyebrow')}
+          </Text>
+          <Text style={styles.title}>{t('ApplicationStatusBar.title')}</Text>
         </View>
         {/* <LinearGradient
           colors={[...BRAND_GRADIENT_WARM]}
@@ -204,11 +156,13 @@ export default function ApplicationStatusBar({
           (it sat behind pink text so was never visible) and let the
           progressHeader flow as a plain row. */}
       <View style={styles.progressHeader}>
-        <Text style={styles.percentText}>{percent}% complete</Text>
+        <Text style={styles.percentText}>
+          {t('ApplicationStatusBar.percentComplete', { percent })}
+        </Text>
         <View style={styles.headerStatusBlock}>
           <Clock size={12} color="#EC4899" />
           <Text style={styles.headerStatusText}>
-            {currentStep.headerStatus}
+            {t(`ApplicationStatusBar.steps.${currentStep.key}.headerStatus`)}
           </Text>
         </View>
       </View>
@@ -280,7 +234,7 @@ export default function ApplicationStatusBar({
                         : styles.stepLabelIdle,
                   ]}
                 >
-                  {step.label}
+                  {t(`ApplicationStatusBar.steps.${step.key}.label`)}
                 </Text>
 
                 {isCurrent ? (
@@ -288,10 +242,12 @@ export default function ApplicationStatusBar({
                     <View style={styles.activeCardHeader}>
                       <View style={styles.activeDot} />
                       <Text style={styles.activeCardTitle}>
-                        {step.activeTitle}
+                        {t(`ApplicationStatusBar.steps.${step.key}.activeTitle`)}
                       </Text>
                     </View>
-                    <Text style={styles.activeCardBody}>{step.activeBody}</Text>
+                    <Text style={styles.activeCardBody}>
+                      {t(`ApplicationStatusBar.steps.${step.key}.activeBody`)}
+                    </Text>
                   </View>
                 ) : null}
               </View>
@@ -328,7 +284,9 @@ export default function ApplicationStatusBar({
       {/* Submitted deliverables list */}
       {submissionLinks.length > 0 ? (
         <View style={{ gap: 10 }}>
-          <Text style={styles.submissionsHeader}>✓ Your Submissions</Text>
+          <Text style={styles.submissionsHeader}>
+            {t('ApplicationStatusBar.yourSubmissions')}
+          </Text>
           <View style={{ gap: 8 }}>
             {submissionLinks.map((link, i) => (
               <TouchableOpacity
@@ -372,6 +330,7 @@ export default function ApplicationStatusBar({
 }
 
 function RevisionBanner({ reason }: { reason: any }) {
+  const { t } = useTranslation();
   const { note, links } = parseRevisionPayload(reason);
   return (
     <View style={styles.revisionBox}>
@@ -379,12 +338,16 @@ function RevisionBanner({ reason }: { reason: any }) {
         <View style={styles.revisionIcon}>
           <Text style={{ color: '#d97706', fontWeight: '700' }}>⟳</Text>
         </View>
-        <Text style={styles.revisionTitle}>Revision Requested</Text>
+        <Text style={styles.revisionTitle}>
+          {t('ApplicationStatusBar.revisionRequested')}
+        </Text>
       </View>
       {note ? <Text style={styles.revisionNote}>{note}</Text> : null}
       {links.length > 0 ? (
         <View style={{ paddingLeft: 36, gap: 6 }}>
-          <Text style={styles.revisionListLabel}>Deliverables to revise:</Text>
+          <Text style={styles.revisionListLabel}>
+            {t('ApplicationStatusBar.deliverablesToRevise')}
+          </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {links.map((l, i) => (
               <View key={i} style={styles.revisionChip}>
@@ -399,6 +362,7 @@ function RevisionBanner({ reason }: { reason: any }) {
 }
 
 function RejectedBanner({ reason }: { reason: any }) {
+  const { t } = useTranslation();
   const text = parseRejectionReason(reason);
   return (
     <View style={styles.rejectedBox}>
@@ -406,7 +370,9 @@ function RejectedBanner({ reason }: { reason: any }) {
         <View style={styles.rejectedIcon}>
           <Text style={{ color: '#dc2626', fontWeight: '700' }}>✕</Text>
         </View>
-        <Text style={styles.rejectedTitle}>Application Rejected</Text>
+        <Text style={styles.rejectedTitle}>
+          {t('ApplicationStatusBar.applicationRejected')}
+        </Text>
       </View>
       {text ? <Text style={styles.rejectedNote}>{text}</Text> : null}
     </View>

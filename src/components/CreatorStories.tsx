@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, Dimensions, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { VLCPlayer, VlCPlayerView } from 'react-native-vlc-media-player';
 const { width } = Dimensions.get('window');
 import Orientation from 'react-native-orientation-locker';
@@ -80,6 +81,7 @@ function StoryCard({ item, isActive }: { item: Story; isActive: boolean }) {
 }
 
 export default function CreatorStories() {
+  const { t } = useTranslation();
   const flatListRef = useRef<FlatList>(null);
   const [current, setCurrent] = useState(0);
   const CARD_WIDTH = width * 0.75;
@@ -102,7 +104,7 @@ export default function CreatorStories() {
     <View className="w-full px-4 py-6">
       {/* Title */}
       <Text className="text-xl font-black text-[#1C115A] mb-6">
-        Top Creator Stories
+        {t('CreatorStories.title')}
       </Text>
 
       {/* Carousel */}

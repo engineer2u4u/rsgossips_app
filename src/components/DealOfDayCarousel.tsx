@@ -4,6 +4,7 @@ import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel
 import {Flame, Clock, MapPin} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {BRAND, BRAND_GRADIENT_WARM} from '../theme/brand';
 import {invokeFn} from '../lib/api';
 
@@ -33,6 +34,7 @@ const FALLBACK_DEALS: Deal[] = [
 // - ≥ 1 day → "N days left"
 // - < 1 day → HH:MM:SS with the seconds in the brand accent
 function Countdown({deadline}: {deadline: Deal['deadline']}) {
+  const {t} = useTranslation();
   const target = deadline ? new Date(deadline).getTime() : null;
   const [now, setNow] = useState(Date.now());
 
@@ -46,7 +48,7 @@ function Countdown({deadline}: {deadline: Deal['deadline']}) {
     return (
       <View className="bg-white/95 rounded-full px-3 py-1.5">
         <Text className="text-[11px] font-black text-slate-900 uppercase tracking-widest">
-          Open
+          {t('DealOfDayCarousel.open')}
         </Text>
       </View>
     );
@@ -58,7 +60,7 @@ function Countdown({deadline}: {deadline: Deal['deadline']}) {
     return (
       <View className="bg-white/95 rounded-full px-3 py-1.5">
         <Text className="text-[11px] font-black text-rose-500 uppercase tracking-widest">
-          Closed
+          {t('DealOfDayCarousel.closed')}
         </Text>
       </View>
     );
@@ -73,7 +75,7 @@ function Countdown({deadline}: {deadline: Deal['deadline']}) {
         <Clock size={12} color="#19162b" />
         <Text className="text-[13px] font-black text-slate-900">{days}</Text>
         <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-          {days === 1 ? 'day left' : 'days left'}
+          {t('DealOfDayCarousel.daysLeft', {count: days})}
         </Text>
       </View>
     );
@@ -96,6 +98,7 @@ function Countdown({deadline}: {deadline: Deal['deadline']}) {
 }
 
 function DealCard({deal}: {deal: Deal}) {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
 
   const handleApply = () => {
@@ -144,7 +147,7 @@ function DealCard({deal}: {deal: Deal}) {
           style={{gap: 6}}>
           <Flame size={12} color="#fff" />
           <Text className="text-white text-[10px] font-black uppercase tracking-widest">
-            Deal of the Day
+            {t('DealOfDayCarousel.dealOfTheDay')}
           </Text>
         </View>
         <Countdown deadline={deal.deadline} />
@@ -152,7 +155,7 @@ function DealCard({deal}: {deal: Deal}) {
 
       <View style={{position: 'absolute', left: 16, right: 16, bottom: 16}}>
         <Text className="text-white text-2xl font-black leading-tight mb-3" numberOfLines={2}>
-          {deal.title || 'Featured Campaign'}
+          {deal.title || t('DealOfDayCarousel.featuredCampaign')}
         </Text>
         <TouchableOpacity
           activeOpacity={0.9}
@@ -165,7 +168,7 @@ function DealCard({deal}: {deal: Deal}) {
             style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
           />
           <Text className="text-white text-center text-[13px] font-black uppercase tracking-widest">
-            Apply Now
+            {t('DealOfDayCarousel.applyNow')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -174,6 +177,7 @@ function DealCard({deal}: {deal: Deal}) {
 }
 
 export default function DealOfDayCarousel() {
+  const {t} = useTranslation();
   const carouselRef = useRef<ICarouselInstance>(null);
   const [active, setActive] = useState(0);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -217,7 +221,7 @@ export default function DealOfDayCarousel() {
       <View className="w-full items-center justify-center" style={{height: 400}}>
         <ActivityIndicator size="large" color={BRAND.accent} />
         <Text className="mt-3 text-sm font-medium text-slate-400">
-          Loading featured campaigns…
+          {t('DealOfDayCarousel.loadingFeaturedCampaigns')}
         </Text>
       </View>
     );
@@ -229,7 +233,7 @@ export default function DealOfDayCarousel() {
     <View className="w-full mt-2">
       <View className="flex-row items-center justify-between px-5 mb-3">
         <Text className="text-xl font-black text-slate-900 tracking-tight">
-          Deal of the Day
+          {t('DealOfDayCarousel.dealOfTheDay')}
         </Text>
       </View>
 

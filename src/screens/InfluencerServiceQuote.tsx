@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   CheckCircle2,
   ChevronLeft,
@@ -106,16 +107,17 @@ function isoDaysFromNow(days: number): string {
 
 // Quick-pick chips for the delivery date so users don't have to type
 // YYYY-MM-DD by hand. Mirrors the same SLA buckets the brand-side uses.
-const DELIVERY_PRESETS: {label: string; days: number}[] = [
-  {label: 'In 1 week', days: 7},
-  {label: 'In 2 weeks', days: 14},
-  {label: 'In 1 month', days: 30},
+const DELIVERY_PRESETS: {key: string; days: number}[] = [
+  {key: 'in1Week', days: 7},
+  {key: 'in2Weeks', days: 14},
+  {key: 'in1Month', days: 30},
 ];
 
 const URL_RE = /^https?:\/\/\S+\.\S+/i;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function InfluencerServiceQuote() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const slug = route.params?.slug;
@@ -197,10 +199,12 @@ export default function InfluencerServiceQuote() {
           gap: 10,
         }}>
         <Text className="text-base font-bold text-slate-600">
-          Service not found
+          {t('ScreensInfluencerServiceQuote.serviceNotFound')}
         </Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text className="text-sm font-bold text-pink-500">← Go back</Text>
+          <Text className="text-sm font-bold text-pink-500">
+            {t('ScreensInfluencerServiceQuote.goBack')}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -222,14 +226,16 @@ export default function InfluencerServiceQuote() {
             <CheckCircle2 size={28} color="#10b981" />
           </View>
           <Text className="text-xl font-black text-slate-900 mt-2 text-center">
-            Quote request submitted!
+            {t('ScreensInfluencerServiceQuote.successTitle')}
           </Text>
           <Text className="text-[13px] text-slate-500 text-center leading-5 mt-1">
-            We'll review your brief and get back with a custom quote within{' '}
+            {t('ScreensInfluencerServiceQuote.successBodyBefore')}{' '}
             <Text className="font-bold text-slate-700">
-              {service.quote_sla_hours || 24} hours
+              {t('ScreensInfluencerServiceQuote.successHours', {
+                hours: service.quote_sla_hours || 24,
+              })}
             </Text>
-            . You'll get a WhatsApp update on the phone tied to your account.
+            {t('ScreensInfluencerServiceQuote.successBodyAfter')}
           </Text>
           <View className="flex-row mt-4" style={{gap: 10}}>
             <TouchableOpacity
@@ -241,7 +247,7 @@ export default function InfluencerServiceQuote() {
               }
               className="px-5 py-3 rounded-2xl border border-slate-200">
               <Text className="text-sm font-black text-slate-700">
-                More services
+                {t('ScreensInfluencerServiceQuote.moreServices')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -261,7 +267,9 @@ export default function InfluencerServiceQuote() {
                 colors={['#9810FA', '#E60076']}
                 style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
               />
-              <Text className="text-white text-sm font-black">View my orders</Text>
+              <Text className="text-white text-sm font-black">
+                {t('ScreensInfluencerServiceQuote.viewMyOrders')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -272,25 +280,27 @@ export default function InfluencerServiceQuote() {
   const handleSubmit = async () => {
     setError('');
     if (!user?.id) {
-      setError('Please sign in to request a quote.');
+      setError(t('ScreensInfluencerServiceQuote.errSignIn'));
       return;
     }
     if (!description.trim() || description.trim().length < 20) {
-      setError('Please describe your project in at least 20 characters.');
+      setError(t('ScreensInfluencerServiceQuote.errDescription'));
       return;
     }
     if (!assetUrl.trim() || !URL_RE.test(assetUrl.trim())) {
-      setError(
-        'Paste a Google Drive / WeTransfer / Dropbox link so the team can review your assets.',
-      );
+      setError(t('ScreensInfluencerServiceQuote.errAssetUrl'));
       return;
     }
     if (deliveryDate && !ISO_DATE_RE.test(deliveryDate)) {
-      setError('Delivery date must be in YYYY-MM-DD format.');
+      setError(t('ScreensInfluencerServiceQuote.errDeliveryFormat'));
       return;
     }
     if (scopeCfg.required && !scope) {
-      setError(`Please select a ${scopeCfg.label.toLowerCase()}.`);
+      setError(
+        t('ScreensInfluencerServiceQuote.errSelectScope', {
+          scope: scopeCfg.label.toLowerCase(),
+        }),
+      );
       return;
     }
     setSubmitting(true);
@@ -312,7 +322,10 @@ export default function InfluencerServiceQuote() {
       if (e instanceof EdgeFunctionError) {
         setError(e.message);
       } else {
-        setError((e as Error)?.message || 'Failed to submit quote request');
+        setError(
+          (e as Error)?.message ||
+            t('ScreensInfluencerServiceQuote.errSubmitFailed'),
+        );
       }
     } finally {
       setSubmitting(false);
@@ -331,7 +344,7 @@ export default function InfluencerServiceQuote() {
           <ChevronLeft size={20} color="#E60076" />
         </TouchableOpacity>
         <Text className="text-base font-bold text-slate-800 flex-1" numberOfLines={1}>
-          Request quote
+          {t('ScreensInfluencerServiceQuote.requestQuote')}
         </Text>
       </View>
 
@@ -366,12 +379,12 @@ export default function InfluencerServiceQuote() {
               {service.title}
             </Text>
             <Text className="text-[11px] text-slate-500 mt-0.5">
-              Step 1 of 1 · Quote request
+              {t('ScreensInfluencerServiceQuote.stepIndicator')}
             </Text>
           </View>
           <View className="bg-slate-900 px-3 py-1.5 rounded-full">
             <Text className="text-[9px] font-black uppercase tracking-widest text-white">
-              Quote
+              {t('ScreensInfluencerServiceQuote.quoteBadge')}
             </Text>
           </View>
         </View>
@@ -379,13 +392,15 @@ export default function InfluencerServiceQuote() {
         {/* Form */}
         <View className="bg-white rounded-2xl border border-slate-100 p-5" style={{gap: 18}}>
           <Field
-            label="Project description"
+            label={t('ScreensInfluencerServiceQuote.fieldDescriptionLabel')}
             required
-            hint="Be specific to get a faster quote">
+            hint={t('ScreensInfluencerServiceQuote.fieldDescriptionHint')}>
             <TextInput
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe what you need… e.g. a 30-second reel showcasing my new skincare product."
+              placeholder={t(
+                'ScreensInfluencerServiceQuote.fieldDescriptionPlaceholder',
+              )}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={5}
@@ -395,7 +410,7 @@ export default function InfluencerServiceQuote() {
           </Field>
 
           <Field
-            label="Reference link to your raw footage / assets"
+            label={t('ScreensInfluencerServiceQuote.fieldAssetLabel')}
             required>
             <View className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-3" style={{gap: 10}}>
               <View className="flex-row" style={{gap: 10}}>
@@ -404,10 +419,10 @@ export default function InfluencerServiceQuote() {
                 </View>
                 <View className="flex-1">
                   <Text className="text-[12px] font-bold text-slate-800">
-                    Share a link to your assets
+                    {t('ScreensInfluencerServiceQuote.fieldAssetHeading')}
                   </Text>
                   <Text className="text-[10px] text-slate-500 mt-0.5">
-                    Paste a Google Drive, WeTransfer, Dropbox or YouTube link — direct uploads aren't accepted here.
+                    {t('ScreensInfluencerServiceQuote.fieldAssetDescription')}
                   </Text>
                 </View>
               </View>
@@ -425,14 +440,16 @@ export default function InfluencerServiceQuote() {
 
           {/* Desired delivery date — quick-pick chips above the editable input
               so users don't have to hand-type a date. */}
-          <Field label="Desired delivery date" hint="YYYY-MM-DD">
+          <Field
+            label={t('ScreensInfluencerServiceQuote.fieldDeliveryLabel')}
+            hint={t('ScreensInfluencerServiceQuote.fieldDeliveryHint')}>
             <View className="flex-row flex-wrap" style={{gap: 6, marginBottom: 8}}>
               {DELIVERY_PRESETS.map(preset => {
                 const presetIso = isoDaysFromNow(preset.days);
                 const active = deliveryDate === presetIso;
                 return (
                   <Pressable
-                    key={preset.label}
+                    key={preset.key}
                     onPress={() => setDeliveryDate(presetIso)}
                     style={{
                       paddingHorizontal: 12,
@@ -448,7 +465,9 @@ export default function InfluencerServiceQuote() {
                         fontWeight: '700',
                         color: active ? '#6D28D9' : '#475569',
                       }}>
-                      {preset.label}
+                      {t(
+                        `ScreensInfluencerServiceQuote.deliveryPresets.${preset.key}`,
+                      )}
                     </Text>
                   </Pressable>
                 );
@@ -476,7 +495,9 @@ export default function InfluencerServiceQuote() {
           ) : null}
 
           {/* Budget */}
-          <Field label="Budget range" hint="Optional, helps us send the right quote">
+          <Field
+            label={t('ScreensInfluencerServiceQuote.fieldBudgetLabel')}
+            hint={t('ScreensInfluencerServiceQuote.fieldBudgetHint')}>
             <PickerChips
               value={budgetRange}
               options={BUDGET_OPTIONS}
@@ -489,32 +510,38 @@ export default function InfluencerServiceQuote() {
                 style={{gap: 6}}>
                 <Info size={12} color="#E11D48" />
                 <Text className="text-[11px] text-rose-700 flex-1">
-                  Typical range for similar projects:{' '}
+                  {t('ScreensInfluencerServiceQuote.typicalRangeBefore')}{' '}
                   <Text className="font-bold">
                     {formatINR(service.price_starting || 0)} – {formatINR(service.price_max)}
                   </Text>
-                  {' '}depending on complexity and revision count.
+                  {' '}{t('ScreensInfluencerServiceQuote.typicalRangeAfter')}
                 </Text>
               </View>
             ) : null}
           </Field>
 
-          <Field label="Style references / inspiration" hint="Optional but recommended">
+          <Field
+            label={t('ScreensInfluencerServiceQuote.fieldStyleLabel')}
+            hint={t('ScreensInfluencerServiceQuote.fieldStyleHint')}>
             <TextInput
               value={styleRefs}
               onChangeText={setStyleRefs}
-              placeholder="Paste Instagram reel links or describe a vibe"
+              placeholder={t(
+                'ScreensInfluencerServiceQuote.fieldStylePlaceholder',
+              )}
               placeholderTextColor="#cbd5e1"
               autoCapitalize="none"
               style={s.input}
             />
           </Field>
 
-          <Field label="Additional notes">
+          <Field label={t('ScreensInfluencerServiceQuote.fieldNotesLabel')}>
             <TextInput
               value={notes}
               onChangeText={setNotes}
-              placeholder="Brand colors, do's and don'ts, etc."
+              placeholder={t(
+                'ScreensInfluencerServiceQuote.fieldNotesPlaceholder',
+              )}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={3}
@@ -559,7 +586,9 @@ export default function InfluencerServiceQuote() {
               <Text
                 className="text-white text-sm font-black"
                 numberOfLines={1}>
-                {submitting ? 'Submitting…' : 'Submit Request'}
+                {submitting
+                  ? t('ScreensInfluencerServiceQuote.submitting')
+                  : t('ScreensInfluencerServiceQuote.submitRequest')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -567,7 +596,9 @@ export default function InfluencerServiceQuote() {
               disabled={submitting}
               className="py-3 rounded-2xl border border-slate-200 items-center"
               style={{opacity: submitting ? 0.5 : 1}}>
-              <Text className="text-sm font-black text-slate-700">Cancel</Text>
+              <Text className="text-sm font-black text-slate-700">
+                {t('ScreensInfluencerServiceQuote.cancel')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

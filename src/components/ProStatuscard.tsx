@@ -10,6 +10,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { invokeFn } from '../lib/api';
 import { useProfilePhoto } from '../utils/photoUrl';
 import {
@@ -39,6 +40,7 @@ function tagsMatchCategories(
 export default function ProStatusCard() {
   const { profile, user } = useAuth();
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const progress = useSharedValue(0);
   const opacity = useSharedValue(0);
   const [matchingBrandsCount, setMatchingBrandsCount] = useState<number | null>(
@@ -57,7 +59,7 @@ export default function ProStatusCard() {
   const trialProgress = Math.min(1, daysSinceCreation / 30);
   const expired = trialDaysLeft === 0;
 
-  const displayName = profile?.full_name || 'Creator';
+  const displayName = profile?.full_name || t('ProStatuscard.creatorFallback');
   const avatarUrl = useProfilePhoto();
   const currentPlan = (profile?.subscription_plan || '').toLowerCase();
   // Mirrors web: any explicit non-empty plan other than the "free"/"trial"
@@ -68,7 +70,9 @@ export default function ProStatusCard() {
   // upgrade to, so the CTA hides itself.
   const isTopTierPlan = currentPlan === 'elite';
   const billingCycle =
-    profile?.billing_cycle === 'annual' ? 'Annual' : 'Monthly';
+    profile?.billing_cycle === 'annual'
+      ? t('ProStatuscard.billingAnnual')
+      : t('ProStatuscard.billingMonthly');
 
   // Resolved plan name shown on the trial/upgrade strip — same logic as the
   // small "PLAN: …" pill in the header.
@@ -77,8 +81,8 @@ export default function ProStatusCard() {
         .replace('_', ' ')
         .replace(/\b\w/g, (c: string) => c.toUpperCase())
     : trialDaysLeft === 0
-      ? 'Free'
-      : 'Starter Trial';
+      ? t('ProStatuscard.planFree')
+      : t('ProStatuscard.planStarterTrial');
 
   // Approximation: assume the active sub renews `cycleDays` after the last
   // profile update (bumped on plan change). Stand-in until Stripe's
@@ -136,15 +140,15 @@ export default function ProStatusCard() {
 
   // Render-time helpers
   const renewalCopy = hasPaidPlan
-    ? `${billingCycle} · renews in `
+    ? t('ProStatuscard.renewsIn', { cycle: billingCycle })
     : expired
-      ? 'Trial ended — '
-      : 'Trial · ';
+      ? t('ProStatuscard.trialEnded')
+      : t('ProStatuscard.trialPrefix');
   const renewalDays = hasPaidPlan
     ? renewalDaysLeft != null
-      ? `${renewalDaysLeft} days`
+      ? t('ProStatuscard.daysValue', { count: renewalDaysLeft })
       : '—'
-    : `${trialDaysLeft} days left`;
+    : t('ProStatuscard.daysLeft', { count: trialDaysLeft });
 
   return (
     <Animated.View
@@ -200,7 +204,7 @@ export default function ProStatusCard() {
 
         <View className="flex-1">
           <Text className="text-[18px] font-bold text-slate-900 leading-tight">
-            Hi, {displayName.split(' ')[0]}
+            {t('ProStatuscard.greeting', { name: displayName.split(' ')[0] })}
           </Text>
           <View
             className="flex-row items-center self-start mt-1.5 px-2.5 py-0.5 rounded-full"
@@ -214,7 +218,7 @@ export default function ProStatusCard() {
               className="text-[11px] font-bold tracking-wide"
               style={{ color: BRAND.violet }}
             >
-              {planLabel} plan
+              {t('ProStatuscard.planPill', { plan: planLabel })}
             </Text>
           </View>
         </View>
@@ -274,13 +278,13 @@ export default function ProStatusCard() {
           <Text style={{ color: BRAND.accent, fontWeight: '700' }}>
             {matchingBrandsCount == null
               ? '…'
-              : matchingBrandsCount === 0
-                ? '0 campaigns'
-                : `${matchingBrandsCount} campaign${matchingBrandsCount === 1 ? '' : 's'}`}
+              : t('ProStatuscard.campaignsCount', {
+                  count: matchingBrandsCount,
+                })}
           </Text>
           {userCategories.length > 0
-            ? ' are open for creators in your niche'
-            : ' are active right now'}
+            ? t('ProStatuscard.nicheTail')
+            : t('ProStatuscard.activeTail')}
         </Text>
 
         <ChevronRight
@@ -303,7 +307,7 @@ export default function ProStatusCard() {
       >
         <View className="flex-1">
           <Text className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
-            Active Plan
+            {t('ProStatuscard.activePlanLabel')}
           </Text>
           <Text
             className="text-[12.5px] font-semibold text-slate-700 mt-1"
@@ -359,7 +363,7 @@ export default function ProStatusCard() {
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             />
             <Crown size={14} color="white" />
-            <Text className="text-white text-[13px] font-bold">Upgrade</Text>
+            <Text className="text-white text-[13px] font-bold">{t('ProStatuscard.upgrade')}</Text>
           </TouchableOpacity>
         )}
       </View>

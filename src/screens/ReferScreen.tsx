@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {Copy, MessageCircle, Sparkles, Trophy} from 'lucide-react-native';
 
@@ -78,6 +79,7 @@ type LedgerRow = {
 
 export default function ReferScreen() {
   const navigation = useNavigation<any>();
+  const {t} = useTranslation();
   const {user, profile, loading: authLoading} = useAuth();
 
   const [referralCode, setReferralCode] = useState('');
@@ -204,7 +206,9 @@ export default function ReferScreen() {
     return (
       <InfluencerLayout>
         <View className="items-center justify-center py-20">
-          <Text className="text-sm font-semibold text-slate-400">Loading…</Text>
+          <Text className="text-sm font-semibold text-slate-400">
+            {t('ScreensReferScreen.loading')}
+          </Text>
         </View>
       </InfluencerLayout>
     );
@@ -217,11 +221,11 @@ export default function ReferScreen() {
         contentContainerStyle={{padding: 16, paddingBottom: 120, gap: 16}}>
         {/* Header */}
         <View>
-          <Text className="text-2xl font-black text-slate-900">Refer & Earn</Text>
+          <Text className="text-2xl font-black text-slate-900">
+            {t('ScreensReferScreen.title')}
+          </Text>
           <Text className="text-sm text-slate-500 mt-1 leading-5">
-            Share RGossips with other creators. When they subscribe you both
-            win — they get 50% off their first month, you earn Reward Credits
-            (RC) redeemable on your next renewal.
+            {t('ScreensReferScreen.subtitle')}
           </Text>
         </View>
 
@@ -245,11 +249,10 @@ export default function ReferScreen() {
               <Sparkles color="white" size={26} />
             </LinearGradient>
             <Text className="text-lg font-black text-slate-900 text-center">
-              Subscribe to unlock referrals
+              {t('ScreensReferScreen.gate.title')}
             </Text>
             <Text className="text-sm text-slate-500 mt-2 text-center">
-              Refer & Earn is available to paid subscribers. Upgrade to any
-              plan and start sharing your referral link right after.
+              {t('ScreensReferScreen.gate.body')}
             </Text>
             <Pressable
               onPress={() => navigation.navigate('InfluencerPricing')}
@@ -259,7 +262,9 @@ export default function ReferScreen() {
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
                 style={{paddingVertical: 12, paddingHorizontal: 24}}>
-                <Text className="text-white text-sm font-black">See plans</Text>
+                <Text className="text-white text-sm font-black">
+                  {t('ScreensReferScreen.gate.cta')}
+                </Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -273,13 +278,15 @@ export default function ReferScreen() {
                 end={{x: 1, y: 1}}
                 style={{padding: 24}}>
                 <Text className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">
-                  Available RC
+                  {t('ScreensReferScreen.balance.available')}
                 </Text>
                 <Text className="text-white text-4xl font-black mt-1">
                   {availableBalance}
                 </Text>
                 <Text className="text-white text-xs opacity-80 mt-1">
-                  ₹{availableBalance} redeemable at checkout
+                  {t('ScreensReferScreen.balance.redeemable', {
+                    amount: availableBalance,
+                  })}
                 </Text>
                 {lockedBalance > 0 ? (
                   <View
@@ -293,17 +300,19 @@ export default function ReferScreen() {
                       gap: 6,
                     }}>
                     <Text className="text-white text-[9px] font-black uppercase tracking-widest opacity-90">
-                      Locked
+                      {t('ScreensReferScreen.locked')}
                     </Text>
                     <Text className="text-white text-[11px] font-black">
-                      +{lockedBalance} RC
+                      {t('ScreensReferScreen.balance.lockedAmount', {
+                        amount: lockedBalance,
+                      })}
                     </Text>
                   </View>
                 ) : null}
                 <Text className="text-white text-[11px] opacity-70 mt-4">
                   {lockedBalance > 0
-                    ? 'Your welcome bonus unlocks 30 days after signup. Referral rewards are spendable immediately.'
-                    : 'Redeem up to 50% of any plan price at checkout.'}
+                    ? t('ScreensReferScreen.balance.noteLocked')
+                    : t('ScreensReferScreen.balance.noteDefault')}
                 </Text>
               </LinearGradient>
             </View>
@@ -313,7 +322,7 @@ export default function ReferScreen() {
               className="bg-white rounded-3xl border border-slate-100 p-5"
               style={CARD_SHADOW}>
               <Text className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-                Your referral link
+                {t('ScreensReferScreen.share.label')}
               </Text>
               <View
                 className="mt-2 flex-row items-center bg-slate-50 rounded-2xl p-3 border border-slate-100"
@@ -333,7 +342,9 @@ export default function ReferScreen() {
                   <Text
                     className="text-xs font-black"
                     style={{color: BRAND.accent}}>
-                    {copied ? 'Copied' : 'Copy'}
+                    {copied
+                      ? t('ScreensReferScreen.share.copied')
+                      : t('ScreensReferScreen.share.copy')}
                   </Text>
                 </Pressable>
               </View>
@@ -347,15 +358,24 @@ export default function ReferScreen() {
                 }}>
                 <MessageCircle size={16} color="white" />
                 <Text className="text-white text-sm font-black">
-                  Share on WhatsApp
+                  {t('ScreensReferScreen.share.whatsapp')}
                 </Text>
               </Pressable>
 
               {/* Stats strip */}
               <View className="flex-row gap-2 mt-4">
-                <StatTile label="Qualified" value={qualifiedCount} />
-                <StatTile label="Pending" value={pendingCount} />
-                <StatTile label="RC earned" value={totalEarned} />
+                <StatTile
+                  label={t('ScreensReferScreen.stats.qualified')}
+                  value={qualifiedCount}
+                />
+                <StatTile
+                  label={t('ScreensReferScreen.stats.pending')}
+                  value={pendingCount}
+                />
+                <StatTile
+                  label={t('ScreensReferScreen.stats.rcEarned')}
+                  value={totalEarned}
+                />
               </View>
             </View>
 
@@ -368,17 +388,29 @@ export default function ReferScreen() {
                 style={{gap: 6}}>
                 <Trophy size={16} color="#F59E0B" />
                 <Text className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Instant rewards
+                  {t('ScreensReferScreen.tiers.heading')}
                 </Text>
               </View>
               <View className="flex-row" style={{gap: 8}}>
-                <TierTile plan="Starter" price="₹99" rc={50} />
-                <TierTile plan="Pro" price="₹299" rc={150} highlight />
-                <TierTile plan="Elite" price="₹699" rc={300} />
+                <TierTile
+                  plan={t('ScreensReferScreen.tiers.starter')}
+                  price="₹99"
+                  rc={50}
+                />
+                <TierTile
+                  plan={t('ScreensReferScreen.tiers.pro')}
+                  price="₹299"
+                  rc={150}
+                  highlight
+                />
+                <TierTile
+                  plan={t('ScreensReferScreen.tiers.elite')}
+                  price="₹699"
+                  rc={300}
+                />
               </View>
               <Text className="text-[11px] text-slate-400 mt-3 leading-4">
-                RC lands the moment your friend pays. Reversed if they refund
-                within 7 days. Auto-expires 90 days after credit.
+                {t('ScreensReferScreen.tiers.note')}
               </Text>
             </View>
 
@@ -392,7 +424,7 @@ export default function ReferScreen() {
                   className="flex-row items-center justify-between mb-2"
                   style={{gap: 8}}>
                   <Text className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                    Top referrers this month
+                    {t('ScreensReferScreen.leaderboard.heading')}
                   </Text>
                   {myRank ? (
                     <View
@@ -403,7 +435,9 @@ export default function ReferScreen() {
                         borderRadius: 4,
                       }}>
                       <Text className="text-[11px] font-black text-slate-700">
-                        You: #{myRank.rank}
+                        {t('ScreensReferScreen.leaderboard.you', {
+                          rank: myRank.rank,
+                        })}
                       </Text>
                     </View>
                   ) : null}
@@ -447,13 +481,15 @@ export default function ReferScreen() {
                           <Text
                             className="text-[13px] font-bold text-slate-900"
                             numberOfLines={1}>
-                            {row.full_name || row.username || 'Unknown'}
+                            {row.full_name ||
+                              row.username ||
+                              t('ScreensReferScreen.leaderboard.unknown')}
                           </Text>
                           {isMe ? (
                             <Text
                               className="text-[10px] font-black"
                               style={{color: BRAND.accent}}>
-                              YOU
+                              {t('ScreensReferScreen.leaderboard.you2')}
                             </Text>
                           ) : null}
                         </View>
@@ -467,18 +503,21 @@ export default function ReferScreen() {
                       </View>
                       <View style={{alignItems: 'flex-end'}}>
                         <Text className="text-sm font-black text-emerald-600">
-                          {row.rc_earned} RC
+                          {t('ScreensReferScreen.leaderboard.rcEarned', {
+                            amount: row.rc_earned,
+                          })}
                         </Text>
                         <Text className="text-[10px] text-slate-400">
-                          {row.rewarded_count} referral
-                          {row.rewarded_count === 1 ? '' : 's'}
+                          {t('ScreensReferScreen.referralCount', {
+                            count: row.rewarded_count,
+                          })}
                         </Text>
                       </View>
                     </View>
                   );
                 })}
                 <Text className="text-[11px] text-slate-400 mt-2 leading-4">
-                  Resets on the 1st of each month (IST).
+                  {t('ScreensReferScreen.leaderboard.reset')}
                 </Text>
               </View>
             ) : null}
@@ -488,11 +527,11 @@ export default function ReferScreen() {
               className="bg-white rounded-3xl border border-slate-100 p-5"
               style={CARD_SHADOW}>
               <Text className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2">
-                Your referrals
+                {t('ScreensReferScreen.referrals.heading')}
               </Text>
               {referrals.length === 0 ? (
                 <Text className="text-sm text-slate-400 py-4 text-center">
-                  No referrals yet — share your link to get started.
+                  {t('ScreensReferScreen.referrals.empty')}
                 </Text>
               ) : (
                 referrals.map(r => {
@@ -509,8 +548,10 @@ export default function ReferScreen() {
                       <View className="flex-1">
                         <Text className="text-[13px] font-bold text-slate-900">
                           {r.referee_first_plan
-                            ? `${r.referee_first_plan} subscription`
-                            : 'New referral'}
+                            ? t('ScreensReferScreen.referrals.planSubscription', {
+                                plan: r.referee_first_plan,
+                              })
+                            : t('ScreensReferScreen.referrals.newReferral')}
                         </Text>
                         <Text className="text-[11px] text-slate-400">
                           {formatDate(
@@ -528,12 +569,16 @@ export default function ReferScreen() {
                         <Text
                           className="text-[10px] font-black uppercase tracking-wider"
                           style={{color: pill.fg}}>
-                          {pill.label}
+                          {t(`ScreensReferScreen.statusPill.${r.status}`, {
+                            defaultValue: pill.label,
+                          })}
                         </Text>
                       </View>
                       {r.status === 'REWARDED' && (
                         <Text className="text-[13px] font-black text-emerald-600">
-                          +{r.referrer_reward_rc} RC
+                          {t('ScreensReferScreen.referrals.rcReward', {
+                            amount: r.referrer_reward_rc,
+                          })}
                         </Text>
                       )}
                     </View>
@@ -547,11 +592,11 @@ export default function ReferScreen() {
               className="bg-white rounded-3xl border border-slate-100 p-5"
               style={CARD_SHADOW}>
               <Text className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2">
-                RC wallet history
+                {t('ScreensReferScreen.ledger.heading')}
               </Text>
               {ledger.length === 0 ? (
                 <Text className="text-sm text-slate-400 py-4 text-center">
-                  Wallet is empty.
+                  {t('ScreensReferScreen.ledger.empty')}
                 </Text>
               ) : (
                 ledger.map(row => {
@@ -569,7 +614,9 @@ export default function ReferScreen() {
                           className="flex-row items-center"
                           style={{gap: 6, flexWrap: 'wrap'}}>
                           <Text className="text-[13px] font-bold text-slate-900">
-                            {REASON_LABEL[row.reason] || row.reason}
+                            {t(`ScreensReferScreen.reasonLabel.${row.reason}`, {
+                              defaultValue: REASON_LABEL[row.reason] || row.reason,
+                            })}
                           </Text>
                           {isLocked ? (
                             <View
@@ -582,18 +629,28 @@ export default function ReferScreen() {
                               <Text
                                 className="text-[9px] font-black uppercase tracking-wider"
                                 style={{color: '#B45309'}}>
-                                Locked
+                                {t('ScreensReferScreen.locked')}
                               </Text>
                             </View>
                           ) : null}
                         </View>
                         <Text className="text-[11px] text-slate-400">
                           {formatDate(row.created_at)}
-                          {isLocked ? ` · unlocks ${formatDate(row.unlocks_at)}` : ''}
-                          {row.expires_at && row.delta_rc > 0
-                            ? ` · expires ${formatDate(row.expires_at)}`
+                          {isLocked
+                            ? t('ScreensReferScreen.ledger.unlocks', {
+                                date: formatDate(row.unlocks_at),
+                              })
                             : ''}
-                          {row.note ? ` · ${row.note}` : ''}
+                          {row.expires_at && row.delta_rc > 0
+                            ? t('ScreensReferScreen.ledger.expires', {
+                                date: formatDate(row.expires_at),
+                              })
+                            : ''}
+                          {row.note
+                            ? t('ScreensReferScreen.ledger.note', {
+                                note: row.note,
+                              })
+                            : ''}
                         </Text>
                       </View>
                       <Text

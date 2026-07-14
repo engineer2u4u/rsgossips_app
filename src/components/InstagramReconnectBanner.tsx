@@ -3,6 +3,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Instagram, AlertTriangle, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabase';
 import { invokeFn } from '../lib/api';
 import {
@@ -21,6 +22,7 @@ export default function InstagramReconnectBanner({
   instagramTokenMissing = false,
   onReconnected,
 }: Props) {
+  const { t } = useTranslation();
   const [connecting, setConnecting] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +50,7 @@ export default function InstagramReconnectBanner({
 
       onReconnected?.();
     } catch (err: any) {
-      setError(err.message || 'Failed to reconnect Instagram');
+      setError(err.message || t('InstagramReconnectBanner.errorReconnect'));
     } finally {
       setConnecting(false);
     }
@@ -80,7 +82,7 @@ export default function InstagramReconnectBanner({
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to open Instagram');
+      setError(err.message || t('InstagramReconnectBanner.errorOpen'));
     }
   };
 
@@ -113,11 +115,11 @@ export default function InstagramReconnectBanner({
           <View className="flex-row items-center mb-0.5" style={{ gap: 6 }}>
             {/* <AlertTriangle size={14} color="#F59E0B" /> */}
             <Text className="text-sm font-bold text-slate-900">
-              Instagram Reconnection Required
+              {t('InstagramReconnectBanner.title')}
             </Text>
           </View>
           <Text className="text-xs text-slate-500">
-            Reconnect your Instagram to keep your analytics up to date.
+            {t('InstagramReconnectBanner.description')}
           </Text>
           {error ? (
             <Text className="text-xs text-red-500 mt-1">{error}</Text>
@@ -145,7 +147,9 @@ export default function InstagramReconnectBanner({
           {connecting ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text className="text-white text-xs font-bold">Reconnect</Text>
+            <Text className="text-white text-xs font-bold">
+              {t('InstagramReconnectBanner.reconnect')}
+            </Text>
           )}
         </Pressable>
 

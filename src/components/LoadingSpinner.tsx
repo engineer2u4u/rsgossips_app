@@ -1,12 +1,14 @@
 import React, {useEffect, useRef} from 'react';
 import {View, Text, Animated, Easing} from 'react-native';
 import {Loader2} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 interface Props {
   message?: string;
 }
 
-export default function LoadingSpinner({message = 'Loading...'}: Props) {
+export default function LoadingSpinner({message}: Props) {
+  const {t} = useTranslation();
   const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function LoadingSpinner({message = 'Loading...'}: Props) {
         </Animated.View>
       </View>
       <Text className="text-sm text-slate-600 font-semibold mt-3">
-        {message}
+        {message ?? t('LoadingSpinner.loading')}
       </Text>
     </View>
   );

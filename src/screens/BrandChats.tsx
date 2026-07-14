@@ -22,6 +22,7 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 type Contact = {
   id: number;
@@ -150,6 +151,7 @@ const WAVEFORM_HEIGHTS = Array.from({length: 30}, () =>
 );
 
 export default function BrandChats() {
+  const {t} = useTranslation();
   const [selectedChat, setSelectedChat] = useState<Contact | null>(null);
   const [activeTab, setActiveTab] = useState('All');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
@@ -294,10 +296,10 @@ export default function BrandChats() {
               <View className="flex-row justify-between items-start mb-5">
                 <View>
                   <Text className="text-2xl font-bold text-white">
-                    Messages
+                    {t('ScreensBrandChats.messages')}
                   </Text>
                   <Text className="text-white/70 text-xs mt-1">
-                    6 Running Projects
+                    {t('ScreensBrandChats.runningProjects', {count: 6})}
                   </Text>
                 </View>
               </View>
@@ -306,7 +308,7 @@ export default function BrandChats() {
             {/* Search Bar - overlapping header */}
             <View className="mx-6 -mt-6 flex-row items-center bg-white rounded-full p-2 shadow-lg shadow-gray-200/50 z-10">
               <TextInput
-                placeholder="Search or start a new chat"
+                placeholder={t('ScreensBrandChats.searchPlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 className="flex-1 pl-4 text-sm text-gray-800"
               />
@@ -330,7 +332,7 @@ export default function BrandChats() {
                     className={`text-sm font-medium ${
                       activeTab === tab ? 'text-white' : 'text-gray-600'
                     }`}>
-                    {tab}
+                    {t(`ScreensBrandChats.tabs.${tab.toLowerCase()}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -374,7 +376,8 @@ export default function BrandChats() {
                         {selectedChat.name}
                       </Text>
                       <Text className="text-xs text-slate-400">
-                        <Text className="text-slate-500">★</Text> Regarding:{' '}
+                        <Text className="text-slate-500">★</Text>{' '}
+                        {t('ScreensBrandChats.regarding')}{' '}
                         <Text className="font-medium text-slate-600">
                           {selectedChat.campaign}
                         </Text>
@@ -405,7 +408,7 @@ export default function BrandChats() {
                   <View className="flex-row items-end gap-3">
                     <View className="flex-1 flex-row items-end bg-[#F8F9FD] p-2.5 rounded-2xl border border-slate-100">
                       <TextInput
-                        placeholder="Type a message..."
+                        placeholder={t('ScreensBrandChats.typeMessage')}
                         placeholderTextColor="#94A3B8"
                         multiline
                         className="flex-1 bg-transparent text-sm py-1.5 text-slate-700 max-h-32"
@@ -429,7 +432,7 @@ export default function BrandChats() {
                   <Send size={32} color="#CBD5E1" />
                 </View>
                 <Text className="font-medium text-slate-300">
-                  Select a conversation to start chatting
+                  {t('ScreensBrandChats.selectConversation')}
                 </Text>
               </View>
             )}

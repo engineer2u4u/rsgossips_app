@@ -2,8 +2,10 @@ import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {ArrowUpRight} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 export const FeaturedCampaign = () => {
+  const {t} = useTranslation();
   return (
     <LinearGradient
       colors={['#5851DB', '#4338CA']}
@@ -11,16 +13,15 @@ export const FeaturedCampaign = () => {
       <View className="flex-row items-center gap-2 mb-2">
         <View className="w-2 h-2 bg-red-400 rounded-full" />
         <Text className="text-[10px] font-bold text-white/80 uppercase tracking-wider">
-          Featured Campaign
+          {t('BrandsFeaturedCampaign.badge')}
         </Text>
       </View>
 
       <Text className="text-lg font-bold text-white mb-1">
-        Mega Brand Collab 2025
+        {t('BrandsFeaturedCampaign.title')}
       </Text>
       <Text className="text-xs text-white/70 leading-5 mb-4" numberOfLines={2}>
-        Join the biggest influencer campaign of the year. Open to all categories
-        with 5K+ followers.
+        {t('BrandsFeaturedCampaign.description')}
       </Text>
 
       <View className="flex-row items-center justify-between">
@@ -32,11 +33,15 @@ export const FeaturedCampaign = () => {
               className="w-8 h-8 rounded-full border-2 border-[#5851DB] -ml-2 first:ml-0"
             />
           ))}
-          <Text className="text-[10px] text-white/60 ml-2">+48 applied</Text>
+          <Text className="text-[10px] text-white/60 ml-2">
+            {t('BrandsFeaturedCampaign.applied', {count: 48})}
+          </Text>
         </View>
 
         <TouchableOpacity className="bg-white px-4 py-2.5 rounded-full flex-row items-center gap-1.5">
-          <Text className="text-xs font-bold text-[#5851DB]">View</Text>
+          <Text className="text-xs font-bold text-[#5851DB]">
+            {t('BrandsFeaturedCampaign.view')}
+          </Text>
           <ArrowUpRight size={14} color="#5851DB" />
         </TouchableOpacity>
       </View>

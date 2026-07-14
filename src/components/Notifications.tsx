@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onNext: (enabled: boolean) => void;
 }
 
 export default function Notifications({ onNext }: Props) {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 items-center px-6 space-y-6">
       {/* IMAGE SECTION */}
@@ -23,11 +25,11 @@ export default function Notifications({ onNext }: Props) {
       {/* TEXT */}
       <View className="items-center space-y-2 px-4">
         <Text className="text-2xl font-bold text-slate-900 text-center">
-          Never Miss a Collab
+          {t('Notifications.title')}
         </Text>
 
         <Text className="text-sm text-slate-500 text-center max-w-[280px]">
-          Get instant updates on new campaigns, messages & payments
+          {t('Notifications.subtitle')}
         </Text>
       </View>
 
@@ -38,13 +40,13 @@ export default function Notifications({ onNext }: Props) {
           className="h-[54px] rounded-2xl bg-[#9810FA] items-center justify-center"
         >
           <Text className="text-white font-semibold text-base">
-            Enable Notifications
+            {t('Notifications.enable')}
           </Text>
         </Pressable>
 
         <Pressable onPress={() => onNext(false)}>
           <Text className="text-center text-sm font-semibold text-slate-400">
-            Not Now
+            {t('Notifications.notNow')}
           </Text>
         </Pressable>
       </View>

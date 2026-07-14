@@ -11,6 +11,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 120;
@@ -30,6 +31,7 @@ export default function DealCard({
   onSwipe,
   autoSwipe,
 }: DealCardProps) {
+  const { t } = useTranslation();
   const x = useSharedValue(0);
   const y = useSharedValue(0);
   const exiting = useSharedValue(false);
@@ -126,10 +128,10 @@ export default function DealCard({
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-lg font-black text-slate-800 uppercase">
-                Deal Of The Day
+                {t('DealCard.title')}
               </Text>
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Limited Time Offer
+                {t('DealCard.subtitle')}
               </Text>
             </View>
 
@@ -152,7 +154,7 @@ export default function DealCard({
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             />
             <Text className="text-white font-black text-xs uppercase tracking-widest">
-              Apply Now
+              {t('DealCard.applyNow')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Film, Newspaper, Handshake } from 'lucide-react-native';
 
 type Category = {
-  label: string;
+  key: string;
   bgColor: string;
   textColor: string;
   Icon: any;
@@ -11,25 +12,25 @@ type Category = {
 
 const categories: Category[] = [
   {
-    label: 'Celebs & Actors',
+    key: 'celebsActors',
     Icon: Film,
     bgColor: '#FFF9F1',
     textColor: '#D97706',
   },
   {
-    label: 'Publishers & Media',
+    key: 'publishersMedia',
     Icon: Newspaper,
     bgColor: '#F1F7FF',
     textColor: '#2563EB',
   },
   {
-    label: 'Talent Agencies',
+    key: 'talentAgencies',
     Icon: Handshake,
     bgColor: '#F9F5FF',
     textColor: '#9333EA',
   },
   {
-    label: 'Meme Pages & More',
+    key: 'memePages',
     Icon: Film, // replace with another icon if needed
     bgColor: '#F0FDF4',
     textColor: '#16A34A',
@@ -37,11 +38,13 @@ const categories: Category[] = [
 ];
 
 export const BeyondInfluencers = () => {
+  const { t } = useTranslation();
+
   return (
     <View className="w-full px-4 py-6">
       {/* Title */}
       <Text className="text-xl font-black text-[#1C115A] mb-6">
-        Beyond Influencers
+        {t('BeyondInfluencers.title')}
       </Text>
 
       {/* Grid */}
@@ -65,7 +68,7 @@ export const BeyondInfluencers = () => {
                 style={{ color: item.textColor }}
                 className="font-black text-[15px] leading-tight"
               >
-                {item.label}
+                {t(`BeyondInfluencers.categories.${item.key}`)}
               </Text>
             </Pressable>
           );

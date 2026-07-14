@@ -28,8 +28,11 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
+
+type TFunc = (key: string, opts?: any) => string;
 
 export type NotificationRow = {
   id?: string;
@@ -136,7 +139,7 @@ function routeFromType(
   return null;
 }
 
-function relativeTime(iso?: string): string {
+function relativeTime(iso: string | undefined, t: TFunc): string {
   if (!iso) return '';
   const date = new Date(iso).getTime();
   if (!isFinite(date)) return '';
@@ -144,10 +147,10 @@ function relativeTime(iso?: string): string {
   const min = Math.floor(diff / 60_000);
   const hr = Math.floor(diff / 3_600_000);
   const day = Math.floor(diff / 86_400_000);
-  if (min < 1) return 'Just now';
-  if (min < 60) return `${min}m ago`;
-  if (hr < 24) return `${hr}h ago`;
-  if (day < 7) return `${day}d ago`;
+  if (min < 1) return t('NotificationsList.justNow');
+  if (min < 60) return t('NotificationsList.minutesAgo', {count: min});
+  if (hr < 24) return t('NotificationsList.hoursAgo', {count: hr});
+  if (day < 7) return t('NotificationsList.daysAgo', {count: day});
   return new Date(iso).toLocaleDateString(undefined, {day: 'numeric', month: 'short'});
 }
 
@@ -161,10 +164,13 @@ interface Props {
 
 export function NotificationsList({
   accentColor = '#E60076',
-  emptyHint = "You'll be notified about campaign activity",
+  emptyHint,
 }: Props) {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const navigation = useNavigation<any>();
+  const resolvedEmptyHint =
+    emptyHint ?? t('NotificationsList.emptyHint');
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +186,7 @@ export function NotificationsList({
       setItems(data?.notifications || []);
     } catch (err: any) {
       console.warn('notifications/list failed:', err);
-      setError(err?.message || 'Failed to load notifications');
+      setError(err?.message || t('NotificationsList.loadError'));
     } finally {
       setLoading(false);
     }
@@ -216,7 +222,7 @@ export function NotificationsList({
     return (
       <View style={s.loadingWrap}>
         <ActivityIndicator color={accentColor} />
-        <Text style={s.loadingText}>Loading notifications…</Text>
+        <Text style={s.loadingText}>{t('NotificationsList.loading')}</Text>
       </View>
     );
   }
@@ -234,10 +240,12 @@ export function NotificationsList({
       {unread > 0 ? (
         <View style={s.headerRow}>
           <Text style={s.unreadCount}>
-            {unread} unread
+            {t('NotificationsList.unreadCount', {count: unread})}
           </Text>
           <Pressable onPress={() => markRead('all')} hitSlop={6}>
-            <Text style={[s.markAll, {color: accentColor}]}>Mark all read</Text>
+            <Text style={[s.markAll, {color: accentColor}]}>
+              {t('NotificationsList.markAllRead')}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -245,8 +253,8 @@ export function NotificationsList({
       {items.length === 0 ? (
         <View style={s.emptyWrap}>
           <Bell size={36} color="#cbd5e1" />
-          <Text style={s.emptyTitle}>No notifications yet</Text>
-          <Text style={s.emptyHint}>{emptyHint}</Text>
+          <Text style={s.emptyTitle}>{t('NotificationsList.emptyTitle')}</Text>
+          <Text style={s.emptyHint}>{resolvedEmptyHint}</Text>
         </View>
       ) : (
         items.map((item, i) => {
@@ -294,9 +302,9 @@ export function NotificationsList({
                         isUnread ? {color: '#0f172a'} : {color: '#64748b'},
                       ]}
                       numberOfLines={2}>
-                      {item.title || 'Notification'}
+                      {item.title || t('NotificationsList.notificationFallback')}
                     </Text>
-                    <Text style={s.time}>{relativeTime(item.created_at)}</Text>
+                    <Text style={s.time}>{relativeTime(item.created_at, t)}</Text>
                   </View>
                   {text ? (
                     <Text style={s.body} numberOfLines={3}>

@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, Image, Pressable, Dimensions } from 'react-native';
 
 interface Props {
@@ -9,27 +10,19 @@ interface Props {
 
 const slides = [
   {
-    title: 'Chat, Negotiate, Close Deals',
-    description:
-      'Directly connect with brands, negotiate deliverables, and finalize collaborations in minutes.',
+    key: 'chat',
     image: require('../assets/login/BrandMessageCard.png'),
   },
   {
-    title: 'Find Campaigns That Fit You',
-    description:
-      'Explore brand deals tailored to your niche, audience, and engagement style.',
+    key: 'campaigns',
     image: require('../assets/login/DiscoverCampaignsCard.png'),
   },
   {
-    title: 'Get Paid Securely & On Time',
-    description:
-      'Track invoices, receive payments, and manage your earnings with transparency.',
+    key: 'payments',
     image: require('../assets/login/CreatorWalletCard.png'),
   },
   {
-    title: 'Ready to Start?',
-    description:
-      'Join thousands of creators managing their business efficiently.',
+    key: 'ready',
     image: require('../assets/login/TodayCollaborationCard.png'),
   },
 ];
@@ -40,6 +33,7 @@ export default function OnboardingCarousel({
   onLoginClick,
   onSignUpClick,
 }: Props) {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(0);
 
   const nextSlide = () => {
@@ -73,11 +67,11 @@ export default function OnboardingCarousel({
       <View className="items-center px-8 pb-12 w-full">
         <View className="mb-6 space-y-2 items-center">
           <Text className="text-[26px] font-bold text-[#0F172A] text-center">
-            {slides[current].title}
+            {t(`OnboardingCarousel.slides.${slides[current].key}.title`)}
           </Text>
 
           <Text className="text-gray-500 text-[15px] text-center px-4">
-            {slides[current].description}
+            {t(`OnboardingCarousel.slides.${slides[current].key}.description`)}
           </Text>
         </View>
 
@@ -101,7 +95,9 @@ export default function OnboardingCarousel({
                 onPress={nextSlide}
                 className="w-full bg-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"
               >
-                <Text className="text-white text-lg font-semibold">Next</Text>
+                <Text className="text-white text-lg font-semibold">
+                  {t('OnboardingCarousel.next')}
+                </Text>
               </Pressable>
 
               <Pressable
@@ -109,7 +105,7 @@ export default function OnboardingCarousel({
                 className="w-full border border-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"
               >
                 <Text className="text-[#FA288A] text-lg font-semibold">
-                  Skip
+                  {t('OnboardingCarousel.skip')}
                 </Text>
               </Pressable>
             </>
@@ -128,7 +124,7 @@ export default function OnboardingCarousel({
                 className="w-full bg-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"
               >
                 <Text className="text-white text-lg font-semibold">
-                  Sign In
+                  {t('OnboardingCarousel.signIn')}
                 </Text>
               </Pressable>
 
@@ -137,7 +133,7 @@ export default function OnboardingCarousel({
                 className="w-full border border-[#FA288A] h-[58px] rounded-[20px] items-center justify-center"
               >
                 <Text className="text-[#FA288A] text-lg font-semibold">
-                  Sign Up
+                  {t('OnboardingCarousel.signUp')}
                 </Text>
               </Pressable>
             </>

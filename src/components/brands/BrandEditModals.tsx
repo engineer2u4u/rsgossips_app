@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import {Check, X} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 // ─────────── Generic primitives ───────────
 
@@ -41,10 +42,12 @@ export function EditModal({
   onClose,
   onSave,
   children,
-  saveLabel = 'Save',
+  saveLabel,
   canSave = true,
 }: EditModalProps) {
+  const {t} = useTranslation();
   const [saving, setSaving] = useState(false);
+  const resolvedSaveLabel = saveLabel ?? t('BrandsBrandEditModals.save');
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -94,7 +97,9 @@ export function EditModal({
               onPress={onClose}
               disabled={saving}
               style={[s.btn, s.btnGhost]}>
-              <Text style={s.btnGhostText}>Cancel</Text>
+              <Text style={s.btnGhostText}>
+                {t('BrandsBrandEditModals.cancel')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -103,7 +108,7 @@ export function EditModal({
               {saving ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={s.btnPrimaryText}>{saveLabel}</Text>
+                <Text style={s.btnPrimaryText}>{resolvedSaveLabel}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -194,6 +199,7 @@ export function BrandInfoEditModal({
   onClose: () => void;
   onSave: (payload: BrandInfoPayload) => Promise<void>;
 }) {
+  const {t} = useTranslation();
   const [brandName, setBrandName] = useState(profile.brand_name || '');
   const [legalName, setLegalName] = useState(profile.gstin_legal_name || '');
   const [tradeName, setTradeName] = useState(profile.gstin_trade_name || '');
@@ -207,8 +213,8 @@ export function BrandInfoEditModal({
   return (
     <EditModal
       visible={visible}
-      title="Edit Brand Information"
-      subtitle="Visible to creators and other brands on your profile"
+      title={t('BrandsBrandEditModals.brandInfo.title')}
+      subtitle={t('BrandsBrandEditModals.brandInfo.subtitle')}
       onClose={onClose}
       onSave={async () => {
         await onSave({
@@ -223,51 +229,51 @@ export function BrandInfoEditModal({
         onClose();
       }}>
       <Field
-        label="Brand Name"
+        label={t('BrandsBrandEditModals.brandInfo.brandNameLabel')}
         value={brandName}
         onChange={setBrandName}
-        placeholder="e.g. Recent Gossips"
-        hint="Used everywhere your brand is displayed."
+        placeholder={t('BrandsBrandEditModals.brandInfo.brandNamePlaceholder')}
+        hint={t('BrandsBrandEditModals.brandInfo.brandNameHint')}
       />
       <Field
-        label="Legal Name"
+        label={t('BrandsBrandEditModals.brandInfo.legalNameLabel')}
         value={legalName}
         onChange={setLegalName}
-        placeholder="As per GSTIN"
+        placeholder={t('BrandsBrandEditModals.brandInfo.legalNamePlaceholder')}
       />
       <Field
-        label="Trade Name"
+        label={t('BrandsBrandEditModals.brandInfo.tradeNameLabel')}
         value={tradeName}
         onChange={setTradeName}
-        placeholder="Common name customers know you by"
+        placeholder={t('BrandsBrandEditModals.brandInfo.tradeNamePlaceholder')}
       />
       <Field
-        label="Business Type"
+        label={t('BrandsBrandEditModals.brandInfo.businessTypeLabel')}
         value={businessType}
         onChange={setBusinessType}
-        placeholder="e.g. Private Limited Company"
+        placeholder={t('BrandsBrandEditModals.brandInfo.businessTypePlaceholder')}
       />
       <Field
-        label="Registered Address"
+        label={t('BrandsBrandEditModals.brandInfo.addressLabel')}
         value={address}
         onChange={setAddress}
-        placeholder="Street, area"
+        placeholder={t('BrandsBrandEditModals.brandInfo.addressPlaceholder')}
       />
       <View style={{flexDirection: 'row', gap: 12}}>
         <View style={{flex: 1}}>
           <Field
-            label="State"
+            label={t('BrandsBrandEditModals.brandInfo.stateLabel')}
             value={state}
             onChange={setState}
-            placeholder="State"
+            placeholder={t('BrandsBrandEditModals.brandInfo.statePlaceholder')}
           />
         </View>
         <View style={{flex: 1}}>
           <Field
-            label="Pincode"
+            label={t('BrandsBrandEditModals.brandInfo.pincodeLabel')}
             value={pincode}
             onChange={v => setPincode(v.replace(/\D/g, '').slice(0, 6))}
-            placeholder="6-digit pincode"
+            placeholder={t('BrandsBrandEditModals.brandInfo.pincodePlaceholder')}
             inputMode="numeric"
           />
         </View>
@@ -275,9 +281,9 @@ export function BrandInfoEditModal({
       {profile.gstin ? (
         <View style={s.gstHintBox}>
           <Text style={s.gstHintText}>
-            Auto-filled from GSTIN{' '}
-            <Text style={{fontWeight: '800'}}>{profile.gstin}</Text>. Edits
-            override the auto-fill but the original GSTIN stays on file.
+            {t('BrandsBrandEditModals.brandInfo.gstHintPrefix')}{' '}
+            <Text style={{fontWeight: '800'}}>{profile.gstin}</Text>
+            {t('BrandsBrandEditModals.brandInfo.gstHintSuffix')}
           </Text>
         </View>
       ) : null}
@@ -303,6 +309,7 @@ export function ContactDetailsEditModal({
   onClose: () => void;
   onSave: (payload: ContactDetailsPayload) => Promise<void>;
 }) {
+  const {t} = useTranslation();
   const [contactName, setContactName] = useState(profile.contact_name || '');
   const [contactEmail, setContactEmail] = useState(profile.contact_email || '');
 
@@ -312,8 +319,8 @@ export function ContactDetailsEditModal({
   return (
     <EditModal
       visible={visible}
-      title="Edit Contact Details"
-      subtitle="Used for campaign messaging and payouts"
+      title={t('BrandsBrandEditModals.contact.title')}
+      subtitle={t('BrandsBrandEditModals.contact.subtitle')}
       canSave={emailLooksOk}
       onClose={onClose}
       onSave={async () => {
@@ -324,38 +331,42 @@ export function ContactDetailsEditModal({
         onClose();
       }}>
       <Field
-        label="Brand Manager"
+        label={t('BrandsBrandEditModals.contact.managerLabel')}
         value={contactName}
         onChange={setContactName}
-        placeholder="Person we'd reach out to"
+        placeholder={t('BrandsBrandEditModals.contact.managerPlaceholder')}
       />
 
       {/* Phone is the login identity — read-only. Changing it here would
           let a signed-in user lock themselves out. */}
       <View>
-        <Text style={s.fieldLabel}>Business Mobile</Text>
+        <Text style={s.fieldLabel}>
+          {t('BrandsBrandEditModals.contact.mobileLabel')}
+        </Text>
         <View style={s.readonlyRow}>
           <Text style={s.readonlyValue} numberOfLines={1}>
             {profile.contact_phone || '—'}
           </Text>
-          <Text style={s.readonlyTag}>Login number · not editable</Text>
+          <Text style={s.readonlyTag}>
+            {t('BrandsBrandEditModals.contact.mobileTag')}
+          </Text>
         </View>
         <Text style={s.hint}>
-          Contact support to change the phone number on your account.
+          {t('BrandsBrandEditModals.contact.mobileHint')}
         </Text>
       </View>
 
       <Field
-        label="Email"
+        label={t('BrandsBrandEditModals.contact.emailLabel')}
         value={contactEmail}
         onChange={setContactEmail}
-        placeholder="hello@yourbrand.com"
-        hint="We'll send campaign updates and invoices here."
+        placeholder={t('BrandsBrandEditModals.contact.emailPlaceholder')}
+        hint={t('BrandsBrandEditModals.contact.emailHint')}
         type="email"
       />
       {contactEmail && !emailLooksOk ? (
         <Text style={s.errorText}>
-          That doesn't look like a valid email address.
+          {t('BrandsBrandEditModals.contact.emailInvalid')}
         </Text>
       ) : null}
     </EditModal>
@@ -397,6 +408,7 @@ export function CategoriesEditModal({
   onClose: () => void;
   onSave: (payload: CategoriesPayload) => Promise<void>;
 }) {
+  const {t} = useTranslation();
   const [selected, setSelected] = useState<string[]>(initial);
 
   const toggle = (cat: string) => {
@@ -408,8 +420,11 @@ export function CategoriesEditModal({
   return (
     <EditModal
       visible={visible}
-      title="Edit Categories"
-      subtitle={`${selected.length} of ${CATEGORIES.length} selected`}
+      title={t('BrandsBrandEditModals.categories.title')}
+      subtitle={t('BrandsBrandEditModals.categories.subtitle', {
+        count: selected.length,
+        total: CATEGORIES.length,
+      })}
       onClose={onClose}
       onSave={async () => {
         await onSave({categories: selected});

@@ -21,6 +21,7 @@ import {
   Briefcase,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
@@ -81,12 +82,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   onPaymentsClick,
   onReferClick,
 }) => {
+  const {t} = useTranslation();
   const {profile, signOut} = useAuth();
   const navigation = useNavigation();
   const [showLogout, setShowLogout] = useState(false);
   const {stats: campaignStats} = useInfluencerCampaigns();
 
-  const name = profile?.full_name || 'Creator';
+  const name = profile?.full_name || t('DashboardView.creator');
   const handle = profile?.instagram_handle || profile?.username || '';
   const photo = useProfilePhoto();
   const categories = profile?.categories || [];
@@ -105,7 +107,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const planLabel = hasPaidPlan
     ? currentPlan.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-    : expired ? 'Free' : 'Starter Trial';
+    : expired ? t('DashboardView.free') : t('DashboardView.starterTrial');
 
   const completion = computeProfileCompletion(profile);
   const openMediaKit = () => navigation.navigate('InfluencerMediaKit' as never);
@@ -123,9 +125,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     <View className="flex-1 px-5 pt-6" style={{gap: 20}}>
       {/* Page Header */}
       <View className="px-1">
-        <Text className="text-2xl font-black text-[#1A1A1A]">Profile</Text>
+        <Text className="text-2xl font-black text-[#1A1A1A]">{t('DashboardView.title')}</Text>
         <Text className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-          Manage your creator account
+          {t('DashboardView.subtitle')}
         </Text>
       </View>
 
@@ -176,7 +178,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Categories */}
           <View className="flex-row flex-wrap justify-center mt-3" style={{gap: 6}}>
-            {(categories.length > 0 ? categories : ['Creator']).map((cat: string) => (
+            {(categories.length > 0 ? categories : [t('DashboardView.creator')]).map((cat: string) => (
               <View key={cat} className="bg-[#F3F4F9] px-4 py-1.5 rounded-full">
                 <Text className="text-[10px] font-bold text-[#374151]">{cat}</Text>
               </View>
@@ -187,17 +189,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <View className="w-full mt-6 pt-5 border-t border-gray-100 flex-row justify-around items-center px-2">
             <View className="items-center">
               <Text className="font-black text-[#1A1A1A] text-base">{formatCount(posts)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Posts</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('DashboardView.posts')}</Text>
             </View>
             <View className="w-px h-9 bg-gray-100" />
             <View className="items-center">
               <Text className="font-black text-[#1A1A1A] text-base">{formatCount(followers)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Followers</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('DashboardView.followers')}</Text>
             </View>
             <View className="w-px h-9 bg-gray-100" />
             <View className="items-center">
               <Text className="font-black text-[#1A1A1A] text-base">{formatCount(following)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Following</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('DashboardView.following')}</Text>
             </View>
           </View>
         </View>
@@ -222,9 +224,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <FileText size={18} color="#8B5CF6" />
           </View>
           <View className="flex-1">
-            <Text className="text-sm font-bold text-[#1A1A1A]">Media Kit</Text>
+            <Text className="text-sm font-bold text-[#1A1A1A]">{t('DashboardView.mediaKit')}</Text>
             <Text className="text-[11px] text-gray-400 font-semibold mt-0.5">
-              View or share your published kit
+              {t('DashboardView.mediaKitSub')}
             </Text>
           </View>
           <ChevronRight size={16} color="#CBD5E1" />
@@ -247,7 +249,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       <View className="flex-row flex-wrap" style={{gap: 12}}>
         <StatCard
           icon={CreditCard}
-          title="Total Earnings"
+          title={t('DashboardView.totalEarnings')}
           value={formatINRCompact(campaignStats.totalEarnings)}
           change=""
           color="#10B981"
@@ -255,7 +257,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         />
         <StatCard
           icon={Clock}
-          title="Active Campaigns"
+          title={t('DashboardView.activeCampaigns')}
           value={String(campaignStats.activeCount)}
           change=""
           color="#3B82F6"
@@ -263,7 +265,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         />
         <StatCard
           icon={Award}
-          title="Completed"
+          title={t('DashboardView.completed')}
           value={String(campaignStats.completedCount)}
           change=""
           color="#10B981"
@@ -271,7 +273,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         />
         <StatCard
           icon={Hourglass}
-          title="Expected Earnings"
+          title={t('DashboardView.expectedEarnings')}
           value={formatINRCompact(campaignStats.expectedEarnings)}
           change=""
           color="#8B5CF6"
@@ -283,7 +285,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       <View style={{gap: 12}}>
         <View className="flex-row items-center px-1" style={{gap: 6}}>
           <Text className="text-[#8B5CF6] text-xl">✦</Text>
-          <Text className="font-black text-[#2D2D2D] text-lg">Creator Hub</Text>
+          <Text className="font-black text-[#2D2D2D] text-lg">{t('DashboardView.creatorHub')}</Text>
         </View>
 
         <View style={{gap: 12}}>
@@ -306,8 +308,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <FileText size={18} color="white" />
             </LinearGradient>
             <View className="flex-1">
-              <Text className="text-sm font-bold text-[#1A1A1A]">My Profile</Text>
-              <Text className="text-[10px] text-gray-400 font-medium">View, edit and manage your profile</Text>
+              <Text className="text-sm font-bold text-[#1A1A1A]">{t('DashboardView.myProfile')}</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">{t('DashboardView.myProfileSub')}</Text>
             </View>
             <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
@@ -331,8 +333,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <BarChart3 size={18} color="white" />
             </LinearGradient>
             <View className="flex-1">
-              <Text className="text-sm font-bold text-[#1A1A1A]">Campaign Analytics</Text>
-              <Text className="text-[10px] text-gray-400 font-medium">Track performance and campaign insights</Text>
+              <Text className="text-sm font-bold text-[#1A1A1A]">{t('DashboardView.campaignAnalytics')}</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">{t('DashboardView.campaignAnalyticsSub')}</Text>
             </View>
             <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
@@ -356,8 +358,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <Briefcase size={18} color="white" />
             </LinearGradient>
             <View className="flex-1">
-              <Text className="text-sm font-bold text-[#1A1A1A]">Service Requests</Text>
-              <Text className="text-[10px] text-gray-400 font-medium">Your quote requests, orders & deliveries</Text>
+              <Text className="text-sm font-bold text-[#1A1A1A]">{t('DashboardView.serviceRequests')}</Text>
+              <Text className="text-[10px] text-gray-400 font-medium">{t('DashboardView.serviceRequestsSub')}</Text>
             </View>
             <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
@@ -367,16 +369,16 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Settings */}
       <View style={{gap: 8}}>
         <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
-          Settings
+          {t('DashboardView.settings')}
         </Text>
         <View className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-50">
-          <SettingsItem icon={Bell} title="Notifications" sub="Manage alerts and updates" color="#8B5CF6" onPress={onNotificationClick} />
-          <SettingsItem icon={Lock} title="Privacy & Security" sub="Control your data and access" color="#10B981" onPress={onPrivacyClick} />
+          <SettingsItem icon={Bell} title={t('DashboardView.notifications')} sub={t('DashboardView.notificationsSub')} color="#8B5CF6" onPress={onNotificationClick} />
+          <SettingsItem icon={Lock} title={t('DashboardView.privacy')} sub={t('DashboardView.privacySub')} color="#10B981" onPress={onPrivacyClick} />
           {onPaymentsClick && (
-            <SettingsItem icon={CreditCard} title="Payment Methods" sub="Manage payout accounts" color="#F97316" onPress={onPaymentsClick} />
+            <SettingsItem icon={CreditCard} title={t('DashboardView.paymentMethods')} sub={t('DashboardView.paymentMethodsSub')} color="#F97316" onPress={onPaymentsClick} />
           )}
           {onReferClick && (
-            <SettingsItem icon={Gift} title="Refer & Earn" sub="Share your link, earn Reward Credits" color="#E60076" onPress={onReferClick} />
+            <SettingsItem icon={Gift} title={t('DashboardView.referEarn')} sub={t('DashboardView.referEarnSub')} color="#E60076" onPress={onReferClick} />
           )}
         </View>
       </View>
@@ -391,13 +393,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <View>
               <Text className="font-bold text-sm text-[#1A1A1A]">{planLabel}</Text>
               <Text className="text-[10px] text-gray-400 font-medium">
-                {hasPaidPlan ? 'Active subscription' : expired ? 'Trial expired' : `${daysLeft} days left`}
+                {hasPaidPlan
+                  ? t('DashboardView.activeSubscription')
+                  : expired
+                  ? t('DashboardView.trialExpired')
+                  : t('DashboardView.daysLeft', {count: daysLeft})}
               </Text>
             </View>
           </View>
           {hasPaidPlan && (
             <View className="bg-green-50 px-2.5 py-1 rounded-full">
-              <Text className="text-[9px] font-black text-green-600 uppercase tracking-wider">Active</Text>
+              <Text className="text-[9px] font-black text-green-600 uppercase tracking-wider">{t('DashboardView.active')}</Text>
             </View>
           )}
         </View>
@@ -408,11 +414,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <View className="flex-row items-center" style={{gap: 6}}>
                 <Zap size={12} color={expired ? '#F87171' : '#9333EA'} fill={expired ? '#F87171' : '#9333EA'} />
                 <Text className="text-[10px] font-bold text-gray-400 uppercase">
-                  {expired ? 'Expired' : 'Trial Progress'}
+                  {expired ? t('DashboardView.expired') : t('DashboardView.trialProgress')}
                 </Text>
               </View>
               <Text className={`text-[10px] font-black ${expired ? 'text-red-400' : 'text-purple-600'}`}>
-                {daysLeft}/{TRIAL_DAYS} days
+                {t('DashboardView.daysProgress', {left: daysLeft, total: TRIAL_DAYS})}
               </Text>
             </View>
             <View className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -439,7 +445,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           />
           <Crown size={16} color="white" />
           <Text className="text-white text-sm font-bold ml-2">
-            {hasPaidPlan ? 'Manage Plan' : 'Upgrade Now'}
+            {hasPaidPlan ? t('DashboardView.managePlan') : t('DashboardView.upgradeNow')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -447,7 +453,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Support */}
       <View style={{gap: 12}}>
         <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
-          Support
+          {t('DashboardView.support')}
         </Text>
         <TouchableOpacity
           onPress={onhelpSupportClick}
@@ -457,8 +463,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <HelpCircle size={24} color="white" />
           </View>
           <View className="flex-1">
-            <Text className="font-bold text-sm text-[#1A1A1A]">Help & Support</Text>
-            <Text className="text-[11px] text-gray-400 font-medium">FAQs and contact us</Text>
+            <Text className="font-bold text-sm text-[#1A1A1A]">{t('DashboardView.helpSupport')}</Text>
+            <Text className="text-[11px] text-gray-400 font-medium">{t('DashboardView.helpSupportSub')}</Text>
           </View>
           <ChevronRight size={18} color="#CBD5E1" />
         </TouchableOpacity>
@@ -468,11 +474,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           className="w-full py-4 bg-white rounded-xl flex-row items-center justify-center"
           style={{borderWidth: 2, borderColor: '#FFF1F2', gap: 8}}>
           <LogOut size={18} color="#FF2D78" />
-          <Text className="text-[#FF2D78] font-black text-sm">Log Out</Text>
+          <Text className="text-[#FF2D78] font-black text-sm">{t('DashboardView.logOut')}</Text>
         </TouchableOpacity>
 
         <Text className="text-center text-[10px] font-bold text-gray-300 mb-4">
-          Recentgossips • Made for creators
+          {t('DashboardView.footer')}
         </Text>
       </View>
 
@@ -525,6 +531,7 @@ const SettingsItem = ({icon: Icon, title, sub, color, onPress}: {
 // Reward Credits summary on the profile (above Profile Completion). Stays
 // visible even when the balance is only the still-locked welcome bonus.
 function RewardCreditsCard() {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const navigation = useNavigation<any>();
   const [avail, setAvail] = useState(0);
@@ -560,7 +567,7 @@ function RewardCreditsCard() {
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={() => navigation.navigate('Refer')}
+      onPress={() => navigation.navigate('InfluencerRefer')}
       className="flex-row items-center bg-white rounded-2xl border border-slate-100 px-4 py-3"
       style={{gap: 12}}>
       <LinearGradient
@@ -572,16 +579,16 @@ function RewardCreditsCard() {
       </LinearGradient>
       <View className="flex-1">
         <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-          Reward Credits
+          {t('DashboardView.rewardCredits')}
         </Text>
         <View className="flex-row items-baseline" style={{gap: 8}}>
           <Text className="text-xl font-black text-slate-900">
-            {avail} <Text className="text-xs font-bold text-slate-400">available</Text>
+            {avail} <Text className="text-xs font-bold text-slate-400">{t('DashboardView.available')}</Text>
           </Text>
           {locked > 0 ? (
             <View style={{backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3}}>
               <Text className="text-[9px] font-black uppercase tracking-wider" style={{color: '#B45309'}}>
-                +{locked} locked
+                {t('DashboardView.locked', {locked})}
               </Text>
             </View>
           ) : null}
@@ -603,6 +610,7 @@ function ProfileCompletionCard({
   onOpenInfo: () => void;
   onOpenMediaKit: () => void;
 }) {
+  const {t} = useTranslation();
   const {percent, completed, total, hasInstagram, hasMediaKit, hasRates} =
     completion;
   const isDone = percent === 100;
@@ -661,22 +669,22 @@ function ProfileCompletionCard({
         </View>
         <View className="flex-1">
           <Text className="text-sm font-extrabold text-[#1A1A1A]">
-            {isDone ? 'Profile complete!' : 'Profile completion'}
+            {isDone ? t('DashboardView.profileComplete') : t('DashboardView.profileCompletion')}
           </Text>
           <Text className="text-[11px] font-semibold text-gray-400 mt-0.5">
             {isDone
-              ? "You're discoverable to brands."
-              : `${completed}/${total} steps done — keep going!`}
+              ? t('DashboardView.discoverable')
+              : t('DashboardView.stepsDone', {completed, total})}
           </Text>
         </View>
       </View>
 
       {!isDone && (
         <View className="flex-row flex-wrap mt-4" style={{gap: 8}}>
-          <ChecklistItem done label="Account created" />
-          <ChecklistItem done={hasInstagram} label="Instagram connected" onPress={onOpenInfo} />
-          <ChecklistItem done={hasMediaKit} label="Media kit published" onPress={onOpenMediaKit} />
-          <ChecklistItem done={hasRates} label="Rate card set" onPress={onOpenInfo} />
+          <ChecklistItem done label={t('DashboardView.accountCreated')} />
+          <ChecklistItem done={hasInstagram} label={t('DashboardView.instagramConnected')} onPress={onOpenInfo} />
+          <ChecklistItem done={hasMediaKit} label={t('DashboardView.mediaKitPublished')} onPress={onOpenMediaKit} />
+          <ChecklistItem done={hasRates} label={t('DashboardView.rateCardSet')} onPress={onOpenInfo} />
         </View>
       )}
     </View>

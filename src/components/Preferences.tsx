@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {View, Text, Pressable} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {
   Video,
   Smartphone,
@@ -22,6 +23,7 @@ const services = [
 ];
 
 export default function Preferences({onNext, onSkip}: Props) {
+  const {t} = useTranslation();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const toggleService = (id: string) => {
@@ -35,11 +37,11 @@ export default function Preferences({onNext, onSkip}: Props) {
       {/* HEADER */}
       <View className="items-center space-y-2">
         <Text className="text-2xl font-bold text-slate-900 text-center">
-          Collaboration Preferences
+          {t('Preferences.title')}
         </Text>
 
         <Text className="text-slate-500 text-sm text-center">
-          Tell brands what you offer
+          {t('Preferences.subtitle')}
         </Text>
       </View>
 
@@ -53,7 +55,7 @@ export default function Preferences({onNext, onSkip}: Props) {
             return (
               <ServiceCard
                 key={service.id}
-                label={service.label}
+                label={t(`Preferences.services.${service.id}`)}
                 Icon={Icon}
                 isSelected={isSelected}
                 onPress={() => toggleService(service.id)}
@@ -70,7 +72,7 @@ export default function Preferences({onNext, onSkip}: Props) {
             return (
               <ServiceCard
                 key={service.id}
-                label={service.label}
+                label={t(`Preferences.services.${service.id}`)}
                 Icon={Icon}
                 isSelected={isSelected}
                 onPress={() => toggleService(service.id)}
@@ -92,14 +94,14 @@ export default function Preferences({onNext, onSkip}: Props) {
             className={`text-base font-semibold ${
               selectedServices.length === 0 ? 'text-slate-400' : 'text-white'
             }`}>
-            Continue
+            {t('Preferences.continue')}
           </Text>
         </Pressable>
 
         {onSkip && (
           <Pressable onPress={onSkip}>
             <Text className="text-center text-sm font-semibold text-[#6347F9]">
-              Skip
+              {t('Preferences.skip')}
             </Text>
           </Pressable>
         )}

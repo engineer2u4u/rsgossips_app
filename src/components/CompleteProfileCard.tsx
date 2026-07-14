@@ -31,6 +31,7 @@ import {useAuth} from '../context/AuthContext';
 import {NavigationContext} from '@react-navigation/native';
 import {invokeFn} from '../lib/api';
 import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
+import {useTranslation} from 'react-i18next';
 
 const SERVICE_OPTIONS = [
   {id: 'reels', label: 'Reels', icon: Video},
@@ -41,6 +42,7 @@ const SERVICE_OPTIONS = [
 ];
 
 export default function CompleteProfileCard() {
+  const {t} = useTranslation();
   const {profile, user, refreshProfile} = useAuth();
   // Read the nav context directly instead of useNavigation() — that hook
   // throws "Couldn't find a navigation context" when the context is briefly
@@ -60,8 +62,8 @@ export default function CompleteProfileCard() {
   const steps = [
     {
       id: 1,
-      title: 'Create your account',
-      subtitle: "You're all set",
+      title: t('CompleteProfileCard.step1Title'),
+      subtitle: t('CompleteProfileCard.step1Subtitle'),
       completed: true,
       active: false as boolean,
       action: undefined as string | undefined,
@@ -69,30 +71,34 @@ export default function CompleteProfileCard() {
     },
     {
       id: 2,
-      title: 'Connect Instagram',
+      title: t('CompleteProfileCard.step2Title'),
       subtitle: hasInstagram
         ? `@${profile?.instagram_handle}`
-        : 'Brands discover you instantly',
+        : t('CompleteProfileCard.step2Subtitle'),
       completed: hasInstagram,
-      action: hasInstagram ? undefined : 'Connect',
+      action: hasInstagram ? undefined : t('CompleteProfileCard.step2Action'),
       active: !hasInstagram,
       onPress: undefined as (() => void) | undefined,
     },
     {
       id: 3,
-      title: 'Generate AI Media Kit',
-      subtitle: hasMediaKit ? 'Published' : 'Look pro in 60 seconds',
+      title: t('CompleteProfileCard.step3Title'),
+      subtitle: hasMediaKit
+        ? t('CompleteProfileCard.step3SubtitleDone')
+        : t('CompleteProfileCard.step3Subtitle'),
       completed: hasMediaKit,
-      action: hasMediaKit ? undefined : 'Create',
+      action: hasMediaKit ? undefined : t('CompleteProfileCard.step3Action'),
       active: hasInstagram && !hasMediaKit,
       onPress: () => navigation?.navigate('InfluencerMediaKit' as never),
     },
     {
       id: 4,
-      title: 'Set your rate card',
-      subtitle: hasRates ? 'Rates configured' : 'Know your worth',
+      title: t('CompleteProfileCard.step4Title'),
+      subtitle: hasRates
+        ? t('CompleteProfileCard.step4SubtitleDone')
+        : t('CompleteProfileCard.step4Subtitle'),
       completed: hasRates,
-      action: hasRates ? undefined : 'Set Rates',
+      action: hasRates ? undefined : t('CompleteProfileCard.step4Action'),
       active: hasMediaKit && !hasRates,
       onPress: () => setShowRatesModal(true),
     },
@@ -100,10 +106,12 @@ export default function CompleteProfileCard() {
       // Mirrors web: once the rate card is set the creator has done
       // everything brands need — treat the funnel as complete.
       id: 5,
-      title: 'Apply to first campaign',
-      subtitle: hasRates ? "You're discoverable to brands!" : 'Land your first deal',
+      title: t('CompleteProfileCard.step5Title'),
+      subtitle: hasRates
+        ? t('CompleteProfileCard.step5SubtitleDone')
+        : t('CompleteProfileCard.step5Subtitle'),
       completed: hasRates,
-      action: hasRates ? undefined : 'Browse',
+      action: hasRates ? undefined : t('CompleteProfileCard.step5Action'),
       active: false,
       onPress: () => navigation?.navigate('InfluencerCampaigns' as never),
     },
@@ -149,8 +157,10 @@ export default function CompleteProfileCard() {
       console.error('Failed to save rates:', err);
       const msg =
         err?.message ||
-        (typeof err === 'string' ? err : 'Something went wrong.');
-      Alert.alert("Couldn't save rates", msg);
+        (typeof err === 'string'
+          ? err
+          : t('CompleteProfileCard.somethingWentWrong'));
+      Alert.alert(t('CompleteProfileCard.saveRatesErrorTitle'), msg);
       // Keep the modal open on failure so the user can retry without re-
       // selecting services + retyping prices.
     }
@@ -217,11 +227,13 @@ export default function CompleteProfileCard() {
 
             <View className="flex-1">
               <Text className="text-[16px] font-black text-slate-900 leading-tight">
-                Get Your First Brand Deal
+                {t('CompleteProfileCard.headerTitle')}
               </Text>
               <Text className="text-[11px] text-slate-400 font-bold mt-0.5">
-                {completedCount}/5 steps —{' '}
-                {completedCount === 5 ? 'all done 🎉' : 'keep going!'}
+                {t('CompleteProfileCard.stepsProgress', {count: completedCount})}{' '}
+                {completedCount === 5
+                  ? t('CompleteProfileCard.allDone')
+                  : t('CompleteProfileCard.keepGoing')}
               </Text>
             </View>
           </View>
@@ -349,6 +361,7 @@ function SetRatesModal({
   onSave: (services: string[], rates: Record<string, string>) => void;
   onClose: () => void;
 }) {
+  const {t} = useTranslation();
   const [localServices, setLocalServices] = useState<string[]>(services);
   const [localRates, setLocalRates] = useState<Record<string, string>>(() => {
     const r: Record<string, string> = {};
@@ -384,7 +397,7 @@ function SetRatesModal({
           {/* Header */}
           <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100">
             <Text className="text-lg font-bold text-slate-800">
-              Set Your Rates
+              {t('CompleteProfileCard.modalTitle')}
             </Text>
             <TouchableOpacity onPress={onClose} className="p-2 rounded-full bg-slate-100">
               <X size={18} color="#475569" />
@@ -394,7 +407,7 @@ function SetRatesModal({
           <ScrollView className="px-6 py-5" showsVerticalScrollIndicator={false}>
             {/* Service Selection */}
             <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-              Select Services
+              {t('CompleteProfileCard.selectServices')}
             </Text>
             <View className="flex-row flex-wrap" style={{gap: 8, marginBottom: 24}}>
               {SERVICE_OPTIONS.map(svc => {
@@ -422,7 +435,7 @@ function SetRatesModal({
                     <Text
                       className="text-[10px] font-bold mt-2"
                       style={{color: isSelected ? BRAND.accent : '#94a3b8'}}>
-                      {svc.label}
+                      {t(`CompleteProfileCard.services.${svc.id}`)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -433,7 +446,7 @@ function SetRatesModal({
             {localServices.length > 0 && (
               <>
                 <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                  Set Rates (₹)
+                  {t('CompleteProfileCard.setRatesLabel')}
                 </Text>
                 <View style={{gap: 12}}>
                   {localServices.map(id => {
@@ -442,7 +455,7 @@ function SetRatesModal({
                     return (
                       <View key={id} className="flex-row items-center bg-slate-50 rounded-xl p-3" style={{gap: 10}}>
                         <Text className="text-sm font-semibold text-slate-700 flex-1">
-                          {svc.label}
+                          {t(`CompleteProfileCard.services.${svc.id}`)}
                         </Text>
                         <View className="flex-row items-center bg-white border border-slate-200 rounded-lg px-3 h-10" style={{gap: 4}}>
                           <Text className="text-slate-400 text-sm">₹</Text>
@@ -471,7 +484,7 @@ function SetRatesModal({
             <TouchableOpacity
               onPress={onClose}
               className="flex-1 h-12 rounded-2xl bg-slate-100 items-center justify-center">
-              <Text className="text-sm font-bold text-slate-600">Cancel</Text>
+              <Text className="text-sm font-bold text-slate-600">{t('CompleteProfileCard.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -496,7 +509,9 @@ function SetRatesModal({
                 <ActivityIndicator color="white" size="small" style={{marginRight: 8}} />
               )}
               <Text className="text-white font-bold text-sm">
-                {saving ? 'Saving...' : 'Save Rates'}
+                {saving
+                  ? t('CompleteProfileCard.saving')
+                  : t('CompleteProfileCard.saveRates')}
               </Text>
             </TouchableOpacity>
           </View>

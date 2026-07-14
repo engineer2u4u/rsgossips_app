@@ -26,6 +26,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   ArrowLeft,
   Calendar,
@@ -149,6 +150,7 @@ function formatDate(iso?: string) {
 }
 
 export default function BrandCampaignDetail() {
+  const {t} = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const {user} = useAuth();
@@ -195,7 +197,7 @@ export default function BrandCampaignDetail() {
       }
     } catch (err: any) {
       console.warn('brand-campaigns get failed:', err);
-      setError(err?.message || 'Failed to load campaign');
+      setError(err?.message || t('ScreensBrandCampaignDetail.errorLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -218,10 +220,13 @@ export default function BrandCampaignDetail() {
           });
           setCampaign(prev => (prev ? {...prev, status: newStatus} : prev));
         } catch (err: any) {
-          Alert.alert('Failed', err?.message || 'Could not update status');
+          Alert.alert(
+            t('ScreensBrandCampaignDetail.alertFailedTitle'),
+            err?.message || t('ScreensBrandCampaignDetail.errorUpdateStatus'),
+          );
         }
       })(),
-      `Updating status to ${newStatus}…`,
+      t('ScreensBrandCampaignDetail.updatingStatus', {status: newStatus}),
     );
   };
 
@@ -245,9 +250,13 @@ export default function BrandCampaignDetail() {
   if (error || !campaign) {
     return (
       <View style={s.centered}>
-        <Text style={s.errorText}>{error || 'Campaign not found'}</Text>
+        <Text style={s.errorText}>
+          {error || t('ScreensBrandCampaignDetail.campaignNotFound')}
+        </Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{marginTop: 16}}>
-          <Text style={{color: '#5851DB', fontWeight: '700'}}>Go back</Text>
+          <Text style={{color: '#5851DB', fontWeight: '700'}}>
+            {t('ScreensBrandCampaignDetail.goBack')}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -312,7 +321,7 @@ export default function BrandCampaignDetail() {
         {/* Stats grid */}
         <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
           <StatCard
-            label="Per Influencer"
+            label={t('ScreensBrandCampaignDetail.statPerInfluencer')}
             value={
               campaign.budgetPerInfluencer
                 ? `₹${campaign.budgetPerInfluencer.toLocaleString('en-IN')}`
@@ -320,7 +329,7 @@ export default function BrandCampaignDetail() {
             }
           />
           <StatCard
-            label="Total Budget"
+            label={t('ScreensBrandCampaignDetail.statTotalBudget')}
             value={
               campaign.budgetTotal
                 ? `₹${campaign.budgetTotal.toLocaleString('en-IN')}`
@@ -328,10 +337,13 @@ export default function BrandCampaignDetail() {
             }
           />
           <StatCard
-            label="Slots"
+            label={t('ScreensBrandCampaignDetail.statSlots')}
             value={`${applications.length}/${campaign.maxInfluencers || '∞'}`}
           />
-          <StatCard label="Deadline" value={formatDate(campaign.applicationDeadline)} />
+          <StatCard
+            label={t('ScreensBrandCampaignDetail.statDeadline')}
+            value={formatDate(campaign.applicationDeadline)}
+          />
         </View>
 
         {/* Deliverables */}
@@ -340,13 +352,15 @@ export default function BrandCampaignDetail() {
           parsedContent.stories ||
           parsedContent.videos) > 0 ? (
           <View style={s.card}>
-            <Text style={s.sectionTitle}>Content Deliverables · per creator</Text>
+            <Text style={s.sectionTitle}>
+              {t('ScreensBrandCampaignDetail.contentDeliverables')}
+            </Text>
             <View style={{flexDirection: 'row', gap: 8, marginTop: 10}}>
               {[
-                {key: 'reels', label: 'Reels'},
-                {key: 'posts', label: 'Posts'},
-                {key: 'stories', label: 'Stories'},
-                {key: 'videos', label: 'Videos'},
+                {key: 'reels', label: t('ScreensBrandCampaignDetail.deliverableReels')},
+                {key: 'posts', label: t('ScreensBrandCampaignDetail.deliverablePosts')},
+                {key: 'stories', label: t('ScreensBrandCampaignDetail.deliverableStories')},
+                {key: 'videos', label: t('ScreensBrandCampaignDetail.deliverableVideos')},
               ].map(d => (
                 <View key={d.key} style={s.deliverableCell}>
                   <Text style={s.deliverableCount}>{parsedContent[d.key] || 0}</Text>
@@ -366,7 +380,9 @@ export default function BrandCampaignDetail() {
               justifyContent: 'space-between',
             }}>
             <Text style={s.sectionTitle}>
-              Applications ({applications.length})
+              {t('ScreensBrandCampaignDetail.applicationsCount', {
+                count: applications.length,
+              })}
             </Text>
             <View
               style={{
@@ -376,14 +392,16 @@ export default function BrandCampaignDetail() {
               }}>
               <Users size={12} color="#94a3b8" />
               <Text style={s.statLabel}>
-                {applications.filter(a => a.status === 'pending').length} pending
+                {t('ScreensBrandCampaignDetail.pendingCount', {
+                  count: applications.filter(a => a.status === 'pending').length,
+                })}
               </Text>
             </View>
           </View>
 
           {applications.length === 0 ? (
             <Text style={{color: '#94a3b8', fontSize: 13, paddingVertical: 12}}>
-              No applications yet.
+              {t('ScreensBrandCampaignDetail.noApplications')}
             </Text>
           ) : (
             applications.map(app => (
@@ -413,10 +431,11 @@ function StatusActions({
   status: CampaignStatus;
   onChange: (s: CampaignStatus) => void;
 }) {
+  const {t} = useTranslation();
   if (status === 'draft') {
     return (
       <ActionBtn
-        label="Activate"
+        label={t('ScreensBrandCampaignDetail.actionActivate')}
         Icon={Play}
         color="#16a34a"
         bg="#dcfce7"
@@ -428,14 +447,14 @@ function StatusActions({
     return (
       <>
         <ActionBtn
-          label="Pause"
+          label={t('ScreensBrandCampaignDetail.actionPause')}
           Icon={Pause}
           color="#d97706"
           bg="#fef3c7"
           onPress={() => onChange('paused')}
         />
         <ActionBtn
-          label="Complete"
+          label={t('ScreensBrandCampaignDetail.actionComplete')}
           Icon={CheckCircle}
           color="#4f46e5"
           bg="#e0e7ff"
@@ -447,7 +466,7 @@ function StatusActions({
   if (status === 'paused') {
     return (
       <ActionBtn
-        label="Resume"
+        label={t('ScreensBrandCampaignDetail.actionResume')}
         Icon={Play}
         color="#16a34a"
         bg="#dcfce7"
@@ -519,6 +538,7 @@ function BrandApplicationRow({
   onRefresh: () => void;
   onRated?: (r: {target_rating: number}) => void;
 }) {
+  const {t} = useTranslation();
   const {withLoading} = useGlobalLoading();
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<RowMode>(null);
@@ -532,7 +552,10 @@ function BrandApplicationRow({
 
   const inf = app.influencer_profiles || {};
   const displayName =
-    inf.full_name || inf.username || inf.instagram_handle || 'Creator';
+    inf.full_name ||
+    inf.username ||
+    inf.instagram_handle ||
+    t('ScreensBrandCampaignDetail.creatorFallback');
   const links = Array.isArray(app.submission_links) ? app.submission_links : [];
   const st = APP_STATUS_PILL[app.status] || APP_STATUS_PILL.pending;
 
@@ -561,17 +584,23 @@ function BrandApplicationRow({
           setRevisionIndexes([]);
           onRefresh();
         } catch (err: any) {
-          Alert.alert('Failed', err?.message || 'Could not update application');
+          Alert.alert(
+            t('ScreensBrandCampaignDetail.alertFailedTitle'),
+            err?.message || t('ScreensBrandCampaignDetail.errorUpdateApplication'),
+          );
         }
       })(),
-      'Updating application…',
+      t('ScreensBrandCampaignDetail.updatingApplication'),
     );
   };
 
   const handleApprove = () => {
     const rate = parseInt(payAmount || '0', 10);
     if (!rate || rate <= 0) {
-      Alert.alert('Enter rate', 'Please enter an agreed rate first.');
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertEnterRateTitle'),
+        t('ScreensBrandCampaignDetail.alertEnterRateMessage'),
+      );
       return;
     }
     updateStatus('approved', {agreedRate: rate});
@@ -583,11 +612,17 @@ function BrandApplicationRow({
 
   const handleRevision = () => {
     if (revisionIndexes.length === 0) {
-      Alert.alert('Pick a deliverable', 'Select at least one deliverable that needs revision.');
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertPickDeliverableTitle'),
+        t('ScreensBrandCampaignDetail.alertPickDeliverableMessage'),
+      );
       return;
     }
     const selectedLabels = revisionIndexes.map(
-      i => links[i]?.label || links[i]?.type || `Deliverable ${i + 1}`,
+      i =>
+        links[i]?.label ||
+        links[i]?.type ||
+        t('ScreensBrandCampaignDetail.deliverableN', {index: i + 1}),
     );
     updateStatus('revision_needed', {revisionNote, revisionLinks: selectedLabels});
   };
@@ -617,7 +652,9 @@ function BrandApplicationRow({
           </Text>
           <Text style={s.appSub} numberOfLines={1}>
             {inf.instagram_handle ? `@${inf.instagram_handle} · ` : ''}
-            {formatCount(inf.followers_count)} followers
+            {t('ScreensBrandCampaignDetail.followersCount', {
+              count: formatCount(inf.followers_count),
+            })}
             {app.proposed_rate != null ? (
               <Text style={{color: '#5851DB', fontWeight: '700'}}>
                 {`  ·  ₹${Number(app.proposed_rate).toLocaleString('en-IN')}`}
@@ -670,26 +707,37 @@ function BrandApplicationRow({
                 alignItems: 'center',
                 marginBottom: 6,
               }}>
-              <Text style={s.detailsHeader}>Creator Details</Text>
+              <Text style={s.detailsHeader}>
+                {t('ScreensBrandCampaignDetail.creatorDetails')}
+              </Text>
             </View>
             <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
-              <Fact label="Followers" value={formatCount(inf.followers_count)} />
               <Fact
-                label="Engagement"
+                label={t('ScreensBrandCampaignDetail.factFollowers')}
+                value={formatCount(inf.followers_count)}
+              />
+              <Fact
+                label={t('ScreensBrandCampaignDetail.factEngagement')}
                 value={inf.engagement_rate != null ? `${inf.engagement_rate}%` : '—'}
               />
-              <Fact label="Posts" value={formatCount(inf.media_count)} />
-              <Fact label="Location" value={inf.location || '—'} />
+              <Fact
+                label={t('ScreensBrandCampaignDetail.factPosts')}
+                value={formatCount(inf.media_count)}
+              />
+              <Fact
+                label={t('ScreensBrandCampaignDetail.factLocation')}
+                value={inf.location || '—'}
+              />
               {app.proposed_rate != null ? (
                 <Fact
-                  label="Proposed"
+                  label={t('ScreensBrandCampaignDetail.factProposed')}
                   value={`₹${Number(app.proposed_rate).toLocaleString('en-IN')}`}
                   highlight
                 />
               ) : null}
               {app.final_agreed_rate != null ? (
                 <Fact
-                  label="Agreed"
+                  label={t('ScreensBrandCampaignDetail.factAgreed')}
                   value={`₹${Number(app.final_agreed_rate).toLocaleString('en-IN')}`}
                   highlight
                 />
@@ -709,7 +757,7 @@ function BrandApplicationRow({
                   borderTopColor: '#fecaca',
                 }}>
                 <Text style={{fontSize: 10, fontWeight: '700', color: '#b91c1c'}}>
-                  REJECTION REASON
+                  {t('ScreensBrandCampaignDetail.rejectionReasonLabel')}
                 </Text>
                 <Text style={{fontSize: 11, color: '#475569', marginTop: 2}}>
                   {app.rejection_reason}
@@ -721,7 +769,9 @@ function BrandApplicationRow({
           {/* Submission links */}
           {links.length > 0 ? (
             <View style={{gap: 6}}>
-              <Text style={s.detailsHeader}>Submissions</Text>
+              <Text style={s.detailsHeader}>
+                {t('ScreensBrandCampaignDetail.submissions')}
+              </Text>
               {links.map((l, i) => (
                 <TouchableOpacity
                   key={i}
@@ -729,7 +779,9 @@ function BrandApplicationRow({
                   style={s.submissionRow}>
                   <ExternalLink size={12} color="#5851DB" />
                   <Text style={{flex: 1, fontSize: 11, fontWeight: '600', color: '#334155'}} numberOfLines={1}>
-                    {l.label || l.type || `Deliverable ${i + 1}`}
+                    {l.label ||
+                      l.type ||
+                      t('ScreensBrandCampaignDetail.deliverableN', {index: i + 1})}
                   </Text>
                   <Text style={{fontSize: 9, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase'}}>
                     {l.type}
@@ -745,14 +797,14 @@ function BrandApplicationRow({
               {app.status === 'pending' ? (
                 <>
                   <SmallBtn
-                    label="Approve"
+                    label={t('ScreensBrandCampaignDetail.btnApprove')}
                     Icon={Check}
                     color="#15803d"
                     bg="#dcfce7"
                     onPress={() => setMode('approve')}
                   />
                   <SmallBtn
-                    label="Reject"
+                    label={t('ScreensBrandCampaignDetail.btnReject')}
                     Icon={X}
                     color="#b91c1c"
                     bg="#fee2e2"
@@ -762,9 +814,11 @@ function BrandApplicationRow({
               ) : null}
               {app.status === 'approved' ? (
                 <>
-                  <Text style={s.waitingNote}>Waiting for submission…</Text>
+                  <Text style={s.waitingNote}>
+                    {t('ScreensBrandCampaignDetail.waitingSubmission')}
+                  </Text>
                   <SmallBtn
-                    label="Reject"
+                    label={t('ScreensBrandCampaignDetail.btnReject')}
                     Icon={X}
                     color="#b91c1c"
                     bg="#fee2e2"
@@ -775,21 +829,21 @@ function BrandApplicationRow({
               {app.status === 'submitted' ? (
                 <>
                   <SmallBtn
-                    label="Accept"
+                    label={t('ScreensBrandCampaignDetail.btnAccept')}
                     Icon={Check}
                     color="#15803d"
                     bg="#dcfce7"
                     onPress={() => updateStatus('accepted')}
                   />
                   <SmallBtn
-                    label="Revision"
+                    label={t('ScreensBrandCampaignDetail.btnRevision')}
                     Icon={RotateCcw}
                     color="#c2410c"
                     bg="#ffedd5"
                     onPress={() => setMode('revision')}
                   />
                   <SmallBtn
-                    label="Reject"
+                    label={t('ScreensBrandCampaignDetail.btnReject')}
                     Icon={X}
                     color="#b91c1c"
                     bg="#fee2e2"
@@ -798,19 +852,21 @@ function BrandApplicationRow({
                 </>
               ) : null}
               {app.status === 'revision_needed' ? (
-                <Text style={s.waitingNote}>Waiting for creator to re-submit…</Text>
+                <Text style={s.waitingNote}>
+                  {t('ScreensBrandCampaignDetail.waitingResubmit')}
+                </Text>
               ) : null}
               {app.status === 'live_submitted' ? (
                 <>
                   <SmallBtn
-                    label="Approve & Pay"
+                    label={t('ScreensBrandCampaignDetail.btnApprovePay')}
                     Icon={Check}
                     color="#15803d"
                     bg="#dcfce7"
                     onPress={() => setShowRating(true)}
                   />
                   <SmallBtn
-                    label="Revision"
+                    label={t('ScreensBrandCampaignDetail.btnRevision')}
                     Icon={RotateCcw}
                     color="#c2410c"
                     bg="#ffedd5"
@@ -820,7 +876,7 @@ function BrandApplicationRow({
               ) : null}
               {app.status === 'payment' ? (
                 <Text style={s.waitingNote}>
-                  Payment released. Waiting for admin to complete this.
+                  {t('ScreensBrandCampaignDetail.paymentReleased')}
                 </Text>
               ) : null}
             </View>
@@ -830,7 +886,7 @@ function BrandApplicationRow({
           {mode === 'approve' ? (
             <View style={[s.formBox, {borderColor: '#bbf7d0', backgroundColor: '#f0fdf4'}]}>
               <Text style={{fontSize: 10, fontWeight: '700', color: '#15803d', textTransform: 'uppercase'}}>
-                Agreed Rate (₹)
+                {t('ScreensBrandCampaignDetail.agreedRateLabel')}
               </Text>
               <TextInput
                 keyboardType="number-pad"
@@ -839,8 +895,8 @@ function BrandApplicationRow({
                 style={s.formInput}
               />
               <View style={{flexDirection: 'row', gap: 8}}>
-                <SmallBtn label="Approve" Icon={Check} color="white" bg="#16a34a" onPress={handleApprove} />
-                <SmallBtn label="Cancel" Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnApprove')} Icon={Check} color="white" bg="#16a34a" onPress={handleApprove} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnCancel')} Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
               </View>
             </View>
           ) : null}
@@ -849,19 +905,19 @@ function BrandApplicationRow({
           {mode === 'reject' ? (
             <View style={[s.formBox, {borderColor: '#fecaca', backgroundColor: '#fef2f2'}]}>
               <Text style={{fontSize: 10, fontWeight: '700', color: '#b91c1c', textTransform: 'uppercase'}}>
-                Reason (optional)
+                {t('ScreensBrandCampaignDetail.reasonOptionalLabel')}
               </Text>
               <TextInput
                 value={reason}
                 onChangeText={setReason}
-                placeholder="Briefly explain why…"
+                placeholder={t('ScreensBrandCampaignDetail.reasonPlaceholder')}
                 placeholderTextColor="#cbd5e1"
                 multiline
                 style={[s.formInput, {minHeight: 60, textAlignVertical: 'top'}]}
               />
               <View style={{flexDirection: 'row', gap: 8}}>
-                <SmallBtn label="Confirm Reject" Icon={X} color="white" bg="#dc2626" onPress={handleReject} />
-                <SmallBtn label="Cancel" Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnConfirmReject')} Icon={X} color="white" bg="#dc2626" onPress={handleReject} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnCancel')} Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
               </View>
             </View>
           ) : null}
@@ -870,12 +926,12 @@ function BrandApplicationRow({
           {mode === 'revision' ? (
             <View style={[s.formBox, {borderColor: '#fed7aa', backgroundColor: '#fff7ed'}]}>
               <Text style={{fontSize: 10, fontWeight: '700', color: '#c2410c', textTransform: 'uppercase'}}>
-                Select deliverables to revise
+                {t('ScreensBrandCampaignDetail.selectDeliverablesToRevise')}
               </Text>
               <View style={{gap: 6}}>
                 {links.length === 0 ? (
                   <Text style={{fontSize: 11, color: '#94a3b8', fontStyle: 'italic'}}>
-                    No submitted deliverables to revise.
+                    {t('ScreensBrandCampaignDetail.noDeliverablesToRevise')}
                   </Text>
                 ) : (
                   links.map((item, i) => {
@@ -889,7 +945,9 @@ function BrandApplicationRow({
                           {selected ? <Check size={10} color="white" /> : null}
                         </View>
                         <Text style={{fontSize: 11, fontWeight: '600', color: '#475569', flex: 1}} numberOfLines={1}>
-                          {item.label || item.type || `Deliverable ${i + 1}`}
+                          {item.label ||
+                            item.type ||
+                            t('ScreensBrandCampaignDetail.deliverableN', {index: i + 1})}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -899,20 +957,20 @@ function BrandApplicationRow({
               <TextInput
                 value={revisionNote}
                 onChangeText={setRevisionNote}
-                placeholder="What needs to change?"
+                placeholder={t('ScreensBrandCampaignDetail.revisionNotePlaceholder')}
                 placeholderTextColor="#cbd5e1"
                 multiline
                 style={[s.formInput, {minHeight: 60, textAlignVertical: 'top'}]}
               />
               <View style={{flexDirection: 'row', gap: 8}}>
                 <SmallBtn
-                  label="Send for Revision"
+                  label={t('ScreensBrandCampaignDetail.btnSendForRevision')}
                   Icon={RotateCcw}
                   color="white"
                   bg="#ea580c"
                   onPress={handleRevision}
                 />
-                <SmallBtn label="Cancel" Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnCancel')} Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
               </View>
             </View>
           ) : null}
@@ -928,11 +986,16 @@ function BrandApplicationRow({
         brandId={brandId}
         influencerId={app.influencer_id}
         raterRole="brand"
-        title="Rate this collaboration"
-        subtitle={`Share your experience working with ${displayName} before approving payment.`}
-        sections={[{key: 'target_rating', label: `How would you rate ${displayName}?`}]}
-        primaryCta="Submit & Release Payment"
-        secondaryCta="Skip & Approve"
+        title={t('ScreensBrandCampaignDetail.ratingTitle')}
+        subtitle={t('ScreensBrandCampaignDetail.ratingSubtitle', {name: displayName})}
+        sections={[
+          {
+            key: 'target_rating',
+            label: t('ScreensBrandCampaignDetail.ratingSectionLabel', {name: displayName}),
+          },
+        ]}
+        primaryCta={t('ScreensBrandCampaignDetail.ratingPrimaryCta')}
+        secondaryCta={t('ScreensBrandCampaignDetail.ratingSecondaryCta')}
         onSaved={saved =>
           onRated?.({target_rating: saved.target_rating || 0})
         }

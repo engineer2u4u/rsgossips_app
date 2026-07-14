@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onNext: (categories: string[]) => void;
@@ -22,6 +23,7 @@ const categories = [
 ];
 
 export default function CategorySelection({ onNext, onSkip }: Props) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggle = (cat: string) => {
@@ -35,11 +37,11 @@ export default function CategorySelection({ onNext, onSkip }: Props) {
       {/* HEADER */}
       <View className="items-center space-y-2">
         <Text className="text-2xl font-bold text-slate-900 text-center">
-          What Do You Create?
+          {t('CategorySelection.heading')}
         </Text>
 
         <Text className="text-slate-500 text-sm text-center">
-          Select categories to get better campaign matches
+          {t('CategorySelection.subtitle')}
         </Text>
       </View>
 
@@ -63,7 +65,7 @@ export default function CategorySelection({ onNext, onSkip }: Props) {
                   isSelected ? 'text-white' : 'text-slate-500'
                 }`}
               >
-                {cat}
+                {t(`CategorySelection.categories.${cat}`)}
               </Text>
             </Pressable>
           );
@@ -73,7 +75,7 @@ export default function CategorySelection({ onNext, onSkip }: Props) {
       {/* FOOTER */}
       <View className="space-y-4 pt-4">
         <Text className="text-center text-[11px] text-slate-400">
-          You can change this later
+          {t('CategorySelection.changeLaterNote')}
         </Text>
 
         <Pressable
@@ -88,14 +90,14 @@ export default function CategorySelection({ onNext, onSkip }: Props) {
               selected.length < 1 ? 'text-slate-400' : 'text-white'
             }`}
           >
-            Continue
+            {t('CategorySelection.continue')}
           </Text>
         </Pressable>
 
         {onSkip && (
           <Pressable onPress={onSkip}>
             <Text className="text-center text-sm font-semibold text-[#6347F9]">
-              Skip
+              {t('CategorySelection.skip')}
             </Text>
           </Pressable>
         )}

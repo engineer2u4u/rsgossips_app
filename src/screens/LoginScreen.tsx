@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Mail, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -59,6 +60,7 @@ interface InstaProfile {
 type LoginRouteParams = { invited?: string; ref?: string };
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ Login: LoginRouteParams }, 'Login'>>();
   const {user: authedUser, role: authedRole, loading: authLoading} = useAuth();
@@ -101,8 +103,8 @@ export default function LoginScreen() {
         if (!data?.found) {
           setInvitationBlock({
             kind: 'invalid',
-            title: 'Invitation link not recognised',
-            message: `We couldn't find an invitation for @${handle}. Double-check the link or sign up normally.`,
+            title: t('ScreensLoginScreen.invitationNotRecognisedTitle'),
+            message: t('ScreensLoginScreen.invitationNotRecognisedMessage', { handle }),
           });
           setFlow('signup');
           return;
@@ -110,8 +112,8 @@ export default function LoginScreen() {
         if (data.status && data.status !== 'pending') {
           setInvitationBlock({
             kind: 'claimed',
-            title: 'Invitation already used',
-            message: `This invitation for @${handle} has already been claimed. Sign in with the phone number you registered with.`,
+            title: t('ScreensLoginScreen.invitationClaimedTitle'),
+            message: t('ScreensLoginScreen.invitationClaimedMessage', { handle }),
           });
           setFlow('signin');
           return;
@@ -133,8 +135,8 @@ export default function LoginScreen() {
         if (cancelled) return;
         setInvitationBlock({
           kind: 'error',
-          title: "Couldn't verify your invitation",
-          message: e?.message || 'Please try the link again or contact support.',
+          title: t('ScreensLoginScreen.invitationVerifyErrorTitle'),
+          message: e?.message || t('ScreensLoginScreen.invitationVerifyErrorMessage'),
         });
         setFlow('signup');
       } finally {
@@ -246,7 +248,7 @@ export default function LoginScreen() {
     try {
       await sendOtp(phoneNumber);
     } catch (err: any) {
-      setError(err?.message || 'Failed to resend OTP');
+      setError(err?.message || t('ScreensLoginScreen.failedResendOtp'));
     }
   };
 
@@ -309,7 +311,7 @@ export default function LoginScreen() {
   // public.leads — web commit 247f99d.
   const handleSignInSendOtp = async (phoneNumber: string) => {
     setLoading(true);
-    setLoadingMsg('Checking your number…');
+    setLoadingMsg(t('ScreensLoginScreen.checkingYourNumber'));
     setError('');
     try {
       // invokeFn (vs supabase.functions.invoke) so we get a hard 20s timeout —
@@ -325,21 +327,23 @@ export default function LoginScreen() {
       });
 
       if (!check?.exists) {
-        setError("You don't exist with us. Kindly sign up first.");
+        setError(t('ScreensLoginScreen.doesNotExist'));
         setLoading(false);
         return;
       }
 
       if (check.match === false) {
-        const otherRole = check.role === 'brand' ? 'a Brand' : 'an Influencer';
+        const otherRole = check.role === 'brand'
+          ? t('ScreensLoginScreen.roleBrand')
+          : t('ScreensLoginScreen.roleInfluencer');
         setError(
-          `This number is registered as ${otherRole}. Please switch role and try again.`,
+          t('ScreensLoginScreen.registeredAsOtherRole', { role: otherRole }),
         );
         setLoading(false);
         return;
       }
 
-      setLoadingMsg('Sending OTP…');
+      setLoadingMsg(t('ScreensLoginScreen.sendingOtp'));
       await sendOtp(phoneNumber);
       setOtp('');
       nextStep(); // -> step 3 (verify)
@@ -347,7 +351,7 @@ export default function LoginScreen() {
       if (err instanceof EdgeFunctionError) {
         setError(err.message);
       } else {
-        setError(err?.message || 'Failed to send OTP');
+        setError(err?.message || t('ScreensLoginScreen.failedSendOtp'));
       }
     } finally {
       setLoading(false);
@@ -356,7 +360,7 @@ export default function LoginScreen() {
 
   const handleSignInVerifyOtp = async (otpCode: string) => {
     setLoading(true);
-    setLoadingMsg('Verifying…');
+    setLoadingMsg(t('ScreensLoginScreen.verifying'));
     setError('');
     try {
       const data = await verifyOtp(phone, otpCode, 'signin');
@@ -368,16 +372,20 @@ export default function LoginScreen() {
       const detectedRole = data?.user?.role;
       const requestedRole = signupData.role;
       if (detectedRole && requestedRole && detectedRole !== requestedRole) {
-        const otherRole = detectedRole === 'brand' ? 'a Brand' : 'an Influencer';
-        const wanted = requestedRole === 'brand' ? 'a Brand' : 'an Influencer';
+        const otherRole = detectedRole === 'brand'
+          ? t('ScreensLoginScreen.roleBrand')
+          : t('ScreensLoginScreen.roleInfluencer');
+        const wanted = requestedRole === 'brand'
+          ? t('ScreensLoginScreen.roleBrand')
+          : t('ScreensLoginScreen.roleInfluencer');
         setError(
-          `This number is registered as ${otherRole}, not ${wanted}. Please go back and pick the correct role.`,
+          t('ScreensLoginScreen.registeredAsOtherRoleMismatch', { role: otherRole, wanted }),
         );
         setLoading(false);
         return;
       }
 
-      setLoadingMsg('Setting up your session…');
+      setLoadingMsg(t('ScreensLoginScreen.settingUpSession'));
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -397,7 +405,7 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
-      setError(err?.message || 'Failed to verify OTP');
+      setError(err?.message || t('ScreensLoginScreen.failedVerifyOtp'));
       setLoading(false);
       return;
     }
@@ -418,9 +426,7 @@ export default function LoginScreen() {
     // second check here means the row can never land with a token-only
     // half-state that breaks the next sign-in.
     if (!profile?.username) {
-      setError(
-        'Instagram didn\'t return your username. Please reconnect Instagram before continuing.',
-      );
+      setError(t('ScreensLoginScreen.instagramNoUsername'));
       return;
     }
 
@@ -432,8 +438,10 @@ export default function LoginScreen() {
       const oauthHandle = profile.username.toLowerCase();
       if (oauthHandle !== invitation.instagramHandle) {
         setError(
-          `This invitation is for @${invitation.instagramHandle}. ` +
-          `You connected @${profile.username}. Please reconnect with the right Instagram account.`,
+          t('ScreensLoginScreen.invitationHandleMismatch', {
+            expected: invitation.instagramHandle,
+            actual: profile.username,
+          }),
         );
         return;
       }
@@ -455,8 +463,8 @@ export default function LoginScreen() {
         setInstaProfile(null);
         setInvitationBlock({
           kind: 'use-link',
-          title: 'Use your invitation link',
-          message: `We've already pre-registered @${profile.username}. Open the invitation link we emailed you (or sign up with a different Instagram).`,
+          title: t('ScreensLoginScreen.useInvitationTitle'),
+          message: t('ScreensLoginScreen.useInvitationMessage', { handle: profile.username }),
           inviteHandle: profile.username,
         });
         return;
@@ -472,7 +480,7 @@ export default function LoginScreen() {
   const handleSignUpFormSubmit = async (formData: any) => {
     setSignupData(prev => ({ ...prev, ...formData }));
     setLoading(true);
-    setLoadingMsg('Creating your account...');
+    setLoadingMsg(t('ScreensLoginScreen.creatingYourAccount'));
     setError('');
 
     try {
@@ -544,12 +552,12 @@ export default function LoginScreen() {
       const newUserId = createResult?.userId;
       const newSession = createResult?.session;
       if (!newUserId)
-        throw new Error('Account creation did not complete. Please try again.');
+        throw new Error(t('ScreensLoginScreen.accountCreationIncomplete'));
       setAuthUserId(newUserId);
 
       if (newSession?.access_token) {
         setPendingSession(newSession);
-        setLoadingMsg('Setting up your session...');
+        setLoadingMsg(t('ScreensLoginScreen.settingUpSessionDots'));
         await supabase.auth.setSession({
           access_token: newSession.access_token,
           refresh_token: newSession.refresh_token,
@@ -559,7 +567,7 @@ export default function LoginScreen() {
       if (signupData.role === 'brand') {
         // Brands go straight to dashboard. reset (not navigate) so the
         // signup stack doesn't linger underneath the home screen.
-        setLoadingMsg('Redirecting to dashboard...');
+        setLoadingMsg(t('ScreensLoginScreen.redirectingToDashboard'));
         (navigation as any).reset({index: 0, routes: [{name: 'BrandHome'}]});
         return;
       }
@@ -567,7 +575,7 @@ export default function LoginScreen() {
       setLoading(false);
       nextStep(); // -> step 4 (categories)
     } catch (err: any) {
-      setError(err.message || 'Failed to create account.');
+      setError(err.message || t('ScreensLoginScreen.failedCreateAccount'));
       setLoading(false);
     }
   };
@@ -588,7 +596,7 @@ export default function LoginScreen() {
 
   const finishSignup = async (data: any) => {
     setLoading(true);
-    setLoadingMsg('Saving your preferences...');
+    setLoadingMsg(t('ScreensLoginScreen.savingPreferences'));
     try {
       if (authUserId) {
         const table =
@@ -604,7 +612,7 @@ export default function LoginScreen() {
       }
 
       if (pendingSession) {
-        setLoadingMsg('Setting up your session...');
+        setLoadingMsg(t('ScreensLoginScreen.settingUpSessionDots'));
         await supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
@@ -621,7 +629,7 @@ export default function LoginScreen() {
         ],
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to complete signup');
+      setError(err.message || t('ScreensLoginScreen.failedCompleteSignup'));
       setLoading(false);
     }
   };
@@ -702,7 +710,7 @@ export default function LoginScreen() {
               <View className="items-center justify-center py-12">
                 <ActivityIndicator size="large" color="#E60076" />
                 <Text className="mt-3 text-sm font-semibold text-slate-500">
-                  Checking your invitation…
+                  {t('ScreensLoginScreen.checkingYourInvitation')}
                 </Text>
               </View>
             )}
@@ -854,6 +862,7 @@ function InvitationInterrupt({
   onSwitchToSignIn: () => void;
   onUseInvitation: (handle: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={{ paddingTop: 24 }}>
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
@@ -880,7 +889,7 @@ function InvitationInterrupt({
 
       {block.kind === 'use-link' && (
         <Text className="text-[11px] text-slate-400 text-center leading-4 mb-4">
-          Can't find the email? Check spam, or reach out to info@rgossips.com.
+          {t('ScreensLoginScreen.cantFindEmail')}
         </Text>
       )}
 
@@ -893,7 +902,7 @@ function InvitationInterrupt({
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ paddingVertical: 14, alignItems: 'center' }}>
-            <Text className="text-white text-sm font-black">Sign in instead</Text>
+            <Text className="text-white text-sm font-black">{t('ScreensLoginScreen.signInInstead')}</Text>
           </LinearGradient>
         </Pressable>
       ) : block.kind === 'use-link' ? (
@@ -908,7 +917,7 @@ function InvitationInterrupt({
                 end={{ x: 1, y: 1 }}
                 style={{ paddingVertical: 14, alignItems: 'center' }}>
                 <Text className="text-white text-sm font-black">
-                  Continue with my invitation →
+                  {t('ScreensLoginScreen.continueWithInvitation')}
                 </Text>
               </LinearGradient>
             </Pressable>
@@ -917,7 +926,7 @@ function InvitationInterrupt({
             onPress={onContinueSignUp}
             className="border border-slate-200 rounded-2xl py-3 items-center">
             <Text className="text-sm font-bold text-slate-600">
-              Sign up with a different Instagram
+              {t('ScreensLoginScreen.signUpDifferentInstagram')}
             </Text>
           </Pressable>
         </View>

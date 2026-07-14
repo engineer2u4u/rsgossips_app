@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   Briefcase,
   Camera,
@@ -58,6 +59,7 @@ import {
 
 export default function BrandProfile() {
   const navigation = useNavigation();
+  const {t} = useTranslation();
   const {profile, signOut, refreshProfile, user} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -78,7 +80,7 @@ export default function BrandProfile() {
     profile?.gstin_trade_name ||
     profile?.brand_name ||
     profile?.contact_name ||
-    'Brand';
+    t('ScreensBrandProfile.brand');
   const initials = displayName.charAt(0).toUpperCase();
   const handle = profile?.instagram_handle || profile?.username || '';
   const categories: string[] = Array.isArray(profile?.categories)
@@ -102,7 +104,10 @@ export default function BrandProfile() {
           });
           await refreshProfile();
         } catch (err: any) {
-          Alert.alert('Failed to save', err?.message || 'Try again later.');
+          Alert.alert(
+            t('ScreensBrandProfile.failedToSave'),
+            err?.message || t('ScreensBrandProfile.tryAgainLater'),
+          );
           throw err;
         }
       })(),
@@ -121,26 +126,36 @@ export default function BrandProfile() {
             await uploadProfilePhoto(user.id, image, 'brand_profiles');
             await refreshProfile();
           } catch (err: any) {
-            Alert.alert('Upload failed', err?.message || 'Try again later.');
+            Alert.alert(
+              t('ScreensBrandProfile.uploadFailed'),
+              err?.message || t('ScreensBrandProfile.tryAgainLater'),
+            );
           }
         })(),
-        'Uploading logo…',
+        t('ScreensBrandProfile.uploadingLogo'),
       );
     } catch (err: any) {
-      Alert.alert('Picker error', err?.message || 'Could not open picker.');
+      Alert.alert(
+        t('ScreensBrandProfile.pickerError'),
+        err?.message || t('ScreensBrandProfile.couldNotOpenPicker'),
+      );
     }
   };
 
   const handleRevertLogo = () => {
     Alert.alert(
-      'Revert to Instagram logo?',
-      'Your custom upload will be replaced with the picture from your Instagram profile.',
+      t('ScreensBrandProfile.revertLogoTitle'),
+      t('ScreensBrandProfile.revertLogoMessage'),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('ScreensBrandProfile.cancel'), style: 'cancel'},
         {
-          text: 'Revert',
+          text: t('ScreensBrandProfile.revert'),
           style: 'destructive',
-          onPress: () => saveBrandFields({revertBrandLogo: true}, 'Reverting logo…'),
+          onPress: () =>
+            saveBrandFields(
+              {revertBrandLogo: true},
+              t('ScreensBrandProfile.revertingLogo'),
+            ),
         },
       ],
     );
@@ -150,7 +165,9 @@ export default function BrandProfile() {
     return (
       <BrandsLayout>
         <View style={{padding: 40, alignItems: 'center'}}>
-          <Text className="text-gray-400 text-sm">Loading profile…</Text>
+          <Text className="text-gray-400 text-sm">
+            {t('ScreensBrandProfile.loadingProfile')}
+          </Text>
         </View>
       </BrandsLayout>
     );
@@ -163,7 +180,9 @@ export default function BrandProfile() {
         colors={['#4C75BE', '#4A3996']}
         className="pt-12 pb-8 px-6 rounded-b-[40px] mb-20">
         <View className="flex-row items-center mb-4">
-          <Text className="text-2xl font-bold text-white">My Profile</Text>
+          <Text className="text-2xl font-bold text-white">
+            {t('ScreensBrandProfile.myProfile')}
+          </Text>
         </View>
       </LinearGradient>
 
@@ -201,7 +220,7 @@ export default function BrandProfile() {
                 hitSlop={6}>
                 <RotateCcw size={10} color="#94a3b8" />
                 <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                  Revert to Instagram
+                  {t('ScreensBrandProfile.revertToInstagram')}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -233,25 +252,27 @@ export default function BrandProfile() {
 
       <View className="px-6" style={{gap: 32, paddingBottom: 32}}>
         {/* Brand Information */}
-        <Section title="Brand Information" onEdit={() => setBrandInfoOpen(true)}>
+        <Section
+          title={t('ScreensBrandProfile.brandInformation')}
+          onEdit={() => setBrandInfoOpen(true)}>
           <View className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
             <InfoRow
               icon={<Briefcase size={18} color="#60A5FA" />}
               label={profile.brand_name || profile.gstin_trade_name || '—'}
-              sub="Brand / Company Name"
+              sub={t('ScreensBrandProfile.brandCompanyName')}
             />
             {profile.gstin_legal_name ? (
               <InfoRow
                 icon={<FileText size={18} color="#3B82F6" />}
                 label={profile.gstin_legal_name}
-                sub="Legal Name"
+                sub={t('ScreensBrandProfile.legalName')}
               />
             ) : null}
             {profile.gstin_business_type ? (
               <InfoRow
                 icon={<ShieldCheck size={18} color="#6366F1" />}
                 label={profile.gstin_business_type}
-                sub="Business Type"
+                sub={t('ScreensBrandProfile.businessType')}
               />
             ) : null}
             {profile.gstin_address ? (
@@ -264,14 +285,14 @@ export default function BrandProfile() {
                 ]
                   .filter(Boolean)
                   .join(', ')}
-                sub="Registered Address"
+                sub={t('ScreensBrandProfile.registeredAddress')}
                 last
               />
             ) : (
               <InfoRow
                 icon={<MapPin size={18} color="#93C5FD" />}
-                label="No address on file"
-                sub="Tap edit to add"
+                label={t('ScreensBrandProfile.noAddressOnFile')}
+                sub={t('ScreensBrandProfile.tapEditToAdd')}
                 last
               />
             )}
@@ -279,23 +300,25 @@ export default function BrandProfile() {
         </Section>
 
         {/* Contact Details */}
-        <Section title="Contact Details" onEdit={() => setContactOpen(true)}>
+        <Section
+          title={t('ScreensBrandProfile.contactDetails')}
+          onEdit={() => setContactOpen(true)}>
           <View className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
             <InfoRow
               icon={<User size={18} color="#4ADE80" />}
               label={profile.contact_name || '—'}
-              sub="Brand Manager"
+              sub={t('ScreensBrandProfile.brandManager')}
             />
             <InfoRow
               icon={<Phone size={18} color="#22C55E" />}
               label={profile.contact_phone || profile.phone || '—'}
-              sub="Business Mobile (login number)"
+              sub={t('ScreensBrandProfile.businessMobile')}
               isVerified
             />
             <InfoRow
               icon={<Mail size={18} color="#F87171" />}
               label={profile.contact_email || '—'}
-              sub="Partnership Email"
+              sub={t('ScreensBrandProfile.partnershipEmail')}
               isVerified={!!profile.contact_email}
               last
             />
@@ -303,7 +326,9 @@ export default function BrandProfile() {
         </Section>
 
         {/* Categories */}
-        <Section title="Categories" onEdit={() => setCategoriesOpen(true)}>
+        <Section
+          title={t('ScreensBrandProfile.categories')}
+          onEdit={() => setCategoriesOpen(true)}>
           {categories.length > 0 ? (
             <View className="flex-row flex-wrap" style={{gap: 6}}>
               {categories.map(c => (
@@ -320,7 +345,7 @@ export default function BrandProfile() {
             <View className="bg-white rounded-2xl border border-gray-100 p-5 flex-row items-center" style={{gap: 12}}>
               <Tag size={18} color="#94A3B8" />
               <Text className="text-xs text-gray-400 flex-1">
-                Pick the categories your brand operates in so creators can find you.
+                {t('ScreensBrandProfile.categoriesHint')}
               </Text>
             </View>
           )}
@@ -328,7 +353,7 @@ export default function BrandProfile() {
 
         {/* Instagram */}
         {handle ? (
-          <Section title="Social">
+          <Section title={t('ScreensBrandProfile.social')}>
             <TouchableOpacity
               onPress={() => Linking.openURL(`https://instagram.com/${handle}`)}
               activeOpacity={0.8}
@@ -352,7 +377,7 @@ export default function BrandProfile() {
 
         {/* GST card */}
         {profile.gstin ? (
-          <Section title="Tax & Legal Documents">
+          <Section title={t('ScreensBrandProfile.taxLegalDocuments')}>
             <View className="bg-white rounded-[28px] p-5 border border-gray-100">
               <View className="flex-row justify-between items-start mb-4">
                 <View className="flex-row" style={{gap: 10}}>
@@ -361,21 +386,21 @@ export default function BrandProfile() {
                   </View>
                   <View>
                     <Text className="text-[11px] font-extrabold text-gray-900">
-                      GST Registration
+                      {t('ScreensBrandProfile.gstRegistration')}
                     </Text>
                     <Text className="text-[9px] text-gray-400 font-semibold">
-                      Goods & Services Tax
+                      {t('ScreensBrandProfile.goodsServicesTax')}
                     </Text>
                   </View>
                 </View>
                 <View className="bg-green-50 px-3 py-1 rounded-lg">
                   <Text className="text-[9px] font-bold text-green-600 uppercase">
-                    Verified
+                    {t('ScreensBrandProfile.verified')}
                   </Text>
                 </View>
               </View>
               <Text className="text-[8px] text-gray-400 font-extrabold uppercase mb-1">
-                GSTIN Number
+                {t('ScreensBrandProfile.gstinNumber')}
               </Text>
               <Text className="text-[13px] font-extrabold text-gray-900 tracking-wider">
                 {profile.gstin}
@@ -385,7 +410,7 @@ export default function BrandProfile() {
         ) : null}
 
         {/* Account */}
-        <Section title="Account">
+        <Section title={t('ScreensBrandProfile.account')}>
           <TouchableOpacity
             onPress={() => setHelpOpen(true)}
             className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm mb-3"
@@ -395,8 +420,12 @@ export default function BrandProfile() {
               <HelpCircle size={18} color="#5851DB" />
             </View>
             <View className="flex-1">
-              <Text className="text-slate-800 font-bold text-sm">Help & Support</Text>
-              <Text className="text-[11px] text-slate-400">FAQs, docs, and getting in touch</Text>
+              <Text className="text-slate-800 font-bold text-sm">
+                {t('ScreensBrandProfile.helpSupport')}
+              </Text>
+              <Text className="text-[11px] text-slate-400">
+                {t('ScreensBrandProfile.helpSupportSub')}
+              </Text>
             </View>
             <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
@@ -409,7 +438,9 @@ export default function BrandProfile() {
             <View className="p-2 bg-red-50 rounded-xl">
               <LogOut size={18} color="#EF4444" />
             </View>
-            <Text className="text-red-500 font-bold text-sm flex-1">Log Out</Text>
+            <Text className="text-red-500 font-bold text-sm flex-1">
+              {t('ScreensBrandProfile.logOut')}
+            </Text>
           </TouchableOpacity>
         </Section>
       </View>
@@ -437,7 +468,7 @@ export default function BrandProfile() {
         profile={profile as any}
         onClose={() => setBrandInfoOpen(false)}
         onSave={(payload: BrandInfoPayload) =>
-          saveBrandFields(payload, 'Saving brand info…')
+          saveBrandFields(payload, t('ScreensBrandProfile.savingBrandInfo'))
         }
       />
 
@@ -446,7 +477,7 @@ export default function BrandProfile() {
         profile={profile as any}
         onClose={() => setContactOpen(false)}
         onSave={(payload: ContactDetailsPayload) =>
-          saveBrandFields(payload, 'Saving contact details…')
+          saveBrandFields(payload, t('ScreensBrandProfile.savingContactDetails'))
         }
       />
 
@@ -455,7 +486,7 @@ export default function BrandProfile() {
         initial={categories}
         onClose={() => setCategoriesOpen(false)}
         onSave={(payload: CategoriesPayload) =>
-          saveBrandFields(payload, 'Saving categories…')
+          saveBrandFields(payload, t('ScreensBrandProfile.savingCategories'))
         }
       />
     </BrandsLayout>

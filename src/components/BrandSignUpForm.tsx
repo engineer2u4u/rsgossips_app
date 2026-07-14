@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {classifyGstPan} from '../lib/brandProfile';
 
@@ -71,6 +72,7 @@ export default function BrandSignUpForm({
   instagramProfile = null,
   invitation = null,
 }: Props) {
+  const {t} = useTranslation();
   const [formData, setFormData] = useState({
     name: invitation?.brand_name || invitation?.full_name || '',
     phone: initialPhone,
@@ -148,13 +150,13 @@ export default function BrandSignUpForm({
       if (data?.error) throw new Error(data.error);
 
       if (!data?.verified) {
-        setGstinError('GSTIN not found or inactive');
+        setGstinError(t('BrandSignUpForm.gstinNotFound'));
         return;
       }
 
       if (data.data.gstStatus !== 'Active') {
         setGstinError(
-          `GSTIN status: ${data.data.gstStatus}. Only active GSTINs are allowed.`,
+          t('BrandSignUpForm.gstinStatus', {status: data.data.gstStatus}),
         );
         return;
       }
@@ -165,15 +167,13 @@ export default function BrandSignUpForm({
         {body: {gstin: formData.gstin}},
       );
       if (uniqueCheck?.conflicts?.includes('gstin')) {
-        setGstinError(
-          'This GSTIN is already registered with another account.',
-        );
+        setGstinError(t('BrandSignUpForm.gstinAlreadyRegistered'));
         return;
       }
 
       setGstinData(data.data);
     } catch (err: any) {
-      setGstinError(err.message || 'Failed to verify GSTIN');
+      setGstinError(err.message || t('BrandSignUpForm.gstinVerifyFailed'));
     } finally {
       setGstinLoading(false);
     }
@@ -190,9 +190,7 @@ export default function BrandSignUpForm({
         {body: {phone: formData.phone}},
       );
       if (uniqueCheck?.conflicts?.includes('phone')) {
-        setLocalError(
-          'This phone number is already registered. Please sign in instead.',
-        );
+        setLocalError(t('BrandSignUpForm.phoneAlreadyRegistered'));
         setOtpLoading(false);
         return;
       }
@@ -200,7 +198,7 @@ export default function BrandSignUpForm({
       setOtpSent(true);
       setTimer(60);
     } catch (err: any) {
-      setLocalError(err.message || 'Failed to send OTP');
+      setLocalError(err.message || t('BrandSignUpForm.sendOtpFailed'));
     } finally {
       setOtpLoading(false);
     }
@@ -240,7 +238,7 @@ export default function BrandSignUpForm({
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err: any) {
-      setLocalError(err.message || 'Invalid OTP');
+      setLocalError(err.message || t('BrandSignUpForm.invalidOtp'));
     } finally {
       setVerifyLoading(false);
     }
@@ -254,7 +252,7 @@ export default function BrandSignUpForm({
       setTimer(60);
       setOtp('');
     } catch (err: any) {
-      setLocalError(err.message || 'Failed to resend OTP');
+      setLocalError(err.message || t('BrandSignUpForm.resendOtpFailed'));
     } finally {
       setOtpLoading(false);
     }
@@ -262,7 +260,7 @@ export default function BrandSignUpForm({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError('Please enter your full name');
+      setLocalError(t('BrandSignUpForm.enterFullName'));
       return;
     }
     // GST/PAN is optional. If something was entered, validate the format
@@ -272,20 +270,20 @@ export default function BrandSignUpForm({
       if (!valid) {
         setGstinError(
           kind === 'pan'
-            ? 'PAN should be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).'
+            ? t('BrandSignUpForm.panFormat')
             : kind === 'gst'
-              ? 'GST should be 15 chars (e.g. 22AAAAA0000A1Z5).'
-              : 'Enter a valid GST (15 chars) or PAN (10 chars), or leave blank.',
+              ? t('BrandSignUpForm.gstFormat')
+              : t('BrandSignUpForm.gstPanFormat'),
         );
         return;
       }
     }
     if (!otpVerified) {
-      setLocalError('Please verify your phone number');
+      setLocalError(t('BrandSignUpForm.verifyPhone'));
       return;
     }
     if (!consentAgreed) {
-      setLocalError('Please accept the Brand Consent Policy to continue');
+      setLocalError(t('BrandSignUpForm.acceptConsent'));
       return;
     }
     onSubmit({...formData, gstin: formData.gstin || '', gstinData: gstinData as any});
@@ -299,12 +297,14 @@ export default function BrandSignUpForm({
         {/* Header */}
         <View className="items-center space-y-2">
           <Text className="text-2xl font-bold text-slate-900">
-            {invitation ? 'Complete Your Profile' : 'Register Brand'}
+            {invitation
+              ? t('BrandSignUpForm.headerTitleInvited')
+              : t('BrandSignUpForm.headerTitle')}
           </Text>
           <Text className="text-sm text-slate-500 text-center">
             {invitation
-              ? 'Your brand has been pre-registered. Verify your details to get started.'
-              : 'Verify your business to start collaborating'}
+              ? t('BrandSignUpForm.headerSubtitleInvited')
+              : t('BrandSignUpForm.headerSubtitle')}
           </Text>
         </View>
 
@@ -331,7 +331,7 @@ export default function BrandSignUpForm({
                 {invitation.brand_name}
               </Text>
               <Text className="text-[11px] text-purple-600 font-medium">
-                Pre-registered by RecentGossips
+                {t('BrandSignUpForm.preRegistered')}
               </Text>
             </View>
             <BadgeCheck size={20} color="#9810FA" />
@@ -370,7 +370,7 @@ export default function BrandSignUpForm({
                 @{instagramProfile.username}
               </Text>
               <Text className="text-[10px] text-slate-400">
-                Instagram connected
+                {t('BrandSignUpForm.instagramConnected')}
               </Text>
             </View>
             <CheckCircle2 size={18} color="#22C55E" />
@@ -380,12 +380,12 @@ export default function BrandSignUpForm({
         {/* Contact Name */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            Contact Person Name
+            {t('BrandSignUpForm.contactPersonName')}
           </Text>
           <View className="flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
             <User size={18} color="rgba(99,71,249,0.6)" />
             <TextInput
-              placeholder="Your full name"
+              placeholder={t('BrandSignUpForm.fullNamePlaceholder')}
               value={formData.name}
               onChangeText={v => setFormData(prev => ({...prev, name: v}))}
               className="flex-1 ml-3 text-base"
@@ -396,14 +396,16 @@ export default function BrandSignUpForm({
         {/* GST / PAN — OPTIONAL (matches web; boosts trust score later). */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            GST / PAN{' '}
-            <Text className="text-slate-300 font-normal">(optional)</Text>
+            {t('BrandSignUpForm.gstPanLabel')}{' '}
+            <Text className="text-slate-300 font-normal">
+              {t('BrandSignUpForm.optional')}
+            </Text>
           </Text>
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
               <Building2 size={18} color="rgba(99,71,249,0.6)" />
               <TextInput
-                placeholder="GST (15) or PAN (10) — e.g. ABCDE1234F"
+                placeholder={t('BrandSignUpForm.gstPlaceholder')}
                 value={formData.gstin}
                 onChangeText={handleGstinChange}
                 editable={!gstinData}
@@ -422,7 +424,7 @@ export default function BrandSignUpForm({
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className="text-white text-sm font-semibold">
-                    Verify
+                    {t('BrandSignUpForm.verify')}
                   </Text>
                 )}
               </Pressable>
@@ -439,7 +441,7 @@ export default function BrandSignUpForm({
             <Text className="text-xs text-red-500 ml-1">{gstinError}</Text>
           ) : (
             <Text className="text-[11px] text-slate-400 ml-1">
-              Helps boost your trust score; you can add it later in Profile.
+              {t('BrandSignUpForm.gstinHelp')}
             </Text>
           )}
 
@@ -449,7 +451,7 @@ export default function BrandSignUpForm({
               <View className="flex-row items-center gap-2">
                 <BadgeCheck size={16} color="#16A34A" />
                 <Text className="text-xs font-bold text-green-700">
-                  GSTIN Verified
+                  {t('BrandSignUpForm.gstinVerified')}
                 </Text>
                 <View className="ml-auto px-2 py-0.5 bg-green-100 rounded-full">
                   <Text className="text-[10px] font-bold text-green-700">
@@ -465,7 +467,7 @@ export default function BrandSignUpForm({
                 {gstinData.tradeName &&
                   gstinData.legalName !== gstinData.tradeName && (
                     <Text className="text-[11px] text-slate-500">
-                      Legal: {gstinData.legalName}
+                      {t('BrandSignUpForm.legal', {name: gstinData.legalName})}
                     </Text>
                   )}
                 <View className="flex-row items-start gap-1">
@@ -475,7 +477,10 @@ export default function BrandSignUpForm({
                   </Text>
                 </View>
                 <Text className="text-[11px] text-slate-400">
-                  {gstinData.businessType} · Regd: {gstinData.registrationDate}
+                  {t('BrandSignUpForm.businessTypeRegd', {
+                    businessType: gstinData.businessType,
+                    date: gstinData.registrationDate,
+                  })}
                 </Text>
               </View>
 
@@ -485,7 +490,7 @@ export default function BrandSignUpForm({
                   setFormData(prev => ({...prev, gstin: ''}));
                 }}>
                 <Text className="text-[11px] text-red-400 font-semibold">
-                  Change GSTIN
+                  {t('BrandSignUpForm.changeGstin')}
                 </Text>
               </Pressable>
             </View>
@@ -495,7 +500,7 @@ export default function BrandSignUpForm({
         {/* Phone + OTP */}
         <View className="space-y-1.5">
           <Text className="text-xs font-semibold text-slate-500 ml-1">
-            Mobile Number
+            {t('BrandSignUpForm.mobileNumber')}
           </Text>
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl h-12">
@@ -506,7 +511,7 @@ export default function BrandSignUpForm({
               </View>
               <TextInput
                 keyboardType="phone-pad"
-                placeholder="Enter phone number"
+                placeholder={t('BrandSignUpForm.phonePlaceholder')}
                 value={formData.phone}
                 onChangeText={handlePhoneChange}
                 editable={!otpVerified}
@@ -526,7 +531,7 @@ export default function BrandSignUpForm({
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className="text-white text-sm font-semibold">
-                    Send OTP
+                    {t('BrandSignUpForm.sendOtp')}
                   </Text>
                 )}
               </Pressable>
@@ -544,7 +549,7 @@ export default function BrandSignUpForm({
             <View className="space-y-3 pt-2">
               <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                 <Text className="text-[11px] text-emerald-700 text-center">
-                  Your OTP just slid into WhatsApp — say hi to{' '}
+                  {t('BrandSignUpForm.otpWhatsapp')}
                   <Text className="font-bold">Rgossips Media</Text>!
                 </Text>
               </View>
@@ -580,13 +585,13 @@ export default function BrandSignUpForm({
                     />
                   )}
                   <Text className="text-white text-sm font-semibold">
-                    Verify
+                    {t('BrandSignUpForm.verify')}
                   </Text>
                 </Pressable>
 
                 {timer > 0 ? (
                   <Text className="text-xs text-slate-400">
-                    Resend in{' '}
+                    {t('BrandSignUpForm.resendIn')}
                     <Text className="text-[#6347F9] font-bold">
                       {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
                     </Text>
@@ -594,7 +599,7 @@ export default function BrandSignUpForm({
                 ) : (
                   <Pressable onPress={handleResend}>
                     <Text className="text-xs text-[#6347F9] font-bold">
-                      Resend OTP
+                      {t('BrandSignUpForm.resendOtp')}
                     </Text>
                   </Pressable>
                 )}
@@ -617,16 +622,15 @@ export default function BrandSignUpForm({
             {consentAgreed && <Check size={14} color="white" strokeWidth={3} />}
           </View>
           <Text className="flex-1 text-[12px] text-slate-600 leading-snug">
-            I have read and agree to the{' '}
+            {t('BrandSignUpForm.consentPrefix')}
             <Text
               className="text-[#6347F9] font-bold"
               onPress={() =>
                 (navigation as any).navigate('ConsentPolicy', {role: 'brand'})
               }>
-              Brand Consent Policy
+              {t('BrandSignUpForm.brandConsentPolicy')}
             </Text>
-            , Terms of Service, Privacy Policy and Community Guidelines of
-            Recent Gossips, on behalf of the Brand I represent.
+            {t('BrandSignUpForm.consentSuffix')}
           </Text>
         </Pressable>
 
@@ -643,7 +647,7 @@ export default function BrandSignUpForm({
             <>
               <ActivityIndicator size="small" color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                Creating account...
+                {t('BrandSignUpForm.creatingAccount')}
               </Text>
             </>
           ) : (
@@ -653,7 +657,7 @@ export default function BrandSignUpForm({
                   ? 'text-slate-400'
                   : 'text-white'
               }`}>
-              Create Brand Account
+              {t('BrandSignUpForm.createBrandAccount')}
             </Text>
           )}
         </Pressable>

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,6 +31,7 @@ const {height: SCREEN_H, width: SCREEN_W} = Dimensions.get('window');
 const CONFETTI_COLORS = ['#9810FA', '#E60076', '#F59E0B', '#22C55E', '#3B82F6', '#EC4899'];
 
 export default function WelcomeRewardModal() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const {user} = useAuth();
   const [open, setOpen] = useState(false);
@@ -116,7 +118,7 @@ export default function WelcomeRewardModal() {
       /* ignore */
     }
     setOpen(false);
-    if (goToRefer) navigation.navigate('Refer');
+    if (goToRefer) navigation.navigate('InfluencerRefer');
   };
 
   return (
@@ -182,7 +184,7 @@ export default function WelcomeRewardModal() {
                   marginBottom: 8,
                 }}>
                 <Text className="text-[11px] font-black uppercase tracking-widest text-white">
-                  Your Reward
+                  {t('WelcomeRewardModal.badge')}
                 </Text>
               </View>
               <Animated.Text style={{fontSize: 78, transform: [{translateY: giftFloat}]}}>🎁</Animated.Text>
@@ -194,10 +196,10 @@ export default function WelcomeRewardModal() {
             {/* Body */}
             <View style={{paddingHorizontal: 24, paddingTop: 18, paddingBottom: 22}}>
               <Text className="text-[22px] font-black text-slate-900 text-center">
-                Congratulations! 🎉
+                {t('WelcomeRewardModal.congrats')}
               </Text>
               <Text className="text-[13px] font-medium text-slate-500 text-center" style={{marginTop: 6, lineHeight: 19}}>
-                You&apos;ve been awarded a welcome reward for joining RGossips.
+                {t('WelcomeRewardModal.subtitle')}
               </Text>
 
               {/* Reward rows */}
@@ -210,12 +212,12 @@ export default function WelcomeRewardModal() {
                     start={{x: 0, y: 0}}
                     end={{x: 1, y: 1}}
                     style={{width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center'}}>
-                    <Text className="text-white text-xs font-black">RC</Text>
+                    <Text className="text-white text-xs font-black">{t('WelcomeRewardModal.rcBadge')}</Text>
                   </LinearGradient>
                   <View style={{flex: 1}}>
-                    <Text className="text-[13px] font-black text-slate-900">50 Reward Credits</Text>
+                    <Text className="text-[13px] font-black text-slate-900">{t('WelcomeRewardModal.creditsTitle')}</Text>
                     <Text className="text-[11px] font-medium text-slate-500" style={{lineHeight: 15}}>
-                      Your welcome bonus — unlocks 1 month after signup, then redeem on your subscription.
+                      {t('WelcomeRewardModal.creditsDesc')}
                     </Text>
                   </View>
                 </View>
@@ -229,9 +231,9 @@ export default function WelcomeRewardModal() {
                       <Text className="text-white text-base font-black">%</Text>
                     </View>
                     <View style={{flex: 1}}>
-                      <Text className="text-[13px] font-black text-slate-900">50% off your first subscription</Text>
+                      <Text className="text-[13px] font-black text-slate-900">{t('WelcomeRewardModal.discountTitle')}</Text>
                       <View className="flex-row items-center" style={{gap: 5, marginTop: 2}}>
-                        <Text className="text-[11px] font-medium text-slate-500">Gifted by</Text>
+                        <Text className="text-[11px] font-medium text-slate-500">{t('WelcomeRewardModal.giftedBy')}</Text>
                         {referrer.referrer_photo ? (
                           <Image
                             source={{uri: referrer.referrer_photo}}
@@ -260,11 +262,11 @@ export default function WelcomeRewardModal() {
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
                   style={{paddingVertical: 15, borderRadius: 16, alignItems: 'center'}}>
-                  <Text className="text-white text-sm font-black">Claim Your Reward</Text>
+                  <Text className="text-white text-sm font-black">{t('WelcomeRewardModal.claim')}</Text>
                 </LinearGradient>
               </Pressable>
               <Pressable onPress={() => dismiss(false)} style={{marginTop: 8, paddingVertical: 6}}>
-                <Text className="text-[12px] font-bold text-slate-400 text-center">Maybe later</Text>
+                <Text className="text-[12px] font-bold text-slate-400 text-center">{t('WelcomeRewardModal.maybeLater')}</Text>
               </Pressable>
             </View>
           </Animated.View>

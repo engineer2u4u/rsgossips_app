@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Linking } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import {
   Instagram,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react-native';
 
 const Footer = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   const [email, setEmail] = useState('');
@@ -18,25 +20,25 @@ const Footer = () => {
 
   const navigation = {
     platform: [
-      { name: 'For Brands', href: '/brands' },
-      { name: 'For Influencers', href: '/influencer' },
-      { name: 'How It Works', href: '/how-it-works' },
-      { name: 'Pricing', href: '/pricing' },
-      { name: 'Features', href: '/features' },
+      { key: 'forBrands', href: '/brands' },
+      { key: 'forInfluencers', href: '/influencer' },
+      { key: 'howItWorks', href: '/how-it-works' },
+      { key: 'pricing', href: '/pricing' },
+      { key: 'features', href: '/features' },
     ],
     company: [
-      { name: 'About Us', href: '/about' },
-      { name: 'Careers', href: '/careers' },
-      { name: 'Blog', href: '/blog' },
-      { name: 'Press Kit', href: '/press' },
-      { name: 'Contact', href: '/contact' },
+      { key: 'aboutUs', href: '/about' },
+      { key: 'careers', href: '/careers' },
+      { key: 'blog', href: '/blog' },
+      { key: 'pressKit', href: '/press' },
+      { key: 'contact', href: '/contact' },
     ],
     legal: [
-      { name: 'Terms of Service', href: '/terms' },
-      { name: 'Privacy Policy', href: '/privacy' },
-      { name: 'Cookie Policy', href: '/cookies' },
-      { name: 'Help Center', href: '/help' },
-      { name: 'Support', href: '/support' },
+      { key: 'terms', href: '/terms' },
+      { key: 'privacy', href: '/privacy' },
+      { key: 'cookies', href: '/cookies' },
+      { key: 'help', href: '/help' },
+      { key: 'support', href: '/support' },
     ],
     social: [
       { Icon: Instagram, href: 'https://www.instagram.com/rgossips_/' },
@@ -54,7 +56,7 @@ const Footer = () => {
     if (!email) return;
 
     setLoading(true);
-    setMessage('Thank You');
+    setMessage(t('Footer.thankYou'));
 
     setLoading(false);
   };
@@ -66,12 +68,11 @@ const Footer = () => {
         <Text className="text-white text-3xl font-bold">RGossips</Text>
 
         <Text className="text-slate-400 text-sm mt-2">
-          The all-in-one influencer campaign platform connecting brands with
-          verified creators globally.
+          {t('Footer.brandDescription')}
         </Text>
 
         <Text className="text-white mt-4 text-sm font-medium">
-          Get influencer marketing tips — weekly in your inbox
+          {t('Footer.newsletterPrompt')}
         </Text>
 
         {/* Newsletter */}
@@ -79,7 +80,7 @@ const Footer = () => {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Enter your email"
+            placeholder={t('Footer.emailPlaceholder')}
             placeholderTextColor="#9ca3af"
             className="bg-[#1a142c] text-white px-4 py-3 rounded-xl flex-1"
           />
@@ -89,7 +90,9 @@ const Footer = () => {
             disabled={loading}
             className="bg-[#6C4DFF] px-5 py-3 rounded-xl"
           >
-            <Text className="text-white font-semibold text-sm">Subscribe</Text>
+            <Text className="text-white font-semibold text-sm">
+              {t('Footer.subscribe')}
+            </Text>
           </Pressable>
         </View>
 
@@ -117,16 +120,20 @@ const Footer = () => {
 
       {/* Link Sections */}
       {[
-        { title: 'Platform', links: navigation.platform },
-        { title: 'Company', links: navigation.company },
-        { title: 'Legal & Support', links: navigation.legal },
+        { key: 'platform', links: navigation.platform, group: 'platform' },
+        { key: 'company', links: navigation.company, group: 'company' },
+        { key: 'legal', links: navigation.legal, group: 'legal' },
       ].map(section => (
-        <View key={section.title} className="mb-6">
-          <Text className="text-white font-semibold mb-3">{section.title}</Text>
+        <View key={section.key} className="mb-6">
+          <Text className="text-white font-semibold mb-3">
+            {t(`Footer.sections.${section.key}`)}
+          </Text>
 
           {section.links.map(link => (
-            <Pressable key={link.name}>
-              <Text className="text-slate-400 py-1">{link.name}</Text>
+            <Pressable key={link.key}>
+              <Text className="text-slate-400 py-1">
+                {t(`Footer.nav.${section.group}.${link.key}`)}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -135,11 +142,11 @@ const Footer = () => {
       {/* Bottom Bar */}
       <View className="border-t border-slate-800 mt-6 pt-4 items-center">
         <Text className="text-slate-500 text-xs">
-          © {currentYear} RGossips. All rights reserved.
+          {t('Footer.copyright', { year: currentYear })}
         </Text>
 
         <Text className="text-slate-500 text-xs mt-2 text-center">
-          Trusted by 5,000+ brands • 200,000+ Influencers • ISO 27001 Certified
+          {t('Footer.trustLine')}
         </Text>
       </View>
     </View>

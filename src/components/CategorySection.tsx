@@ -1,43 +1,46 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { ChevronRight, Sparkles, Zap } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = [
-  { label: 'Lifestyle & Living', emoji: '🏠' },
-  { label: 'Tech', emoji: '💻' },
-  { label: 'Finance', emoji: '📈' },
-  { label: 'Education', emoji: '🎓' },
-  { label: 'Health', emoji: '🏥' },
-  { label: 'Fashion', emoji: '👗' },
-  { label: 'Food', emoji: '🍕' },
-  { label: 'Fitness', emoji: '🏋️' },
-  { label: 'Beauty', emoji: '💄' },
-  { label: 'Travel & Places', emoji: '✈️' },
+  { key: 'lifestyle', emoji: '🏠' },
+  { key: 'tech', emoji: '💻' },
+  { key: 'finance', emoji: '📈' },
+  { key: 'education', emoji: '🎓' },
+  { key: 'health', emoji: '🏥' },
+  { key: 'fashion', emoji: '👗' },
+  { key: 'food', emoji: '🍕' },
+  { key: 'fitness', emoji: '🏋️' },
+  { key: 'beauty', emoji: '💄' },
+  { key: 'travel', emoji: '✈️' },
 ];
 
-const CategoryIcon = ({ label, emoji }: { label: string; emoji: string }) => {
+const CategoryIcon = ({ labelKey, emoji }: { labelKey: string; emoji: string }) => {
+  const { t } = useTranslation();
   return (
     <Pressable className="items-center justify-center bg-white p-4 gap-3 rounded-2xl border border-slate-100 shadow-sm w-[90px]">
       <Text className="text-2xl">{emoji}</Text>
 
       <Text className="text-[10px] font-bold text-slate-500 text-center">
-        {label}
+        {t(`CategorySection.categories.${labelKey}`)}
       </Text>
     </Pressable>
   );
 };
 
 export const CategorySection = () => {
+  const { t } = useTranslation();
   return (
     <View className="px-4 bg-slate-50/50 w-full py-10 gap-8">
       {/* Header */}
       <View className="flex-row justify-between items-center">
         <Text className="text-2xl font-black text-slate-900">
-          Creator Categories
+          {t('CategorySection.title')}
         </Text>
 
         <Pressable className="flex-row items-center gap-1">
-          <Text className="text-sm font-bold text-[#5B3DF5]">View All</Text>
+          <Text className="text-sm font-bold text-[#5B3DF5]">{t('CategorySection.viewAll')}</Text>
 
           <ChevronRight size={14} color="#5B3DF5" />
         </Pressable>
@@ -50,7 +53,7 @@ export const CategorySection = () => {
         contentContainerStyle={{ gap: 12 }}
       >
         {CATEGORIES.map(cat => (
-          <CategoryIcon key={cat.label} label={cat.label} emoji={cat.emoji} />
+          <CategoryIcon key={cat.key} labelKey={cat.key} emoji={cat.emoji} />
         ))}
       </ScrollView>
 
@@ -62,11 +65,11 @@ export const CategorySection = () => {
 
           <View>
             <Text className="font-black text-[#1C115A] text-xl">
-              Influencers
+              {t('CategorySection.influencers.title')}
             </Text>
 
             <Text className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">
-              Micro & Macro
+              {t('CategorySection.influencers.subtitle')}
             </Text>
           </View>
         </Pressable>
@@ -77,11 +80,11 @@ export const CategorySection = () => {
 
           <View>
             <Text className="font-black text-[#6B1D1D] text-xl">
-              Celebrities
+              {t('CategorySection.celebrities.title')}
             </Text>
 
             <Text className="text-[10px] font-bold text-red-400 uppercase tracking-widest mt-1">
-              A-list Artists
+              {t('CategorySection.celebrities.subtitle')}
             </Text>
           </View>
         </Pressable>
@@ -91,7 +94,7 @@ export const CategorySection = () => {
       <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow">
         <View className="flex-row justify-between items-center mb-2">
           <Text className="text-lg font-bold text-slate-900">
-            Your Trust Score
+            {t('CategorySection.trustScore.title')}
           </Text>
 
           <View className="bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
@@ -100,7 +103,7 @@ export const CategorySection = () => {
         </View>
 
         <Text className="text-slate-400 text-sm mb-6">
-          Unlock premium features
+          {t('CategorySection.trustScore.subtitle')}
         </Text>
 
         {/* Progress Bar */}
@@ -115,13 +118,12 @@ export const CategorySection = () => {
           </View>
 
           <Text className="text-slate-600 text-xs font-semibold text-center leading-relaxed">
-            You cannot contact creators yet. Verify your work email to start
-            connecting.
+            {t('CategorySection.trustScore.lockedNotice')}
           </Text>
         </View>
 
         <Pressable className="mt-8 bg-[#131722] py-4 rounded-2xl items-center">
-          <Text className="text-white font-bold text-sm">Verify My Email</Text>
+          <Text className="text-white font-bold text-sm">{t('CategorySection.trustScore.verifyEmail')}</Text>
         </Pressable>
       </View>
     </View>

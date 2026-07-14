@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {MapPin, Gift, Users, Zap} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
@@ -48,12 +49,13 @@ function pickPlaceholder(id: string | number): string {
 
 function CampaignCardImpl({campaign, matchScore = 0}: Props) {
   const navigation = useNavigation<any>();
+  const {t} = useTranslation();
 
-  const category = campaign.tags?.[0] || 'General';
+  const category = campaign.tags?.[0] || t('CampaignCard.general');
   const badge =
     campaign.daysLeft && parseInt(campaign.daysLeft, 10) <= 7
-      ? 'Ending Soon'
-      : campaign.status || 'Active';
+      ? t('CampaignCard.endingSoon')
+      : campaign.status || t('CampaignCard.active');
   const initials =
     campaign.initials ||
     campaign.brandName?.[0]?.toUpperCase() ||
@@ -61,7 +63,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
     'B';
   const description =
     campaign.description?.slice(0, 80) ||
-    `${campaign.brandName} campaign. Created by admin.`;
+    t('CampaignCard.defaultDescription', {brandName: campaign.brandName});
   const imageUrl = campaign.bannerImage || pickPlaceholder(campaign.id);
 
   // Shadow on an outer wrapper so the inner card can keep overflow-hidden
@@ -107,7 +109,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
               }}>
               <Zap size={10} color="#fff" />
               <Text className="text-white text-[10px] font-black">
-                {matchScore}% match
+                {t('CampaignCard.matchPercent', {score: matchScore})}
               </Text>
             </View>
           )}
@@ -157,7 +159,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
             <View className="flex-row items-center mb-1" style={{gap: 4}}>
               <Gift size={11} color="#22C55E" />
               <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Pay
+                {t('CampaignCard.pay')}
               </Text>
             </View>
             <Text className="text-sm font-black text-slate-800" numberOfLines={1}>
@@ -168,7 +170,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
             <View className="flex-row items-center mb-1" style={{gap: 4}}>
               <Users size={11} color="#3B82F6" />
               <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Req
+                {t('CampaignCard.req')}
               </Text>
             </View>
             <Text className="text-xs font-black text-slate-800" numberOfLines={2}>
@@ -193,10 +195,10 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
           />
           <Text className="text-white text-xs font-black uppercase tracking-widest">
             {campaign.applicationStatus === 'completed'
-              ? 'View Status'
+              ? t('CampaignCard.viewStatus')
               : campaign.status === 'Applied'
-                ? 'View Status'
-                : 'Apply Now'}
+                ? t('CampaignCard.viewStatus')
+                : t('CampaignCard.applyNow')}
           </Text>
         </TouchableOpacity>
       </View>

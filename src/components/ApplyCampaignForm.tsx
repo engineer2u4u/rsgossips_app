@@ -23,6 +23,7 @@ import {
   Activity,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 
@@ -41,6 +42,7 @@ function formatCount(n: number | undefined) {
 }
 
 export default function ApplyCampaignForm({visible, onClose, campaignData, onSubmitSuccess}: Props) {
+  const {t} = useTranslation();
   const {profile, user} = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -73,7 +75,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
           onSubmitSuccess();
         }, 2000);
       } else {
-        setError('Unexpected response from the server.');
+        setError(t('ApplyCampaignForm.errors.unexpectedResponse'));
       }
     } catch (err) {
       // The edge function returns structured errors (already_applied,
@@ -81,19 +83,19 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
       if (err instanceof EdgeFunctionError) {
         const code = err.data?.error;
         if (code === 'already_applied') {
-          setError('You have already applied to this campaign.');
+          setError(t('ApplyCampaignForm.errors.alreadyApplied'));
         } else if (code === 'plan_limit_reached') {
           const used = err.data?.used ?? '?';
           const limit = err.data?.limit ?? '?';
           const plan = (err.data?.plan || 'starter') as string;
           setError(
-            `You've used ${used}/${limit} applications on your ${plan} plan this month. Upgrade to apply to more campaigns.`,
+            t('ApplyCampaignForm.errors.planLimitReached', {used, limit, plan}),
           );
         } else {
           setError(err.message);
         }
       } else {
-        setError((err as Error)?.message || 'Failed to submit application');
+        setError((err as Error)?.message || t('ApplyCampaignForm.errors.submitFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -122,9 +124,9 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               <View className="w-16 h-16 bg-emerald-50 rounded-full items-center justify-center">
                 <CheckCircle2 size={32} color="#10B981" />
               </View>
-              <Text className="text-xl font-black text-slate-900">Application Submitted!</Text>
+              <Text className="text-xl font-black text-slate-900">{t('ApplyCampaignForm.success.title')}</Text>
               <Text className="text-sm text-slate-500 text-center">
-                Your application is now under review. You'll be notified when the brand responds.
+                {t('ApplyCampaignForm.success.message')}
               </Text>
             </View>
           ) : (
@@ -132,9 +134,9 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               {/* Header */}
               <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100">
                 <View>
-                  <Text className="text-base font-bold text-slate-900">Apply for Campaign</Text>
+                  <Text className="text-base font-bold text-slate-900">{t('ApplyCampaignForm.header.title')}</Text>
                   <Text className="text-[11px] text-slate-400">
-                    {campaignData?.title || 'Campaign'} · {campaignData?.brandName || 'Brand'}
+                    {campaignData?.title || t('ApplyCampaignForm.header.campaignFallback')} · {campaignData?.brandName || t('ApplyCampaignForm.header.brandFallback')}
                   </Text>
                 </View>
                 <Pressable onPress={onClose} className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center">
@@ -154,64 +156,64 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                   {/* Your Profile (Auto-populated) */}
                   <View style={{gap: 10}}>
                     <View className="flex-row items-center" style={{gap: 6}}>
-                      <Text className="text-sm font-bold text-slate-900">Your Profile</Text>
+                      <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.profile.title')}</Text>
                       <View className="bg-emerald-50 px-2 py-0.5 rounded-full">
-                        <Text className="text-[9px] font-bold text-emerald-500">Auto-filled</Text>
+                        <Text className="text-[9px] font-bold text-emerald-500">{t('ApplyCampaignForm.profile.autoFilled')}</Text>
                       </View>
                     </View>
 
-                    <ReadOnlyField icon={<User size={14} color="#9810FA" />} label="Full Name" value={fullName || 'Not set'} />
+                    <ReadOnlyField icon={<User size={14} color="#9810FA" />} label={t('ApplyCampaignForm.profile.fullName')} value={fullName || t('ApplyCampaignForm.profile.notSet')} />
                     <View className="flex-row" style={{gap: 8}}>
                       <View className="flex-1">
-                        <ReadOnlyField icon={<Mail size={14} color="#EC4899" />} label="Email" value={email || 'Not set'} />
+                        <ReadOnlyField icon={<Mail size={14} color="#EC4899" />} label={t('ApplyCampaignForm.profile.email')} value={email || t('ApplyCampaignForm.profile.notSet')} />
                       </View>
                       <View className="flex-1">
-                        <ReadOnlyField icon={<Phone size={14} color="#3B82F6" />} label="Phone" value={phone || 'Not set'} />
+                        <ReadOnlyField icon={<Phone size={14} color="#3B82F6" />} label={t('ApplyCampaignForm.profile.phone')} value={phone || t('ApplyCampaignForm.profile.notSet')} />
                       </View>
                     </View>
-                    <ReadOnlyField icon={<Instagram size={14} color="#EC4899" />} label="Instagram" value={instagramHandle ? `@${instagramHandle}` : 'Not connected'} />
+                    <ReadOnlyField icon={<Instagram size={14} color="#EC4899" />} label="Instagram" value={instagramHandle ? `@${instagramHandle}` : t('ApplyCampaignForm.profile.notConnected')} />
                     <View className="flex-row" style={{gap: 8}}>
                       <View className="flex-1">
-                        <ReadOnlyField icon={<Users size={14} color="#9810FA" />} label="Followers" value={formatCount(followersCount)} />
+                        <ReadOnlyField icon={<Users size={14} color="#9810FA" />} label={t('ApplyCampaignForm.profile.followers')} value={formatCount(followersCount)} />
                       </View>
                       <View className="flex-1">
-                        <ReadOnlyField icon={<Activity size={14} color="#10B981" />} label="Engagement" value={engagementRate ? `${engagementRate}%` : '—'} />
+                        <ReadOnlyField icon={<Activity size={14} color="#10B981" />} label={t('ApplyCampaignForm.profile.engagement')} value={engagementRate ? `${engagementRate}%` : '—'} />
                       </View>
                     </View>
                   </View>
 
                   {/* Media Kit */}
                   <View style={{gap: 8}}>
-                    <Text className="text-sm font-bold text-slate-900">Media Kit</Text>
+                    <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.mediaKit.title')}</Text>
                     {mediaKitPublished && instagramHandle ? (
                       <View className="flex-row items-center p-4 border border-purple-100 bg-purple-50/30 rounded-xl" style={{gap: 12}}>
                         <View className="w-10 h-10 rounded-xl bg-purple-100 items-center justify-center">
                           <ExternalLink size={18} color="#9333EA" />
                         </View>
                         <View className="flex-1">
-                          <Text className="text-sm font-bold text-slate-800">View Media Kit</Text>
+                          <Text className="text-sm font-bold text-slate-800">{t('ApplyCampaignForm.mediaKit.view')}</Text>
                           <Text className="text-[10px] text-slate-400" numberOfLines={1}>rgossips.com/kit/{instagramHandle}</Text>
                         </View>
                         <View className="bg-emerald-50 px-2 py-1 rounded-full">
-                          <Text className="text-[9px] font-bold text-emerald-600">Published</Text>
+                          <Text className="text-[9px] font-bold text-emerald-600">{t('ApplyCampaignForm.mediaKit.published')}</Text>
                         </View>
                       </View>
                     ) : (
                       <View className="p-4 border border-dashed border-slate-200 rounded-xl items-center">
-                        <Text className="text-xs text-slate-400">Media kit not published yet</Text>
-                        <Text className="text-xs font-bold text-purple-500 mt-1">Generate Media Kit</Text>
+                        <Text className="text-xs text-slate-400">{t('ApplyCampaignForm.mediaKit.notPublished')}</Text>
+                        <Text className="text-xs font-bold text-purple-500 mt-1">{t('ApplyCampaignForm.mediaKit.generate')}</Text>
                       </View>
                     )}
                   </View>
 
                   {/* Proposed Rate */}
                   <View style={{gap: 8}}>
-                    <Text className="text-sm font-bold text-slate-900">Your Proposed Rate</Text>
+                    <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.rate.label')}</Text>
                     <View className="flex-row items-center bg-slate-50 border border-slate-100 rounded-xl px-4 h-12">
                       <Text className="text-sm font-bold text-slate-400 mr-2">₹</Text>
                       <TextInput
                         keyboardType="number-pad"
-                        placeholder="Enter your rate for this campaign"
+                        placeholder={t('ApplyCampaignForm.rate.placeholder')}
                         placeholderTextColor="#94A3B8"
                         value={proposedRate}
                         onChangeText={setProposedRate}
@@ -219,15 +221,15 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                       />
                     </View>
                     {campaignData?.budget && (
-                      <Text className="text-[10px] text-slate-400">Campaign budget: {campaignData.budget}</Text>
+                      <Text className="text-[10px] text-slate-400">{t('ApplyCampaignForm.rate.budget', {budget: campaignData.budget})}</Text>
                     )}
                   </View>
 
                   {/* Why Choose You */}
                   <View style={{gap: 8}}>
-                    <Text className="text-sm font-bold text-slate-900">Why should we choose you?</Text>
+                    <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.why.label')}</Text>
                     <TextInput
-                      placeholder="Tell the brand why you're the perfect fit..."
+                      placeholder={t('ApplyCampaignForm.why.placeholder')}
                       placeholderTextColor="#94A3B8"
                       value={whyChooseYou}
                       onChangeText={setWhyChooseYou}
@@ -247,7 +249,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                 <TouchableOpacity
                   onPress={onClose}
                   className="flex-1 h-12 rounded-xl border border-slate-200 items-center justify-center">
-                  <Text className="text-sm font-bold text-slate-600">Cancel</Text>
+                  <Text className="text-sm font-bold text-slate-600">{t('ApplyCampaignForm.footer.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSubmit}
@@ -268,7 +270,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                   />
                   {submitting && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
                   <Text className="text-white text-sm font-bold">
-                    {submitting ? 'Submitting...' : 'Submit Application'}
+                    {submitting ? t('ApplyCampaignForm.footer.submitting') : t('ApplyCampaignForm.footer.submit')}
                   </Text>
                 </TouchableOpacity>
               </View>

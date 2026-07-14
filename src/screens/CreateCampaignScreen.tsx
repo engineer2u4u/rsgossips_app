@@ -29,6 +29,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   ArrowLeft,
   Check,
@@ -97,43 +98,15 @@ const LANGUAGES = [
 
 const GENDERS = ['Male', 'Female', 'Any'];
 
-const USAGE_RIGHTS = [
-  {value: 'creator_only', label: "Influencer's page only"},
-  {value: 'brand_repost', label: 'Brand can repost'},
-  {value: 'paid_ads', label: 'Brand can use in paid ads'},
-  {value: 'full_rights', label: 'Full rights transfer'},
-];
+const USAGE_RIGHTS = ['creator_only', 'brand_repost', 'paid_ads', 'full_rights'];
 
-const PAYMENT_TIMELINES = [
-  {value: 'advance', label: 'Advance'},
-  {value: 'on_approval', label: 'On content approval'},
-  {value: '7_days', label: 'Within 7 days of posting'},
-  {value: '30_days', label: 'Within 30 days'},
-];
+const PAYMENT_TIMELINES = ['advance', 'on_approval', '7_days', '30_days'];
 
-const KEEPUP_DURATIONS = [
-  {value: '24h', label: '24 hours (stories)'},
-  {value: '7d', label: '7 days'},
-  {value: '30d', label: '30 days'},
-  {value: 'permanent', label: 'Permanent'},
-];
+const KEEPUP_DURATIONS = ['24h', '7d', '30d', 'permanent'];
 
-const EXCLUSIVITY_PERIODS = [
-  {value: '0', label: 'No exclusivity'},
-  {value: '7', label: '7 days'},
-  {value: '15', label: '15 days'},
-  {value: '30', label: '30 days'},
-  {value: '60', label: '60 days'},
-  {value: '90', label: '90 days'},
-];
+const EXCLUSIVITY_PERIODS = ['0', '7', '15', '30', '60', '90'];
 
-const TIER_OPTIONS = [
-  {value: 'all', label: 'All Tiers'},
-  {value: 'nano', label: 'Nano (1K–10K)'},
-  {value: 'micro', label: 'Micro (10K–100K)'},
-  {value: 'macro', label: 'Macro (100K–1M)'},
-  {value: 'mega', label: 'Mega (1M+)'},
-];
+const TIER_OPTIONS = ['all', 'nano', 'micro', 'macro', 'mega'];
 
 // Auto-fill follower ranges when tier is selected. Matches web's TIER_RANGES.
 const TIER_RANGES: Record<string, {min: number; max: number}> = {
@@ -219,8 +192,50 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function CreateCampaignScreen() {
   const navigation = useNavigation();
+  const {t} = useTranslation();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
+
+  const usageRightsOptions = useMemo(
+    () =>
+      USAGE_RIGHTS.map(v => ({
+        value: v,
+        label: t(`ScreensCreateCampaignScreen.usageRights.${v}`),
+      })),
+    [t],
+  );
+  const paymentTimelineOptions = useMemo(
+    () =>
+      PAYMENT_TIMELINES.map(v => ({
+        value: v,
+        label: t(`ScreensCreateCampaignScreen.paymentTimelines.${v}`),
+      })),
+    [t],
+  );
+  const keepupDurationOptions = useMemo(
+    () =>
+      KEEPUP_DURATIONS.map(v => ({
+        value: v,
+        label: t(`ScreensCreateCampaignScreen.keepupDurations.${v}`),
+      })),
+    [t],
+  );
+  const exclusivityPeriodOptions = useMemo(
+    () =>
+      EXCLUSIVITY_PERIODS.map(v => ({
+        value: v,
+        label: t(`ScreensCreateCampaignScreen.exclusivityPeriods.${v}`),
+      })),
+    [t],
+  );
+  const tierOptions = useMemo(
+    () =>
+      TIER_OPTIONS.map(v => ({
+        value: v,
+        label: t(`ScreensCreateCampaignScreen.tierOptions.${v}`),
+      })),
+    [t],
+  );
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [categories, setCategories] = useState<string[]>([]);
@@ -288,31 +303,31 @@ export default function CreateCampaignScreen() {
   }, [form.budget_total, form.max_influencers, showBudget]);
 
   const validate = (): string | null => {
-    if (!user?.id) return 'You must be signed in';
-    if (!form.title.trim()) return 'Title is required';
-    if (!form.campaign_start_date) return 'Start date is required';
-    if (!form.application_deadline) return 'Application deadline is required';
-    if (!form.campaign_end_date) return 'Campaign end date is required';
+    if (!user?.id) return t('ScreensCreateCampaignScreen.errors.signedIn');
+    if (!form.title.trim()) return t('ScreensCreateCampaignScreen.errors.titleRequired');
+    if (!form.campaign_start_date) return t('ScreensCreateCampaignScreen.errors.startRequired');
+    if (!form.application_deadline) return t('ScreensCreateCampaignScreen.errors.deadlineRequired');
+    if (!form.campaign_end_date) return t('ScreensCreateCampaignScreen.errors.endRequired');
     for (const d of [
       form.campaign_start_date,
       form.application_deadline,
       form.campaign_end_date,
     ]) {
       if (!ISO_DATE_RE.test(d)) {
-        return `Dates must be in YYYY-MM-DD format (got "${d}")`;
+        return t('ScreensCreateCampaignScreen.errors.dateFormat', {value: d});
       }
     }
     if (
       new Date(form.application_deadline).getTime() >
       new Date(form.campaign_end_date).getTime()
     ) {
-      return 'Application deadline must be on or before the campaign end date';
+      return t('ScreensCreateCampaignScreen.errors.deadlineBeforeEnd');
     }
     if (totalDeliverables < 1) {
-      return 'Add at least 1 deliverable (reels, posts, stories, videos or blogs)';
+      return t('ScreensCreateCampaignScreen.errors.minDeliverable');
     }
-    if (categories.length < 1) return 'Select at least 1 category';
-    if (platforms.length < 1) return 'Select at least 1 platform';
+    if (categories.length < 1) return t('ScreensCreateCampaignScreen.errors.minCategory');
+    if (platforms.length < 1) return t('ScreensCreateCampaignScreen.errors.minPlatform');
     return null;
   };
 
@@ -361,18 +376,27 @@ export default function CreateCampaignScreen() {
           );
           if (data?.campaignId) {
             Alert.alert(
-              publish ? 'Campaign published' : 'Draft saved',
               publish
-                ? 'Creators can now see and apply.'
-                : 'You can publish it from the campaigns list.',
-              [{text: 'OK', onPress: () => navigation.goBack()}],
+                ? t('ScreensCreateCampaignScreen.alerts.publishedTitle')
+                : t('ScreensCreateCampaignScreen.alerts.draftSavedTitle'),
+              publish
+                ? t('ScreensCreateCampaignScreen.alerts.publishedMessage')
+                : t('ScreensCreateCampaignScreen.alerts.draftSavedMessage'),
+              [
+                {
+                  text: t('ScreensCreateCampaignScreen.alerts.ok'),
+                  onPress: () => navigation.goBack(),
+                },
+              ],
             );
           }
         } catch (e: any) {
-          setError(e?.message || 'Failed to create campaign');
+          setError(e?.message || t('ScreensCreateCampaignScreen.errors.createFailed'));
         }
       })(),
-      publish ? 'Publishing campaign…' : 'Saving draft…',
+      publish
+        ? t('ScreensCreateCampaignScreen.loading.publishing')
+        : t('ScreensCreateCampaignScreen.loading.savingDraft'),
     );
     setSubmitting(false);
   };
@@ -390,9 +414,9 @@ export default function CreateCampaignScreen() {
           <ArrowLeft size={22} color="#0f172a" />
         </Pressable>
         <View>
-          <Text style={s.topTitle}>New Campaign</Text>
+          <Text style={s.topTitle}>{t('ScreensCreateCampaignScreen.topTitle')}</Text>
           <Text style={s.topSub}>
-            Saved as draft unless you publish
+            {t('ScreensCreateCampaignScreen.topSubtitle')}
           </Text>
         </View>
         <View style={{width: 30}} />
@@ -408,23 +432,23 @@ export default function CreateCampaignScreen() {
         ) : null}
 
         {/* Basic info */}
-        <Section title="Basic info">
-          <Field label="Title" required>
+        <Section title={t('ScreensCreateCampaignScreen.sections.basicInfo')}>
+          <Field label={t('ScreensCreateCampaignScreen.fields.title')} required>
             <TextInput
               value={form.title}
               onChangeText={v => update('title', v)}
-              placeholder="e.g. Summer Fashion 2026"
+              placeholder={t('ScreensCreateCampaignScreen.fields.titlePlaceholder')}
               placeholderTextColor="#cbd5e1"
               style={s.input}
             />
           </Field>
           <Field
-            label="Description"
-            hint="Helps creators understand what you need">
+            label={t('ScreensCreateCampaignScreen.fields.description')}
+            hint={t('ScreensCreateCampaignScreen.fields.descriptionHint')}>
             <TextInput
               value={form.description}
               onChangeText={v => update('description', v)}
-              placeholder="Tell creators what you're looking for…"
+              placeholder={t('ScreensCreateCampaignScreen.fields.descriptionPlaceholder')}
               placeholderTextColor="#cbd5e1"
               multiline
               numberOfLines={5}
@@ -432,18 +456,20 @@ export default function CreateCampaignScreen() {
             />
           </Field>
           <View style={s.twoCol}>
-            <Field label="Campaign Type" required>
+            <Field label={t('ScreensCreateCampaignScreen.fields.campaignType')} required>
               <Dropdown
                 value={form.campaign_type}
                 options={[
-                  {value: 'barter', label: 'Barter'},
-                  {value: 'paid', label: 'Paid'},
-                  {value: 'hybrid', label: 'Hybrid'},
+                  {value: 'barter', label: t('ScreensCreateCampaignScreen.campaignTypeOptions.barter')},
+                  {value: 'paid', label: t('ScreensCreateCampaignScreen.campaignTypeOptions.paid')},
+                  {value: 'hybrid', label: t('ScreensCreateCampaignScreen.campaignTypeOptions.hybrid')},
                 ]}
                 onChange={v => update('campaign_type', v as any)}
               />
             </Field>
-            <Field label="Slots" hint="Number of creators">
+            <Field
+              label={t('ScreensCreateCampaignScreen.fields.slots')}
+              hint={t('ScreensCreateCampaignScreen.fields.slotsHint')}>
               <TextInput
                 value={form.max_influencers}
                 onChangeText={v =>
@@ -459,7 +485,7 @@ export default function CreateCampaignScreen() {
 
           {showBudget ? (
             <View style={s.twoCol}>
-              <Field label="Budget (Total)">
+              <Field label={t('ScreensCreateCampaignScreen.fields.budgetTotal')}>
                 <TextInput
                   value={form.budget_total}
                   onChangeText={v => update('budget_total', v.replace(/\D/g, ''))}
@@ -469,7 +495,9 @@ export default function CreateCampaignScreen() {
                   style={s.input}
                 />
               </Field>
-              <Field label="Budget / Influencer" hint="Auto-calculated">
+              <Field
+                label={t('ScreensCreateCampaignScreen.fields.budgetPerInfluencer')}
+                hint={t('ScreensCreateCampaignScreen.fields.budgetPerInfluencerHint')}>
                 <TextInput
                   value={form.budget_per_influencer}
                   editable={false}
@@ -483,8 +511,8 @@ export default function CreateCampaignScreen() {
 
           {showProductValue ? (
             <Field
-              label="Product value (approx.)"
-              hint="Helps creators evaluate the offer">
+              label={t('ScreensCreateCampaignScreen.fields.productValue')}
+              hint={t('ScreensCreateCampaignScreen.fields.productValueHint')}>
               <TextInput
                 value={form.product_value}
                 onChangeText={v => update('product_value', v.replace(/\D/g, ''))}
@@ -498,16 +526,16 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Product / Service */}
-        <Section title="Product / service">
-          <Field label="What are you promoting?" required>
+        <Section title={t('ScreensCreateCampaignScreen.sections.productService')}>
+          <Field label={t('ScreensCreateCampaignScreen.fields.whatPromoting')} required>
             <View style={s.twoCol}>
               <TogglePill
-                label="📦 Product"
+                label={t('ScreensCreateCampaignScreen.toggle.product')}
                 active={form.offering_type === 'product'}
                 onPress={() => update('offering_type', 'product')}
               />
               <TogglePill
-                label="🛎️ Service / Experience"
+                label={t('ScreensCreateCampaignScreen.toggle.service')}
                 active={form.offering_type === 'service'}
                 onPress={() => update('offering_type', 'service')}
               />
@@ -517,8 +545,8 @@ export default function CreateCampaignScreen() {
               onChangeText={v => update('product_name', v)}
               placeholder={
                 form.offering_type === 'product'
-                  ? 'e.g. "Moisturizing cream — 50ml tube"'
-                  : 'e.g. "Weekend stay at our Mussoorie resort"'
+                  ? t('ScreensCreateCampaignScreen.fields.productNamePlaceholderProduct')
+                  : t('ScreensCreateCampaignScreen.fields.productNamePlaceholderService')
               }
               placeholderTextColor="#cbd5e1"
               style={[s.input, {marginTop: 8}]}
@@ -527,19 +555,19 @@ export default function CreateCampaignScreen() {
 
           {form.offering_type === 'product' ? (
             <View style={s.twoCol}>
-              <Field label="Will product be shipped?">
+              <Field label={t('ScreensCreateCampaignScreen.fields.willShip')}>
                 <Dropdown
                   value={form.shipping_required}
                   options={[
-                    {value: 'no', label: 'No'},
-                    {value: 'yes', label: 'Yes'},
-                    {value: 'pickup', label: 'Pickup required'},
+                    {value: 'no', label: t('ScreensCreateCampaignScreen.shippingOptions.no')},
+                    {value: 'yes', label: t('ScreensCreateCampaignScreen.shippingOptions.yes')},
+                    {value: 'pickup', label: t('ScreensCreateCampaignScreen.shippingOptions.pickup')},
                   ]}
                   onChange={v => update('shipping_required', v as any)}
                 />
               </Field>
               {form.shipping_required === 'yes' ? (
-                <Field label="Shipping timeline (days)">
+                <Field label={t('ScreensCreateCampaignScreen.fields.shippingTimeline')}>
                   <TextInput
                     value={form.shipping_timeline_days}
                     onChangeText={v =>
@@ -557,12 +585,12 @@ export default function CreateCampaignScreen() {
             </View>
           ) : (
             <Field
-              label="Service location"
-              hint="Where the influencer experiences the service">
+              label={t('ScreensCreateCampaignScreen.fields.serviceLocation')}
+              hint={t('ScreensCreateCampaignScreen.fields.serviceLocationHint')}>
               <TextInput
                 value={form.service_location}
                 onChangeText={v => update('service_location', v)}
-                placeholder='e.g. "Mussoorie, India" or "Online / virtual"'
+                placeholder={t('ScreensCreateCampaignScreen.fields.serviceLocationPlaceholder')}
                 placeholderTextColor="#cbd5e1"
                 style={s.input}
               />
@@ -570,14 +598,14 @@ export default function CreateCampaignScreen() {
           )}
 
           {showBarterCompensation ? (
-            <Field label="What does the influencer get? (compensation details)">
+            <Field label={t('ScreensCreateCampaignScreen.fields.compensation')}>
               <TextInput
                 value={form.barter_compensation}
                 onChangeText={v => update('barter_compensation', v)}
                 placeholder={
                   form.offering_type === 'product'
-                    ? 'e.g. "Full skincare kit worth ₹3,500"'
-                    : 'e.g. "Free 2-night stay + meals + spa session"'
+                    ? t('ScreensCreateCampaignScreen.fields.compensationPlaceholderProduct')
+                    : t('ScreensCreateCampaignScreen.fields.compensationPlaceholderService')
                 }
                 placeholderTextColor="#cbd5e1"
                 multiline
@@ -588,7 +616,7 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Banner */}
-        <Section title="Banner image">
+        <Section title={t('ScreensCreateCampaignScreen.sections.bannerImage')}>
           {banner ? (
             <View style={s.bannerPreview}>
               <Image source={{uri: banner.uri}} style={s.bannerImage} />
@@ -606,21 +634,24 @@ export default function CreateCampaignScreen() {
                   const img = await pickFromLibrary();
                   if (img) setBanner(img);
                 } catch (e: any) {
-                  Alert.alert('Picker error', e?.message || 'Could not open picker.');
+                  Alert.alert(
+                    t('ScreensCreateCampaignScreen.alerts.pickerErrorTitle'),
+                    e?.message || t('ScreensCreateCampaignScreen.alerts.pickerErrorMessage'),
+                  );
                 }
               }}
               style={s.uploadBox}>
               <Upload size={22} color="#94a3b8" />
-              <Text style={s.uploadHint}>Tap to upload banner</Text>
-              <Text style={s.uploadHintSmall}>PNG, JPG up to 10MB</Text>
+              <Text style={s.uploadHint}>{t('ScreensCreateCampaignScreen.banner.tapToUpload')}</Text>
+              <Text style={s.uploadHintSmall}>{t('ScreensCreateCampaignScreen.banner.fileHint')}</Text>
             </TouchableOpacity>
           )}
         </Section>
 
         {/* Gallery */}
         <Section
-          title="Gallery"
-          rightLabel={gallery.length > 0 ? `${gallery.length} image${gallery.length > 1 ? 's' : ''}` : undefined}>
+          title={t('ScreensCreateCampaignScreen.sections.gallery')}
+          rightLabel={gallery.length > 0 ? t('ScreensCreateCampaignScreen.gallery.count', {count: gallery.length}) : undefined}>
           {gallery.length > 0 ? (
             <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
               {gallery.map((g, i) => (
@@ -642,20 +673,23 @@ export default function CreateCampaignScreen() {
                 const imgs = await pickManyFromLibrary(6 - gallery.length);
                 if (imgs.length > 0) setGallery(prev => [...prev, ...imgs]);
               } catch (e: any) {
-                Alert.alert('Picker error', e?.message || 'Could not open picker.');
+                Alert.alert(
+                  t('ScreensCreateCampaignScreen.alerts.pickerErrorTitle'),
+                  e?.message || t('ScreensCreateCampaignScreen.alerts.pickerErrorMessage'),
+                );
               }
             }}
             style={s.uploadStripe}>
             <ImagePlus size={16} color="#5851DB" />
-            <Text style={s.uploadStripeText}>Add gallery images</Text>
+            <Text style={s.uploadStripeText}>{t('ScreensCreateCampaignScreen.gallery.add')}</Text>
           </TouchableOpacity>
         </Section>
 
         {/* Platforms */}
         <Section
-          title="Platforms"
+          title={t('ScreensCreateCampaignScreen.sections.platforms')}
           required
-          rightLabel={platforms.length > 0 ? `${platforms.length} selected` : undefined}>
+          rightLabel={platforms.length > 0 ? t('ScreensCreateCampaignScreen.counts.selected', {count: platforms.length}) : undefined}>
           <ChipGroup
             options={PLATFORMS}
             selected={platforms}
@@ -665,20 +699,20 @@ export default function CreateCampaignScreen() {
 
         {/* Deliverables */}
         <Section
-          title="Content deliverables (per creator)"
+          title={t('ScreensCreateCampaignScreen.sections.deliverables')}
           required
-          rightLabel={`${totalDeliverables} piece${totalDeliverables === 1 ? '' : 's'}`}
+          rightLabel={t('ScreensCreateCampaignScreen.counts.pieces', {count: totalDeliverables})}
           rightHighlight={totalDeliverables > 0}>
           <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
             {[
-              {k: 'num_reels' as const, label: 'Reels'},
-              {k: 'num_posts' as const, label: 'Posts'},
-              {k: 'num_stories' as const, label: 'Stories'},
-              {k: 'num_videos' as const, label: 'Videos'},
-              {k: 'num_blogs' as const, label: 'Blogs'},
+              {k: 'num_reels' as const},
+              {k: 'num_posts' as const},
+              {k: 'num_stories' as const},
+              {k: 'num_videos' as const},
+              {k: 'num_blogs' as const},
             ].map(d => (
               <View key={d.k} style={s.deliverableCell}>
-                <Text style={s.fieldLabel}>{d.label}</Text>
+                <Text style={s.fieldLabel}>{t(`ScreensCreateCampaignScreen.deliverableLabels.${d.k}`)}</Text>
                 <TextInput
                   value={form[d.k]}
                   onChangeText={v => update(d.k, v.replace(/\D/g, ''))}
@@ -694,9 +728,9 @@ export default function CreateCampaignScreen() {
 
         {/* Categories */}
         <Section
-          title="Categories"
+          title={t('ScreensCreateCampaignScreen.sections.categories')}
           required
-          rightLabel={`${categories.length} of ${CATEGORIES.length}`}
+          rightLabel={t('ScreensCreateCampaignScreen.counts.ofTotal', {count: categories.length, total: CATEGORIES.length})}
           rightHighlight={categories.length > 0}>
           <ChipGroup
             options={CATEGORIES}
@@ -706,16 +740,18 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Influencer requirements */}
-        <Section title="Influencer requirements">
+        <Section title={t('ScreensCreateCampaignScreen.sections.influencerRequirements')}>
           <View style={s.twoCol}>
-            <Field label="Tier" hint="Auto-fills follower range">
+            <Field
+              label={t('ScreensCreateCampaignScreen.fields.tier')}
+              hint={t('ScreensCreateCampaignScreen.fields.tierHint')}>
               <Dropdown
                 value={form.target_influencer_tier}
-                options={TIER_OPTIONS}
+                options={tierOptions}
                 onChange={v => update('target_influencer_tier', v)}
               />
             </Field>
-            <Field label="Min. Engagement (%)">
+            <Field label={t('ScreensCreateCampaignScreen.fields.minEngagement')}>
               <TextInput
                 value={form.min_engagement_rate}
                 onChangeText={v =>
@@ -729,7 +765,7 @@ export default function CreateCampaignScreen() {
             </Field>
           </View>
           <View style={s.twoCol}>
-            <Field label="Min. Followers">
+            <Field label={t('ScreensCreateCampaignScreen.fields.minFollowers')}>
               <TextInput
                 value={form.target_follower_min}
                 onChangeText={v =>
@@ -741,7 +777,7 @@ export default function CreateCampaignScreen() {
                 style={s.input}
               />
             </Field>
-            <Field label="Max. Followers">
+            <Field label={t('ScreensCreateCampaignScreen.fields.maxFollowers')}>
               <TextInput
                 value={form.target_follower_max}
                 onChangeText={v =>
@@ -758,8 +794,8 @@ export default function CreateCampaignScreen() {
 
         {/* Locations */}
         <Section
-          title="Locations"
-          rightLabel={allIndia ? 'All India' : `${cities.length} selected`}>
+          title={t('ScreensCreateCampaignScreen.sections.locations')}
+          rightLabel={allIndia ? t('ScreensCreateCampaignScreen.locations.allIndia') : t('ScreensCreateCampaignScreen.counts.selected', {count: cities.length})}>
           <Pressable
             onPress={() => setAllIndia(v => !v)}
             style={s.checkboxRow}>
@@ -767,7 +803,7 @@ export default function CreateCampaignScreen() {
               {allIndia ? <Check size={12} color="white" /> : null}
             </View>
             <Text style={{fontSize: 12, fontWeight: '600', color: '#475569'}}>
-              Open to all creators across India
+              {t('ScreensCreateCampaignScreen.locations.openToAll')}
             </Text>
           </Pressable>
           {!allIndia ? (
@@ -780,15 +816,15 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Audience preferences */}
-        <Section title="Audience preferences">
-          <Field label="Preferred gender">
+        <Section title={t('ScreensCreateCampaignScreen.sections.audiencePreferences')}>
+          <Field label={t('ScreensCreateCampaignScreen.fields.preferredGender')}>
             <ChipGroup
               options={GENDERS}
               selected={genders}
               onToggle={v => setGenders(g => toggleIn(g, v))}
             />
           </Field>
-          <Field label="Preferred languages">
+          <Field label={t('ScreensCreateCampaignScreen.fields.preferredLanguages')}>
             <ChipGroup
               options={LANGUAGES}
               selected={languages}
@@ -798,28 +834,32 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Content guidelines */}
-        <Section title="Content guidelines">
-          <Field label="Must include (Do's)" hint="What every creator must show or mention">
+        <Section title={t('ScreensCreateCampaignScreen.sections.contentGuidelines')}>
+          <Field
+            label={t('ScreensCreateCampaignScreen.fields.mustInclude')}
+            hint={t('ScreensCreateCampaignScreen.fields.mustIncludeHint')}>
             <TextInput
               value={form.content_dos}
               onChangeText={v => update('content_dos', v)}
-              placeholder='e.g. "Show product packaging, mention discount code SAVE20"'
+              placeholder={t('ScreensCreateCampaignScreen.fields.mustIncludePlaceholder')}
               placeholderTextColor="#cbd5e1"
               multiline
               style={[s.input, {minHeight: 60, textAlignVertical: 'top'}]}
             />
           </Field>
-          <Field label="Must avoid (Don'ts)" hint="Eliminates 80% of revisions">
+          <Field
+            label={t('ScreensCreateCampaignScreen.fields.mustAvoid')}
+            hint={t('ScreensCreateCampaignScreen.fields.mustAvoidHint')}>
             <TextInput
               value={form.content_donts}
               onChangeText={v => update('content_donts', v)}
-              placeholder={'e.g. "Don’t show competitor products, no copyrighted music"'}
+              placeholder={t('ScreensCreateCampaignScreen.fields.mustAvoidPlaceholder')}
               placeholderTextColor="#cbd5e1"
               multiline
               style={[s.input, {minHeight: 60, textAlignVertical: 'top'}]}
             />
           </Field>
-          <Field label="Required hashtags">
+          <Field label={t('ScreensCreateCampaignScreen.fields.requiredHashtags')}>
             <TextInput
               value={form.required_hashtags}
               onChangeText={v => update('required_hashtags', v)}
@@ -829,7 +869,7 @@ export default function CreateCampaignScreen() {
               style={s.input}
             />
           </Field>
-          <Field label="Brand handle(s) to tag">
+          <Field label={t('ScreensCreateCampaignScreen.fields.brandHandles')}>
             <TextInput
               value={form.brand_handles_to_tag}
               onChangeText={v => update('brand_handles_to_tag', v)}
@@ -842,33 +882,33 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Terms & rights */}
-        <Section title="Terms & rights">
-          <Field label="Content usage rights">
+        <Section title={t('ScreensCreateCampaignScreen.sections.termsRights')}>
+          <Field label={t('ScreensCreateCampaignScreen.fields.contentUsageRights')}>
             <Dropdown
               value={form.usage_rights}
-              options={USAGE_RIGHTS}
+              options={usageRightsOptions}
               onChange={v => update('usage_rights', v)}
             />
           </Field>
-          <Field label="Content keep-up duration">
+          <Field label={t('ScreensCreateCampaignScreen.fields.keepupDuration')}>
             <Dropdown
               value={form.keepup_duration}
-              options={KEEPUP_DURATIONS}
+              options={keepupDurationOptions}
               onChange={v => update('keepup_duration', v)}
             />
           </Field>
-          <Field label="Exclusivity (no competing brands)">
+          <Field label={t('ScreensCreateCampaignScreen.fields.exclusivity')}>
             <Dropdown
               value={form.exclusivity_days}
-              options={EXCLUSIVITY_PERIODS}
+              options={exclusivityPeriodOptions}
               onChange={v => update('exclusivity_days', v)}
             />
           </Field>
           {!isBarter ? (
-            <Field label="Payment timeline">
+            <Field label={t('ScreensCreateCampaignScreen.fields.paymentTimeline')}>
               <Dropdown
                 value={form.payment_timeline}
-                options={PAYMENT_TIMELINES}
+                options={paymentTimelineOptions}
                 onChange={v => update('payment_timeline', v)}
               />
             </Field>
@@ -876,8 +916,11 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Schedule */}
-        <Section title="Schedule">
-          <Field label="Start Date" required hint="YYYY-MM-DD">
+        <Section title={t('ScreensCreateCampaignScreen.sections.schedule')}>
+          <Field
+            label={t('ScreensCreateCampaignScreen.fields.startDate')}
+            required
+            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
             <TextInput
               value={form.campaign_start_date}
               onChangeText={v => update('campaign_start_date', v)}
@@ -888,7 +931,10 @@ export default function CreateCampaignScreen() {
               style={s.input}
             />
           </Field>
-          <Field label="Application Deadline" required hint="YYYY-MM-DD">
+          <Field
+            label={t('ScreensCreateCampaignScreen.fields.applicationDeadline')}
+            required
+            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
             <TextInput
               value={form.application_deadline}
               onChangeText={v => update('application_deadline', v)}
@@ -899,7 +945,10 @@ export default function CreateCampaignScreen() {
               style={s.input}
             />
           </Field>
-          <Field label="Campaign End Date" required hint="YYYY-MM-DD">
+          <Field
+            label={t('ScreensCreateCampaignScreen.fields.campaignEndDate')}
+            required
+            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
             <TextInput
               value={form.campaign_end_date}
               onChangeText={v => update('campaign_end_date', v)}
@@ -911,7 +960,7 @@ export default function CreateCampaignScreen() {
             />
           </Field>
           <Text style={s.helperText}>
-            Application deadline is the last day to apply. Campaign end date is when all content must be delivered.
+            {t('ScreensCreateCampaignScreen.schedule.helper')}
           </Text>
         </Section>
       </ScrollView>
@@ -922,13 +971,13 @@ export default function CreateCampaignScreen() {
           onPress={() => navigation.goBack()}
           disabled={submitting}
           style={[s.footerBtn, s.footerCancel]}>
-          <Text style={s.footerCancelText}>Cancel</Text>
+          <Text style={s.footerCancelText}>{t('ScreensCreateCampaignScreen.footer.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => submit(false)}
           disabled={submitting}
           style={[s.footerBtn, s.footerDraft]}>
-          <Text style={s.footerDraftText}>Save Draft</Text>
+          <Text style={s.footerDraftText}>{t('ScreensCreateCampaignScreen.footer.saveDraft')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => submit(true)}
@@ -937,7 +986,7 @@ export default function CreateCampaignScreen() {
           <LinearGradient
             colors={['#5851DB', '#4338CA']}
             style={s.publishGradient}>
-            <Text style={s.footerPublishText}>Publish</Text>
+            <Text style={s.footerPublishText}>{t('ScreensCreateCampaignScreen.footer.publish')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

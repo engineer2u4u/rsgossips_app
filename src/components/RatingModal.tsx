@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import {Star, X} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 
 export type RatingValues = {
@@ -66,19 +67,24 @@ export default function RatingModal({
   brandId,
   influencerId,
   raterRole = 'influencer',
-  title = 'Rate this campaign',
+  title,
   subtitle,
   sections,
-  primaryCta = 'Submit Rating',
-  secondaryCta = 'Skip for now',
+  primaryCta,
+  secondaryCta,
   initialValues,
   onPrimary,
   onSaved,
   onSkip,
 }: Props) {
+  const {t} = useTranslation();
   const [values, setValues] = useState<RatingValues>(initialValues || {});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const resolvedTitle = title ?? t('RatingModal.title');
+  const resolvedPrimaryCta = primaryCta ?? t('RatingModal.submitRating');
+  const resolvedSecondaryCta = secondaryCta ?? t('RatingModal.skipForNow');
 
   const setStar = (key: keyof RatingValues, n: number) => {
     setValues(v => ({...v, [key]: n}));
@@ -91,7 +97,7 @@ export default function RatingModal({
     for (const s of sections) {
       const v = values[s.key];
       if (!v || v < 1 || v > 5) {
-        setError(`Please rate '${s.label}' before submitting`);
+        setError(t('RatingModal.pleaseRate', {label: s.label}));
         return;
       }
     }
@@ -123,7 +129,7 @@ export default function RatingModal({
       onSaved?.(values);
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Failed to submit rating');
+      setError(e?.message || t('RatingModal.failedToSubmit'));
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +159,7 @@ export default function RatingModal({
         <Pressable style={styles.card} onPress={e => e.stopPropagation()}>
           <View style={styles.header}>
             <View style={{flex: 1, paddingRight: 12}}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.title}>{resolvedTitle}</Text>
               {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
             </View>
             <TouchableOpacity
@@ -205,7 +211,7 @@ export default function RatingModal({
               onPress={handleSkip}
               disabled={submitting}
               style={[styles.btn, styles.btnGhost]}>
-              <Text style={styles.btnGhostText}>{secondaryCta}</Text>
+              <Text style={styles.btnGhostText}>{resolvedSecondaryCta}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
@@ -214,7 +220,7 @@ export default function RatingModal({
               {submitting ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={styles.btnPrimaryText}>{primaryCta}</Text>
+                <Text style={styles.btnPrimaryText}>{resolvedPrimaryCta}</Text>
               )}
             </TouchableOpacity>
           </View>

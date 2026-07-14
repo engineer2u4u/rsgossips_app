@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import {LogOut} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 interface Props {
   visible: boolean;
@@ -33,10 +34,15 @@ export default function LogoutConfirmDialog({
   visible,
   onCancel,
   onConfirm,
-  title = 'Log out?',
-  message = "You'll need to sign in again to access your account.",
-  confirmLabel = 'Log out',
+  title,
+  message,
+  confirmLabel,
 }: Props) {
+  const {t} = useTranslation();
+  const resolvedTitle = title ?? t('LogoutConfirmDialog.title');
+  const resolvedMessage = message ?? t('LogoutConfirmDialog.message');
+  const resolvedConfirmLabel =
+    confirmLabel ?? t('LogoutConfirmDialog.confirmLabel');
   const [busy, setBusy] = useState(false);
 
   const handleConfirm = async () => {
@@ -66,14 +72,16 @@ export default function LogoutConfirmDialog({
           <View style={styles.iconWrap}>
             <LogOut size={22} color="#dc2626" />
           </View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.title}>{resolvedTitle}</Text>
+          <Text style={styles.message}>{resolvedMessage}</Text>
           <View style={styles.actions}>
             <Pressable
               onPress={handleCancel}
               disabled={busy}
               style={[styles.btn, styles.btnGhost]}>
-              <Text style={styles.btnGhostText}>Cancel</Text>
+              <Text style={styles.btnGhostText}>
+                {t('LogoutConfirmDialog.cancel')}
+              </Text>
             </Pressable>
             <Pressable
               onPress={handleConfirm}
@@ -82,7 +90,7 @@ export default function LogoutConfirmDialog({
               {busy ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={styles.btnDangerText}>{confirmLabel}</Text>
+                <Text style={styles.btnDangerText}>{resolvedConfirmLabel}</Text>
               )}
             </Pressable>
           </View>

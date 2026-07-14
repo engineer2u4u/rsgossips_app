@@ -10,6 +10,7 @@
 import React from 'react';
 import {Alert, Image, Linking, Pressable, Text, View} from 'react-native';
 import {Instagram, MapPin, Plus} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 export type SearchInfluencer = {
   influencer_id: string;
@@ -36,15 +37,22 @@ function formatCount(n?: number) {
 }
 
 export function InfluencerCard({influencer}: Props) {
+  const {t} = useTranslation();
   const name =
-    influencer.full_name || influencer.username || influencer.instagram_handle || 'Creator';
+    influencer.full_name ||
+    influencer.username ||
+    influencer.instagram_handle ||
+    t('BrandsInfluencerCard.creatorFallback');
   const handle = influencer.instagram_handle || influencer.username || '';
   const followers = formatCount(influencer.followers_count);
   const initial = name.charAt(0).toUpperCase();
 
   const openMediaKit = () => {
     if (!handle) {
-      Alert.alert('No media kit', "This creator hasn't connected Instagram yet.");
+      Alert.alert(
+        t('BrandsInfluencerCard.noMediaKitTitle'),
+        t('BrandsInfluencerCard.noMediaKitMessage'),
+      );
       return;
     }
     Linking.openURL(`https://rgossips.com/kit/${handle}`);
@@ -53,7 +61,10 @@ export function InfluencerCard({influencer}: Props) {
   const invite = () => {
     // Web doesn't have a generic invite either — brands invite by creating a
     // campaign and letting the matching engine surface this creator.
-    Alert.alert('Invite via campaign', 'Create a campaign with matching filters and this creator will appear.');
+    Alert.alert(
+      t('BrandsInfluencerCard.inviteTitle'),
+      t('BrandsInfluencerCard.inviteMessage'),
+    );
   };
 
   return (
@@ -113,7 +124,9 @@ export function InfluencerCard({influencer}: Props) {
         className="bg-[#4C75BE] px-4 py-2 rounded-full flex-row items-center"
         style={{gap: 6}}>
         <Plus size={12} color="white" />
-        <Text className="text-white text-[11px] font-bold">Invite</Text>
+        <Text className="text-white text-[11px] font-bold">
+          {t('BrandsInfluencerCard.inviteButton')}
+        </Text>
       </Pressable>
     </Pressable>
   );

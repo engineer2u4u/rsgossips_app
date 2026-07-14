@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
 import {useProfilePhoto} from '../utils/photoUrl';
@@ -20,6 +21,7 @@ function formatCount(n: number | undefined) {
 }
 
 export default function AiMediaKitCard() {
+  const {t} = useTranslation();
   const {profile} = useAuth();
   const navigation = useNavigation();
   const opacity = useSharedValue(0);
@@ -35,14 +37,14 @@ export default function AiMediaKitCard() {
     transform: [{translateY: translateY.value}],
   }));
 
-  const userName = profile?.full_name || 'Creator';
+  const userName = profile?.full_name || t('AIMediaKitCard.defaultName');
   const userHandle = profile?.instagram_handle || profile?.username || 'creator';
   const userPhoto = useProfilePhoto();
 
   const stats = [
-    {label: 'FOLLOWERS', value: formatCount(profile?.followers_count)},
-    {label: 'POSTS', value: formatCount(profile?.media_count)},
-    {label: 'FOLLOWING', value: formatCount(profile?.follows_count)},
+    {key: 'followers', label: t('AIMediaKitCard.stats.followers'), value: formatCount(profile?.followers_count)},
+    {key: 'posts', label: t('AIMediaKitCard.stats.posts'), value: formatCount(profile?.media_count)},
+    {key: 'following', label: t('AIMediaKitCard.stats.following'), value: formatCount(profile?.follows_count)},
   ];
 
   return (
@@ -63,7 +65,7 @@ export default function AiMediaKitCard() {
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center" style={{gap: 6}}>
           <Text className="text-[16px] font-bold text-slate-900">
-            AI Media Kit
+            {t('AIMediaKitCard.title')}
           </Text>
           <Sparkles size={14} color={BRAND.accent} />
         </View>
@@ -73,7 +75,7 @@ export default function AiMediaKitCard() {
           <Text
             className="text-[10px] font-bold tracking-widest"
             style={{color: BRAND.accent}}>
-            PREVIEW
+            {t('AIMediaKitCard.preview')}
           </Text>
         </View>
       </View>
@@ -81,7 +83,7 @@ export default function AiMediaKitCard() {
       {/* Centered REAL-TIME ANALYTICS subtitle */}
       <Text
         className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mt-3">
-        Real-Time Analytics
+        {t('AIMediaKitCard.subtitle')}
       </Text>
 
       {/* Avatar with gradient ring */}
@@ -147,7 +149,7 @@ export default function AiMediaKitCard() {
       <View className="flex-row mt-4">
         {stats.map((stat, i) => (
           <View
-            key={stat.label}
+            key={stat.key}
             className="flex-1 items-center"
             style={{
               paddingVertical: 4,
@@ -190,7 +192,9 @@ export default function AiMediaKitCard() {
           style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
         />
         <Text className="text-white font-bold text-[13px] uppercase tracking-widest">
-          {profile?.media_kit_published ? 'View Media Kit' : 'Generate Media Kit'}
+          {profile?.media_kit_published
+            ? t('AIMediaKitCard.viewMediaKit')
+            : t('AIMediaKitCard.generateMediaKit')}
         </Text>
         <ArrowRight size={16} color="#fff" />
       </TouchableOpacity>

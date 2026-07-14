@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {ChevronLeft} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 // Canonical category list — same 15 used on the web's FilterModal.jsx so
 // brand/campaign filters share the same vocabulary across platforms.
@@ -72,6 +73,7 @@ export default function FilterModal({
   selectedBrands,
   setSelectedBrands,
 }: FilterModalProps) {
+  const {t} = useTranslation();
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
@@ -113,9 +115,13 @@ export default function FilterModal({
               className="w-10 h-10 rounded-full bg-pink-50 items-center justify-center">
               <ChevronLeft size={24} color="#E60076" />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-800">Filters</Text>
+            <Text className="text-lg font-bold text-slate-800">
+              {t('FilterModal.filters')}
+            </Text>
             <TouchableOpacity onPress={handleReset}>
-              <Text className="text-xs font-bold text-slate-400">Clear All</Text>
+              <Text className="text-xs font-bold text-slate-400">
+                {t('FilterModal.clearAll')}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -126,11 +132,13 @@ export default function FilterModal({
             <View className="mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-sm font-bold text-slate-800">
-                  Category
+                  {t('FilterModal.category')}
                 </Text>
                 {selectedCategories.length > 0 && (
                   <Text className="text-[10px] font-bold text-[#E60076]">
-                    {selectedCategories.length} selected
+                    {t('FilterModal.selectedCount', {
+                      count: selectedCategories.length,
+                    })}
                   </Text>
                 )}
               </View>
@@ -148,7 +156,7 @@ export default function FilterModal({
                         ? 'text-white'
                         : 'text-slate-600'
                     }`}>
-                    All
+                    {t('FilterModal.all')}
                   </Text>
                 </TouchableOpacity>
                 {CATEGORIES.map(cat => (
@@ -176,12 +184,12 @@ export default function FilterModal({
             {/* Budget Range */}
             <View className="mb-6">
               <Text className="text-sm font-bold text-slate-800 mb-3">
-                Budget Range
+                {t('FilterModal.budgetRange')}
               </Text>
               <View className="flex-row items-center" style={{gap: 16}}>
                 <View className="flex-1">
                   <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">
-                    Min (₹)
+                    {t('FilterModal.minRupee')}
                   </Text>
                   <TextInput
                     keyboardType="number-pad"
@@ -195,7 +203,7 @@ export default function FilterModal({
                 <Text className="text-slate-300 pt-5">—</Text>
                 <View className="flex-1">
                   <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">
-                    Max (₹)
+                    {t('FilterModal.maxRupee')}
                   </Text>
                   <TextInput
                     keyboardType="number-pad"
@@ -217,11 +225,13 @@ export default function FilterModal({
             {brands && brands.length > 0 && setSelectedBrands && (
               <View className="mb-6">
                 <View className="flex-row items-center justify-between mb-3">
-                  <Text className="text-sm font-bold text-slate-800">Brand</Text>
+                  <Text className="text-sm font-bold text-slate-800">
+                    {t('FilterModal.brand')}
+                  </Text>
                   {selectedBrands && selectedBrands.length > 0 && (
                     <TouchableOpacity onPress={() => setSelectedBrands([])}>
                       <Text className="text-[11px] font-bold text-slate-400">
-                        Clear
+                        {t('FilterModal.clear')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -263,7 +273,7 @@ export default function FilterModal({
             {selectedPlatforms && setSelectedPlatforms && (
               <View className="mb-6">
                 <Text className="text-sm font-bold text-slate-800 mb-3">
-                  Platform
+                  {t('FilterModal.platform')}
                 </Text>
                 <View className="flex-row flex-wrap" style={{gap: 8}}>
                   {PLATFORMS.map(p => (
@@ -293,10 +303,10 @@ export default function FilterModal({
             <View className="mb-6 flex-row items-center justify-between bg-slate-50 p-4 rounded-2xl">
               <View>
                 <Text className="text-sm font-bold text-slate-800">
-                  Verified Only
+                  {t('FilterModal.verifiedOnly')}
                 </Text>
                 <Text className="text-xs text-slate-400 mt-0.5">
-                  4.7+ rating brands
+                  {t('FilterModal.verifiedOnlySubtitle')}
                 </Text>
               </View>
               <Switch
@@ -317,7 +327,9 @@ export default function FilterModal({
             <TouchableOpacity
               onPress={handleReset}
               className="flex-1 h-14 rounded-2xl bg-slate-50 items-center justify-center">
-              <Text className="text-sm font-bold text-slate-700">Clear All</Text>
+              <Text className="text-sm font-bold text-slate-700">
+                {t('FilterModal.clearAll')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onClose}
@@ -336,7 +348,7 @@ export default function FilterModal({
                 style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
               />
               <Text className="text-white font-bold text-sm">
-                Apply Filters
+                {t('FilterModal.applyFilters')}
               </Text>
             </TouchableOpacity>
           </View>

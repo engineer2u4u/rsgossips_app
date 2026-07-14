@@ -26,6 +26,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {AlertTriangle, Check, ChevronLeft, XCircle} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
@@ -35,13 +36,22 @@ interface DeactiveAccountProps {
   onBack: () => void;
 }
 
+// `value` is the stable enum stored on the profile (never translated);
+// `key` maps to the localized display label.
 const REASONS = [
-  'Taking a break',
-  'Not enough relevant brand offers',
-  'Privacy concerns',
-  'App was hard to use',
-  'Switching to another platform',
-  'Other',
+  {value: 'Taking a break', key: 'takingBreak'},
+  {value: 'Not enough relevant brand offers', key: 'notEnoughOffers'},
+  {value: 'Privacy concerns', key: 'privacyConcerns'},
+  {value: 'App was hard to use', key: 'hardToUse'},
+  {value: 'Switching to another platform', key: 'switching'},
+  {value: 'Other', key: 'other'},
+];
+
+const EFFECT_KEYS = [
+  'profileHidden',
+  'campaignsPaused',
+  'otherDevices',
+  'noNotifications',
 ];
 
 const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
@@ -55,6 +65,7 @@ const PageHeader = ({title, onBack}: {title: string; onBack: () => void}) => (
 
 const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
   const navigation = useNavigation();
+  const {t} = useTranslation();
   const {user, role, signOut} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -97,21 +108,22 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
       await signOut();
       navigation.navigate('Login' as never);
     } catch (e: any) {
-      setError(e?.message || 'Failed to deactivate account.');
+      setError(e?.message || t('DeactiveAccount.errorFallback'));
     }
   };
 
   const onDeactivatePressed = () => {
     if (!canSubmit) return;
     Alert.alert(
-      'Deactivate account?',
-      "Your profile will be hidden and you'll be signed out of every device. You can reactivate by signing back in.",
+      t('DeactiveAccount.alertTitle'),
+      t('DeactiveAccount.alertMessage'),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('DeactiveAccount.cancel'), style: 'cancel'},
         {
-          text: 'Deactivate',
+          text: t('DeactiveAccount.alertConfirm'),
           style: 'destructive',
-          onPress: () => withLoading(performDeactivate(), 'Deactivating account…'),
+          onPress: () =>
+            withLoading(performDeactivate(), t('DeactiveAccount.loading')),
         },
       ],
     );
@@ -121,7 +133,7 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-slate-50">
-      <PageHeader title="Deactivate Account" onBack={onBack} />
+      <PageHeader title={t('DeactiveAccount.headerTitle')} onBack={onBack} />
 
       <ScrollView
         className="flex-1 px-6 pt-6"
@@ -130,41 +142,39 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
         <View className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
           <View className="flex-row items-center mb-3">
             <AlertTriangle size={22} color="#ef4444" />
-            <Text className="text-base font-bold text-red-600 ml-3">Warning</Text>
+            <Text className="text-base font-bold text-red-600 ml-3">
+              {t('DeactiveAccount.warningTitle')}
+            </Text>
           </View>
           <Text className="text-sm text-red-500 leading-5">
-            Deactivating your account hides your profile and signs you out of every device.
-            You can reactivate any time by signing back in.
+            {t('DeactiveAccount.warningBody')}
           </Text>
         </View>
 
         <Text className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          What happens when you deactivate
+          {t('DeactiveAccount.whatHappensTitle')}
         </Text>
         <View className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          {[
-            'Your profile is hidden from search and discovery',
-            'Active campaigns and applications are paused',
-            'Other devices signed in to your account are signed out',
-            'You stop receiving notifications',
-          ].map(item => (
-            <View key={item} className="flex-row items-start mb-3">
+          {EFFECT_KEYS.map(k => (
+            <View key={k} className="flex-row items-start mb-3">
               <XCircle size={16} color="#94a3b8" />
-              <Text className="text-sm text-slate-600 ml-3 flex-1">{item}</Text>
+              <Text className="text-sm text-slate-600 ml-3 flex-1">
+                {t(`DeactiveAccount.effects.${k}`)}
+              </Text>
             </View>
           ))}
         </View>
 
         <Text className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          Reason for leaving (optional)
+          {t('DeactiveAccount.reasonTitle')}
         </Text>
         <View className="bg-white rounded-2xl shadow-sm mb-3 overflow-hidden">
           {REASONS.map((r, i) => {
-            const active = reason === r;
+            const active = reason === r.value;
             return (
               <Pressable
-                key={r}
-                onPress={() => setReason(active ? null : r)}
+                key={r.value}
+                onPress={() => setReason(active ? null : r.value)}
                 className={`flex-row items-center px-5 py-3 ${
                   i < REASONS.length - 1 ? 'border-b border-slate-50' : ''
                 }`}>
@@ -174,7 +184,9 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
                   }`}>
                   {active && <View className="w-2.5 h-2.5 rounded-full bg-[#E60076]" />}
                 </View>
-                <Text className="text-sm text-slate-700 flex-1">{r}</Text>
+                <Text className="text-sm text-slate-700 flex-1">
+                  {t(`DeactiveAccount.reasons.${r.key}`)}
+                </Text>
               </Pressable>
             );
           })}
@@ -182,7 +194,7 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
 
         <TextInput
           className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 h-24 mb-6"
-          placeholder="Anything else you want to tell us? (optional)"
+          placeholder={t('DeactiveAccount.detailPlaceholder')}
           placeholderTextColor="#94a3b8"
           multiline
           textAlignVertical="top"
@@ -201,7 +213,7 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
             {confirmed && <Check size={14} color="white" strokeWidth={3} />}
           </View>
           <Text className="flex-1 text-sm text-slate-700 leading-snug">
-            I understand my profile will be hidden and I'll be signed out of every device.
+            {t('DeactiveAccount.confirmText')}
           </Text>
         </Pressable>
 
@@ -216,13 +228,17 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
           disabled={!canSubmit}
           className="items-center justify-center mb-4 py-4 rounded-xl"
           style={{backgroundColor: canSubmit ? '#ef4444' : '#fca5a5'}}>
-          <Text className="text-white font-bold text-base">Deactivate Account</Text>
+          <Text className="text-white font-bold text-base">
+            {t('DeactiveAccount.deactivateButton')}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={onBack}
           className="items-center justify-center mb-8 py-4 rounded-xl border border-slate-200">
-          <Text className="text-slate-600 font-bold text-base">Cancel</Text>
+          <Text className="text-slate-600 font-bold text-base">
+            {t('DeactiveAccount.cancel')}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

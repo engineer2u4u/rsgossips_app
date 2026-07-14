@@ -26,6 +26,7 @@ import {
   Youtube,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
 import {invokeFn} from '../lib/api';
@@ -52,6 +53,7 @@ interface Props {
 }
 
 const EditProfilePage: React.FC<Props> = ({onBack}) => {
+  const {t} = useTranslation();
   const {profile, user, refreshProfile} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -105,25 +107,31 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             await uploadProfilePhoto(user.id, image, 'influencer_profiles');
             await refreshProfile();
           } catch (err: any) {
-            Alert.alert('Upload failed', err?.message || 'Try again later.');
+            Alert.alert(
+              t('EditProfilePage.alert.uploadFailed.title'),
+              err?.message || t('EditProfilePage.alert.uploadFailed.fallback'),
+            );
           }
         })(),
-        'Uploading photo…',
+        t('EditProfilePage.loading.uploadingPhoto'),
       );
     } catch (err: any) {
-      Alert.alert('Picker error', err?.message || 'Could not open picker.');
+      Alert.alert(
+        t('EditProfilePage.alert.pickerError.title'),
+        err?.message || t('EditProfilePage.alert.pickerError.fallback'),
+      );
     }
   };
 
   const handleRevertPhoto = () => {
     if (!user?.id) return;
     Alert.alert(
-      'Revert to Instagram photo?',
-      'Your custom upload will be replaced with the picture from your Instagram profile.',
+      t('EditProfilePage.alert.revert.title'),
+      t('EditProfilePage.alert.revert.message'),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('EditProfilePage.alert.cancel'), style: 'cancel'},
         {
-          text: 'Revert',
+          text: t('EditProfilePage.alert.revert.confirm'),
           style: 'destructive',
           onPress: () =>
             withLoading(
@@ -138,10 +146,14 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
                   });
                   await refreshProfile();
                 } catch (err: any) {
-                  Alert.alert('Failed', err?.message || 'Could not revert.');
+                  Alert.alert(
+                    t('EditProfilePage.alert.revertFailed.title'),
+                    err?.message ||
+                      t('EditProfilePage.alert.revertFailed.fallback'),
+                  );
                 }
               })(),
-              'Reverting photo…',
+              t('EditProfilePage.loading.revertingPhoto'),
             ),
         },
       ],
@@ -198,12 +210,16 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center">
             <ChevronLeft size={20} color="#E60076" />
           </TouchableOpacity>
-          <Text className="text-lg font-bold text-slate-800">Edit Profile</Text>
+          <Text className="text-lg font-bold text-slate-800">
+            {t('EditProfilePage.header.title')}
+          </Text>
         </View>
         {saved ? (
           <View className="flex-row items-center bg-green-50 px-4 py-2 rounded-xl" style={{gap: 4}}>
             <Check size={16} color="#10B981" />
-            <Text className="text-sm font-bold text-green-600">Saved!</Text>
+            <Text className="text-sm font-bold text-green-600">
+              {t('EditProfilePage.header.saved')}
+            </Text>
           </View>
         ) : (
           <TouchableOpacity
@@ -225,7 +241,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             />
             {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 6}} />}
             <Text className="text-white text-sm font-bold">
-              {saving ? 'Saving' : 'Save'}
+              {saving
+                ? t('EditProfilePage.header.saving')
+                : t('EditProfilePage.header.save')}
             </Text>
           </TouchableOpacity>
         )}
@@ -271,7 +289,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             </View>
           </TouchableOpacity>
           <Text className="text-sm text-gray-400 italic mt-2">
-            {handle ? `@${handle}` : 'Tap to upload'}
+            {handle ? `@${handle}` : t('EditProfilePage.avatar.tapToUpload')}
           </Text>
           {photo ? (
             <TouchableOpacity
@@ -281,7 +299,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
               hitSlop={6}>
               <RotateCcw size={10} color="#94a3b8" />
               <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Revert to Instagram
+                {t('EditProfilePage.avatar.revertToInstagram')}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -292,35 +310,35 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           style={{gap: Platform.OS === 'ios' ? 18 : 16}}>
           {/* Basic Info */}
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            Basic Information
+            {t('EditProfilePage.section.basicInfo')}
           </Text>
 
           <InputGroup
-            label="Full Name"
+            label={t('EditProfilePage.field.fullName.label')}
             value={name}
             onChange={setName}
-            placeholder="Your name"
+            placeholder={t('EditProfilePage.field.fullName.placeholder')}
             icon={<User size={16} color="#9810FA" />}
           />
           <InputGroup
-            label="Bio"
+            label={t('EditProfilePage.field.bio.label')}
             value={bio}
             onChange={setBio}
-            placeholder="Tell brands about yourself..."
+            placeholder={t('EditProfilePage.field.bio.placeholder')}
             multiline
           />
           <InputGroup
-            label="Email"
+            label={t('EditProfilePage.field.email.label')}
             value={email}
             onChange={setEmail}
-            placeholder="your@email.com"
+            placeholder={t('EditProfilePage.field.email.placeholder')}
             icon={<Mail size={16} color="#9810FA" />}
           />
           <InputGroup
-            label="Location"
+            label={t('EditProfilePage.field.location.label')}
             value={location}
             onChange={setLocation}
-            placeholder="City, Country"
+            placeholder={t('EditProfilePage.field.location.placeholder')}
             icon={<MapPin size={16} color="#9810FA" />}
           />
 
@@ -328,14 +346,14 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
               active chip again clears the selection. */}
           <View style={{gap: 8}}>
             <Text className="text-[10px] font-black text-gray-400 uppercase ml-1">
-              Gender
+              {t('EditProfilePage.gender.title')}
             </Text>
             <View className="flex-row flex-wrap" style={{gap: 8}}>
               {[
-                {value: 'male', label: 'Male'},
-                {value: 'female', label: 'Female'},
-                {value: 'non_binary', label: 'Non-binary'},
-                {value: 'prefer_not_to_say', label: 'Prefer not to say'},
+                {value: 'male'},
+                {value: 'female'},
+                {value: 'non_binary'},
+                {value: 'prefer_not_to_say'},
               ].map(opt => {
                 const active = gender === opt.value;
                 return (
@@ -351,7 +369,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
                       className={`text-xs font-black ${
                         active ? 'text-white' : 'text-gray-600'
                       }`}>
-                      {opt.label}
+                      {t(`EditProfilePage.gender.${opt.value}`)}
                     </Text>
                   </Pressable>
                 );
@@ -360,24 +378,24 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           </View>
 
           <InputGroup
-            label="Phone"
+            label={t('EditProfilePage.field.phone.label')}
             value={profile?.phone || ''}
             onChange={() => {}}
-            placeholder="Not available"
+            placeholder={t('EditProfilePage.field.phone.placeholder')}
             icon={<User size={16} color="#9810FA" />}
             disabled
           />
           <InputGroup
-            label="Address"
+            label={t('EditProfilePage.field.address.label')}
             value={address}
             onChange={setAddress}
-            placeholder="Full address"
+            placeholder={t('EditProfilePage.field.address.placeholder')}
             icon={<FileText size={16} color="#9810FA" />}
           />
 
           {/* Social Links */}
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
-            Social Links
+            {t('EditProfilePage.section.socialLinks')}
           </Text>
 
           <InputGroup
@@ -389,33 +407,33 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             disabled
           />
           <Text className="text-[9px] font-bold text-gray-400 ml-1 -mt-2">
-            Instagram handle is synced from your connected account
+            {t('EditProfilePage.instagramSyncNote')}
           </Text>
           <InputGroup
             label="TikTok"
             value={tiktok}
             onChange={setTiktok}
-            placeholder="TikTok URL"
+            placeholder={t('EditProfilePage.field.tiktok.placeholder')}
             icon={<Globe size={16} color="#000" />}
           />
           <InputGroup
             label="YouTube"
             value={youtubeUrl}
             onChange={setYoutubeUrl}
-            placeholder="YouTube channel URL"
+            placeholder={t('EditProfilePage.field.youtube.placeholder')}
             icon={<Youtube size={16} color="#FF0000" />}
           />
           <InputGroup
             label="Facebook"
             value={facebookUrl}
             onChange={setFacebookUrl}
-            placeholder="Facebook page URL"
+            placeholder={t('EditProfilePage.field.facebook.placeholder')}
             icon={<Globe size={16} color="#3B82F6" />}
           />
 
           {/* Categories */}
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
-            Categories
+            {t('EditProfilePage.section.categories')}
           </Text>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
             {CATEGORY_OPTIONS.map(cat => {
@@ -448,7 +466,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
 
           {/* Services & Rates */}
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
-            Services & Rates
+            {t('EditProfilePage.section.servicesRates')}
           </Text>
           <View style={{gap: 8}}>
             {SERVICE_OPTIONS.map(svc => {
@@ -473,7 +491,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
                       className={`text-sm font-semibold flex-1 ${
                         isSelected ? 'text-[#E60076]' : 'text-slate-600'
                       }`}>
-                      {svc.label}
+                      {t(`EditProfilePage.services.${svc.id}`)}
                     </Text>
                     {isSelected && (
                       <View className="flex-row items-center bg-white border border-slate-200 rounded-lg px-3 h-9" style={{gap: 4}}>
@@ -519,7 +537,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
             />
             {saving && <ActivityIndicator size="small" color="white" style={{marginRight: 8}} />}
             <Text className="text-white font-bold text-base">
-              {saving ? 'Saving Changes...' : saved ? 'Saved!' : 'Save Changes'}
+              {saving
+                ? t('EditProfilePage.saveButton.saving')
+                : saved
+                  ? t('EditProfilePage.saveButton.saved')
+                  : t('EditProfilePage.saveButton.save')}
             </Text>
           </TouchableOpacity>
         </View>

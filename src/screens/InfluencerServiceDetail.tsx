@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {
   ChevronLeft,
   Clock,
@@ -31,6 +32,7 @@ import {
 } from '../lib/services';
 
 export default function InfluencerServiceDetail() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const slug = route.params?.slug;
@@ -68,9 +70,9 @@ export default function InfluencerServiceDetail() {
     return (
       <View
         style={{flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FD', padding: 24, gap: 12}}>
-        <Text className="text-base font-bold text-slate-600">Service not found</Text>
+        <Text className="text-base font-bold text-slate-600">{t('ScreensInfluencerServiceDetail.serviceNotFound')}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text className="text-sm font-bold text-pink-500">← Back to Services</Text>
+          <Text className="text-sm font-bold text-pink-500">{t('ScreensInfluencerServiceDetail.backToServices')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -133,21 +135,21 @@ export default function InfluencerServiceDetail() {
                 <Text className="text-[12px] font-black text-slate-700">
                   {ratingAvg.toFixed(1)}{' '}
                   <Text className="text-slate-400 font-bold">
-                    ({service.reviews_count || 0} reviews)
+                    {t('ScreensInfluencerServiceDetail.reviewsCount', {count: service.reviews_count || 0})}
                   </Text>
                 </Text>
               </View>
             ) : null}
             <View className="bg-emerald-50 px-2 py-1 rounded-md">
               <Text className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">
-                Available Now
+                {t('ScreensInfluencerServiceDetail.availableNow')}
               </Text>
             </View>
             {service.quote_sla_hours ? (
               <View className="flex-row items-center" style={{gap: 4}}>
                 <Clock size={11} color="#64748b" />
                 <Text className="text-[11px] font-bold text-slate-500">
-                  {service.quote_sla_hours} hr quote SLA
+                  {t('ScreensInfluencerServiceDetail.quoteSla', {hours: service.quote_sla_hours})}
                 </Text>
               </View>
             ) : null}
@@ -155,7 +157,7 @@ export default function InfluencerServiceDetail() {
               <View className="flex-row items-center" style={{gap: 4}}>
                 <Flame size={11} color="#F97316" />
                 <Text className="text-[11px] font-bold text-slate-500">
-                  {service.booked_this_month} booked this month
+                  {t('ScreensInfluencerServiceDetail.bookedThisMonth', {count: service.booked_this_month})}
                 </Text>
               </View>
             ) : null}
@@ -166,7 +168,7 @@ export default function InfluencerServiceDetail() {
         {service.gallery_image_urls && service.gallery_image_urls.length > 0 ? (
           <View className="bg-white rounded-2xl p-4 border border-slate-100">
             <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
-              Gallery
+              {t('ScreensInfluencerServiceDetail.gallery')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 8}}>
               {service.gallery_image_urls.map((url, i) => (
@@ -184,7 +186,7 @@ export default function InfluencerServiceDetail() {
         {/* About */}
         {service.description ? (
           <View className="bg-white rounded-2xl p-5 border border-slate-100" style={{gap: 8}}>
-            <Text className="text-base font-black text-slate-900">About this service</Text>
+            <Text className="text-base font-black text-slate-900">{t('ScreensInfluencerServiceDetail.aboutThisService')}</Text>
             <Text className="text-sm text-slate-600 leading-relaxed">
               {service.description}
             </Text>
@@ -194,7 +196,7 @@ export default function InfluencerServiceDetail() {
         {/* What's included */}
         {service.whats_included && service.whats_included.length > 0 ? (
           <View className="bg-white rounded-2xl p-5 border border-slate-100" style={{gap: 8}}>
-            <Text className="text-base font-black text-slate-900">What's included</Text>
+            <Text className="text-base font-black text-slate-900">{t('ScreensInfluencerServiceDetail.whatsIncluded')}</Text>
             <View style={{gap: 6}}>
               {service.whats_included.map((item, i) => (
                 <View
@@ -214,7 +216,7 @@ export default function InfluencerServiceDetail() {
         {/* Deliverables */}
         {service.deliverables && service.deliverables.length > 0 ? (
           <View className="bg-white rounded-2xl p-5 border border-slate-100" style={{gap: 8}}>
-            <Text className="text-base font-black text-slate-900">Deliverables</Text>
+            <Text className="text-base font-black text-slate-900">{t('ScreensInfluencerServiceDetail.deliverables')}</Text>
             <View className="flex-row flex-wrap" style={{gap: 6}}>
               {service.deliverables.map((d, i) => (
                 <View
@@ -230,7 +232,7 @@ export default function InfluencerServiceDetail() {
         {/* FAQ */}
         {service.faq && service.faq.length > 0 ? (
           <View className="bg-white rounded-2xl p-5 border border-slate-100" style={{gap: 12}}>
-            <Text className="text-base font-black text-slate-900">FAQ</Text>
+            <Text className="text-base font-black text-slate-900">{t('ScreensInfluencerServiceDetail.faq')}</Text>
             {service.faq.map((item, i) => (
               <View key={i} style={{gap: 4}}>
                 <Text className="text-sm font-bold text-slate-800">
@@ -252,7 +254,7 @@ export default function InfluencerServiceDetail() {
         <View className="flex-row items-center" style={{gap: 12}}>
           <View className="flex-1">
             <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Starts at
+              {t('ScreensInfluencerServiceDetail.startsAt')}
             </Text>
             <Text className="text-xl font-black text-pink-600">
               {formatINR(service.price_starting || 0)}
@@ -279,7 +281,7 @@ export default function InfluencerServiceDetail() {
               end={{x: 1, y: 0}}
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
             />
-            <Text className="text-white text-sm font-bold">Request Quote</Text>
+            <Text className="text-white text-sm font-bold">{t('ScreensInfluencerServiceDetail.requestQuote')}</Text>
           </TouchableOpacity>
         </View>
       </View>

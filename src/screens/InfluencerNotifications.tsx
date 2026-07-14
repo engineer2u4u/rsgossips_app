@@ -6,10 +6,12 @@ import {Pressable, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft} from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {NotificationsList} from '../components/NotificationsList';
 
 export default function InfluencerNotifications() {
   const navigation = useNavigation();
+  const {t} = useTranslation();
   // SafeAreaView + a single in-screen header (no InfluencerLayout wrapper)
   // — that way the back button + "Notifications" title render together on
   // first paint instead of staggering behind the layout's TopBar.
@@ -25,13 +27,15 @@ export default function InfluencerNotifications() {
           className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center">
           <ChevronLeft size={24} color="#E60076" />
         </Pressable>
-        <Text className="text-xl font-bold text-slate-800">Notifications</Text>
+        <Text className="text-xl font-bold text-slate-800">
+          {t('ScreensInfluencerNotifications.title')}
+        </Text>
         <View className="w-10" />
       </View>
 
       <NotificationsList
         accentColor="#E60076"
-        emptyHint="You'll be notified about brand offers, application updates, and payouts."
+        emptyHint={t('ScreensInfluencerNotifications.emptyHint')}
       />
     </SafeAreaView>
   );

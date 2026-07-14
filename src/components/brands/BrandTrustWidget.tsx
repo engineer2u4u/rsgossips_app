@@ -11,15 +11,17 @@
 import React from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {Award, CheckCircle2, ShieldCheck, Star, Truck} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {useBrandTrustScore} from '../../hooks/useBrandTrustScore';
 
 const BAND_STYLES = {
-  HIGH: {bg: '#D1FAE5', text: '#065F46', label: 'HIGH TRUST'},
-  GOOD: {bg: '#DBEAFE', text: '#1E40AF', label: 'GOOD'},
-  LOW: {bg: '#FEE2E2', text: '#991B1B', label: 'BUILDING'},
+  HIGH: {bg: '#D1FAE5', text: '#065F46', labelKey: 'high'},
+  GOOD: {bg: '#DBEAFE', text: '#1E40AF', labelKey: 'good'},
+  LOW: {bg: '#FEE2E2', text: '#991B1B', labelKey: 'low'},
 };
 
 export function BrandTrustWidget() {
+  const {t} = useTranslation();
   const {loading, trust, completion} = useBrandTrustScore();
 
   if (loading) {
@@ -39,15 +41,17 @@ export function BrandTrustWidget() {
       {/* Header — score + band */}
       <View style={s.header}>
         <View style={{flex: 1}}>
-          <Text style={s.label}>Trust Score</Text>
+          <Text style={s.label}>{t('BrandsBrandTrustWidget.trustScore')}</Text>
           <View style={s.scoreRow}>
             <Text style={s.score}>{trust.score}</Text>
-            <Text style={s.scoreMax}>/ 1000</Text>
+            <Text style={s.scoreMax}>{t('BrandsBrandTrustWidget.scoreMax')}</Text>
           </View>
         </View>
         <View style={[s.bandPill, {backgroundColor: band.bg}]}>
           <Award size={11} color={band.text} />
-          <Text style={[s.bandText, {color: band.text}]}>{band.label}</Text>
+          <Text style={[s.bandText, {color: band.text}]}>
+            {t(`BrandsBrandTrustWidget.band.${band.labelKey}`)}
+          </Text>
         </View>
       </View>
 
@@ -68,46 +72,53 @@ export function BrandTrustWidget() {
           ]}
         />
       </View>
-      <Text style={s.percentHint}>{trust.percent}% of the way to a perfect score</Text>
+      <Text style={s.percentHint}>
+        {t('BrandsBrandTrustWidget.percentHint', {percent: trust.percent})}
+      </Text>
 
       {/* Breakdown */}
       <View style={s.breakdownList}>
         <BreakdownRow
           Icon={Star}
           color="#f59e0b"
-          title="Influencer ratings"
+          title={t('BrandsBrandTrustWidget.influencerRatings')}
           weight={influencerRating.weight}
           percent={influencerRating.percent}
           subtitle={
             influencerRating.count
-              ? `${influencerRating.count} rating${
-                  influencerRating.count === 1 ? '' : 's'
-                } so far`
-              : 'No ratings yet — complete a campaign'
+              ? t('BrandsBrandTrustWidget.ratingsCount', {
+                  count: influencerRating.count,
+                })
+              : t('BrandsBrandTrustWidget.noRatings')
           }
         />
         <BreakdownRow
           Icon={Truck}
           color="#6366f1"
-          title="Campaign delivery"
+          title={t('BrandsBrandTrustWidget.campaignDelivery')}
           weight={campaignDelivery.weight}
           percent={campaignDelivery.percent}
           subtitle={
             campaignDelivery.total > 0
-              ? `${campaignDelivery.completedCount} completed · ${campaignDelivery.staleCount} stale`
-              : 'No closed campaigns yet'
+              ? t('BrandsBrandTrustWidget.deliverySubtitle', {
+                  completed: campaignDelivery.completedCount,
+                  stale: campaignDelivery.staleCount,
+                })
+              : t('BrandsBrandTrustWidget.noCampaigns')
           }
         />
         <BreakdownRow
           Icon={ShieldCheck}
           color="#10b981"
-          title="Profile completeness"
+          title={t('BrandsBrandTrustWidget.profileCompleteness')}
           weight={profileCompleteness.weight}
           percent={profileCompleteness.percent}
           subtitle={
             completion.missing.length === 0
-              ? 'All set'
-              : `Missing: ${completion.missing.join(', ')}`
+              ? t('BrandsBrandTrustWidget.allSet')
+              : t('BrandsBrandTrustWidget.missing', {
+                  fields: completion.missing.join(', '),
+                })
           }
         />
       </View>
@@ -130,6 +141,7 @@ function BreakdownRow({
   percent: number;
   subtitle: string;
 }) {
+  const {t} = useTranslation();
   return (
     <View style={s.row}>
       <View style={[s.rowIcon, {backgroundColor: `${color}1A`}]}>
@@ -142,7 +154,9 @@ function BreakdownRow({
           </Text>
           <View style={s.rowWeightPill}>
             <Text style={s.rowWeightText}>
-              {Math.round(weight * 100)}% weight
+              {t('BrandsBrandTrustWidget.weight', {
+                weight: Math.round(weight * 100),
+              })}
             </Text>
           </View>
         </View>

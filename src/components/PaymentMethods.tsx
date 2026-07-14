@@ -43,6 +43,7 @@ import {
   X,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
 import {useAuth} from '../context/AuthContext';
@@ -141,20 +142,23 @@ function formatDate(input: number | string | null | undefined): string {
 // function's server-side check, so anything that passes here won't bounce
 // with a generic server error after a round trip.
 // Returns null when valid, or a human-readable reason string.
-function validateUpiId(raw: string): string | null {
+function validateUpiId(
+  raw: string,
+  t: (k: string) => string,
+): string | null {
   const id = (raw || '').trim();
-  if (!id) return 'UPI ID is required.';
-  if (id.length > 50) return 'UPI ID is too long.';
+  if (!id) return t('PaymentMethods.upiRequired');
+  if (id.length > 50) return t('PaymentMethods.upiTooLong');
   const at = id.indexOf('@');
   if (at < 0 || id.indexOf('@', at + 1) !== -1) {
-    return 'Must contain exactly one @ symbol.';
+    return t('PaymentMethods.upiOneAt');
   }
   const [userPart, handle] = id.split('@');
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,49}$/.test(userPart)) {
-    return 'The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.';
+    return t('PaymentMethods.upiUserPart');
   }
   if (!/^[a-zA-Z][a-zA-Z0-9.]{1,29}$/.test(handle)) {
-    return 'The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl.';
+    return t('PaymentMethods.upiHandle');
   }
   return null;
 }
@@ -164,17 +168,18 @@ function ValidationChip({
 }: {
   status?: 'pending' | 'success' | 'failed' | 'manual';
 }) {
+  const {t} = useTranslation();
   if (status === 'success') {
     return (
-      <Chip bg="#D1FAE5" fg="#047857" label="Verified" />
+      <Chip bg="#D1FAE5" fg="#047857" label={t('PaymentMethods.validation.verified')} />
     );
   }
   if (status === 'failed') {
     return (
-      <Chip bg="#FEE2E2" fg="#B91C1C" label="Verify failed" />
+      <Chip bg="#FEE2E2" fg="#B91C1C" label={t('PaymentMethods.validation.verifyFailed')} />
     );
   }
-  return <Chip bg="#FEF3C7" fg="#92400E" label="Verifying…" />;
+  return <Chip bg="#FEF3C7" fg="#92400E" label={t('PaymentMethods.validation.verifying')} />;
 }
 
 function Chip({bg, fg, label}: {bg: string; fg: string; label: string}) {
@@ -226,6 +231,7 @@ const INVOICE_STATUS_STYLE: Record<string, {bg: string; fg: string}> = {
 };
 
 export default function PaymentMethods({onBack}: Props) {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -319,32 +325,35 @@ export default function PaymentMethods({onBack}: Props) {
           .update({is_primary: false})
           .eq('user_id', user.id);
         if (clearErr) {
-          Alert.alert('Could not update primary', clearErr.message);
+          Alert.alert(t('PaymentMethods.couldNotUpdatePrimary'), clearErr.message);
         } else {
           const {error: setErr} = await supabase
             .from('payment_methods')
             .update({is_primary: true, updated_at: new Date().toISOString()})
             .eq('id', id);
           if (setErr) {
-            Alert.alert('Could not update primary', setErr.message);
+            Alert.alert(t('PaymentMethods.couldNotUpdatePrimary'), setErr.message);
           }
         }
         await fetchMethods();
       })(),
-      'Updating primary…',
+      t('PaymentMethods.updatingPrimary'),
     );
   };
 
   const removeMethod = (m: PaymentMethod) =>
     Alert.alert(
-      'Remove payment method?',
+      t('PaymentMethods.removeTitle'),
       m.type === 'upi'
-        ? `Remove ${m.upi_id}?`
-        : `Remove ${m.bank_name} •••• ${(m.account_number || '').slice(-4)}?`,
+        ? t('PaymentMethods.removeUpiMsg', {upi: m.upi_id})
+        : t('PaymentMethods.removeBankMsg', {
+            bank: m.bank_name,
+            last4: (m.account_number || '').slice(-4),
+          }),
       [
-        {text: 'Cancel', style: 'cancel'},
+        {text: t('PaymentMethods.cancel'), style: 'cancel'},
         {
-          text: 'Remove',
+          text: t('PaymentMethods.remove'),
           style: 'destructive',
           onPress: () =>
             withLoading(
@@ -357,7 +366,7 @@ export default function PaymentMethods({onBack}: Props) {
                   // Don't touch local state on failure — optimistically
                   // hiding the row would show a "deleted" method that
                   // reappears on the next fetch.
-                  Alert.alert('Could not remove', delErr.message);
+                  Alert.alert(t('PaymentMethods.couldNotRemove'), delErr.message);
                   return;
                 }
                 // Deleting the primary must not leave zero primaries —
@@ -374,14 +383,14 @@ export default function PaymentMethods({onBack}: Props) {
                     .eq('id', remaining[0].id);
                   if (promoteErr) {
                     Alert.alert(
-                      'Removed, but no primary is set',
-                      'Pick a primary payment method from the list.',
+                      t('PaymentMethods.removedNoPrimaryTitle'),
+                      t('PaymentMethods.removedNoPrimaryMsg'),
                     );
                   }
                 }
                 await fetchMethods();
               })(),
-              'Removing…',
+              t('PaymentMethods.removing'),
             ),
         },
       ],
@@ -398,7 +407,7 @@ export default function PaymentMethods({onBack}: Props) {
           <ChevronLeft size={20} color="#E60076" />
         </Pressable>
         <Text className="text-lg font-black text-slate-900 tracking-tight">
-          Payments
+          {t('PaymentMethods.header')}
         </Text>
       </View>
 
@@ -437,10 +446,12 @@ export default function PaymentMethods({onBack}: Props) {
             </View>
             <View className="flex-1">
               <Text className="text-sm font-black" style={{color: '#78350F'}}>
-                ₹{pendingTotalInr.toLocaleString('en-IN')} is waiting for you
+                {t('PaymentMethods.pendingBannerAmount', {
+                  amount: pendingTotalInr.toLocaleString('en-IN'),
+                })}
               </Text>
               <Text className="text-[11px] font-bold" style={{color: '#92400E'}}>
-                Add a UPI ID or bank account to receive your campaign earnings.
+                {t('PaymentMethods.pendingBannerHint')}
               </Text>
             </View>
             <Plus size={16} color="#92400E" />
@@ -457,7 +468,7 @@ export default function PaymentMethods({onBack}: Props) {
             <View className="flex-row items-center" style={{gap: 8}}>
               <Wallet size={18} color="#F97316" />
               <Text className="font-black text-gray-900 text-base">
-                Payment Methods
+                {t('PaymentMethods.paymentMethods')}
               </Text>
             </View>
             <TouchableOpacity
@@ -476,7 +487,7 @@ export default function PaymentMethods({onBack}: Props) {
               <Text
                 className="font-black"
                 style={{fontSize: 10, color: '#7C3AED'}}>
-                Add New
+                {t('PaymentMethods.addNew')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -490,18 +501,18 @@ export default function PaymentMethods({onBack}: Props) {
               <View className="py-8 items-center">
                 <CreditCard size={32} color="#E5E7EB" />
                 <Text className="text-sm font-bold text-gray-400 mt-3">
-                  No payment methods added
+                  {t('PaymentMethods.noMethods')}
                 </Text>
                 <Text className="text-xs text-gray-300 mt-1">
-                  Add a UPI ID or bank account to receive payments
+                  {t('PaymentMethods.noMethodsHint')}
                 </Text>
               </View>
             ) : (
               methods.map(m => {
                 const isUpi = m.type === 'upi';
                 const detail = isUpi
-                  ? m.upi_id || 'UPI'
-                  : `${m.bank_name || 'Bank'} ••••${(m.account_number || '').slice(-4)}`;
+                  ? m.upi_id || t('PaymentMethods.typeUpi')
+                  : `${m.bank_name || t('PaymentMethods.bankFallback')} ••••${(m.account_number || '').slice(-4)}`;
                 return (
                   <View
                     key={m.id}
@@ -535,10 +546,12 @@ export default function PaymentMethods({onBack}: Props) {
                     <View className="flex-1">
                       <View className="flex-row items-center flex-wrap" style={{gap: 6}}>
                         <Text className="text-sm font-black text-gray-800">
-                          {isUpi ? 'UPI' : 'Bank Account'}
+                          {isUpi
+                            ? t('PaymentMethods.typeUpi')
+                            : t('PaymentMethods.typeBankAccount')}
                         </Text>
                         {m.is_primary ? (
-                          <Chip bg="#EDE9FE" fg="#6D28D9" label="Primary" />
+                          <Chip bg="#EDE9FE" fg="#6D28D9" label={t('PaymentMethods.primary')} />
                         ) : null}
                         <ValidationChip status={m.validation_status} />
                       </View>
@@ -562,7 +575,7 @@ export default function PaymentMethods({onBack}: Props) {
                           <Text
                             className="font-black"
                             style={{fontSize: 9, color: '#7C3AED'}}>
-                            Set Primary
+                            {t('PaymentMethods.setPrimary')}
                           </Text>
                         </TouchableOpacity>
                       ) : null}
@@ -587,7 +600,7 @@ export default function PaymentMethods({onBack}: Props) {
           <View className="flex-row items-center mb-4" style={{gap: 8}}>
             <CreditCard size={18} color="#EC4899" />
             <Text className="font-black text-gray-900 text-base">
-              Credit History
+              {t('PaymentMethods.creditHistory')}
             </Text>
           </View>
           {earningsLoading ? (
@@ -605,11 +618,11 @@ export default function PaymentMethods({onBack}: Props) {
               }}>
               <IndianRupee size={28} color="#E5E7EB" />
               <Text className="text-sm font-bold text-gray-400 mt-3">
-                No payouts yet
+                {t('PaymentMethods.noPayouts')}
               </Text>
               <Text
                 className="text-[11px] text-gray-300 mt-1 px-6 text-center">
-                Once your campaign earnings are released they'll show up here.
+                {t('PaymentMethods.noPayoutsHint')}
               </Text>
             </View>
           ) : (
@@ -627,7 +640,7 @@ export default function PaymentMethods({onBack}: Props) {
             <View className="flex-row items-center" style={{gap: 8}}>
               <Receipt size={18} color="#6366F1" />
               <Text className="font-black text-gray-900 text-base">
-                Subscription History
+                {t('PaymentMethods.subscriptionHistory')}
               </Text>
             </View>
             <TouchableOpacity
@@ -642,7 +655,7 @@ export default function PaymentMethods({onBack}: Props) {
               <Text
                 className="font-black"
                 style={{fontSize: 10, color: '#4F46E5'}}>
-                Refresh
+                {t('PaymentMethods.refresh')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -661,12 +674,11 @@ export default function PaymentMethods({onBack}: Props) {
               }}>
               <Receipt size={28} color="#E5E7EB" />
               <Text className="text-sm font-bold text-gray-400 mt-3">
-                No subscription invoices yet
+                {t('PaymentMethods.noInvoices')}
               </Text>
               <Text
                 className="text-[11px] text-gray-300 mt-1 px-6 text-center">
-                Invoices for plan upgrades and renewals will show up here once
-                you've made a payment.
+                {t('PaymentMethods.noInvoicesHint')}
               </Text>
             </View>
           ) : (
@@ -691,18 +703,28 @@ export default function PaymentMethods({onBack}: Props) {
 }
 
 function EarningRow({earning}: {earning: Earning}) {
+  const {t} = useTranslation();
   const status = EARNING_STATUS_STYLE[earning.payout_status];
+  const statusLabel = t(`PaymentMethods.earningStatus.${earning.payout_status}`);
   const brand = earning.campaigns?.brand_profiles || {};
-  const brandName = brand.brand_name || brand.gstin_trade_name || 'Brand';
-  const campaignTitle = earning.campaigns?.title || 'Campaign';
+  const brandName =
+    brand.brand_name ||
+    brand.gstin_trade_name ||
+    t('PaymentMethods.brandFallback');
+  const campaignTitle =
+    earning.campaigns?.title || t('PaymentMethods.campaignFallback');
   const amountInr = Math.round((earning.escrow_amount || 0) / 100);
 
   const subtitleDate =
     earning.payout_status === 'processed' && earning.payout_processed_at
-      ? `Paid on ${formatDate(earning.payout_processed_at)}`
+      ? t('PaymentMethods.paidOn', {
+          date: formatDate(earning.payout_processed_at),
+        })
       : earning.payout_release_at
         ? earning.payout_status === 'scheduled'
-          ? `Arriving by ${formatDate(earning.payout_release_at)}`
+          ? t('PaymentMethods.arrivingBy', {
+              date: formatDate(earning.payout_release_at),
+            })
           : formatDate(earning.payout_release_at)
         : '';
 
@@ -738,7 +760,7 @@ function EarningRow({earning}: {earning: Earning}) {
             style={{maxWidth: 140}}>
             {campaignTitle}
           </Text>
-          <Chip bg={status.bg} fg={status.fg} label={status.label} />
+          <Chip bg={status.bg} fg={status.fg} label={statusLabel} />
         </View>
         <Text
           className="text-[11px] font-bold text-gray-400 mt-0.5"
@@ -755,14 +777,15 @@ function EarningRow({earning}: {earning: Earning}) {
 }
 
 function InvoiceRow({inv}: {inv: Invoice}) {
+  const {t} = useTranslation();
   const planLabel = inv.plan
     ? inv.plan.charAt(0).toUpperCase() + inv.plan.slice(1)
-    : 'Subscription';
+    : t('PaymentMethods.subscriptionFallback');
   const cycleLabel =
     inv.cycle === 'annual' || inv.cycle === 'yearly'
-      ? 'Annual'
+      ? t('PaymentMethods.cycleAnnual')
       : inv.cycle === 'monthly'
-        ? 'Monthly'
+        ? t('PaymentMethods.cycleMonthly')
         : '';
   const downloadUrl = inv.pdf_url || inv.hosted_url;
   const isPdf = !!inv.pdf_url;
@@ -813,7 +836,11 @@ function InvoiceRow({inv}: {inv: Invoice}) {
           <Chip
             bg={subActive ? '#D1FAE5' : '#F3F4F6'}
             fg={subActive ? '#047857' : '#6B7280'}
-            label={subActive ? 'Active' : 'Cancelled'}
+            label={
+              subActive
+                ? t('PaymentMethods.invoiceActive')
+                : t('PaymentMethods.invoiceCancelled')
+            }
           />
           {statusKey && statusKey !== 'paid' ? (
             <Chip bg={statusStyle.bg} fg={statusStyle.fg} label={statusKey} />
@@ -848,7 +875,7 @@ function InvoiceRow({inv}: {inv: Invoice}) {
             <ExternalLink size={11} color="#4F46E5" />
           )}
           <Text className="font-black" style={{fontSize: 10, color: '#4F46E5'}}>
-            {isPdf ? 'PDF' : 'Invoice'}
+            {isPdf ? 'PDF' : t('PaymentMethods.invoiceButton')}
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -865,6 +892,7 @@ function AddPaymentModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const [type, setType] = useState<'upi' | 'bank'>('upi');
   const [upiId, setUpiId] = useState('');
@@ -892,22 +920,22 @@ function AddPaymentModal({
     // a terse 400 otherwise): full NPCI VPA for UPI, 9–18 digit account
     // number and 11-char IFSC for bank.
     if (type === 'upi') {
-      const upiErr = validateUpiId(trimmedUpi);
+      const upiErr = validateUpiId(trimmedUpi, t);
       if (upiErr) {
         setError(upiErr);
         return;
       }
     } else {
       if (!holderName.trim() || !bankName.trim()) {
-        setError('Fill in every field to add the bank account.');
+        setError(t('PaymentMethods.errFillBankFields'));
         return;
       }
       if (!/^[0-9]{9,18}$/.test(accountNumber.trim())) {
-        setError('Account number should be 9–18 digits.');
+        setError(t('PaymentMethods.errAccountDigits'));
         return;
       }
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase())) {
-        setError('Enter the full 11-character IFSC (e.g. HDFC0001234).');
+        setError(t('PaymentMethods.errIfsc'));
         return;
       }
     }
@@ -942,9 +970,8 @@ function AddPaymentModal({
     } catch (e: any) {
       setError(
         e?.status === 408
-          ? 'The request timed out, but the method may still have been saved. Close this and check your list before retrying.'
-          : e?.message ||
-              'Could not save this payment method. Please try again.',
+          ? t('PaymentMethods.errTimeout')
+          : e?.message || t('PaymentMethods.errSaveFailed'),
       );
     } finally {
       setSaving(false);
@@ -967,7 +994,7 @@ function AddPaymentModal({
             className="flex-row items-center justify-between px-6 py-4 border-b border-gray-100"
             style={{gap: 12}}>
             <Text className="text-base font-black text-gray-900">
-              Add Payment Method
+              {t('PaymentMethods.addPaymentMethod')}
             </Text>
             <Pressable
               onPress={() => {
@@ -985,8 +1012,16 @@ function AddPaymentModal({
             keyboardShouldPersistTaps="handled">
             <View className="flex-row" style={{gap: 12}}>
               {[
-                {key: 'upi' as const, label: 'UPI', icon: Smartphone},
-                {key: 'bank' as const, label: 'Bank Account', icon: Building2},
+                {
+                  key: 'upi' as const,
+                  label: t('PaymentMethods.typeUpi'),
+                  icon: Smartphone,
+                },
+                {
+                  key: 'bank' as const,
+                  label: t('PaymentMethods.typeBankAccount'),
+                  icon: Building2,
+                },
               ].map(opt => {
                 const Icon = opt.icon;
                 const active = type === opt.key;
@@ -1025,12 +1060,12 @@ function AddPaymentModal({
                 <Text
                   className="font-black text-gray-400 uppercase ml-1"
                   style={{fontSize: 10}}>
-                  UPI ID
+                  {t('PaymentMethods.upiIdLabel')}
                 </Text>
                 <TextInput
                   value={upiId}
                   onChangeText={setUpiId}
-                  placeholder="yourname@upi"
+                  placeholder={t('PaymentMethods.upiPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -1048,20 +1083,20 @@ function AddPaymentModal({
                 <Text
                   className="font-bold text-gray-400"
                   style={{fontSize: 10}}>
-                  Enter your UPI ID linked to Google Pay, PhonePe, Paytm, etc.
+                  {t('PaymentMethods.upiHint')}
                 </Text>
               </View>
             ) : (
               <View style={{gap: 16}}>
                 {(
                   [
-                    {label: 'Account Holder Name', value: holderName, set: setHolderName, ph: 'Full name as per bank', auto: 'words' as const},
-                    {label: 'Bank Name', value: bankName, set: setBankName, ph: 'e.g. HDFC Bank', auto: 'words' as const},
-                    {label: 'Account Number', value: accountNumber, set: (v: string) => setAccountNumber(v.replace(/\D/g, '').slice(0, 18)), ph: 'Enter account number', auto: 'none' as const, keyboard: 'numeric' as const},
-                    {label: 'IFSC Code', value: ifsc, set: (v: string) => setIfsc(v.toUpperCase().slice(0, 11)), ph: 'e.g. HDFC0001234', auto: 'characters' as const},
+                    {id: 'holder', label: t('PaymentMethods.accountHolderName'), value: holderName, set: setHolderName, ph: t('PaymentMethods.accountHolderNamePlaceholder'), auto: 'words' as const},
+                    {id: 'bank', label: t('PaymentMethods.bankName'), value: bankName, set: setBankName, ph: t('PaymentMethods.bankNamePlaceholder'), auto: 'words' as const},
+                    {id: 'account', label: t('PaymentMethods.accountNumber'), value: accountNumber, set: (v: string) => setAccountNumber(v.replace(/\D/g, '').slice(0, 18)), ph: t('PaymentMethods.accountNumberPlaceholder'), auto: 'none' as const, keyboard: 'numeric' as const},
+                    {id: 'ifsc', label: t('PaymentMethods.ifscCode'), value: ifsc, set: (v: string) => setIfsc(v.toUpperCase().slice(0, 11)), ph: t('PaymentMethods.ifscPlaceholder'), auto: 'characters' as const},
                   ] as const
                 ).map(f => (
-                  <View key={f.label} style={{gap: 8}}>
+                  <View key={f.id} style={{gap: 8}}>
                     <Text
                       className="font-black text-gray-400 uppercase ml-1"
                       style={{fontSize: 10}}>
@@ -1115,7 +1150,9 @@ function AddPaymentModal({
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-              <Text className="font-black text-sm text-gray-600">Cancel</Text>
+              <Text className="font-black text-sm text-gray-600">
+                {t('PaymentMethods.cancel')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
@@ -1140,7 +1177,9 @@ function AddPaymentModal({
                 }}>
                 {saving ? <Loader size={14} color="#fff" /> : null}
                 <Text className="text-white font-black text-sm">
-                  {saving ? 'Saving…' : 'Add Method'}
+                  {saving
+                    ? t('PaymentMethods.saving')
+                    : t('PaymentMethods.addMethod')}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, Pressable} from 'react-native';
 import {User, Briefcase} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 interface Props {
   onNext: (role: 'brand' | 'influencer') => void;
@@ -13,6 +14,7 @@ export default function RoleSelection({
   mode = 'signup',
   onSwitchMode,
 }: Props) {
+  const {t} = useTranslation();
   const isSignIn = mode === 'signin';
 
   return (
@@ -20,13 +22,13 @@ export default function RoleSelection({
       {/* TITLE */}
       <View className="items-center mb-8">
         <Text className="text-2xl font-bold text-slate-900 mb-2">
-          {isSignIn ? 'Sign In' : 'Create Account'}
+          {isSignIn ? t('RoleSelection.signIn') : t('RoleSelection.createAccount')}
         </Text>
 
         <Text className="text-slate-500 text-sm text-center">
           {isSignIn
-            ? 'Select your role to sign in'
-            : 'Select how you want to use the platform'}
+            ? t('RoleSelection.selectRoleSignIn')
+            : t('RoleSelection.selectRoleSignUp')}
         </Text>
       </View>
 
@@ -42,11 +44,11 @@ export default function RoleSelection({
 
           <View className="flex-1">
             <Text className="font-bold text-slate-900">
-              Influencer / Creator
+              {t('RoleSelection.influencerTitle')}
             </Text>
 
             <Text className="text-xs text-slate-500">
-              I want to collaborate with brands
+              {t('RoleSelection.influencerSubtitle')}
             </Text>
           </View>
         </Pressable>
@@ -60,10 +62,12 @@ export default function RoleSelection({
           </View>
 
           <View className="flex-1">
-            <Text className="font-bold text-slate-900">Brand / Business</Text>
+            <Text className="font-bold text-slate-900">
+              {t('RoleSelection.brandTitle')}
+            </Text>
 
             <Text className="text-xs text-slate-500">
-              I want to hire creators for campaigns
+              {t('RoleSelection.brandSubtitle')}
             </Text>
           </View>
         </Pressable>
@@ -73,9 +77,11 @@ export default function RoleSelection({
       {onSwitchMode && (
         <Pressable onPress={onSwitchMode} className="mt-8">
           <Text className="text-center text-sm text-slate-500">
-            {isSignIn ? "Don't have an account? " : 'Already have an account? '}
+            {isSignIn
+              ? t('RoleSelection.noAccountPrompt')
+              : t('RoleSelection.haveAccountPrompt')}
             <Text className="text-[#6347F9] font-bold">
-              {isSignIn ? 'Sign Up' : 'Sign In'}
+              {isSignIn ? t('RoleSelection.signUp') : t('RoleSelection.signIn')}
             </Text>
           </Text>
         </Pressable>

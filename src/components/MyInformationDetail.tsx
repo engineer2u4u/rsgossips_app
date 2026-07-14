@@ -10,6 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import {ChevronLeft, Instagram, Edit2} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
@@ -27,9 +28,9 @@ interface Props {
 
 // Mirrors web's SUBMISSION_STATUS_BADGE. Anything else falls through to
 // no badge so we never paint an unknown status.
-const SUBMISSION_STATUS_BADGE: Record<string, {label: string; bg: string; fg: string}> = {
-  live_submitted: {label: 'Pending', bg: '#FEF3C7', fg: '#92400E'},
-  completed: {label: 'Approved', bg: '#D1FAE5', fg: '#065F46'},
+const SUBMISSION_STATUS_BADGE: Record<string, {labelKey: string; bg: string; fg: string}> = {
+  live_submitted: {labelKey: 'pending', bg: '#FEF3C7', fg: '#92400E'},
+  completed: {labelKey: 'approved', bg: '#D1FAE5', fg: '#065F46'},
 };
 
 // One card per submitted live link, derived from the user's campaigns.
@@ -61,9 +62,10 @@ const METRIC_COLORS: Record<string, string> = {
 };
 
 const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
+  const {t} = useTranslation();
   const {profile, user} = useAuth();
 
-  const name = profile?.full_name || 'Creator';
+  const name = profile?.full_name || t('MyInformationDetail.defaults.creator');
   const handle = profile?.instagram_handle || profile?.username || 'creator';
   const photo = useProfilePhoto();
   const followers = profile?.followers_count || 0;
@@ -115,10 +117,10 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
         items.push({
           url: l.url,
           type: l.type || 'link',
-          label: l.label || 'Live post',
+          label: l.label || t('MyInformationDetail.defaults.livePost'),
           campaignId: c.id,
-          campaignTitle: c.title || 'Campaign',
-          brandName: c.brandName || 'Brand',
+          campaignTitle: c.title || t('MyInformationDetail.defaults.campaign'),
+          brandName: c.brandName || t('MyInformationDetail.defaults.brand'),
           brandLogo: c.brandLogo,
           applicationStatus: c.applicationStatus,
         });
@@ -130,12 +132,12 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   const metrics = [
-    {label: 'Engagement', value: profile?.engagement_rate ? `${profile.engagement_rate}%` : '—', color: 'blue'},
-    {label: 'Followers', value: formatCount(followers), color: 'purple'},
-    {label: 'Avg Likes', value: formatCount(profile?.avg_likes), color: 'pink'},
-    {label: 'Avg Comments', value: formatCount(profile?.avg_comments), color: 'green'},
-    {label: 'Impressions', value: formatCount(profile?.total_impressions), color: 'amber'},
-    {label: 'Reach', value: formatCount(profile?.total_reach), color: 'cyan'},
+    {key: 'engagement', label: t('MyInformationDetail.metrics.engagement'), value: profile?.engagement_rate ? `${profile.engagement_rate}%` : '—', color: 'blue'},
+    {key: 'followers', label: t('MyInformationDetail.metrics.followers'), value: formatCount(followers), color: 'purple'},
+    {key: 'avgLikes', label: t('MyInformationDetail.metrics.avgLikes'), value: formatCount(profile?.avg_likes), color: 'pink'},
+    {key: 'avgComments', label: t('MyInformationDetail.metrics.avgComments'), value: formatCount(profile?.avg_comments), color: 'green'},
+    {key: 'impressions', label: t('MyInformationDetail.metrics.impressions'), value: formatCount(profile?.total_impressions), color: 'amber'},
+    {key: 'reach', label: t('MyInformationDetail.metrics.reach'), value: formatCount(profile?.total_reach), color: 'cyan'},
   ];
 
   return (
@@ -211,17 +213,17 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
           <View className="flex-row w-full mt-5 pt-4 border-t border-gray-100 justify-around">
             <View className="items-center">
               <Text className="text-lg font-black text-[#1A1A1A]">{formatCount(posts)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Posts</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('MyInformationDetail.stats.posts')}</Text>
             </View>
             <View className="w-px h-9 bg-gray-100" />
             <View className="items-center">
               <Text className="text-lg font-black text-[#1A1A1A]">{formatCount(followers)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Followers</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('MyInformationDetail.stats.followers')}</Text>
             </View>
             <View className="w-px h-9 bg-gray-100" />
             <View className="items-center">
               <Text className="text-lg font-black text-[#1A1A1A]">{formatCount(following)}</Text>
-              <Text className="text-[10px] font-bold text-gray-400 uppercase">Following</Text>
+              <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('MyInformationDetail.stats.following')}</Text>
             </View>
           </View>
 
@@ -248,7 +250,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
             />
             <Edit2 size={16} color="white" />
-            <Text className="text-white font-bold text-sm">Edit Profile</Text>
+            <Text className="text-white font-bold text-sm">{t('MyInformationDetail.editProfile')}</Text>
           </TouchableOpacity>
         </View>
         </LinearGradient>
@@ -257,13 +259,13 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
         <View className="mx-5 mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <View className="flex-row items-center mb-4" style={{gap: 6}}>
             <Text className="text-lg">√</Text>
-            <Text className="text-base font-black text-[#1A1A1A]">Engagement Metrics</Text>
+            <Text className="text-base font-black text-[#1A1A1A]">{t('MyInformationDetail.engagementMetrics')}</Text>
           </View>
 
           <View className="flex-row flex-wrap" style={{gap: 10}}>
             {metrics.map(m => (
               <View
-                key={m.label}
+                key={m.key}
                 style={{width: '47%'}}
                 className="bg-slate-50 rounded-xl p-3">
                 <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -289,7 +291,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
         <View className="mx-5 mt-6 mb-4">
           <View className="flex-row items-center mb-4" style={{gap: 6}}>
             <View className="w-1 h-5 bg-[#E60076] rounded-full" />
-            <Text className="text-lg font-black text-[#1A1A1A]">My Work</Text>
+            <Text className="text-lg font-black text-[#1A1A1A]">{t('MyInformationDetail.myWork')}</Text>
             <Text className="text-sm text-gray-400 font-bold">
               {submittedLiveLinks.length}
             </Text>
@@ -298,15 +300,15 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
           {submissionsLoading ? (
             <View className="py-10 items-center" style={{gap: 8}}>
               <ActivityIndicator size="small" color="#E60076" />
-              <Text className="text-xs font-bold text-gray-400">Loading…</Text>
+              <Text className="text-xs font-bold text-gray-400">{t('MyInformationDetail.loading')}</Text>
             </View>
           ) : submittedLiveLinks.length === 0 ? (
             <View className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 items-center">
               <Text className="text-sm font-bold text-gray-500">
-                No live submissions yet.
+                {t('MyInformationDetail.noSubmissions')}
               </Text>
               <Text className="text-[11px] text-gray-400 mt-1 text-center">
-                Your approved campaign live links will show up here.
+                {t('MyInformationDetail.noSubmissionsHint')}
               </Text>
             </View>
           ) : (
@@ -332,6 +334,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
 };
 
 function SubmissionCard({sub, size}: {sub: LiveSubmission; size: number}) {
+  const {t} = useTranslation();
   const status = SUBMISSION_STATUS_BADGE[sub.applicationStatus];
   const initials = (sub.brandName || '?').charAt(0).toUpperCase();
 
@@ -400,7 +403,7 @@ function SubmissionCard({sub, size}: {sub: LiveSubmission; size: number}) {
           <Text
             className="text-[9px] font-black uppercase tracking-wider"
             style={{color: status.fg}}>
-            {status.label}
+            {t(`MyInformationDetail.status.${status.labelKey}`)}
           </Text>
         </View>
       ) : null}

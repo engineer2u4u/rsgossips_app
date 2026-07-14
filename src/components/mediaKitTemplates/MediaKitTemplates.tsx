@@ -13,6 +13,7 @@
 //   tracking + uppercase to suggest the editorial / brutalist vibes.
 
 import React from 'react';
+import {useTranslation} from 'react-i18next';
 import {View, Text, Image, ScrollView, Pressable, TextInput, Linking} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -63,6 +64,7 @@ export function TemplateClassic({
   setEditingBio,
   onBioSave,
 }: TemplateProps) {
+  const {t} = useTranslation();
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -125,13 +127,13 @@ export function TemplateClassic({
 
       <View className="px-4 py-6" style={{gap: 16}}>
         {/* ABOUT — only template with inline bio edit */}
-        <ClassicCard title="About Me">
+        <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.aboutMe')}>
           {editingBio && setBioDraft && setEditingBio && onBioSave ? (
             <View style={{gap: 8}}>
               <TextInput
                 value={bioDraft}
                 onChangeText={setBioDraft}
-                placeholder="Write something about yourself..."
+                placeholder={t('MediaKitTemplatesMediaKitTemplates.bioPlaceholder')}
                 maxLength={500}
                 multiline
                 className="text-sm text-slate-700 bg-white border border-purple-200 rounded-xl p-3"
@@ -145,7 +147,9 @@ export function TemplateClassic({
                     className="flex-row items-center px-3 py-1.5 rounded-lg"
                     style={{gap: 4}}>
                     <XIcon size={14} color="#64748B" />
-                    <Text className="text-xs font-semibold text-slate-500">Cancel</Text>
+                    <Text className="text-xs font-semibold text-slate-500">
+                      {t('MediaKitTemplatesMediaKitTemplates.cancel')}
+                    </Text>
                   </Pressable>
                   <Pressable
                     onPress={onBioSave}
@@ -156,7 +160,9 @@ export function TemplateClassic({
                       style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
                     />
                     <Check size={14} color="white" />
-                    <Text className="text-xs font-bold text-white">Save</Text>
+                    <Text className="text-xs font-bold text-white">
+                      {t('MediaKitTemplatesMediaKitTemplates.save')}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -183,9 +189,12 @@ export function TemplateClassic({
           )}
         </ClassicCard>
 
-        <ClassicCard title="Expertise">
+        <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.expertise')}>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
-            {(p.categories.length > 0 ? p.categories : ['Content Creation']).map(
+            {(p.categories.length > 0
+              ? p.categories
+              : [t('MediaKitTemplatesMediaKitTemplates.contentCreation')]
+            ).map(
               (cat: string) => (
                 <View
                   key={cat}
@@ -198,7 +207,7 @@ export function TemplateClassic({
         </ClassicCard>
 
         {p.services.length > 0 && (
-          <ClassicCard title="Services & Rates">
+          <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.servicesRates')}>
             <View style={{gap: 8}}>
               {p.services.map((svcId: string) => (
                 <View
@@ -210,7 +219,7 @@ export function TemplateClassic({
                   <Text className="text-sm font-black text-slate-500">
                     {p.serviceRates[svcId]
                       ? `₹${Number(p.serviceRates[svcId]).toLocaleString('en-IN')}`
-                      : 'On request'}
+                      : t('MediaKitTemplatesMediaKitTemplates.onRequest')}
                   </Text>
                 </View>
               ))}
@@ -218,11 +227,11 @@ export function TemplateClassic({
           </ClassicCard>
         )}
 
-        <ClassicCard title="Who's Watching">
+        <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.whosWatching')}>
           <ClassicDemo demo={demo} hasData={!!p.demographics?.topCities?.length} />
         </ClassicCard>
 
-        <ClassicCard title="Social Media">
+        <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.socialMedia')}>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
             {socials.map(s => (
               <ClassicSocial key={s.key} label={s.label} value={s.value} />
@@ -230,15 +239,19 @@ export function TemplateClassic({
           </View>
         </ClassicCard>
 
-        <ClassicCard title="Performance">
+        <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.performance')}>
           <Text className="text-xl font-black text-slate-900 mb-4">
-            The <Text style={{color: '#EC4899'}}>NUMBER</Text> That Matters
+            {t('MediaKitTemplatesMediaKitTemplates.perfTitlePrefix')}
+            <Text style={{color: '#EC4899'}}>
+              {t('MediaKitTemplatesMediaKitTemplates.perfTitleHighlight')}
+            </Text>
+            {t('MediaKitTemplatesMediaKitTemplates.perfTitleSuffix')}
           </Text>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
             <ClassicStat
-              label="Accounts Reached"
+              label={t('MediaKitTemplatesMediaKitTemplates.accountsReached')}
               value={formatCount(p.totalReach || p.totalImpressions || p.followers * 2)}
-              sub="Last 30 days"
+              sub={t('MediaKitTemplatesMediaKitTemplates.last30Days')}
             />
             <View
               className="flex-1 min-w-[45%] rounded-2xl p-4 overflow-hidden"
@@ -248,35 +261,37 @@ export function TemplateClassic({
                 style={{position: 'absolute', inset: 0}}
               />
               <Text className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">
-                Engagement Rate
+                {t('MediaKitTemplatesMediaKitTemplates.engagementRate')}
               </Text>
               <Text className="text-2xl font-black text-white">
                 {p.engagementRate || 0}%
               </Text>
-              <Text className="text-[10px] text-white/70 mt-1">vs 1.9% category avg</Text>
+              <Text className="text-[10px] text-white/70 mt-1">
+                {t('MediaKitTemplatesMediaKitTemplates.categoryAvg')}
+              </Text>
             </View>
             <ClassicStat
-              label="Non-Follower Reach"
+              label={t('MediaKitTemplatesMediaKitTemplates.nonFollowerReach')}
               value={`${p.nonFollowerReachPct}%`}
-              sub="organic discovery"
+              sub={t('MediaKitTemplatesMediaKitTemplates.organicDiscovery')}
             />
             <ClassicStat
-              label="Interactions"
+              label={t('MediaKitTemplatesMediaKitTemplates.interactions')}
               value={formatCount(p.avgLikes + p.avgComments)}
-              sub="avg per post"
+              sub={t('MediaKitTemplatesMediaKitTemplates.avgPerPost')}
             />
           </View>
         </ClassicCard>
 
         {p.topReels.length > 0 && (
-          <ClassicCard title="Top Content">
+          <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.topContent')}>
             <TopContentGrid reels={p.topReels} />
           </ClassicCard>
         )}
 
         <View className="flex-row items-center justify-between py-4 border-t border-slate-100">
           <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Generated on RGossips
+            {t('MediaKitTemplatesMediaKitTemplates.generatedOn')}
           </Text>
           <Text className="text-[10px] font-bold text-slate-300">recentgossips.com</Text>
         </View>
@@ -341,11 +356,12 @@ function ClassicDemo({
   demo: ReturnType<typeof readDemographics>;
   hasData: boolean;
 }) {
+  const {t} = useTranslation();
   return (
     <View style={{gap: 16}}>
       <View>
         <Text className="text-xs font-black text-slate-800 uppercase mb-3">
-          Top Cities
+          {t('MediaKitTemplatesMediaKitTemplates.topCities')}
         </Text>
         <View style={{gap: 8}}>
           {demo.topCities.map(c => (
@@ -355,7 +371,7 @@ function ClassicDemo({
       </View>
       <View>
         <Text className="text-xs font-black text-slate-800 uppercase mb-3">
-          Age + Gender
+          {t('MediaKitTemplatesMediaKitTemplates.ageGender')}
         </Text>
         <View style={{gap: 8}}>
           {demo.ageRanges.map(a => (
@@ -367,20 +383,26 @@ function ClassicDemo({
             <View className="flex-row items-center" style={{gap: 6}}>
               <View className="w-2.5 h-2.5 rounded-full bg-purple-500" />
               <Text className="text-[11px] font-bold text-slate-600">
-                Female {demo.gender.female}%
+                {t('MediaKitTemplatesMediaKitTemplates.genderFemale', {
+                  pct: demo.gender.female,
+                })}
               </Text>
             </View>
             <View className="flex-row items-center" style={{gap: 6}}>
               <View className="w-2.5 h-2.5 rounded-full bg-pink-500" />
               <Text className="text-[11px] font-bold text-slate-600">
-                Male {demo.gender.male}%
+                {t('MediaKitTemplatesMediaKitTemplates.genderMale', {
+                  pct: demo.gender.male,
+                })}
               </Text>
             </View>
             {demo.gender.other > 0 && (
               <View className="flex-row items-center" style={{gap: 6}}>
                 <View className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                 <Text className="text-[11px] font-bold text-slate-600">
-                  Other {demo.gender.other}%
+                  {t('MediaKitTemplatesMediaKitTemplates.genderOther', {
+                    pct: demo.gender.other,
+                  })}
                 </Text>
               </View>
             )}
@@ -390,7 +412,7 @@ function ClassicDemo({
       {demo.topCountries.length > 0 && (
         <View>
           <Text className="text-xs font-black text-slate-800 uppercase mb-3">
-            Top Countries
+            {t('MediaKitTemplatesMediaKitTemplates.topCountries')}
           </Text>
           <View style={{gap: 8}}>
             {demo.topCountries.map(c => (
@@ -401,7 +423,7 @@ function ClassicDemo({
       )}
       {!hasData && (
         <Text className="text-[10px] text-slate-400 italic">
-          Demographics data will appear after Instagram data refresh
+          {t('MediaKitTemplatesMediaKitTemplates.demoEmpty')}
         </Text>
       )}
     </View>
@@ -440,6 +462,7 @@ function DemoBar({label, pct, short}: {label: string; pct: number; short?: boole
 // stacked translucent panels. Read-only (bio edits stay in Classic).
 // ─────────────────────────────────────────────────────────────────────────
 export function TemplateGlassBlue({profile}: TemplateProps) {
+  const {t} = useTranslation();
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -506,16 +529,25 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
             paddingVertical: 18,
             flexDirection: 'row',
           }}>
-          <GlassStat n={formatCount(p.followers)} l="Followers" />
+          <GlassStat
+            n={formatCount(p.followers)}
+            l={t('MediaKitTemplatesMediaKitTemplates.followers')}
+          />
           <GlassDivider />
-          <GlassStat n={`${p.engagementRate || 0}%`} l="Engagement" />
+          <GlassStat
+            n={`${p.engagementRate || 0}%`}
+            l={t('MediaKitTemplatesMediaKitTemplates.engagement')}
+          />
           <GlassDivider />
-          <GlassStat n={formatCount(p.posts)} l="Posts" />
+          <GlassStat
+            n={formatCount(p.posts)}
+            l={t('MediaKitTemplatesMediaKitTemplates.posts')}
+          />
         </View>
 
         {/* SERVICES */}
         {p.services.length > 0 && (
-          <GlassPanel title="Services">
+          <GlassPanel title={t('MediaKitTemplatesMediaKitTemplates.services')}>
             {p.services.map((sv: string, i: number) => (
               <View
                 key={sv}
@@ -531,7 +563,7 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
                 <Text style={{color: ink, fontWeight: '800', fontSize: 14}}>
                   {p.serviceRates[sv]
                     ? `₹${Number(p.serviceRates[sv]).toLocaleString('en-IN')}`
-                    : 'On request'}
+                    : t('MediaKitTemplatesMediaKitTemplates.onRequest')}
                 </Text>
               </View>
             ))}
@@ -539,13 +571,13 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
         )}
 
         {/* DEMOGRAPHICS */}
-        <GlassPanel title="Audience">
-          <GlassSubhead text="Top Cities" />
+        <GlassPanel title={t('MediaKitTemplatesMediaKitTemplates.audience')}>
+          <GlassSubhead text={t('MediaKitTemplatesMediaKitTemplates.topCities')} />
           {demo.topCities.map(c => (
             <GlassBar key={c.name} label={c.name} pct={c.pct} accent={accent} />
           ))}
           <View style={{height: 10}} />
-          <GlassSubhead text="Age" />
+          <GlassSubhead text={t('MediaKitTemplatesMediaKitTemplates.age')} />
           {demo.ageRanges.map(a => (
             <GlassBar key={a.range} label={a.range} pct={a.pct} accent={accent} />
           ))}
@@ -554,20 +586,26 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
             <View className="flex-row items-center" style={{gap: 6}}>
               <View style={{width: 10, height: 10, borderRadius: 9, backgroundColor: '#7c3aed'}} />
               <Text style={{color: ink, fontSize: 12, fontWeight: '600'}}>
-                F {demo.gender.female}%
+                {t('MediaKitTemplatesMediaKitTemplates.glassGenderFemale', {
+                  pct: demo.gender.female,
+                })}
               </Text>
             </View>
             <View className="flex-row items-center" style={{gap: 6}}>
               <View style={{width: 10, height: 10, borderRadius: 9, backgroundColor: accent}} />
               <Text style={{color: ink, fontSize: 12, fontWeight: '600'}}>
-                M {demo.gender.male}%
+                {t('MediaKitTemplatesMediaKitTemplates.glassGenderMale', {
+                  pct: demo.gender.male,
+                })}
               </Text>
             </View>
             {demo.gender.other > 0 && (
               <View className="flex-row items-center" style={{gap: 6}}>
                 <View style={{width: 10, height: 10, borderRadius: 9, backgroundColor: '#f59e0b'}} />
                 <Text style={{color: ink, fontSize: 12, fontWeight: '600'}}>
-                  Other {demo.gender.other}%
+                  {t('MediaKitTemplatesMediaKitTemplates.glassGenderOther', {
+                    pct: demo.gender.other,
+                  })}
                 </Text>
               </View>
             )}
@@ -575,7 +613,7 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
         </GlassPanel>
 
         {/* SOCIAL */}
-        <GlassPanel title="Social">
+        <GlassPanel title={t('MediaKitTemplatesMediaKitTemplates.social')}>
           {socials.map(s => (
             <View
               key={s.key}
@@ -596,21 +634,21 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
             alignItems: 'center',
           }}>
           <Text style={{color: '#fff', fontSize: 18, fontWeight: '800'}}>
-            Let's collaborate
+            {t('MediaKitTemplatesMediaKitTemplates.letsCollaborate')}
           </Text>
           <Text style={{color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4}}>
-            Reach out via @{p.handle} on Instagram
+            {t('MediaKitTemplatesMediaKitTemplates.reachOut', {handle: p.handle})}
           </Text>
         </View>
 
         {p.topReels.length > 0 && (
-          <GlassPanel title="Top Content">
+          <GlassPanel title={t('MediaKitTemplatesMediaKitTemplates.topContent')}>
             <TopContentGrid reels={p.topReels} />
           </GlassPanel>
         )}
 
         <Text style={{color: '#48657e', fontSize: 11, textAlign: 'center', fontWeight: '500'}}>
-          Generated on RGossips
+          {t('MediaKitTemplatesMediaKitTemplates.generatedOn')}
         </Text>
       </View>
     </LinearGradient>
@@ -720,6 +758,7 @@ function GlassBar({
 // rules and offset shadows. Read-only.
 // ─────────────────────────────────────────────────────────────────────────
 export function TemplateEditorialNoir({profile}: TemplateProps) {
+  const {t} = useTranslation();
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -744,7 +783,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
             letterSpacing: 3,
             textTransform: 'uppercase',
           }}>
-          The Media Kit
+          {t('MediaKitTemplatesMediaKitTemplates.theMediaKit')}
         </Text>
         <Text
           style={{
@@ -753,7 +792,9 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
             fontSize: 11,
             letterSpacing: 1.5,
           }}>
-          Vol. 01 — {p.primaryCategory}
+          {t('MediaKitTemplatesMediaKitTemplates.volLabel', {
+            category: p.primaryCategory,
+          })}
         </Text>
       </View>
       <View style={{borderTopWidth: 1, borderColor: ink, marginTop: 6, marginBottom: 22}} />
@@ -791,7 +832,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
               fontWeight: '700',
               marginBottom: 6,
             }}>
-            Creator Profile
+            {t('MediaKitTemplatesMediaKitTemplates.creatorProfile')}
           </Text>
           <Text
             // lineHeight bumped above fontSize so the top of ascenders
@@ -842,16 +883,32 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
       {/* STATS — three columns separated by ink rules */}
       <NoirRule line={line} />
       <View className="flex-row" style={{paddingVertical: 8}}>
-        <NoirStat n={formatCount(p.followers)} l="Followers" line={line} />
-        <NoirStat n={`${p.engagementRate || 0}%`} l="Engagement" line={line} />
-        <NoirStat n={formatCount(p.posts)} l="Posts" last line={line} />
+        <NoirStat
+          n={formatCount(p.followers)}
+          l={t('MediaKitTemplatesMediaKitTemplates.followers')}
+          line={line}
+        />
+        <NoirStat
+          n={`${p.engagementRate || 0}%`}
+          l={t('MediaKitTemplatesMediaKitTemplates.engagement')}
+          line={line}
+        />
+        <NoirStat
+          n={formatCount(p.posts)}
+          l={t('MediaKitTemplatesMediaKitTemplates.posts')}
+          last
+          line={line}
+        />
       </View>
 
       {/* SERVICES */}
       {p.services.length > 0 && (
         <View>
           <NoirRule line={line} />
-          <NoirSubhead text="Services" ink={ink} />
+          <NoirSubhead
+            text={t('MediaKitTemplatesMediaKitTemplates.services')}
+            ink={ink}
+          />
           {p.services.map((sv: string) => (
             <View
               key={sv}
@@ -865,7 +922,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
                 style={{color: ink, fontFamily: FONTS.SERIF_BOLD, fontSize: 16}}>
                 {p.serviceRates[sv]
                   ? `₹${Number(p.serviceRates[sv]).toLocaleString('en-IN')}`
-                  : 'On request'}
+                  : t('MediaKitTemplatesMediaKitTemplates.onRequest')}
               </Text>
             </View>
           ))}
@@ -874,7 +931,10 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
 
       {/* AUDIENCE */}
       <NoirRule line={line} />
-      <NoirSubhead text="Audience" ink={ink} />
+      <NoirSubhead
+        text={t('MediaKitTemplatesMediaKitTemplates.audience')}
+        ink={ink}
+      />
       <Text
         style={{
           color: muted,
@@ -884,7 +944,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           textTransform: 'uppercase',
           marginBottom: 6,
         }}>
-        Top Cities
+        {t('MediaKitTemplatesMediaKitTemplates.topCities')}
       </Text>
       {demo.topCities.map(c => (
         <NoirBar key={c.name} label={c.name} pct={c.pct} ink={ink} line={line} />
@@ -899,7 +959,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           marginTop: 10,
           marginBottom: 6,
         }}>
-        Age
+        {t('MediaKitTemplatesMediaKitTemplates.age')}
       </Text>
       {demo.ageRanges.map(a => (
         <NoirBar key={a.range} label={a.range} pct={a.pct} ink={ink} line={line} />
@@ -907,7 +967,10 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
 
       {/* SOCIAL */}
       <NoirRule line={line} />
-      <NoirSubhead text="Social" ink={ink} />
+      <NoirSubhead
+        text={t('MediaKitTemplatesMediaKitTemplates.social')}
+        ink={ink}
+      />
       {socials.map(s => (
         <View
           key={s.key}
@@ -925,7 +988,10 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
       {p.topReels.length > 0 && (
         <>
           <NoirRule line={line} />
-          <NoirSubhead text="Top Content" ink={ink} />
+          <NoirSubhead
+            text={t('MediaKitTemplatesMediaKitTemplates.topContent')}
+            ink={ink}
+          />
           <TopContentGrid reels={p.topReels} />
         </>
       )}
@@ -940,7 +1006,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           textTransform: 'uppercase',
           textAlign: 'center',
         }}>
-        Fin · Recentgossips
+        {t('MediaKitTemplatesMediaKitTemplates.fin')}
       </Text>
     </View>
   );
@@ -1051,6 +1117,7 @@ function NoirBar({
 // gradient running through the hero and engagement tile.
 // ─────────────────────────────────────────────────────────────────────────
 export function TemplateBentoSunset({profile}: TemplateProps) {
+  const {t} = useTranslation();
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -1195,7 +1262,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
 
         {/* About */}
         <Tile>
-          {lbl('About Me')}
+          {lbl(t('MediaKitTemplatesMediaKitTemplates.aboutMe'))}
           <Text
             style={{
               color: '#ff5d73',
@@ -1224,26 +1291,26 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
               fontWeight: '800',
               marginBottom: 6,
             }}>
-            Engagement Rate
+            {t('MediaKitTemplatesMediaKitTemplates.engagementRate')}
           </Text>
           <Text style={{color: '#fff', fontSize: 42, fontWeight: '900', letterSpacing: -1}}>
             {p.engagementRate || 0}%
           </Text>
           <Text style={{color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2}}>
-            vs 1.9% category avg
+            {t('MediaKitTemplatesMediaKitTemplates.categoryAvg')}
           </Text>
         </View>
 
         {/* Followers + Posts as two side-by-side tiles */}
         <View className="flex-row" style={{gap: 12}}>
           <Tile style={{flex: 1}}>
-            {lbl('Followers')}
+            {lbl(t('MediaKitTemplatesMediaKitTemplates.followers'))}
             <Text style={{color: ink, fontSize: 32, fontWeight: '900', letterSpacing: -1}}>
               {formatCount(p.followers)}
             </Text>
           </Tile>
           <Tile style={{flex: 1}}>
-            {lbl('Posts')}
+            {lbl(t('MediaKitTemplatesMediaKitTemplates.posts'))}
             <Text style={{color: ink, fontSize: 32, fontWeight: '900', letterSpacing: -1}}>
               {formatCount(p.posts)}
             </Text>
@@ -1252,9 +1319,12 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
 
         {/* Expertise chips */}
         <Tile>
-          {lbl('Expertise')}
+          {lbl(t('MediaKitTemplatesMediaKitTemplates.expertise'))}
           <View className="flex-row flex-wrap" style={{gap: 8}}>
-            {(p.categories.length > 0 ? p.categories : ['Content Creation']).map(
+            {(p.categories.length > 0
+              ? p.categories
+              : [t('MediaKitTemplatesMediaKitTemplates.contentCreation')]
+            ).map(
               (cat: string) => (
                 <View
                   key={cat}
@@ -1276,7 +1346,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
         {/* Services */}
         {p.services.length > 0 && (
           <Tile>
-            {lbl('Services & Rates')}
+            {lbl(t('MediaKitTemplatesMediaKitTemplates.servicesRates'))}
             <View style={{gap: 8}}>
               {p.services.map((sv: string) => (
                 <View
@@ -1294,7 +1364,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
                   <Text style={{color: '#ff5d73', fontWeight: '800', fontSize: 14}}>
                     {p.serviceRates[sv]
                       ? `₹${Number(p.serviceRates[sv]).toLocaleString('en-IN')}`
-                      : 'On request'}
+                      : t('MediaKitTemplatesMediaKitTemplates.onRequest')}
                   </Text>
                 </View>
               ))}
@@ -1304,7 +1374,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
 
         {/* Audience */}
         <Tile>
-          {lbl("Who's Watching")}
+          {lbl(t('MediaKitTemplatesMediaKitTemplates.whosWatching'))}
           {demo.topCities.map(c => (
             <BentoBar key={c.name} label={c.name} pct={c.pct} />
           ))}
@@ -1316,7 +1386,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
 
         {/* Social */}
         <Tile>
-          {lbl('Social')}
+          {lbl(t('MediaKitTemplatesMediaKitTemplates.social'))}
           {socials.map(s => (
             <View
               key={s.key}
@@ -1336,13 +1406,13 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
             consistent across the column. */}
         {p.topReels.length > 0 && (
           <Tile>
-            {lbl('Top Content')}
+            {lbl(t('MediaKitTemplatesMediaKitTemplates.topContent'))}
             <TopContentGrid reels={p.topReels} />
           </Tile>
         )}
 
         <Text style={{color: muted, fontSize: 11, textAlign: 'center', fontWeight: '700'}}>
-          Generated on RGossips
+          {t('MediaKitTemplatesMediaKitTemplates.generatedOn')}
         </Text>
       </View>
     </View>
@@ -1385,6 +1455,7 @@ function BentoBar({label, pct}: {label: string; pct: number}) {
 // uppercase Archivo Black-style display, mono-typed chips.
 // ─────────────────────────────────────────────────────────────────────────
 export function TemplateNeoBrutalist({profile}: TemplateProps) {
+  const {t} = useTranslation();
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -1488,7 +1559,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {/* About */}
         <View style={hardCard()}>
           <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-            About
+            {t('MediaKitTemplatesMediaKitTemplates.about')}
           </Text>
           <Text
             style={{
@@ -1515,7 +1586,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                 letterSpacing: 1,
                 textTransform: 'uppercase',
               }}>
-              Followers
+              {t('MediaKitTemplatesMediaKitTemplates.followers')}
             </Text>
           </View>
           <View style={[hardCard(), {flex: 1, backgroundColor: cyan}]}>
@@ -1530,7 +1601,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                 letterSpacing: 1,
                 textTransform: 'uppercase',
               }}>
-              Engagement
+              {t('MediaKitTemplatesMediaKitTemplates.engagement')}
             </Text>
           </View>
           <View style={[hardCard(), {flex: 1, backgroundColor: purple}]}>
@@ -1545,7 +1616,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                 letterSpacing: 1,
                 textTransform: 'uppercase',
               }}>
-              Posts
+              {t('MediaKitTemplatesMediaKitTemplates.posts')}
             </Text>
           </View>
         </View>
@@ -1553,10 +1624,13 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {/* Expertise */}
         <View style={hardCard()}>
           <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-            Expertise
+            {t('MediaKitTemplatesMediaKitTemplates.expertise')}
           </Text>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
-            {(p.categories.length > 0 ? p.categories : ['Content Creation']).map(
+            {(p.categories.length > 0
+              ? p.categories
+              : [t('MediaKitTemplatesMediaKitTemplates.contentCreation')]
+            ).map(
               (cat: string) => (
                 <View
                   key={cat}
@@ -1586,7 +1660,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {p.services.length > 0 && (
           <View style={hardCard()}>
             <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-              Services & Rates
+              {t('MediaKitTemplatesMediaKitTemplates.servicesRates')}
             </Text>
             {p.services.map((sv: string, i: number) => (
               <View
@@ -1614,7 +1688,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                   }}>
                   {p.serviceRates[sv]
                     ? `₹${Number(p.serviceRates[sv]).toLocaleString('en-IN')}`
-                    : 'On request'}
+                    : t('MediaKitTemplatesMediaKitTemplates.onRequest')}
                 </Text>
               </View>
             ))}
@@ -1624,7 +1698,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {/* Audience */}
         <View style={hardCard()}>
           <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-            Who's Watching
+            {t('MediaKitTemplatesMediaKitTemplates.whosWatching')}
           </Text>
           <Text
             style={{
@@ -1635,7 +1709,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
               textTransform: 'uppercase',
               marginBottom: 6,
             }}>
-            Top Cities
+            {t('MediaKitTemplatesMediaKitTemplates.topCities')}
           </Text>
           {demo.topCities.map(c => (
             <BrutalBar key={c.name} label={c.name} pct={c.pct} colour={pink} ink={ink} />
@@ -1650,7 +1724,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
               marginTop: 10,
               marginBottom: 6,
             }}>
-            Age
+            {t('MediaKitTemplatesMediaKitTemplates.age')}
           </Text>
           {demo.ageRanges.map(a => (
             <BrutalBar key={a.range} label={a.range} pct={a.pct} colour={cyan} ink={ink} />
@@ -1660,7 +1734,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {/* Social */}
         <View style={hardCard()}>
           <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-            Social
+            {t('MediaKitTemplatesMediaKitTemplates.social')}
           </Text>
           {socials.map((s, i) => (
             <View
@@ -1705,7 +1779,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
         {p.topReels.length > 0 && (
           <View style={hardCard()}>
             <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
-              Top Content
+              {t('MediaKitTemplatesMediaKitTemplates.topContent')}
             </Text>
             <TopContentGrid reels={p.topReels} />
           </View>
@@ -1720,7 +1794,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
             letterSpacing: 2,
             textTransform: 'uppercase',
           }}>
-          End ◆ Recentgossips
+          {t('MediaKitTemplatesMediaKitTemplates.endBrutal')}
         </Text>
       </View>
     </View>

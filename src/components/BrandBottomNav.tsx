@@ -2,17 +2,19 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Home, Search, Briefcase, User, Bell } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const BottomNav = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
 
   const navItems = [
-    { label: 'Home', icon: Home, screen: 'BrandHome' },
-    { label: 'Search', icon: Search, screen: 'BrandSearch' },
-    { label: 'Campaigns', icon: Briefcase, screen: 'BrandCampaigns' },
-    { label: 'Messages', icon: Bell, screen: 'BrandChats' },
-    { label: 'Profile', icon: User, screen: 'BrandProfile' },
+    { key: 'home', icon: Home, screen: 'BrandHome' },
+    { key: 'search', icon: Search, screen: 'BrandSearch' },
+    { key: 'campaigns', icon: Briefcase, screen: 'BrandCampaigns' },
+    { key: 'messages', icon: Bell, screen: 'BrandChats' },
+    { key: 'profile', icon: User, screen: 'BrandProfile' },
   ];
 
   return (
@@ -24,7 +26,7 @@ const BottomNav = () => {
 
           return (
             <Pressable
-              key={item.label}
+              key={item.key}
               onPress={() => navigation.navigate(item.screen as never)}
               className="flex-1 items-center justify-center relative"
             >
@@ -44,7 +46,7 @@ const BottomNav = () => {
                   isActive ? 'text-[#4C75BE]' : 'text-gray-400'
                 }`}
               >
-                {item.label}
+                {t(`BrandBottomNav.nav.${item.key}`)}
               </Text>
             </Pressable>
           );

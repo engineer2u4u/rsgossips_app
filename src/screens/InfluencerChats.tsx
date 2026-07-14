@@ -20,6 +20,7 @@ import {
   Plus,
 } from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 
 type Contact = {
   id: number;
@@ -90,6 +91,7 @@ const MOCK_MESSAGES: Message[] = [
 ];
 
 export default function InfluencerChats() {
+  const {t} = useTranslation();
   const [selectedChat, setSelectedChat] = useState<Contact | null>(null);
   const {width} = useWindowDimensions();
   const navigation = useNavigation();
@@ -188,7 +190,7 @@ export default function InfluencerChats() {
                   <ChevronLeft size={24} color="#E60076" />
                 </TouchableOpacity>
                 <Text className="text-xl font-bold text-slate-800">
-                  Messages
+                  {t('ScreensInfluencerChats.messages')}
                 </Text>
               </View>
 
@@ -196,7 +198,7 @@ export default function InfluencerChats() {
               <View className="flex-row items-center bg-slate-50 rounded-xl px-4 h-12">
                 <Search size={16} color="#94A3B8" />
                 <TextInput
-                  placeholder="Search messages..."
+                  placeholder={t('ScreensInfluencerChats.searchPlaceholder')}
                   placeholderTextColor="#94A3B8"
                   className="flex-1 ml-2 text-sm text-slate-700"
                 />
@@ -243,7 +245,7 @@ export default function InfluencerChats() {
                       <View className="flex-row items-center gap-1.5">
                         <View className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                         <Text className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                          Active Now
+                          {t('ScreensInfluencerChats.activeNow')}
                         </Text>
                       </View>
                     </View>
@@ -284,7 +286,7 @@ export default function InfluencerChats() {
 
                     {/* Text Input */}
                     <TextInput
-                      placeholder="Type a message..."
+                      placeholder={t('ScreensInfluencerChats.typeMessagePlaceholder')}
                       placeholderTextColor="#94A3B8"
                       multiline
                       className="flex-1 bg-transparent text-sm py-1.5 text-slate-700 max-h-32"
@@ -308,7 +310,7 @@ export default function InfluencerChats() {
                   <Send size={32} color="#CBD5E1" />
                 </View>
                 <Text className="font-medium text-slate-300">
-                  Select a conversation to start chatting
+                  {t('ScreensInfluencerChats.emptyState')}
                 </Text>
               </View>
             )}

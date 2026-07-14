@@ -24,6 +24,7 @@ import {
   MessageCircle,
   Search,
 } from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import SupportChatModal from './SupportChatModal';
 
 interface HelpSupportProps {
@@ -34,100 +35,37 @@ const SUPPORT_EMAIL = 'grievance@rgossips.com';
 
 // Same FAQ content the web ships. Keep in lock-step with the SupportChat
 // decision tree so users see consistent answers either way.
+// Text lives in the i18n catalog under HelpAndSupport.faq.<groupKey>; the
+// stable keys here are resolved at render via useTranslation.
 const FAQ_GROUPS: {
   icon: string;
-  title: string;
-  items: {q: string; a: string}[];
+  key: string;
+  itemKeys: string[];
 }[] = [
   {
     icon: '🚀',
-    title: 'Getting Started',
-    items: [
-      {
-        q: 'How do I complete my profile?',
-        a: "Open Profile → My Information and fill in your name, categories, location and bio. The progress bar on the profile page tells you what's left.",
-      },
-      {
-        q: 'How do campaigns work?',
-        a: 'Browse open campaigns from the Campaigns tab, apply with a short pitch, and once a brand approves you, post the deliverables and link them inside the campaign detail page.',
-      },
-      {
-        q: "What's the requirement to receive deals?",
-        a: 'A connected Instagram (Business / Creator account), a published media kit, and a rate card. The profile completion checklist shows you exactly what\'s pending.',
-      },
-    ],
+    key: 'gettingStarted',
+    itemKeys: ['completeProfile', 'campaignsWork', 'dealsRequirement'],
   },
   {
     icon: '📸',
-    title: 'Profile & Instagram',
-    items: [
-      {
-        q: 'How do I refresh my Instagram stats?',
-        a: "Profile → tap the Instagram card → Refresh. Stats sync at most once per hour to stay within Instagram's API limits.",
-      },
-      {
-        q: 'Instagram says reconnect — why?',
-        a: "Instagram access tokens expire every 60 days. Opening Profile while signed in usually auto-renews the token; if it's already expired, you'll see a Reconnect button.",
-      },
-      {
-        q: "My reels aren't showing up",
-        a: 'Reels only sync from Business / Creator accounts. Switch in the Instagram app under Settings → Account type, then come back and tap Refresh on your Profile.',
-      },
-    ],
+    key: 'profileInstagram',
+    itemKeys: ['refreshStats', 'reconnect', 'reelsMissing'],
   },
   {
     icon: '💰',
-    title: 'Payments',
-    items: [
-      {
-        q: 'When do I get paid?',
-        a: 'Once the brand approves your live links, payment moves to Payment Released. Funds typically reflect within 7–10 business days.',
-      },
-      {
-        q: 'How do I add a UPI ID or bank account?',
-        a: 'Profile → Payment Methods → Add New. The first method you add becomes your primary payout destination.',
-      },
-      {
-        q: "Payment hasn't arrived",
-        a: "If the campaign is on Payment Released for more than 14 business days, tap Request a callback in support — we'll chase the brand.",
-      },
-    ],
+    key: 'payments',
+    itemKeys: ['whenPaid', 'addPayment', 'paymentMissing'],
   },
   {
     icon: '📦',
-    title: 'Services & Orders',
-    items: [
-      {
-        q: 'How does Get Custom Quote work?',
-        a: 'Pick a service, submit the brief, and the seller replies with a quote. Once you accept and pay the advance via Stripe, work begins.',
-      },
-      {
-        q: 'Where do I track my orders?',
-        a: 'Profile → Service Requests. Each order has its own page with status and payment breakdown.',
-      },
-      {
-        q: 'Can I request a revision?',
-        a: "Yes. While the draft is in review, open the order and tap Request Revision. You'll be asked to describe what to change.",
-      },
-    ],
+    key: 'servicesOrders',
+    itemKeys: ['customQuote', 'trackOrders', 'revision'],
   },
   {
     icon: '🛡️',
-    title: 'Account & Privacy',
-    items: [
-      {
-        q: 'How do I take a break without losing my data?',
-        a: 'Profile → Privacy & Security → Deactivate Account. Your data is preserved; signing in with the same phone reactivates everything.',
-      },
-      {
-        q: "How do I remove a device that's logged in?",
-        a: "Profile → Privacy & Security → Trusted Devices. Tap Remove on any device that isn't yours.",
-      },
-      {
-        q: 'Where are notification preferences?',
-        a: 'Profile → Notifications. Toggles persist immediately and the disabled categories stop appearing in your bell and on the notifications page.',
-      },
-    ],
+    key: 'accountPrivacy',
+    itemKeys: ['takeBreak', 'removeDevice', 'notificationPrefs'],
   },
 ];
 
@@ -264,21 +202,39 @@ function FAQItem({
 }
 
 const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
+  const {t} = useTranslation();
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
+  const resolvedGroups = useMemo(
+    () =>
+      FAQ_GROUPS.map(g => ({
+        icon: g.icon,
+        key: g.key,
+        title: t(`HelpAndSupport.faq.${g.key}.title`),
+        items: g.itemKeys.map(itemKey => ({
+          key: itemKey,
+          q: t(`HelpAndSupport.faq.${g.key}.items.${itemKey}.q`),
+          a: t(`HelpAndSupport.faq.${g.key}.items.${itemKey}.a`),
+        })),
+      })),
+    [t],
+  );
+
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return FAQ_GROUPS;
-    return FAQ_GROUPS.map(g => ({
-      ...g,
-      items: g.items.filter(
-        it =>
-          it.q.toLowerCase().includes(q) || it.a.toLowerCase().includes(q),
-      ),
-    })).filter(g => g.items.length > 0);
-  }, [query]);
+    if (!q) return resolvedGroups;
+    return resolvedGroups
+      .map(g => ({
+        ...g,
+        items: g.items.filter(
+          it =>
+            it.q.toLowerCase().includes(q) || it.a.toLowerCase().includes(q),
+        ),
+      }))
+      .filter(g => g.items.length > 0);
+  }, [query, resolvedGroups]);
 
   return (
     <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
@@ -296,7 +252,7 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
           <ChevronLeft size={20} color="#EC4899" strokeWidth={3} />
         </TouchableOpacity>
         <Text className="text-xl font-black text-gray-900 tracking-tight">
-          Help & Support
+          {t('HelpAndSupport.header')}
         </Text>
       </View>
 
@@ -325,7 +281,7 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search the FAQs…"
+            placeholder={t('HelpAndSupport.searchPlaceholder')}
             placeholderTextColor="#D1D5DB"
             style={{flex: 1, fontSize: 14, fontWeight: '700', color: '#374151'}}
           />
@@ -336,19 +292,19 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
           <Text
             className="font-black text-gray-400 uppercase ml-2"
             style={{fontSize: 11, letterSpacing: 1.5}}>
-            Contact Us
+            {t('HelpAndSupport.contactUs')}
           </Text>
           <View style={{gap: 12}}>
             <ContactCard
               icon={<MessageCircle size={22} color="#fff" />}
-              title="Live Chat"
-              subtitle="Chat with our team — usually replies instantly"
+              title={t('HelpAndSupport.liveChat')}
+              subtitle={t('HelpAndSupport.liveChatSubtitle')}
               iconBg="#3B82F6"
               onPress={() => setChatOpen(true)}
             />
             <ContactCard
               icon={<Mail size={22} color="#fff" />}
-              title="Email Support"
+              title={t('HelpAndSupport.emailSupport')}
               subtitle={SUPPORT_EMAIL}
               iconBg="#EC4899"
               onPress={() =>
@@ -363,7 +319,7 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
           <Text
             className="font-black text-gray-400 uppercase ml-2"
             style={{fontSize: 11, letterSpacing: 1.5}}>
-            Frequently Asked Questions
+            {t('HelpAndSupport.faqHeading')}
           </Text>
 
           {filteredGroups.length === 0 ? (
@@ -372,17 +328,17 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
               style={[{padding: 32, borderRadius: 16}, cardShadow]}>
               <HelpCircle size={28} color="#E5E7EB" />
               <Text className="text-sm font-bold text-gray-400 mt-3">
-                No matches for "{query}"
+                {t('HelpAndSupport.noMatches', {query})}
               </Text>
               <Text className="text-[11px] text-gray-300 mt-1">
-                Try a different keyword or start a live chat.
+                {t('HelpAndSupport.noMatchesHint')}
               </Text>
             </View>
           ) : (
             filteredGroups.map(group => (
-              <FAQGroup key={group.title} icon={group.icon} title={group.title}>
+              <FAQGroup key={group.key} icon={group.icon} title={group.title}>
                 {group.items.map((item, i) => {
-                  const id = `${group.title}-${i}`;
+                  const id = `${group.key}-${item.key}`;
                   const isLast = i === group.items.length - 1;
                   return (
                     <FAQItem
@@ -426,13 +382,12 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
             </View>
             <View className="flex-1" style={{gap: 4}}>
               <Text className="text-base font-black text-gray-900">
-                Still stuck?
+                {t('HelpAndSupport.stillStuck')}
               </Text>
               <Text
                 className="font-bold text-gray-500"
                 style={{fontSize: 11, lineHeight: 16}}>
-                Open a chat with our support team — for anything an FAQ
-                doesn't cover.
+                {t('HelpAndSupport.stillStuckSubtitle')}
               </Text>
             </View>
           </View>
@@ -446,7 +401,7 @@ const HelpSupport: React.FC<HelpSupportProps> = ({onBack}) => {
               justifyContent: 'center',
             }}>
             <Text className="text-white text-sm font-black">
-              Open Live Chat
+              {t('HelpAndSupport.openLiveChat')}
             </Text>
           </TouchableOpacity>
         </View>

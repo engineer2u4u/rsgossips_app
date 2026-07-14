@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Star } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -32,14 +33,13 @@ type PriceBandId = 'any' | 'under-3k' | '3k-7k' | '7k-15k' | '15k-plus';
 
 const PRICE_BANDS: {
   id: PriceBandId;
-  label: string;
   test: (p: number) => boolean;
 }[] = [
-  { id: 'any', label: 'Any price', test: () => true },
-  { id: 'under-3k', label: 'Under ₹3,000', test: p => p < 3000 },
-  { id: '3k-7k', label: '₹3K – ₹7K', test: p => p >= 3000 && p < 7000 },
-  { id: '7k-15k', label: '₹7K – ₹15K', test: p => p >= 7000 && p < 15000 },
-  { id: '15k-plus', label: '₹15K+', test: p => p >= 15000 },
+  { id: 'any', test: () => true },
+  { id: 'under-3k', test: p => p < 3000 },
+  { id: '3k-7k', test: p => p >= 3000 && p < 7000 },
+  { id: '7k-15k', test: p => p >= 7000 && p < 15000 },
+  { id: '15k-plus', test: p => p >= 15000 },
 ];
 
 // Match the page-size / load-step used by InfluencerDiscover (brands) and
@@ -49,6 +49,7 @@ const LOAD_MORE_STEP = 6;
 
 export default function InfluencerServicesList() {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priceBand, setPriceBand] = useState<PriceBandId>('any');
@@ -157,10 +158,10 @@ export default function InfluencerServicesList() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-2xl font-bold text-slate-800">
-                All Services
+                {t('ScreensInfluencerServicesList.title')}
               </Text>
               <Text className="text-xs text-slate-400 mt-1 font-medium">
-                Creator services brands are booking now
+                {t('ScreensInfluencerServicesList.subtitle')}
               </Text>
             </View>
             <TouchableOpacity
@@ -168,7 +169,7 @@ export default function InfluencerServicesList() {
               className="bg-pink-50 px-3 h-10 rounded-xl items-center justify-center border border-pink-200"
             >
               <Text className="text-xs font-bold text-pink-600">
-                My orders
+                {t('ScreensInfluencerServicesList.myOrders')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -179,7 +180,7 @@ export default function InfluencerServicesList() {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search services…"
+              placeholder={t('ScreensInfluencerServicesList.searchPlaceholder')}
               placeholderTextColor="#94A3B8"
               className="flex-1 ml-2 text-sm text-slate-700"
             />
@@ -206,7 +207,7 @@ export default function InfluencerServicesList() {
                       active ? 'text-white' : 'text-slate-600'
                     }`}
                   >
-                    {b.label}
+                    {t(`ScreensInfluencerServicesList.priceBand.${b.id}`)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -254,7 +255,7 @@ export default function InfluencerServicesList() {
               }}
             >
               <Text className="text-[11px] font-bold text-pink-500 underline">
-                Clear filters
+                {t('ScreensInfluencerServicesList.clearFilters')}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -286,10 +287,10 @@ export default function InfluencerServicesList() {
           ) : filtered.length === 0 ? (
             <View className="py-16 items-center" style={{ gap: 6 }}>
               <Text className="text-sm font-bold text-slate-600">
-                No services match these filters
+                {t('ScreensInfluencerServicesList.emptyTitle')}
               </Text>
               <Text className="text-xs text-slate-400">
-                Try widening the price band or clearing tags.
+                {t('ScreensInfluencerServicesList.emptyHint')}
               </Text>
             </View>
           ) : (
@@ -332,6 +333,7 @@ function ServiceCard({
   service: ServiceRow;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const Icon = iconForName(service.icon_name);
   const ratingAvg = Number(service.rating_avg || 0);
   const reviewsCount = service.reviews_count || 0;
@@ -421,7 +423,7 @@ function ServiceCard({
 
         <View className="flex-row items-baseline mt-1" style={{ gap: 6 }}>
           <Text className="text-[10px] font-bold text-slate-400 uppercase">
-            Starts at
+            {t('ScreensInfluencerServicesList.startsAt')}
           </Text>
           <Text className="text-base font-black text-pink-600">
             {formatINR(service.price_starting || 0)}

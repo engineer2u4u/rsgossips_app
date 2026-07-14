@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, Pressable } from 'react-native';
 import { MapPin, Star } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const topCreators = [
   {
@@ -27,22 +28,23 @@ const topCreators = [
 ];
 
 export const TopCreatorsCarousel = () => {
+  const { t } = useTranslation();
   return (
     <View className="w-full bg-white py-8">
       {/* Header */}
       <View className="px-6 mb-6 flex-row justify-between items-start">
         <View>
           <Text className="text-2xl font-black text-[#1C115A]">
-            Top Creators
+            {t('TopCreatorCarousel.title')}
           </Text>
 
           <Text className="text-slate-500 font-medium text-sm">
-            High impact, low cost
+            {t('TopCreatorCarousel.subtitle')}
           </Text>
         </View>
 
         <Pressable>
-          <Text className="text-[#5B3DF5] font-bold text-sm">See all</Text>
+          <Text className="text-[#5B3DF5] font-bold text-sm">{t('TopCreatorCarousel.seeAll')}</Text>
         </Pressable>
       </View>
 
@@ -87,7 +89,7 @@ export const TopCreatorsCarousel = () => {
                     <MapPin size={12} color="#94a3b8" />
 
                     <Text className="text-slate-400 text-xs font-bold">
-                      {creator.followers} followers
+                      {t('TopCreatorCarousel.followers', { followers: creator.followers })}
                     </Text>
                   </View>
                 </View>
@@ -96,7 +98,7 @@ export const TopCreatorsCarousel = () => {
               {/* Button */}
               <Pressable className="w-full py-3.5 rounded-2xl bg-slate-50 items-center">
                 <Text className="text-[#1C115A] font-black text-sm">
-                  View Profile
+                  {t('TopCreatorCarousel.viewProfile')}
                 </Text>
               </Pressable>
             </View>

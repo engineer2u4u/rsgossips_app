@@ -20,6 +20,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {useProfilePhoto} from '../utils/photoUrl';
 import {invokeFn} from '../lib/api';
@@ -32,6 +33,7 @@ function formatCount(n: number | undefined) {
 }
 
 export default function InfluencerResume() {
+  const {t} = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const {profile, user} = useAuth();
@@ -85,7 +87,7 @@ export default function InfluencerResume() {
   };
 
   const data = influencer || profile;
-  const name = data?.full_name || 'Creator';
+  const name = data?.full_name || t('ScreensInfluencerResume.defaultName');
   const handle = data?.instagram_handle || data?.username || 'creator';
   // Pass the resolved `data` profile (which can be either the logged-in
   // user or an influencer prop) — the hook still picks up the photoVersion
@@ -113,7 +115,7 @@ export default function InfluencerResume() {
       <View className="flex-1 bg-[#0b0b0f] items-center justify-center" style={{gap: 12}}>
         <ActivityIndicator size="large" color="#9810FA" />
         <Text className="text-sm font-bold text-gray-500">
-          Loading resume...
+          {t('ScreensInfluencerResume.loading')}
         </Text>
       </View>
     );
@@ -134,17 +136,17 @@ export default function InfluencerResume() {
             className="flex-row items-center bg-white px-5 py-3 rounded-xl"
             style={{gap: 8}}>
             <Download size={18} color="#000" />
-            <Text className="text-sm font-bold text-black">Download PDF</Text>
+            <Text className="text-sm font-bold text-black">{t('ScreensInfluencerResume.downloadPdf')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Title */}
         <View className="px-5 mb-8">
           <Text className="text-3xl font-bold text-white tracking-tight">
-            Media Kit / Resume
+            {t('ScreensInfluencerResume.title')}
           </Text>
           <Text className="text-gray-400 mt-2">
-            AI-Powered insights for {name}
+            {t('ScreensInfluencerResume.aiInsightsFor', {name})}
           </Text>
         </View>
 
@@ -189,15 +191,15 @@ export default function InfluencerResume() {
           <View className="p-5" style={{gap: 16}}>
             <View className="flex-row" style={{gap: 8}}>
               <View className="flex-1 bg-white/5 rounded-xl p-4 items-center">
-                <Text className="text-xs text-gray-500">Followers</Text>
+                <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.followers')}</Text>
                 <Text className="text-xl font-bold text-white">{formatCount(followers)}</Text>
               </View>
               <View className="flex-1 bg-white/5 rounded-xl p-4 items-center">
-                <Text className="text-xs text-gray-500">Engagement</Text>
+                <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.engagement')}</Text>
                 <Text className="text-xl font-bold text-white">{engagement}%</Text>
               </View>
               <View className="flex-1 bg-white/5 rounded-xl p-4 items-center">
-                <Text className="text-xs text-gray-500">Posts</Text>
+                <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.posts')}</Text>
                 <Text className="text-xl font-bold text-white">{formatCount(data?.media_count)}</Text>
               </View>
             </View>
@@ -205,7 +207,7 @@ export default function InfluencerResume() {
             {/* Bio */}
             {bio ? (
               <View className="bg-white/5 rounded-xl p-4">
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">About</Text>
+                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('ScreensInfluencerResume.about')}</Text>
                 <Text className="text-sm text-gray-300 leading-relaxed">{bio}</Text>
               </View>
             ) : null}
@@ -213,12 +215,12 @@ export default function InfluencerResume() {
             {/* Services & Rates */}
             {services.length > 0 && (
               <View className="bg-white/5 rounded-xl p-4" style={{gap: 8}}>
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Services & Rates</Text>
+                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('ScreensInfluencerResume.servicesAndRates')}</Text>
                 {services.map((svc: string) => (
                   <View key={svc} className="flex-row items-center justify-between py-2 border-b border-white/5">
-                    <Text className="text-sm text-gray-300">{SERVICE_LABELS[svc] || svc}</Text>
+                    <Text className="text-sm text-gray-300">{t(`ScreensInfluencerResume.serviceLabels.${svc}`, {defaultValue: SERVICE_LABELS[svc] || svc})}</Text>
                     <Text className="text-sm font-bold text-white">
-                      {serviceRates[svc] ? `₹${Number(serviceRates[svc]).toLocaleString('en-IN')}` : 'On request'}
+                      {serviceRates[svc] ? `₹${Number(serviceRates[svc]).toLocaleString('en-IN')}` : t('ScreensInfluencerResume.onRequest')}
                     </Text>
                   </View>
                 ))}
@@ -228,7 +230,7 @@ export default function InfluencerResume() {
             {/* Demographics */}
             {demographics?.topCities?.length > 0 && (
               <View className="bg-white/5 rounded-xl p-4" style={{gap: 8}}>
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Top Audience Cities</Text>
+                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('ScreensInfluencerResume.topAudienceCities')}</Text>
                 {demographics.topCities.slice(0, 5).map((c: any) => (
                   <View key={c.name} className="flex-row items-center" style={{gap: 8}}>
                     <Text className="text-xs text-gray-400 w-20">{c.name}</Text>
@@ -249,7 +251,7 @@ export default function InfluencerResume() {
             {/* Categories */}
             {categories.length > 0 && (
               <View className="bg-white/5 rounded-xl p-4" style={{gap: 8}}>
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Expertise</Text>
+                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('ScreensInfluencerResume.expertise')}</Text>
                 <View className="flex-row flex-wrap" style={{gap: 6}}>
                   {categories.map((cat: string) => (
                     <View key={cat} className="bg-purple-500/20 px-3 py-1.5 rounded-full">
@@ -267,15 +269,15 @@ export default function InfluencerResume() {
           {/* Creator Snapshot */}
           <View className="bg-[#16161d] border border-white/10 rounded-2xl p-6">
             <Text className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">
-              Creator Snapshot
+              {t('ScreensInfluencerResume.creatorSnapshot')}
             </Text>
             <View className="flex-row" style={{gap: 12}}>
               <View className="flex-1 bg-white/5 rounded-xl p-3 items-center">
-                <Text className="text-xs text-gray-500">Reach</Text>
+                <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.reach')}</Text>
                 <Text className="text-xl font-bold text-white">{formatCount(followers)}</Text>
               </View>
               <View className="flex-1 bg-white/5 rounded-xl p-3 items-center">
-                <Text className="text-xs text-gray-500">Engagement</Text>
+                <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.engagement')}</Text>
                 <Text className="text-xl font-bold text-white">{engagement}%</Text>
               </View>
             </View>
@@ -285,7 +287,7 @@ export default function InfluencerResume() {
           {isOwner ? (
             <View className="bg-[#16161d] border border-white/10 rounded-2xl p-6" style={{gap: 12}}>
               <Text className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                Manage Resume
+                {t('ScreensInfluencerResume.manageResume')}
               </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('InfluencerProfile' as never)}
@@ -293,8 +295,8 @@ export default function InfluencerResume() {
                 style={{gap: 12}}>
                 <Edit3 size={18} color="#A78BFA" />
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-white">Edit Profile</Text>
-                  <Text className="text-xs text-gray-500">Update your info to refresh resume</Text>
+                  <Text className="text-sm font-bold text-white">{t('ScreensInfluencerResume.editProfile')}</Text>
+                  <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.editProfileHint')}</Text>
                 </View>
                 <ExternalLink size={14} color="#6B7280" />
               </TouchableOpacity>
@@ -307,9 +309,9 @@ export default function InfluencerResume() {
                 <RefreshCw size={18} color="#A78BFA" />
                 <View className="flex-1">
                   <Text className="text-sm font-bold text-white">
-                    {regenerating ? 'Regenerating...' : 'Regenerate Resume'}
+                    {regenerating ? t('ScreensInfluencerResume.regenerating') : t('ScreensInfluencerResume.regenerateResume')}
                   </Text>
-                  <Text className="text-xs text-gray-500">1 generation per month</Text>
+                  <Text className="text-xs text-gray-500">{t('ScreensInfluencerResume.regenerateHint')}</Text>
                 </View>
                 {regenerating && <ActivityIndicator size="small" color="#A78BFA" />}
               </TouchableOpacity>
@@ -319,15 +321,15 @@ export default function InfluencerResume() {
               <View className="flex-row items-center" style={{gap: 8}}>
                 <Zap size={18} color="#818CF8" />
                 <Text className="text-lg font-bold text-indigo-400">
-                  Hire this Creator
+                  {t('ScreensInfluencerResume.hireThisCreator')}
                 </Text>
               </View>
               <Text className="text-sm text-gray-400">
-                Contact {name} directly for your next campaign.
+                {t('ScreensInfluencerResume.contactCreator', {name})}
               </Text>
               <TouchableOpacity className="w-full py-3 bg-indigo-500 rounded-xl items-center">
                 <Text className="text-white font-bold text-sm">
-                  Send Collaboration Inquiry
+                  {t('ScreensInfluencerResume.sendCollaborationInquiry')}
                 </Text>
               </TouchableOpacity>
             </View>

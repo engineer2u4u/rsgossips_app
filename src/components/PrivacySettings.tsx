@@ -25,6 +25,7 @@ import {
   Smartphone,
   UserMinus,
 } from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
@@ -161,10 +162,11 @@ function SecurityLink({
 }
 
 function SecurityTipsCard() {
+  const {t} = useTranslation();
   const tips = [
-    'Use a strong, unique password',
-    'Review trusted devices regularly',
-    'Never share your password',
+    t('PrivacySettings.securityTips.strongPassword'),
+    t('PrivacySettings.securityTips.reviewDevices'),
+    t('PrivacySettings.securityTips.neverShare'),
   ];
   return (
     <View
@@ -188,7 +190,7 @@ function SecurityTipsCard() {
       </View>
       <View className="flex-1">
         <Text className="text-sm font-black mb-2" style={{color: '#78350F'}}>
-          Security Tips
+          {t('PrivacySettings.securityTips.title')}
         </Text>
         <View style={{gap: 6}}>
           {tips.map(tip => (
@@ -230,6 +232,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
   onTrustedDevices,
   onDeactiveAccount,
 }) => {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
   const [settings, setSettings] = useState<Prefs>(DEFAULT_PREFS);
@@ -270,7 +273,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
         );
         setSavedAt(Date.now());
       })(),
-      'Saving preferences…',
+      t('PrivacySettings.savingPreferences'),
     );
   };
 
@@ -278,7 +281,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
 
   return (
     <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
-      <PageHeader title="Privacy & Security" onBack={onBack} />
+      <PageHeader title={t('PrivacySettings.pageTitle')} onBack={onBack} />
 
       {!loaded ? (
         <View className="flex-1 items-center justify-center">
@@ -296,7 +299,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
           {/* Privacy Settings */}
           <View style={{gap: 12}}>
             <SectionHeader
-              title="Privacy Settings"
+              title={t('PrivacySettings.privacySettingsSection')}
               iconBg="#3B82F6"
               icon={<Eye size={18} color="#fff" />}
             />
@@ -307,14 +310,14 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
                 cardShadow,
               ]}>
               <ToggleRow
-                title="Public Profile"
-                description="Allow brands to find your profile"
+                title={t('PrivacySettings.publicProfile.title')}
+                description={t('PrivacySettings.publicProfile.description')}
                 isEnabled={settings.publicProfile}
                 onToggle={() => toggleSetting('publicProfile')}
               />
               <ToggleRow
-                title="Show Email"
-                description="Display email on public profile"
+                title={t('PrivacySettings.showEmail.title')}
+                description={t('PrivacySettings.showEmail.description')}
                 isEnabled={settings.showEmail}
                 onToggle={() => toggleSetting('showEmail')}
               />
@@ -324,7 +327,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
           {/* Security Control */}
           <View style={{gap: 12}}>
             <SectionHeader
-              title="Security Control"
+              title={t('PrivacySettings.securityControlSection')}
               iconBg="#10B981"
               icon={<Shield size={18} color="#fff" />}
             />
@@ -336,14 +339,14 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
               ]}>
               <SecurityLink
                 icon={<Smartphone size={18} color="#6B7280" />}
-                title="Trusted Devices"
-                description="Manage your active login sessions"
+                title={t('PrivacySettings.trustedDevices.title')}
+                description={t('PrivacySettings.trustedDevices.description')}
                 onPress={onTrustedDevices}
               />
               <SecurityLink
                 icon={<UserMinus size={18} color="#EF4444" />}
-                title="Deactivate Account"
-                description="Temporarily disable your account"
+                title={t('PrivacySettings.deactivateAccount.title')}
+                description={t('PrivacySettings.deactivateAccount.description')}
                 onPress={onDeactiveAccount}
                 isDestructive
               />
@@ -368,7 +371,9 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
               elevation: 6,
             }}>
             <Text className="text-white font-black text-sm">
-              {justSaved ? 'Saved ✓' : 'Save Changes'}
+              {justSaved
+                ? t('PrivacySettings.saved')
+                : t('PrivacySettings.saveChanges')}
             </Text>
           </TouchableOpacity>
         </ScrollView>

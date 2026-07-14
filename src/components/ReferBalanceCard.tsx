@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Pressable, Text, View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {ChevronRight, Sparkles} from 'lucide-react-native';
 
@@ -12,6 +13,7 @@ import {BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
 // no RC so the home stays clean until the wallet has something to show.
 export default function ReferBalanceCard() {
   const navigation = useNavigation<any>();
+  const {t} = useTranslation();
   const {user} = useAuth();
   const [avail, setAvail] = useState(0);
   const [locked, setLocked] = useState(0);
@@ -45,7 +47,7 @@ export default function ReferBalanceCard() {
 
   return (
     <Pressable
-      onPress={() => navigation.navigate('Refer')}
+      onPress={() => navigation.navigate('InfluencerRefer')}
       className="flex-row items-center bg-white rounded-2xl border border-slate-100 px-3 py-3"
       style={[{gap: 12}, CARD_SHADOW]}>
       <LinearGradient
@@ -63,12 +65,14 @@ export default function ReferBalanceCard() {
       </LinearGradient>
       <View className="flex-1">
         <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-          Reward Credits
+          {t('ReferBalanceCard.rewardCredits')}
         </Text>
         <View className="flex-row items-baseline" style={{gap: 8}}>
           <Text className="text-lg font-black text-slate-900">
             {avail}{' '}
-            <Text className="text-xs font-bold text-slate-400">available</Text>
+            <Text className="text-xs font-bold text-slate-400">
+              {t('ReferBalanceCard.available')}
+            </Text>
           </Text>
           {locked > 0 ? (
             <View
@@ -81,7 +85,7 @@ export default function ReferBalanceCard() {
               <Text
                 className="text-[9px] font-black uppercase tracking-wider"
                 style={{color: '#B45309'}}>
-                +{locked} locked
+                {t('ReferBalanceCard.locked', {count: locked})}
               </Text>
             </View>
           ) : null}

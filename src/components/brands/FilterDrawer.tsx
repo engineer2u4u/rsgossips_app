@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import {Check, SlidersHorizontal, X} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 export type FilterValues = Record<string, string[]>;
 
@@ -78,6 +79,7 @@ interface Props {
 }
 
 export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) {
+  const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   // Draft = working copy while drawer is open; only committed on Apply.
   const [draft, setDraft] = useState<FilterValues>(filters);
@@ -130,7 +132,9 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
           className={`text-[11px] font-semibold ${
             totalActive > 0 ? 'text-[#5851DB]' : 'text-gray-700'
           }`}>
-          Filters{totalActive > 0 ? ` (${totalActive})` : ''}
+          {totalActive > 0
+            ? t('BrandsFilterDrawer.filtersWithCount', {count: totalActive})
+            : t('BrandsFilterDrawer.filters')}
         </Text>
       </Pressable>
 
@@ -143,7 +147,7 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
           <View style={s.sheet}>
             {/* Header */}
             <View style={s.header}>
-              <Text style={s.title}>Filters</Text>
+              <Text style={s.title}>{t('BrandsFilterDrawer.filters')}</Text>
               <Pressable onPress={() => setVisible(false)} hitSlop={8} style={{padding: 4}}>
                 <X size={20} color="#374151" />
               </Pressable>
@@ -214,11 +218,13 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
                   onClear();
                 }}
                 style={[s.footerBtn, s.footerClear]}>
-                <Text style={s.footerClearText}>Clear All</Text>
+                <Text style={s.footerClearText}>
+                  {t('BrandsFilterDrawer.clearAll')}
+                </Text>
               </Pressable>
               <Pressable onPress={apply} style={[s.footerBtn, s.footerApply]}>
                 <Text style={s.footerApplyText}>
-                  Apply Filters ({matchCount})
+                  {t('BrandsFilterDrawer.applyFilters', {count: matchCount})}
                 </Text>
               </Pressable>
             </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import {Modal, View, Text, Pressable, Image} from 'react-native';
 import Svg, {Path, SvgUri} from 'react-native-svg';
+import {useTranslation} from 'react-i18next';
 
 interface Props {
   visible: boolean;
@@ -9,16 +10,19 @@ interface Props {
   onPick: (gateway: 'stripe' | 'razorpay') => void;
 }
 
-// Bottom-sheet gateway picker — mirrors the web's modal so a user has the
-// same Stripe vs Razorpay choice on every platform. The actual checkout
-// is opened by the parent once a gateway is picked; this component just
-// owns the visual choice.
+// Bottom-sheet gateway picker — mirrors the web's modal. Stripe is currently
+// DISABLED (only Razorpay is offered); all Stripe code (this option, the
+// StripeLogo, the gateway==='stripe' branch in callers, the stripe-* edge
+// functions) is kept so it can be re-enabled by flipping SHOW_STRIPE.
+const SHOW_STRIPE = false;
+
 export default function GatewayPickerModal({
   visible,
   planLabel,
   onCancel,
   onPick,
 }: Props) {
+  const {t} = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -39,10 +43,11 @@ export default function GatewayPickerModal({
 
           <View className="px-5 pt-4">
             <Text className="text-base font-black text-slate-900">
-              Pay for <Text style={{color: '#5851DB'}}>{planLabel}</Text>
+              {t('GatewayPickerModal.payFor')}{' '}
+              <Text style={{color: '#5851DB'}}>{planLabel}</Text>
             </Text>
             <Text className="text-[11px] font-semibold text-slate-400 mt-0.5">
-              Pick a payment method to continue
+              {t('GatewayPickerModal.pickMethod')}
             </Text>
           </View>
 
@@ -50,19 +55,21 @@ export default function GatewayPickerModal({
             <GatewayOption
               onPress={() => onPick('razorpay')}
               title="Razorpay"
-              tagline="UPI · Cards · Netbanking · Wallets"
+              tagline={t('GatewayPickerModal.razorpayTagline')}
               borderColor="rgba(12,36,81,0.15)"
               logo={<RazorpayLogo />}
             />
-            <GatewayOption
-              onPress={() => onPick('stripe')}
-              title="Stripe"
-              tagline="International cards · Apple Pay · Google Pay"
-              borderColor="rgba(99,91,255,0.15)"
-              logo={<StripeLogo />}
-            />
+            {SHOW_STRIPE && (
+              <GatewayOption
+                onPress={() => onPick('stripe')}
+                title="Stripe"
+                tagline={t('GatewayPickerModal.stripeTagline')}
+                borderColor="rgba(99,91,255,0.15)"
+                logo={<StripeLogo />}
+              />
+            )}
             <Text className="text-[10px] text-slate-400 font-semibold text-center pt-3">
-              You'll be brought back to the app once payment is complete.
+              {t('GatewayPickerModal.returnNote')}
             </Text>
           </View>
         </Pressable>

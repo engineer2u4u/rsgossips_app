@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft, ChevronRight, Search} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
@@ -70,6 +71,7 @@ const ACTIVE_STATUSES = new Set([
 ]);
 
 export default function InfluencerServiceOrders() {
+  const {t} = useTranslation();
   const navigation = useNavigation<any>();
   const {user} = useAuth();
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -158,10 +160,10 @@ export default function InfluencerServiceOrders() {
         </TouchableOpacity>
         <View>
           <Text className="text-base font-bold text-slate-800">
-            Service Requests
+            {t('ScreensInfluencerServiceOrders.title')}
           </Text>
           <Text className="text-[11px] text-slate-400">
-            Every brief — quote, in progress or done
+            {t('ScreensInfluencerServiceOrders.subtitle')}
           </Text>
         </View>
       </View>
@@ -183,7 +185,7 @@ export default function InfluencerServiceOrders() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search by service or order number…"
+            placeholder={t('ScreensInfluencerServiceOrders.searchPlaceholder')}
             placeholderTextColor="#cbd5e1"
             className="flex-1 ml-2 text-sm text-slate-700"
           />
@@ -194,12 +196,12 @@ export default function InfluencerServiceOrders() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{gap: 6}}>
-          {TABS.map(t => {
-            const active = tab === t.id;
+          {TABS.map(tabItem => {
+            const active = tab === tabItem.id;
             return (
               <TouchableOpacity
-                key={t.id}
-                onPress={() => setTab(t.id)}
+                key={tabItem.id}
+                onPress={() => setTab(tabItem.id)}
                 className={`flex-row items-center px-3.5 py-2 rounded-full ${
                   active ? 'bg-slate-900' : 'bg-white border border-slate-200'
                 }`}
@@ -208,7 +210,7 @@ export default function InfluencerServiceOrders() {
                   className={`text-[12px] font-bold ${
                     active ? 'text-white' : 'text-slate-600'
                   }`}>
-                  {t.label}
+                  {t(`ScreensInfluencerServiceOrders.tabs.${tabItem.id}`)}
                 </Text>
                 <View
                   className={`px-1.5 py-0.5 rounded ${
@@ -218,7 +220,7 @@ export default function InfluencerServiceOrders() {
                     className={`text-[10px] font-black ${
                       active ? 'text-white' : 'text-slate-600'
                     }`}>
-                    {counts[t.id] || 0}
+                    {counts[tabItem.id] || 0}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -235,14 +237,14 @@ export default function InfluencerServiceOrders() {
           <View className="bg-white rounded-3xl py-12 items-center" style={{gap: 8}}>
             <Text className="text-sm font-bold text-slate-500">
               {orders.length === 0
-                ? "You haven't requested any services yet."
-                : 'Nothing in this view.'}
+                ? t('ScreensInfluencerServiceOrders.emptyNoOrders')
+                : t('ScreensInfluencerServiceOrders.emptyNoView')}
             </Text>
             {orders.length === 0 ? (
               <TouchableOpacity
                 onPress={() => navigation.navigate('InfluencerServices')}>
                 <Text className="text-sm font-bold text-pink-500 underline">
-                  Browse services →
+                  {t('ScreensInfluencerServiceOrders.browseServices')}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -270,11 +272,15 @@ function OrderRowCard({
   order: OrderRow;
   onPress: () => void;
 }) {
+  const {t} = useTranslation();
   const pill = STATUS_PILL[order.status] || {
     label: order.status,
     bg: 'bg-slate-100',
     text: 'text-slate-600',
   };
+  const pillLabel = t(`ScreensInfluencerServiceOrders.status.${order.status}`, {
+    defaultValue: pill.label,
+  });
   const amount = order.total_amount || order.quoted_amount || 0;
   const date = order.created_at
     ? new Date(order.created_at).toLocaleDateString(undefined, {
@@ -300,14 +306,15 @@ function OrderRowCard({
           <View className={`${pill.bg} px-2 py-0.5 rounded`}>
             <Text
               className={`text-[9px] font-black uppercase tracking-wider ${pill.text}`}>
-              {pill.label}
+              {pillLabel}
             </Text>
           </View>
         </View>
         <Text
           className="text-sm font-black text-slate-900 mt-1"
           numberOfLines={1}>
-          {order.service_title || 'Service order'}
+          {order.service_title ||
+            t('ScreensInfluencerServiceOrders.serviceOrderFallback')}
         </Text>
         <Text className="text-[11px] text-slate-400 mt-0.5">{date}</Text>
       </View>

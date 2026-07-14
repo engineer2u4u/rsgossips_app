@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, Pressable} from 'react-native';
 import {Box, Compass, Crown, Star} from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import {CARD_SHADOW} from '../theme/brand';
 
 type Tile = {
@@ -36,6 +37,7 @@ export default function QuickLinks({
   onScroll?: (sectionKey: string) => void;
 }) {
   const navigation = useNavigation<any>();
+  const {t: translate} = useTranslation();
 
   const handlePress = (t: Tile) => {
     if (t.action === 'navigate') {
@@ -79,7 +81,7 @@ export default function QuickLinks({
             <Text
               numberOfLines={1}
               className="text-[11px] font-bold text-slate-700">
-              {t.label}
+              {translate(`QuickLinks.tiles.${t.key}`)}
             </Text>
           </Pressable>
         );

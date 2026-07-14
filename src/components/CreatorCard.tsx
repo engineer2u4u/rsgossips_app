@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image, Pressable, Linking } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Crown, TrendingUp } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
@@ -47,6 +48,7 @@ export default function CreatorCard({
   rank,
   trending = true,
 }: CreatorCardProps) {
+  const { t } = useTranslation();
   const initial = (name || '?').trim().charAt(0).toUpperCase();
   const [bgA, bgB] = avatarTone(name || '?');
 
@@ -73,7 +75,7 @@ export default function CreatorCard({
               className="text-[11px] font-black"
               style={{ color: '#9D174D' }}
             >
-              #{rank} this week
+              {t('CreatorCard.rankThisWeek', { rank })}
             </Text>
           </View>
         ) : (
@@ -89,7 +91,7 @@ export default function CreatorCard({
               className="text-[11px] font-black"
               style={{ color: '#047857' }}
             >
-              Trending
+              {t('CreatorCard.trending')}
             </Text>
           </View>
         ) : null}
@@ -165,7 +167,7 @@ export default function CreatorCard({
           className="text-[10px] font-bold tracking-widest"
           style={{ color: '#94A3B8' }}
         >
-          FOLLOWERS
+          {t('CreatorCard.followers')}
         </Text>
       </View>
 
@@ -181,7 +183,7 @@ export default function CreatorCard({
                 {posts}
               </Text>
               <Text className="text-[10px] font-bold tracking-widest text-slate-400">
-                POSTS
+                {t('CreatorCard.posts')}
               </Text>
             </View>
           ) : null}
@@ -200,7 +202,7 @@ export default function CreatorCard({
                 {following}
               </Text>
               <Text className="text-[10px] font-bold tracking-widest text-slate-400">
-                FOLLOWING
+                {t('CreatorCard.following')}
               </Text>
             </View>
           ) : null}
@@ -223,7 +225,7 @@ export default function CreatorCard({
           }}
         >
           <Text className="text-white text-sm font-black tracking-widest">
-            FOLLOW CREATOR
+            {t('CreatorCard.followCreator')}
           </Text>
         </LinearGradient>
       </Pressable>

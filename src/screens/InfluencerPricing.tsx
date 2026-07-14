@@ -22,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import RazorpayCheckout from 'react-native-razorpay';
 import {useAuth} from '../context/AuthContext';
@@ -267,6 +268,7 @@ const PlanIcon = ({name, color}: {name: string; color: string}) => {
 };
 
 export default function InfluencerPricing() {
+  const {t} = useTranslation();
   const {profile, user, refreshProfile} = useAuth();
   const navigation = useNavigation();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
@@ -358,17 +360,25 @@ export default function InfluencerPricing() {
   const handleUpgrade = (plan: Plan) => {
     if (upgrading || verifying) return;
     if (!user?.id) {
-      Alert.alert('Sign in required', 'Please sign in to upgrade your plan.');
+      Alert.alert(
+        t('ScreensInfluencerPricing.alerts.signInRequiredTitle'),
+        t('ScreensInfluencerPricing.alerts.signInRequiredBody'),
+      );
       return;
     }
-    setPickerPlan(plan);
+    // Razorpay is the only enabled gateway — skip the picker and start
+    // checkout directly. Restore `setPickerPlan(plan)` to bring it back.
+    handleGatewayPick('razorpay', plan);
   };
 
   // Step 2 — user picked a gateway in the modal. Kick off the actual
   // checkout for that gateway. setUpgrading shows the spinner on the
   // plan card; the picker modal closes.
-  const handleGatewayPick = async (gateway: 'stripe' | 'razorpay') => {
-    const plan = pickerPlan;
+  const handleGatewayPick = async (
+    gateway: 'stripe' | 'razorpay',
+    planOverride?: Plan,
+  ) => {
+    const plan = planOverride || pickerPlan;
     if (!plan) return;
     setPickerPlan(null);
     setUpgrading(plan.id);
@@ -380,8 +390,8 @@ export default function InfluencerPricing() {
       }
     } catch (err: any) {
       Alert.alert(
-        "Couldn't start checkout",
-        err?.message || 'Something went wrong. Please try again in a moment.',
+        t('ScreensInfluencerPricing.alerts.checkoutFailedTitle'),
+        err?.message || t('ScreensInfluencerPricing.alerts.genericError'),
       );
     } finally {
       setUpgrading(null);
@@ -410,7 +420,10 @@ export default function InfluencerPricing() {
     let keptSubId: string | null = null;
     let reconciled = false;
     for (let attempt = 0; attempt < 4 && !reconciled; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 1200));
+      if (attempt > 0)
+        await new Promise<void>(r => {
+          setTimeout(() => r(), 1200);
+        });
       try {
         const r = await invokeFn<{subscription_id?: string; reconciled?: boolean}>(
           'reconcile-subscription',
@@ -459,14 +472,14 @@ export default function InfluencerPricing() {
     const buttons: any[] = [];
     if (invoiceUrl) {
       buttons.push({
-        text: 'Open Invoice',
+        text: t('ScreensInfluencerPricing.alerts.openInvoice'),
         onPress: () => Linking.openURL(invoiceUrl as string).catch(() => {}),
       });
     }
-    buttons.push({text: 'Done', style: 'cancel'});
+    buttons.push({text: t('ScreensInfluencerPricing.alerts.done'), style: 'cancel'});
     Alert.alert(
-      `You're on ${label} 🎉`,
-      'Payment received and your plan is live.',
+      t('ScreensInfluencerPricing.alerts.successTitle', {plan: label}),
+      t('ScreensInfluencerPricing.alerts.successBody'),
       buttons,
     );
   };
@@ -474,17 +487,28 @@ export default function InfluencerPricing() {
   const startRazorpay = async (plan: Plan) => {
     // Send the actual razorpay plan id — the edge function no longer
     // resolves it from env, unlike the earlier assumption in this file.
-    const razorpayPlanId =
-      PLAN_RAZORPAY_IDS[plan.id as PlanId]?.[billing];
+    // Annual cards carry ids like `pro_annual`; the config maps and the
+    // backend are keyed by the base tier (`pro`) with the cycle passed
+    // separately. Strip the suffix before every lookup.
+    const baseId = plan.id.replace(/_annual$/, '') as PlanId;
+    const razorpayPlanId = PLAN_RAZORPAY_IDS[baseId]?.[billing];
     if (!razorpayPlanId) {
       throw new Error(
-        `Razorpay isn't configured for the ${plan.id} ${billing} plan. Set NEXT_PUBLIC_RAZORPAY_PLAN_${plan.id.toUpperCase()}_${billing.toUpperCase()} in .env and rebuild.`,
+        t('ScreensInfluencerPricing.errors.razorpayNotConfigured', {
+          plan: baseId,
+          cycle: billing,
+          planUpper: baseId.toUpperCase(),
+          cycleUpper: billing.toUpperCase(),
+        }),
       );
     }
+    // Source the price from the card the user actually sees so the RC /
+    // discount cap can never drift from the displayed amount.
     const planPriceRupees =
-      billing === 'annual'
-        ? PLAN_PRICING[plan.id as PlanId]?.annual
-        : PLAN_PRICING[plan.id as PlanId]?.monthly;
+      Number(String(plan.price).replace(/[^0-9]/g, '')) ||
+      (billing === 'annual'
+        ? PLAN_PRICING[baseId]?.annual
+        : PLAN_PRICING[baseId]?.monthly);
     const contact = formatPhoneForRazorpay(profile?.phone);
     const created = await invokeFn<{
       subscription_id?: string;
@@ -494,7 +518,7 @@ export default function InfluencerPricing() {
     }>('razorpay-checkout', {
       userId: user?.id,
       planId: razorpayPlanId,
-      plan: plan.id,
+      plan: baseId,
       cycle: billing,
       email: profile?.email || '',
       name: profile?.full_name || '',
@@ -504,14 +528,14 @@ export default function InfluencerPricing() {
     });
     if (created?.error) throw new Error(created.error);
     if (!created?.subscription_id || !created?.key_id) {
-      throw new Error("Razorpay didn't return a subscription / key.");
+      throw new Error(t('ScreensInfluencerPricing.errors.razorpayNoSub'));
     }
 
     // Idempotency: the server found this plan is ALREADY active for the user
     // (a prior successful checkout). Don't reopen the sheet — that would
     // collect a second charge. Just verify + reconcile.
     if (created.already_active) {
-      await finishSuccess(plan.id, {
+      await finishSuccess(baseId, {
         preferSubscriptionId: created.subscription_id,
         preferGateway: 'razorpay',
       });
@@ -527,7 +551,10 @@ export default function InfluencerPricing() {
         key: created.key_id,
         subscription_id: created.subscription_id,
         name: 'RGossips',
-        description: `Upgrade to ${plan.name} · ${billing}`,
+        description: t('ScreensInfluencerPricing.razorpayDescription', {
+          plan: t(`ScreensInfluencerPricing.plans.${plan.id}.name`),
+          cycle: billing,
+        }),
         prefill: {
           email: profile?.email || '',
           contact,
@@ -535,13 +562,13 @@ export default function InfluencerPricing() {
         },
         notes: {
           user_id: String(user?.id || ''),
-          plan: plan.id,
+          plan: baseId,
           cycle: billing,
         },
         theme: {color: '#5851DB'},
       });
       // Promise resolved → payment succeeded → reconcile (owns the overlay).
-      await finishSuccess(plan.id, {
+      await finishSuccess(baseId, {
         preferSubscriptionId: created.subscription_id,
         preferGateway: 'razorpay',
       });
@@ -550,28 +577,37 @@ export default function InfluencerPricing() {
       // dismissed the sheet without paying; treat that as a silent
       // cancel rather than a hard error.
       if (err?.code !== 0 && err?.code !== undefined) {
-        throw new Error(err?.description || 'Payment failed.');
+        throw new Error(
+          err?.description || t('ScreensInfluencerPricing.errors.paymentFailed'),
+        );
       }
     }
   };
 
   const startStripe = async (plan: Plan) => {
-    const priceId = PLAN_STRIPE_PRICES[plan.id as PlanId]?.[billing];
+    const baseId = plan.id.replace(/_annual$/, '') as PlanId;
+    const priceId = PLAN_STRIPE_PRICES[baseId]?.[billing];
     if (!priceId) {
       throw new Error(
-        `Stripe isn't configured for the ${plan.id} ${billing} plan. Set NEXT_PUBLIC_STRIPE_PRICE_${plan.id.toUpperCase()}_${billing.toUpperCase()} in .env and rebuild.`,
+        t('ScreensInfluencerPricing.errors.stripeNotConfigured', {
+          plan: baseId,
+          cycle: billing,
+          planUpper: baseId.toUpperCase(),
+          cycleUpper: billing.toUpperCase(),
+        }),
       );
     }
     const planPriceRupees =
-      billing === 'annual'
-        ? PLAN_PRICING[plan.id as PlanId]?.annual
-        : PLAN_PRICING[plan.id as PlanId]?.monthly;
+      Number(String(plan.price).replace(/[^0-9]/g, '')) ||
+      (billing === 'annual'
+        ? PLAN_PRICING[baseId]?.annual
+        : PLAN_PRICING[baseId]?.monthly);
     const created = await invokeFn<{url?: string; error?: string}>(
       'stripe-checkout',
       {
         userId: user?.id,
         priceId,
-        plan: plan.id,
+        plan: baseId,
         cycle: billing,
         email: profile?.email || '',
         origin: STRIPE_RETURN_ORIGIN,
@@ -580,7 +616,9 @@ export default function InfluencerPricing() {
       },
     );
     if (created?.error) throw new Error(created.error);
-    if (!created?.url) throw new Error("Stripe didn't return a checkout URL.");
+    if (!created?.url) {
+      throw new Error(t('ScreensInfluencerPricing.errors.stripeNoUrl'));
+    }
 
     // Open Stripe's hosted Checkout in an in-app browser. openAuth is
     // *supposed* to intercept the navigation to STRIPE_RETURN_URL_PREFIX
@@ -597,9 +635,7 @@ export default function InfluencerPricing() {
     // visually), the listener catches it, we dismiss the tab, and we
     // process the success the same way. Whichever path fires first wins.
     if (!(await InAppBrowser.isAvailable())) {
-      throw new Error(
-        'No in-app browser is available on this device. Update Chrome / Safari and try again.',
-      );
+      throw new Error(t('ScreensInfluencerPricing.errors.noBrowser'));
     }
 
     const linkPromise = new Promise<{url: string} | null>(resolve => {
@@ -649,13 +685,13 @@ export default function InfluencerPricing() {
           // Stripe: the client doesn't have the sub id at success time (only
           // the checkout session), so pass the gateway only — reconcile falls
           // back to newest active+paid, which is fine as Stripe activates fast.
-          await finishSuccess(plan.id, {preferGateway: 'stripe'});
+          await finishSuccess(baseId, {preferGateway: 'stripe'});
         }
         // canceled=1 or anything else: user backed out; no-op.
       } catch {
         // URL parse failed — be safe and still reconcile in case the redirect
         // did happen; worst case it's a no-op and the banner stays put.
-        await finishSuccess(plan.id, {preferGateway: 'stripe'});
+        await finishSuccess(baseId, {preferGateway: 'stripe'});
       }
     }
   };
@@ -684,10 +720,10 @@ export default function InfluencerPricing() {
           </Pressable>
           <View>
             <Text className="text-lg font-bold text-slate-900">
-              Choose Your Plan
+              {t('ScreensInfluencerPricing.header.title')}
             </Text>
             <Text className="text-xs text-slate-500">
-              Upgrade anytime to unlock more features
+              {t('ScreensInfluencerPricing.header.subtitle')}
             </Text>
           </View>
         </View>
@@ -711,21 +747,22 @@ export default function InfluencerPricing() {
                 <View className="flex-row items-center" style={{gap: 8}}>
                   <Text className="text-lg font-bold text-slate-900">
                     {currentPlan === 'free'
-                      ? 'Free Trial'
+                      ? t('ScreensInfluencerPricing.currentPlan.freeTrial')
                       : currentPlan
                           .replace('_', ' ')
                           .replace(/\b\w/g, c => c.toUpperCase())}
                   </Text>
                   <View className="bg-purple-100 px-2 py-0.5 rounded-full">
                     <Text className="text-[10px] font-bold text-purple-700">
-                      CURRENT
+                      {t('ScreensInfluencerPricing.currentPlan.badge')}
                     </Text>
                   </View>
                   {renewalDaysLeft != null && (
                     <View className="bg-blue-50 px-2 py-0.5 rounded-full">
                       <Text className="text-[10px] font-bold text-blue-700">
-                        Renews in {renewalDaysLeft}{' '}
-                        {renewalDaysLeft === 1 ? 'day' : 'days'}
+                        {t('ScreensInfluencerPricing.currentPlan.renewsIn', {
+                          count: renewalDaysLeft,
+                        })}
                       </Text>
                     </View>
                   )}
@@ -733,9 +770,13 @@ export default function InfluencerPricing() {
                 <Text className="text-sm text-slate-500 mt-0.5">
                   {currentPlan === 'free'
                     ? expired
-                      ? 'Your free trial has expired'
-                      : `${daysLeft} days remaining`
-                    : `Active ${billing} subscription`}
+                      ? t('ScreensInfluencerPricing.currentPlan.trialExpired')
+                      : t('ScreensInfluencerPricing.currentPlan.daysRemaining', {
+                          count: daysLeft,
+                        })
+                    : t('ScreensInfluencerPricing.currentPlan.activeSubscription', {
+                        cycle: billing,
+                      })}
                 </Text>
               </View>
             </View>
@@ -769,7 +810,7 @@ export default function InfluencerPricing() {
                   className={`text-sm font-bold ${
                     billing === 'monthly' ? 'text-white' : 'text-slate-500'
                   }`}>
-                  Monthly
+                  {t('ScreensInfluencerPricing.billing.monthly')}
                 </Text>
               </TouchableOpacity>
               {/* Wrap the button + the SAVE badge so the badge can sit
@@ -795,7 +836,7 @@ export default function InfluencerPricing() {
                     className={`text-sm font-bold ${
                       billing === 'annual' ? 'text-white' : 'text-slate-500'
                     }`}>
-                    Annual
+                    {t('ScreensInfluencerPricing.billing.annual')}
                   </Text>
                 </TouchableOpacity>
                 <View
@@ -811,7 +852,7 @@ export default function InfluencerPricing() {
                     elevation: 3,
                   }}>
                   <Text className="text-[8px] text-white font-black">
-                    SAVE 20%
+                    {t('ScreensInfluencerPricing.billing.save')}
                   </Text>
                 </View>
               </View>
@@ -844,13 +885,13 @@ export default function InfluencerPricing() {
               </View>
               <View style={{flex: 1}}>
                 <Text className="text-[13px] font-black text-slate-900">
-                  50% off your first subscription 🎉
+                  {t('ScreensInfluencerPricing.referral.title')}
                 </Text>
                 <View
                   className="flex-row items-center flex-wrap"
                   style={{gap: 5, marginTop: 2}}>
                   <Text className="text-[11px] font-medium text-slate-500">
-                    Gifted by
+                    {t('ScreensInfluencerPricing.referral.giftedBy')}
                   </Text>
                   {referralDiscount.referrer_photo ? (
                     <Image
@@ -885,7 +926,7 @@ export default function InfluencerPricing() {
                       `@${referralDiscount.referrer_username}`}
                   </Text>
                   <Text className="text-[10px] font-normal text-slate-400">
-                    · auto-applied at checkout
+                    {t('ScreensInfluencerPricing.referral.autoApplied')}
                   </Text>
                 </View>
               </View>
@@ -915,13 +956,13 @@ export default function InfluencerPricing() {
                 {applyRc && <Check size={12} color="white" />}
               </View>
               <Text className="text-[13px] font-semibold text-slate-700">
-                Apply my{' '}
+                {t('ScreensInfluencerPricing.rc.applyMy')}{' '}
                 <Text className="text-[#5851DB] font-black">
-                  {availableRc} RC
+                  {t('ScreensInfluencerPricing.rc.amount', {amount: availableRc})}
                 </Text>{' '}
-                at checkout{'  '}
+                {t('ScreensInfluencerPricing.rc.atCheckout')}{'  '}
                 <Text className="text-[10px] text-slate-400 font-normal">
-                  (up to 50% off first invoice)
+                  {t('ScreensInfluencerPricing.rc.note')}
                 </Text>
               </Text>
             </Pressable>
@@ -938,14 +979,14 @@ export default function InfluencerPricing() {
                 {plan.popular && (
                   <View className="absolute -top-3 self-center z-10 bg-pink-500 px-4 py-1.5 rounded-full shadow-lg">
                     <Text className="text-[10px] text-white font-black uppercase tracking-wider">
-                      Most Popular
+                      {t('ScreensInfluencerPricing.badges.mostPopular')}
                     </Text>
                   </View>
                 )}
                 {isActive && (
                   <View className="absolute -top-3 self-center z-10 bg-purple-600 px-4 py-1.5 rounded-full shadow-lg">
                     <Text className="text-[10px] text-white font-black uppercase tracking-wider">
-                      Current Plan
+                      {t('ScreensInfluencerPricing.badges.currentPlan')}
                     </Text>
                   </View>
                 )}
@@ -999,27 +1040,16 @@ export default function InfluencerPricing() {
           {/* FAQ */}
           <View className="bg-white p-6 rounded-3xl border border-slate-100" style={{gap: 16}}>
             <Text className="text-lg font-bold text-slate-900">
-              Frequently Asked Questions
+              {t('ScreensInfluencerPricing.faq.title')}
             </Text>
-            {[
-              {
-                q: 'Can I switch plans anytime?',
-                a: 'Yes! You can upgrade or change your plan at any time. Your new plan takes effect immediately.',
-              },
-              {
-                q: 'What happens when my free trial ends?',
-                a: "You'll be moved to limited access. Upgrade to any plan to continue using all features.",
-              },
-              {
-                q: 'Can I cancel my subscription?',
-                a: "Yes, you can cancel anytime. You'll continue to have access until the end of your billing period.",
-              },
-            ].map(faq => (
-              <View key={faq.q}>
+            {[{id: 'switch'}, {id: 'trialEnds'}, {id: 'cancel'}].map(faq => (
+              <View key={faq.id}>
                 <Text className="text-sm font-semibold text-slate-800">
-                  {faq.q}
+                  {t(`ScreensInfluencerPricing.faq.${faq.id}.q`)}
                 </Text>
-                <Text className="text-xs text-slate-500 mt-1">{faq.a}</Text>
+                <Text className="text-xs text-slate-500 mt-1">
+                  {t(`ScreensInfluencerPricing.faq.${faq.id}.a`)}
+                </Text>
               </View>
             ))}
           </View>
@@ -1030,7 +1060,11 @@ export default function InfluencerPricing() {
 
       <GatewayPickerModal
         visible={!!pickerPlan}
-        planLabel={pickerPlan?.name || ''}
+        planLabel={
+          pickerPlan
+            ? t(`ScreensInfluencerPricing.plans.${pickerPlan.id}.name`)
+            : ''
+        }
         onCancel={() => setPickerPlan(null)}
         onPick={handleGatewayPick}
       />
@@ -1056,6 +1090,14 @@ function PlanCardContent({
   onUpgrade: () => void;
   popular?: boolean;
 }) {
+  const {t} = useTranslation();
+  const features = t(`ScreensInfluencerPricing.plans.${plan.id}.features`, {
+    returnObjects: true,
+  }) as string[];
+  const notIncluded = t(
+    `ScreensInfluencerPricing.plans.${plan.id}.notIncluded`,
+    {returnObjects: true},
+  ) as string[];
   return (
     <View style={{gap: 16}}>
       {/* Header */}
@@ -1066,12 +1108,12 @@ function PlanCardContent({
         />
         <Text
           className={`text-2xl font-extrabold ${popular ? 'text-white' : 'text-slate-900'}`}>
-          {plan.name}
+          {t(`ScreensInfluencerPricing.plans.${plan.id}.name`)}
         </Text>
       </View>
       <Text
         className={`text-xs ${popular ? 'text-indigo-200' : 'text-slate-500'}`}>
-        {plan.tagline}
+        {t(`ScreensInfluencerPricing.plans.${plan.id}.tagline`)}
       </Text>
 
       {/* Price */}
@@ -1089,14 +1131,14 @@ function PlanCardContent({
       {plan.savings && (
         <View className="self-start bg-green-100 px-2 py-0.5 rounded-full">
           <Text className="text-[10px] font-bold text-green-700">
-            {plan.savings}
+            {t(`ScreensInfluencerPricing.plans.${plan.id}.savings`)}
           </Text>
         </View>
       )}
 
       <Text
         className={`text-[10px] font-bold uppercase tracking-wide ${popular ? 'text-indigo-200' : 'text-slate-400'}`}>
-        {plan.description}
+        {t(`ScreensInfluencerPricing.plans.${plan.id}.description`)}
       </Text>
 
       {/* CTA */}
@@ -1107,7 +1149,7 @@ function PlanCardContent({
         {isSuccess ? (
           <View className="h-12 rounded-2xl bg-green-500 items-center justify-center">
             <Text className="text-white font-bold text-sm">
-              Plan Activated!
+              {t('ScreensInfluencerPricing.cta.planActivated')}
             </Text>
           </View>
         ) : isActive ? (
@@ -1115,7 +1157,7 @@ function PlanCardContent({
             className={`h-12 rounded-2xl items-center justify-center ${popular ? 'bg-white/20' : 'bg-slate-100'}`}>
             <Text
               className={`font-bold text-sm ${popular ? 'text-white/60' : 'text-slate-400'}`}>
-              Current Plan
+              {t('ScreensInfluencerPricing.cta.currentPlan')}
             </Text>
           </View>
         ) : popular ? (
@@ -1124,7 +1166,9 @@ function PlanCardContent({
               <ActivityIndicator color="#6C4DFF" />
             ) : (
               <Text className="text-purple-700 font-bold text-sm">
-                {isUpgrade ? 'Upgrade Now' : 'Switch Plan'}
+                {isUpgrade
+                  ? t('ScreensInfluencerPricing.cta.upgradeNow')
+                  : t('ScreensInfluencerPricing.cta.switchPlan')}
               </Text>
             )}
           </View>
@@ -1150,7 +1194,9 @@ function PlanCardContent({
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-white font-bold text-sm">
-                {isUpgrade ? 'Upgrade Now' : 'Switch Plan'}
+                {isUpgrade
+                  ? t('ScreensInfluencerPricing.cta.upgradeNow')
+                  : t('ScreensInfluencerPricing.cta.switchPlan')}
               </Text>
             )}
           </View>
@@ -1161,7 +1207,7 @@ function PlanCardContent({
       <View
         className={`border-t border-dashed pt-4 ${popular ? 'border-white/20' : 'border-slate-100'}`}
         style={{gap: 10}}>
-        {plan.features.map((f, i) => (
+        {features.map((f, i) => (
           <View key={i} className="flex-row items-start" style={{gap: 8}}>
             <Check
               size={14}
@@ -1174,7 +1220,7 @@ function PlanCardContent({
             </Text>
           </View>
         ))}
-        {plan.notIncluded.map((f, i) => (
+        {notIncluded.map((f, i) => (
           <View
             key={`ni-${i}`}
             className="flex-row items-start opacity-30"

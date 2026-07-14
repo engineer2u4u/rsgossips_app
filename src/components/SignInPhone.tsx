@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onNext: (phone: string) => void;
@@ -28,6 +29,7 @@ export default function SignInPhone({
   role = 'influencer',
   onSwitchToSignIn = () => {},
 }: Props) {
+  const { t } = useTranslation();
   const [localPhone, setLocalPhone] = useState(phone);
 
   const handlePhoneChange = (value: string) => {
@@ -46,13 +48,13 @@ export default function SignInPhone({
       {/* TITLE */}
       <View className="items-center mb-8">
         <Text className="text-2xl font-bold text-slate-900 mb-2">
-          {mode === 'signup' ? 'Create Account' : 'Sign In'}
+          {mode === 'signup' ? t('SignInPhone.titleSignup') : t('SignInPhone.titleSignin')}
         </Text>
 
         <Text className="text-sm text-slate-500 text-center">
           {mode === 'signup'
-            ? 'Enter your mobile number to create an account'
-            : 'Enter your mobile number to continue'}
+            ? t('SignInPhone.subtitleSignup')
+            : t('SignInPhone.subtitleSignin')}
         </Text>
       </View>
 
@@ -66,11 +68,11 @@ export default function SignInPhone({
       {/* USER EXISTS */}
       {userExists && (
         <View className="p-3 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg flex-row justify-between items-center">
-          <Text className="text-sm text-yellow-800">User already exists.</Text>
+          <Text className="text-sm text-yellow-800">{t('SignInPhone.userExists')}</Text>
 
           <Pressable onPress={onSwitchToSignIn}>
             <Text className="text-sm font-semibold text-[#6347F9]">
-              Sign In
+              {t('SignInPhone.signInLink')}
             </Text>
           </Pressable>
         </View>
@@ -87,7 +89,7 @@ export default function SignInPhone({
             keyboardType="phone-pad"
             value={localPhone}
             onChangeText={handlePhoneChange}
-            placeholder="Enter phone number"
+            placeholder={t('SignInPhone.phonePlaceholder')}
             maxLength={maxLen}
             editable={!loading}
             className="flex-1 text-base"
@@ -107,10 +109,10 @@ export default function SignInPhone({
       >
         <Text className="text-white text-lg font-semibold">
           {loading
-            ? 'Sending OTP...'
+            ? t('SignInPhone.sendingOtp')
             : mode === 'signup'
-              ? 'Create Account'
-              : 'Send OTP'}
+              ? t('SignInPhone.titleSignup')
+              : t('SignInPhone.sendOtp')}
         </Text>
       </Pressable>
     </View>

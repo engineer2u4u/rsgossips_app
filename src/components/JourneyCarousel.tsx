@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {View, Text, Image, FlatList, Pressable, Dimensions} from 'react-native';
 import Animated, {FadeInRight} from 'react-native-reanimated';
 import {Star} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 import {invokeFn} from '../lib/api';
 
 const {width} = Dimensions.get('window');
@@ -44,6 +45,7 @@ const FALLBACK_DATA = [
 ];
 
 export default function JourneyCarousel() {
+  const {t} = useTranslation();
   const [campaigns, setCampaigns] = useState<Campaign[]>(FALLBACK_DATA);
 
   useEffect(() => {
@@ -82,10 +84,12 @@ export default function JourneyCarousel() {
       {/* Header */}
       <View className="flex-row justify-between items-center px-4 mb-4">
         <Text className="text-xl font-bold text-slate-800 uppercase">
-          For You
+          {t('JourneyCarousel.forYou')}
         </Text>
         <Pressable>
-          <Text className="text-sm font-bold text-slate-500">See all</Text>
+          <Text className="text-sm font-bold text-slate-500">
+            {t('JourneyCarousel.seeAll')}
+          </Text>
         </Pressable>
       </View>
 
@@ -130,7 +134,7 @@ export default function JourneyCarousel() {
                 <View className="flex-row justify-between items-end mt-4">
                   <View>
                     <Text className="text-[10px] text-slate-400 font-black uppercase">
-                      Budget
+                      {t('JourneyCarousel.budget')}
                     </Text>
                     <Text className="text-lg font-black text-slate-900">
                       ₹{item.budget?.toLocaleString('en-IN')}
@@ -138,7 +142,7 @@ export default function JourneyCarousel() {
                   </View>
                   <View className="bg-pink-500 px-4 py-1.5 rounded-full">
                     <Text className="text-white text-[10px] font-black">
-                      {item.daysLeft} days left
+                      {t('JourneyCarousel.daysLeft', {count: item.daysLeft})}
                     </Text>
                   </View>
                 </View>

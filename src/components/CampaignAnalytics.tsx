@@ -25,6 +25,7 @@ import {
   DollarSign,
 } from 'lucide-react-native';
 import {BarChart, PieChart} from 'react-native-chart-kit';
+import {useTranslation} from 'react-i18next';
 
 interface DetailedCampaignAnalyticsProps {
   onBack: () => void;
@@ -149,6 +150,7 @@ function CampaignItem({
   statusBg: string;
   statusFg: string;
 }) {
+  const {t} = useTranslation();
   return (
     <View
       className="bg-white p-5 rounded-xl border border-gray-100"
@@ -182,9 +184,16 @@ function CampaignItem({
         </View>
       </View>
       <View className="flex-row" style={{gap: 8}}>
-        <StatBox label="Views" value={views} />
-        <StatBox label="Engagement" value={engagement} />
-        <StatBox label="Revenue" value={revenue} valueColor="#EC4899" />
+        <StatBox label={t('CampaignAnalytics.box.views')} value={views} />
+        <StatBox
+          label={t('CampaignAnalytics.box.engagement')}
+          value={engagement}
+        />
+        <StatBox
+          label={t('CampaignAnalytics.box.revenue')}
+          value={revenue}
+          valueColor="#EC4899"
+        />
       </View>
     </View>
   );
@@ -217,6 +226,7 @@ function StatBox({
 const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
   onBack,
 }) => {
+  const {t} = useTranslation();
   // Same labels/values web uses in the mobile branch.
   const barLabels = ['Nike', 'Spotify', 'Sephora', 'Disney', 'Netflix'];
   const barValues = [2000, 1500, 2500, 1100, 1800];
@@ -244,7 +254,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
       legendFontSize: 11,
     },
     {
-      name: 'Other',
+      name: t('CampaignAnalytics.charts.platformOther'),
       population: 10,
       color: '#64748b',
       legendFontColor: '#1F2937',
@@ -254,7 +264,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
 
   return (
     <View className="flex-1" style={{backgroundColor: '#F9FAFB'}}>
-      <PageHeader title="Campaign Analytics" onBack={onBack} />
+      <PageHeader title={t('CampaignAnalytics.title')} onBack={onBack} />
 
       <ScrollView
         className="flex-1"
@@ -269,9 +279,9 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <View style={{width: '48%'}}>
             <StatMiniCard
               icon={<Target size={16} color="#fff" />}
-              label="Total Campaigns"
+              label={t('CampaignAnalytics.stats.totalCampaigns')}
               value="12"
-              trend="+3 this month"
+              trend={t('CampaignAnalytics.stats.totalCampaignsTrend')}
               iconBg="#EC4899"
               trendColor="#EC4899"
             />
@@ -279,9 +289,9 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <View style={{width: '48%'}}>
             <StatMiniCard
               icon={<Activity size={16} color="#fff" />}
-              label="Active"
+              label={t('CampaignAnalytics.stats.active')}
               value="5"
-              trend="In progress"
+              trend={t('CampaignAnalytics.stats.activeTrend')}
               iconBg="#34D399"
               trendColor="#34D399"
             />
@@ -289,7 +299,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <View style={{width: '48%'}}>
             <StatMiniCard
               icon={<Eye size={16} color="#fff" />}
-              label="Total Views"
+              label={t('CampaignAnalytics.stats.totalViews')}
               value="850K"
               trend="+15%"
               iconBg="#8b5cf6"
@@ -299,7 +309,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <View style={{width: '48%'}}>
             <StatMiniCard
               icon={<DollarSign size={16} color="#fff" />}
-              label="Total Earnings"
+              label={t('CampaignAnalytics.stats.totalEarnings')}
               value="$24.5K"
               trend="+20%"
               iconBg="#EC4899"
@@ -319,7 +329,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
             elevation: 2,
           }}>
           <Text className="font-black text-gray-900 text-[13px] mb-4">
-            Campaign Performance
+            {t('CampaignAnalytics.charts.campaignPerformance')}
           </Text>
           <BarChart
             data={{labels: barLabels, datasets: [{data: barValues}]}}
@@ -355,7 +365,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
             elevation: 2,
           }}>
           <Text className="font-black text-gray-900 text-[13px] mb-4 text-center">
-            Platform Distribution
+            {t('CampaignAnalytics.charts.platformDistribution')}
           </Text>
           <PieChart
             data={platformData}
@@ -384,29 +394,29 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
             elevation: 2,
           }}>
           <Text className="font-black text-gray-900 text-[13px]">
-            Performance by Category
+            {t('CampaignAnalytics.category.heading')}
           </Text>
           <CategoryProgress
-            label="Fashion"
-            count="4 campaigns"
+            label={t('CampaignAnalytics.category.fashion')}
+            count={t('CampaignAnalytics.campaignsCount', {count: 4})}
             value="$90,500"
             progressPct={90}
           />
           <CategoryProgress
-            label="Beauty"
-            count="3 campaigns"
+            label={t('CampaignAnalytics.category.beauty')}
+            count={t('CampaignAnalytics.campaignsCount', {count: 3})}
             value="$35,200"
             progressPct={60}
           />
           <CategoryProgress
-            label="Tech"
-            count="2 campaigns"
+            label={t('CampaignAnalytics.category.tech')}
+            count={t('CampaignAnalytics.campaignsCount', {count: 2})}
             value="$65,300"
             progressPct={75}
           />
           <CategoryProgress
-            label="Lifestyle"
-            count="3 campaigns"
+            label={t('CampaignAnalytics.category.lifestyle')}
+            count={t('CampaignAnalytics.campaignsCount', {count: 3})}
             value="$54,100"
             progressPct={65}
           />
@@ -415,12 +425,12 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
         {/* 5. Recent Campaigns list */}
         <View style={{gap: 16}}>
           <Text className="font-black text-gray-900 text-[13px] px-1">
-            Recent Campaigns
+            {t('CampaignAnalytics.recentCampaigns')}
           </Text>
           <CampaignItem
             title="Nike Summer Launch"
             date="Jan 10 - Jan 31"
-            status="Completed"
+            status={t('CampaignAnalytics.status.completed')}
             views="45K"
             engagement="12.5%"
             revenue="$2,500"
@@ -430,7 +440,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <CampaignItem
             title="Spotify Playlist Series"
             date="Jan 15 - Feb 5"
-            status="Active"
+            status={t('CampaignAnalytics.status.active')}
             views="11K"
             engagement="8.8%"
             revenue="$1,800"
@@ -440,7 +450,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           <CampaignItem
             title="Sephora Tutorial"
             date="Feb 1 - Feb 10"
-            status="Active"
+            status={t('CampaignAnalytics.status.active')}
             views="8K"
             engagement="7.2%"
             revenue="$1,200"

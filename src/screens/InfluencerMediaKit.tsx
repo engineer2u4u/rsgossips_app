@@ -33,6 +33,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
@@ -68,6 +69,7 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 export default function InfluencerMediaKit() {
+  const {t} = useTranslation();
   const {profile, user} = useAuth();
   const navigation = useNavigation();
 
@@ -180,8 +182,12 @@ export default function InfluencerMediaKit() {
       // `url` and only uses `message`, so we keep the URL inline there.
       await Share.share(
         Platform.OS === 'ios'
-          ? {message: 'Check out my media kit', url: shareUrl}
-          : {message: `Check out my media kit: ${shareUrl}`},
+          ? {message: t('ScreensInfluencerMediaKit.shareMessage'), url: shareUrl}
+          : {
+              message: t('ScreensInfluencerMediaKit.shareMessageWithUrl', {
+                url: shareUrl,
+              }),
+            },
       );
     } catch {}
   };
@@ -210,7 +216,9 @@ export default function InfluencerMediaKit() {
       } catch (err: any) {
         // invokeFn throws on { error } responses — pull the message out
         // so plan / cap rejections still reach the user.
-        setTemplateError(err?.message || 'Failed to save — please try again.');
+        setTemplateError(
+          err?.message || t('ScreensInfluencerMediaKit.saveError'),
+        );
       } finally {
         setSavingTemplate(null);
       }
@@ -262,7 +270,7 @@ export default function InfluencerMediaKit() {
           {published ? (
             <View className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5" style={{gap: 12}}>
               <Text className="text-sm font-bold text-slate-900">
-                Share Your Media Kit
+                {t('ScreensInfluencerMediaKit.shareYourMediaKit')}
               </Text>
               <View className="flex-row items-center bg-slate-50 rounded-xl border border-slate-100 p-3" style={{gap: 8}}>
                 <Text
@@ -289,7 +297,7 @@ export default function InfluencerMediaKit() {
                 />
                 <Share2 size={16} color="white" />
                 <Text className="text-white font-bold text-sm ml-2">
-                  Share
+                  {t('ScreensInfluencerMediaKit.share')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -299,11 +307,10 @@ export default function InfluencerMediaKit() {
                 <Share2 size={22} color="#9810FA" />
               </View>
               <Text className="text-sm font-bold text-slate-900">
-                Publish to Share
+                {t('ScreensInfluencerMediaKit.publishToShare')}
               </Text>
               <Text className="text-xs text-slate-500 text-center leading-relaxed">
-                Review your media kit, edit your bio, then hit Publish to
-                get a shareable link.
+                {t('ScreensInfluencerMediaKit.publishDescription')}
               </Text>
               <TouchableOpacity
                 onPress={handlePublish}
@@ -327,7 +334,9 @@ export default function InfluencerMediaKit() {
                   />
                 )}
                 <Text className="text-white font-bold text-sm">
-                  {publishing ? 'Publishing...' : 'Publish Media Kit'}
+                  {publishing
+                    ? t('ScreensInfluencerMediaKit.publishing')
+                    : t('ScreensInfluencerMediaKit.publishMediaKit')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -339,12 +348,12 @@ export default function InfluencerMediaKit() {
             className="rounded-2xl border border-purple-100 p-5"
             style={{gap: 12, borderRadius: 16}}>
             <Text className="text-sm font-bold text-slate-900">
-              Tips to stand out
+              {t('ScreensInfluencerMediaKit.tipsTitle')}
             </Text>
             {[
-              'Keep your Instagram profile up to date',
-              'Add your niche categories in profile settings',
-              'Share your media kit link in your Instagram bio',
+              t('ScreensInfluencerMediaKit.tips.keepInstagram'),
+              t('ScreensInfluencerMediaKit.tips.addCategories'),
+              t('ScreensInfluencerMediaKit.tips.shareLink'),
             ].map(tip => (
               <View
                 key={tip}
@@ -389,7 +398,7 @@ export default function InfluencerMediaKit() {
               <View className="flex-row items-center" style={{gap: 8}}>
                 <LayoutTemplate size={18} color={activeTemplate.accent} />
                 <Text className="text-base font-bold text-slate-900">
-                  Choose a template
+                  {t('ScreensInfluencerMediaKit.chooseTemplate')}
                 </Text>
               </View>
               <Pressable
@@ -439,6 +448,7 @@ function TemplateSelectorButton({
   onOpen: () => void;
   onUpgrade: () => void;
 }) {
+  const {t} = useTranslation();
   const isLive = activeTemplate.id === savedTemplate;
 
   // Compute the same plan / cap state TemplatePicker used to compute. The
@@ -459,11 +469,14 @@ function TemplateSelectorButton({
   // If none apply, there's nothing to upgrade for, so the row hides.
   let upgradeLabel: string | null = null;
   if (!canUseActive) {
-    upgradeLabel = `Upgrade to ${activeTemplate.minPlan} to use ${activeTemplate.label}`;
+    upgradeLabel = t('ScreensInfluencerMediaKit.upgradeToUse', {
+      plan: activeTemplate.minPlan,
+      template: activeTemplate.label,
+    });
   } else if (isCapped) {
-    upgradeLabel = 'Upgrade for unlimited switches';
+    upgradeLabel = t('ScreensInfluencerMediaKit.upgradeUnlimitedSwitches');
   } else if (anyLocked) {
-    upgradeLabel = 'Upgrade to unlock more templates';
+    upgradeLabel = t('ScreensInfluencerMediaKit.upgradeUnlockMore');
   }
 
   return (
@@ -489,12 +502,12 @@ function TemplateSelectorButton({
             <Text
               className="text-[10px] font-black uppercase tracking-widest"
               style={{color: activeTemplate.accent}}>
-              Template
+              {t('ScreensInfluencerMediaKit.templateLabel')}
             </Text>
             {isLive && (
               <View className="bg-emerald-50 px-1.5 py-0.5 rounded-full">
                 <Text className="text-[9px] font-black text-emerald-600 tracking-widest uppercase">
-                  Live
+                  {t('ScreensInfluencerMediaKit.live')}
                 </Text>
               </View>
             )}
@@ -503,7 +516,7 @@ function TemplateSelectorButton({
             {activeTemplate.label}
           </Text>
           <Text className="text-[11px] text-slate-400" numberOfLines={1}>
-            Tap to change the layout of your shareable kit
+            {t('ScreensInfluencerMediaKit.selectorSubtitle')}
           </Text>
         </View>
         <ChevronRight size={18} color="#94A3B8" />
@@ -607,6 +620,7 @@ function TemplatePicker({
   onPreview: (id: string) => void;
   onSave: (id: string) => void;
 }) {
+  const {t} = useTranslation();
   const effectivePlan = getEffectivePlan(profile);
   const hasUnsavedPreview = previewTemplate !== savedTemplate;
   const previewMeta = MEDIA_KIT_TEMPLATES.find(
@@ -624,32 +638,33 @@ function TemplatePicker({
       style={{gap: 12}}>
       <View className="flex-row items-center">
         <LayoutTemplate size={16} color="#9810FA" />
-        <Text className="text-sm font-bold text-slate-900 ml-2">Templates</Text>
+        <Text className="text-sm font-bold text-slate-900 ml-2">
+          {t('ScreensInfluencerMediaKit.templates')}
+        </Text>
         <View className="flex-1" />
         <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           {effectivePlan}
         </Text>
       </View>
       <Text className="text-[11px] text-slate-500 leading-snug">
-        Tap a template to preview. Pick the one you want shareable to brands
-        and creators.
+        {t('ScreensInfluencerMediaKit.pickerSubtitle')}
       </Text>
 
       <View style={{gap: 8}}>
-        {MEDIA_KIT_TEMPLATES.map((t: MediaKitTemplate) => {
-          const locked = !profileCanUseMediaKitTemplate(profile, t.id);
-          const isSaved = savedTemplate === t.id;
-          const isPreviewing = previewTemplate === t.id;
+        {MEDIA_KIT_TEMPLATES.map((tpl: MediaKitTemplate) => {
+          const locked = !profileCanUseMediaKitTemplate(profile, tpl.id);
+          const isSaved = savedTemplate === tpl.id;
+          const isPreviewing = previewTemplate === tpl.id;
           return (
             <Pressable
-              key={t.id}
+              key={tpl.id}
               onPress={() => {
                 // Locked templates can't be previewed — the user can only
                 // try a layout their plan unlocks. The lock badge below
                 // shows why; the upgrade pill outside the modal carries
                 // the upgrade CTA.
                 if (locked) return;
-                onPreview(t.id);
+                onPreview(tpl.id);
               }}
               disabled={locked}
               className="rounded-xl border p-2.5 flex-row items-center"
@@ -662,7 +677,7 @@ function TemplatePicker({
                 opacity: locked ? 0.55 : 1,
               }}>
               <LinearGradient
-                colors={t.previewColors}
+                colors={tpl.previewColors}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
                 style={{
@@ -678,12 +693,12 @@ function TemplatePicker({
                   <Text
                     className="text-xs font-bold text-slate-800"
                     numberOfLines={1}>
-                    {t.label}
+                    {tpl.label}
                   </Text>
                   {isSaved && (
                     <View className="bg-emerald-50 px-1.5 py-0.5 rounded-full">
                       <Text className="text-[9px] font-black text-emerald-600 tracking-widest uppercase">
-                        Live
+                        {t('ScreensInfluencerMediaKit.live')}
                       </Text>
                     </View>
                   )}
@@ -691,7 +706,7 @@ function TemplatePicker({
                 <Text
                   className="text-[10px] text-slate-400"
                   numberOfLines={1}>
-                  {t.description}
+                  {tpl.description}
                 </Text>
               </View>
               {locked ? (
@@ -700,7 +715,7 @@ function TemplatePicker({
                   style={{gap: 4}}>
                   <Lock size={9} color="#d97706" />
                   <Text className="text-[9px] font-black uppercase tracking-wider text-amber-700">
-                    {t.minPlan}
+                    {tpl.minPlan}
                   </Text>
                 </View>
               ) : isPreviewing ? (
@@ -728,7 +743,10 @@ function TemplatePicker({
           }}>
           <Lock size={11} color="#b45309" />
           <Text className="text-[11px] font-bold text-amber-800">
-            {previewMeta?.label} needs the {previewMeta?.minPlan} plan.
+            {t('ScreensInfluencerMediaKit.templateNeedsPlan', {
+              template: previewMeta?.label,
+              plan: previewMeta?.minPlan,
+            })}
           </Text>
         </View>
       )}
@@ -763,14 +781,20 @@ function TemplatePicker({
           )}
           <Text className="text-white text-xs font-bold">
             {savingTemplate === previewTemplate
-              ? 'Saving…'
-              : `Use ${previewMeta?.label || 'this template'}`}
+              ? t('ScreensInfluencerMediaKit.saving')
+              : t('ScreensInfluencerMediaKit.useTemplate', {
+                  template:
+                    previewMeta?.label ||
+                    t('ScreensInfluencerMediaKit.thisTemplate'),
+                })}
           </Text>
         </Pressable>
       )}
       {!hasUnsavedPreview && (
         <Text className="text-[10px] text-slate-400 text-center">
-          {previewMeta?.label} is your live template.
+          {t('ScreensInfluencerMediaKit.isLiveTemplate', {
+            template: previewMeta?.label,
+          })}
         </Text>
       )}
 
@@ -795,18 +819,20 @@ function TemplatePicker({
             className="text-[11px] font-bold leading-snug"
             style={{color: isCapped ? '#e11d48' : '#475569'}}>
             {isCapped
-              ? `You've used all ${usage.limit} template change${
-                  usage.limit === 1 ? '' : 's'
-                }. Upgrade to Elite for unlimited switches.`
-              : `${usage.remaining} of ${usage.limit} template change${
-                  usage.limit === 1 ? '' : 's'
-                } remaining on ${effectivePlan}.`}
+              ? t('ScreensInfluencerMediaKit.capUsedAll', {
+                  count: usage.limit,
+                })
+              : t('ScreensInfluencerMediaKit.capRemaining', {
+                  count: usage.limit,
+                  remaining: usage.remaining,
+                  plan: effectivePlan,
+                })}
           </Text>
         </View>
       )}
       {isUnlimited && effectivePlan === 'elite' && (
         <Text className="text-[10px] text-emerald-600 font-bold text-center">
-          Unlimited template switches — go wild.
+          {t('ScreensInfluencerMediaKit.unlimitedSwitches')}
         </Text>
       )}
     </View>

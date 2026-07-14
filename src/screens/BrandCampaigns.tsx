@@ -18,6 +18,7 @@ import {
 import {ArrowRight, ArrowUpRight, Plus, Search, SlidersHorizontal} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 import BrandsLayout from '../layouts/BrandLayout';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
@@ -50,6 +51,7 @@ const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
 };
 
 export default function BrandCampaigns() {
+  const {t} = useTranslation();
   const {user} = useAuth();
   const navigation = useNavigation<any>();
   const [campaigns, setCampaigns] = useState<BrandCampaign[]>([]);
@@ -69,12 +71,12 @@ export default function BrandCampaigns() {
       setCampaigns(data?.campaigns || []);
     } catch (err: any) {
       console.warn('brand-campaigns list failed:', err);
-      setError(err?.message || 'Failed to load campaigns');
+      setError(err?.message || t('ScreensBrandCampaigns.loadError'));
       setCampaigns([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, t]);
 
   useEffect(() => {
     load();
@@ -114,9 +116,11 @@ export default function BrandCampaigns() {
           className="px-6 pt-12 pb-16 rounded-b-[40px]">
           <View className="flex-row justify-between items-start mb-6">
             <View>
-              <Text className="text-2xl font-bold text-white">Campaigns</Text>
+              <Text className="text-2xl font-bold text-white">
+                {t('ScreensBrandCampaigns.headerTitle')}
+              </Text>
               <Text className="text-purple-100 text-xs">
-                Manage and review your collaborations
+                {t('ScreensBrandCampaigns.headerSubtitle')}
               </Text>
             </View>
             <View className="flex-row gap-2">
@@ -133,7 +137,7 @@ export default function BrandCampaigns() {
         <View className="absolute left-6 right-6 -bottom-12">
           <View className="flex-row items-center bg-white rounded-3xl p-2 shadow-md shadow-gray-200 mb-4">
             <TextInput
-              placeholder="Search your campaigns…"
+              placeholder={t('ScreensBrandCampaigns.searchPlaceholder')}
               placeholderTextColor="#D1D5DB"
               value={query}
               onChangeText={setQuery}
@@ -161,7 +165,7 @@ export default function BrandCampaigns() {
                         <View className="w-2 h-2 bg-red-500 rounded-full" />
                       )}
                       <Text className="text-xs font-semibold text-white">
-                        {tab} ({counts[tab]})
+                        {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
                       </Text>
                     </TouchableOpacity>
                   </LinearGradient>
@@ -171,7 +175,7 @@ export default function BrandCampaigns() {
                     onPress={() => setActiveTab(tab)}
                     className="px-5 py-2 rounded-full bg-white flex-row items-center gap-2">
                     <Text className="text-xs font-semibold text-gray-400">
-                      {tab} ({counts[tab]})
+                      {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
                     </Text>
                   </TouchableOpacity>
                 ),
@@ -197,12 +201,16 @@ export default function BrandCampaigns() {
               className="w-24 h-24 opacity-50 mb-2"
             />
             <Text className="text-base font-bold text-gray-800">
-              No {activeTab.toLowerCase()} campaigns
+              {t('ScreensBrandCampaigns.emptyTitle', {
+                status: t(`ScreensBrandCampaigns.tabs.${activeTab}`).toLowerCase(),
+              })}
             </Text>
             <Text className="text-xs text-gray-400 text-center px-12">
               {activeTab === 'Active'
-                ? 'Post a campaign request to start receiving creator applications.'
-                : `You have no campaigns in ${activeTab.toLowerCase()} status.`}
+                ? t('ScreensBrandCampaigns.emptyActiveSubtitle')
+                : t('ScreensBrandCampaigns.emptyOtherSubtitle', {
+                    status: t(`ScreensBrandCampaigns.tabs.${activeTab}`).toLowerCase(),
+                  })}
             </Text>
           </View>
         ) : (
@@ -228,7 +236,9 @@ export default function BrandCampaigns() {
             className="px-6 py-3 flex-row items-center gap-2"
             activeOpacity={0.8}>
             <Plus size={20} color="#FFFFFF" />
-            <Text className="text-white font-bold text-sm">Post Request</Text>
+            <Text className="text-white font-bold text-sm">
+              {t('ScreensBrandCampaigns.postRequest')}
+            </Text>
             <ArrowUpRight size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </LinearGradient>
@@ -244,6 +254,7 @@ function RealCampaignCard({
   campaign: BrandCampaign;
   onPress: () => void;
 }) {
+  const {t} = useTranslation();
   const total = campaign.applicationsTotal || 0;
   const pending = campaign.applicationsPending || 0;
   const slots = campaign.maxInfluencers || 0;
@@ -307,10 +318,12 @@ function RealCampaignCard({
           </Text>
         ) : null}
         <View className="flex-row flex-wrap" style={{gap: 6, marginTop: 4}}>
-          <Pill label="Budget" value={budget} />
-          <Pill label="Slots" value={`${total}/${slots || '∞'}`} />
-          {pending > 0 ? <Pill label="Pending" value={String(pending)} highlight /> : null}
-          {deadline ? <Pill label="Deadline" value={deadline} /> : null}
+          <Pill label={t('ScreensBrandCampaigns.pillBudget')} value={budget} />
+          <Pill label={t('ScreensBrandCampaigns.pillSlots')} value={`${total}/${slots || '∞'}`} />
+          {pending > 0 ? (
+            <Pill label={t('ScreensBrandCampaigns.pillPending')} value={String(pending)} highlight />
+          ) : null}
+          {deadline ? <Pill label={t('ScreensBrandCampaigns.pillDeadline')} value={deadline} /> : null}
         </View>
       </View>
     </TouchableOpacity>

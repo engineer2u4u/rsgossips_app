@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, Image, Pressable} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import {
   Heart,
@@ -54,22 +55,23 @@ const contributors = [
 ];
 
 export default function CommunityFeed() {
+  const {t} = useTranslation();
   return (
     <View className="bg-white px-4 py-8">
       {/* Header */}
       <View className="mb-5">
         <Text className="text-xl font-black text-slate-900 uppercase tracking-tight">
-          Creator Community
+          {t('CommunityFeed.title')}
         </Text>
         <Text className="text-xs text-slate-400 font-medium mt-1">
-          Connect with other creators, share wins, and get advice.
+          {t('CommunityFeed.subtitle')}
         </Text>
       </View>
 
       {/* Start Discussion */}
       <Pressable className="bg-purple-600 flex-row items-center justify-center py-3.5 rounded-2xl mb-5" style={{gap: 8}}>
         <Plus size={16} color="white" />
-        <Text className="text-white font-bold text-sm">Start Discussion</Text>
+        <Text className="text-white font-bold text-sm">{t('CommunityFeed.startDiscussion')}</Text>
       </Pressable>
 
       {/* Posts */}
@@ -93,7 +95,7 @@ export default function CommunityFeed() {
                   {post.pinned && (
                     <View className="bg-purple-50 px-2 py-0.5 rounded-full">
                       <Text className="text-purple-600 text-[9px] font-black uppercase">
-                        Pinned
+                        {t('CommunityFeed.pinned')}
                       </Text>
                     </View>
                   )}
@@ -140,7 +142,7 @@ export default function CommunityFeed() {
               <View className="flex-row items-center" style={{gap: 4}}>
                 <Flame size={12} color="#F97316" />
                 <Text className="text-[11px] text-orange-500 font-bold">
-                  Trending
+                  {t('CommunityFeed.trending')}
                 </Text>
               </View>
             </View>
@@ -151,7 +153,7 @@ export default function CommunityFeed() {
       {/* Load More */}
       <Pressable className="bg-slate-50 py-3 rounded-xl items-center mt-4 mb-6">
         <Text className="text-slate-500 text-xs font-bold">
-          Load more discussions
+          {t('CommunityFeed.loadMore')}
         </Text>
       </Pressable>
 
@@ -159,7 +161,7 @@ export default function CommunityFeed() {
       <View style={{gap: 12}}>
         <View className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
           <Text className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4">
-            Community Stats
+            {t('CommunityFeed.communityStats')}
           </Text>
           <View className="flex-row" style={{gap: 10}}>
             <View className="flex-1 items-center bg-slate-50 py-5 rounded-2xl">
@@ -168,7 +170,7 @@ export default function CommunityFeed() {
                 12.4k
               </Text>
               <Text className="text-[10px] text-slate-400 font-bold">
-                Members
+                {t('CommunityFeed.members')}
               </Text>
             </View>
             <View className="flex-1 items-center bg-slate-50 py-5 rounded-2xl">
@@ -177,7 +179,7 @@ export default function CommunityFeed() {
                 342
               </Text>
               <Text className="text-[10px] text-slate-400 font-bold">
-                Online
+                {t('CommunityFeed.online')}
               </Text>
             </View>
           </View>
@@ -185,7 +187,7 @@ export default function CommunityFeed() {
 
         <View className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
           <Text className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-4">
-            Top Contributors
+            {t('CommunityFeed.topContributors')}
           </Text>
           <View style={{gap: 10}}>
             {contributors.map((c, i) => (
@@ -202,7 +204,7 @@ export default function CommunityFeed() {
                   </Text>
                 </View>
                 <Text className="text-xs font-bold text-slate-400">
-                  {c.points} pts
+                  {t('CommunityFeed.points', {points: c.points})}
                 </Text>
               </View>
             ))}

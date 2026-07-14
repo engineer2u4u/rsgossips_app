@@ -21,6 +21,7 @@ import {useAuth} from '../context/AuthContext';
 import {calculateCampaignMatchScore} from '../utils/matchScore';
 import {invokeFn} from '../lib/api';
 import {useRoute} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
 
 const TABS = ['Active', 'Applied', 'Completed'];
 const PAGE_SIZE = 10;
@@ -94,6 +95,7 @@ const FALLBACK_CAMPAIGNS: CampaignData[] = [
 ];
 
 export default function InfluencerCampaign() {
+  const {t} = useTranslation();
   const {profile, user} = useAuth();
   const route = useRoute<any>();
   // Optional brand-name param — coming from "Brands you'll love" tiles or
@@ -378,10 +380,10 @@ export default function InfluencerCampaign() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-2xl font-bold text-slate-800">
-                Campaigns
+                {t('ScreensInfluencerCampaign.title')}
               </Text>
               <Text className="text-xs text-slate-400 mt-1 font-medium">
-                Track and manage collaborations
+                {t('ScreensInfluencerCampaign.subtitle')}
               </Text>
             </View>
             <TouchableOpacity
@@ -395,7 +397,7 @@ export default function InfluencerCampaign() {
           <View className="flex-row items-center bg-white rounded-xl px-4 h-11 shadow-sm border border-slate-100">
             <Search size={18} color="#94A3B8" />
             <TextInput
-              placeholder="Search campaigns..."
+              placeholder={t('ScreensInfluencerCampaign.searchPlaceholder')}
               placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -406,7 +408,9 @@ export default function InfluencerCampaign() {
           {/* Tab Switcher — count appears next to the label in parentheses */}
           <View className="bg-white p-1.5 rounded-2xl flex-row shadow-sm border border-slate-50" style={{gap: 4}}>
             {TABS.map(tab => {
-              const label = `${tab} (${tabCounts[tab] ?? 0})`;
+              const label = t(`ScreensInfluencerCampaign.tabs.${tab}`, {
+                count: tabCounts[tab] ?? 0,
+              });
               return activeTab === tab ? (
                 <LinearGradient
                   key={tab}
@@ -436,7 +440,7 @@ export default function InfluencerCampaign() {
             <View className="py-20 items-center" style={{gap: 12}}>
               <ActivityIndicator size="large" color="#9810FA" />
               <Text className="text-sm font-bold text-slate-400">
-                Loading campaigns...
+                {t('ScreensInfluencerCampaign.loading')}
               </Text>
             </View>
           ) : (
@@ -452,7 +456,9 @@ export default function InfluencerCampaign() {
               {filteredCampaigns.length === 0 && (
                 <View className="py-20 bg-white rounded-[32px] items-center">
                   <Text className="text-sm font-bold text-slate-400">
-                    No {activeTab.toLowerCase()} campaigns found.
+                    {t('ScreensInfluencerCampaign.noCampaigns', {
+                      tab: t(`ScreensInfluencerCampaign.tabsLower.${activeTab}`),
+                    })}
                   </Text>
                 </View>
               )}

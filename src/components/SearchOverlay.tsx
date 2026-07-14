@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {Search, X, Clock} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   visible: boolean;
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export const SearchOverlay = ({visible, onClose, recentSearches}: Props) => {
+  const {t} = useTranslation();
   const [query, setQuery] = useState('');
 
   return (
@@ -28,7 +30,7 @@ export const SearchOverlay = ({visible, onClose, recentSearches}: Props) => {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search campaigns..."
+              placeholder={t('SearchOverlay.searchPlaceholder')}
               placeholderTextColor="#94A3B8"
               autoFocus
               className="flex-1 text-sm text-slate-700"
@@ -41,7 +43,7 @@ export const SearchOverlay = ({visible, onClose, recentSearches}: Props) => {
           {/* Recent Searches */}
           <ScrollView className="px-6 pt-4">
             <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-              Recent Searches
+              {t('SearchOverlay.recentSearches')}
             </Text>
             {recentSearches.map(term => (
               <TouchableOpacity

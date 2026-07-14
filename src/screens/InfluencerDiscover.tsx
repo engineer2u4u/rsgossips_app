@@ -20,6 +20,7 @@ import BottomNav from '../components/BottomNav';
 import {useAuth} from '../context/AuthContext';
 import {calculateBrandMatchScore} from '../utils/matchScore';
 import {invokeFn} from '../lib/api';
+import {useTranslation} from 'react-i18next';
 
 const PAGE_SIZE = 10;
 const LOAD_MORE_STEP = 6;
@@ -124,6 +125,7 @@ const FALLBACK_BRANDS: Brand[] = [
 ];
 
 export default function InfluencerDiscover() {
+  const {t} = useTranslation();
   const {profile} = useAuth();
   const navigation = useNavigation<any>();
   const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
@@ -290,10 +292,10 @@ export default function InfluencerDiscover() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-2xl font-bold text-slate-800">
-                Discover Brands
+                {t('ScreensInfluencerDiscover.title')}
               </Text>
               <Text className="text-xs text-slate-400 mt-1 font-medium">
-                Find the perfect collaboration
+                {t('ScreensInfluencerDiscover.subtitle')}
               </Text>
             </View>
             <TouchableOpacity
@@ -307,7 +309,7 @@ export default function InfluencerDiscover() {
           <View className="flex-row items-center bg-white rounded-xl px-4 h-11 shadow-sm border border-slate-100">
             <Search size={18} color="#94A3B8" />
             <TextInput
-              placeholder="Search brands..."
+              placeholder={t('ScreensInfluencerDiscover.searchPlaceholder')}
               placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -322,13 +324,13 @@ export default function InfluencerDiscover() {
             <View className="py-20 items-center" style={{gap: 12}}>
               <ActivityIndicator size="large" color="#9810FA" />
               <Text className="text-sm font-bold text-slate-400">
-                Loading brands...
+                {t('ScreensInfluencerDiscover.loading')}
               </Text>
             </View>
           ) : filteredBrands.length === 0 ? (
             <View className="py-20 bg-white rounded-[32px] items-center">
               <Text className="text-sm font-bold text-slate-400">
-                No brands match these filters.
+                {t('ScreensInfluencerDiscover.empty')}
               </Text>
             </View>
           ) : (

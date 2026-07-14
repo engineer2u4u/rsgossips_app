@@ -31,6 +31,7 @@ import {
 } from 'react-native';
 import {Upload, X} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {
   detectInstagramLinkType,
@@ -68,6 +69,7 @@ export default function SubmitDeliverablesModal({
   onClose,
   onSuccess,
 }: Props) {
+  const {t} = useTranslation();
   const isRevision = campaign?.applicationStatus === 'revision_needed';
 
   // Parse revision info — the brand can send a JSON blob with a note + the
@@ -193,9 +195,7 @@ export default function SubmitDeliverablesModal({
   const handleSubmit = async () => {
     if (!allFilled || submitting) return;
     if (hasDuplicates) {
-      setError(
-        "You've pasted the same link more than once. Each deliverable needs a unique URL.",
-      );
+      setError(t('SubmitDeliverablesModal.duplicateError'));
       return;
     }
     setSubmitting(true);
@@ -213,20 +213,22 @@ export default function SubmitDeliverablesModal({
       if (data?.success) {
         onSuccess();
       } else {
-        setError('Unexpected response from the server.');
+        setError(t('SubmitDeliverablesModal.unexpectedResponse'));
       }
     } catch (err) {
       if (err instanceof EdgeFunctionError) {
         setError(err.message);
       } else {
-        setError((err as Error)?.message || 'Failed to submit');
+        setError((err as Error)?.message || t('SubmitDeliverablesModal.failedToSubmit'));
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const heading = isLiveLinksFlow ? 'Submit Live Links' : 'Upload Submissions';
+  const heading = isLiveLinksFlow
+    ? t('SubmitDeliverablesModal.submitLiveLinks')
+    : t('SubmitDeliverablesModal.uploadSubmissions');
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -240,11 +242,14 @@ export default function SubmitDeliverablesModal({
               {heading}
             </Text>
             <Text style={styles.subheading} numberOfLines={1}>
-              {campaign?.title} · {deliverables.length} deliverables
+              {t('SubmitDeliverablesModal.subheading', {
+                title: campaign?.title,
+                count: deliverables.length,
+              })}
             </Text>
             {isLiveLinksFlow ? (
               <Text style={styles.liveHint}>
-                Post your content on Instagram, then paste the live post links below.
+                {t('SubmitDeliverablesModal.liveHint')}
               </Text>
             ) : null}
           </View>
@@ -264,15 +269,15 @@ export default function SubmitDeliverablesModal({
 
           {isRevision && revisionNote ? (
             <View style={styles.revisionBox}>
-              <Text style={styles.revisionLabel}>Revision Note</Text>
+              <Text style={styles.revisionLabel}>{t('SubmitDeliverablesModal.revisionNoteLabel')}</Text>
               <Text style={styles.revisionNote}>{revisionNote}</Text>
             </View>
           ) : null}
 
           <Text style={styles.intro}>
             {isRevision
-              ? 'Update the highlighted deliverables below and resubmit.'
-              : 'Provide the link for each deliverable. All links are required before submitting.'}
+              ? t('SubmitDeliverablesModal.introRevision')
+              : t('SubmitDeliverablesModal.introNormal')}
           </Text>
 
           {deliverables.map(d => {
@@ -292,10 +297,10 @@ export default function SubmitDeliverablesModal({
                 <View style={styles.rowHeader}>
                   <Text style={styles.rowLabel}>{d.label}</Text>
                   {isRevision && d.needsRevision ? (
-                    <Text style={styles.revisionBadge}>NEEDS REVISION</Text>
+                    <Text style={styles.revisionBadge}>{t('SubmitDeliverablesModal.needsRevisionBadge')}</Text>
                   ) : null}
                   {dimmed ? (
-                    <Text style={styles.kept}>KEEP AS-IS</Text>
+                    <Text style={styles.kept}>{t('SubmitDeliverablesModal.keepAsIs')}</Text>
                   ) : null}
                 </View>
                 <TextInput
@@ -313,22 +318,26 @@ export default function SubmitDeliverablesModal({
                   <View style={styles.analysisRow}>
                     {analysis.detected && analysis.detected !== 'unknown' ? (
                       <Text style={styles.detected}>
-                        {labelForLinkType(analysis.detected)} detected
+                        {t('SubmitDeliverablesModal.detectedType', {
+                          type: labelForLinkType(analysis.detected),
+                        })}
                       </Text>
                     ) : analysis.detected === 'unknown' ? (
                       <Text style={styles.warn}>
-                        Couldn't detect type — make sure it's an Instagram URL.
+                        {t('SubmitDeliverablesModal.couldntDetect')}
                       </Text>
                     ) : null}
                     {analysis.mismatch ? (
                       <Text style={styles.mismatch}>
-                        Expected {labelForLinkType(analysis.expected)} but pasted{' '}
-                        {labelForLinkType(analysis.detected)}.
+                        {t('SubmitDeliverablesModal.mismatchTypes', {
+                          expected: labelForLinkType(analysis.expected),
+                          detected: labelForLinkType(analysis.detected),
+                        })}
                       </Text>
                     ) : null}
                     {analysis.duplicate ? (
                       <Text style={styles.mismatch}>
-                        This URL is also used in another row.
+                        {t('SubmitDeliverablesModal.duplicateRow')}
                       </Text>
                     ) : null}
                   </View>
@@ -339,7 +348,7 @@ export default function SubmitDeliverablesModal({
 
           {deliverables.length === 0 ? (
             <Text style={styles.warn}>
-              No deliverables on this campaign. Contact the brand if this looks wrong.
+              {t('SubmitDeliverablesModal.noDeliverables')}
             </Text>
           ) : null}
         </ScrollView>
@@ -347,7 +356,7 @@ export default function SubmitDeliverablesModal({
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity onPress={onClose} style={[styles.btn, styles.btnGhost]}>
-            <Text style={styles.btnGhostText}>Cancel</Text>
+            <Text style={styles.btnGhostText}>{t('SubmitDeliverablesModal.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSubmit}
@@ -364,10 +373,10 @@ export default function SubmitDeliverablesModal({
                 <Upload size={16} color="white" />
                 <Text style={styles.btnPrimaryText}>
                   {isLiveLinksFlow
-                    ? 'Submit Live Links'
+                    ? t('SubmitDeliverablesModal.submitLiveLinks')
                     : isRevision
-                      ? 'Resubmit'
-                      : 'Submit'}
+                      ? t('SubmitDeliverablesModal.resubmit')
+                      : t('SubmitDeliverablesModal.submit')}
                 </Text>
               </>
             )}

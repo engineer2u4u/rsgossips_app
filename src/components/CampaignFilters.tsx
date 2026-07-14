@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import {X} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 type FilterData = {
   categories: string[];
@@ -22,6 +23,7 @@ type Props = {
 };
 
 export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
+  const {t} = useTranslation();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
@@ -47,14 +49,18 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
             <TouchableOpacity onPress={onClose}>
               <X size={24} color="#94A3B8" />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-800">Filters</Text>
+            <Text className="text-lg font-bold text-slate-800">
+              {t('CampaignFilters.title')}
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 setSelectedCategories([]);
                 setSelectedPlatforms([]);
                 setSelectedStatus([]);
               }}>
-              <Text className="text-xs font-bold text-[#E60076]">Reset</Text>
+              <Text className="text-xs font-bold text-[#E60076]">
+                {t('CampaignFilters.reset')}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -62,7 +68,7 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
             {/* Categories */}
             <View className="mb-6">
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                Categories
+                {t('CampaignFilters.categories')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {filterData.categories.map(cat => (
@@ -92,7 +98,7 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
             {/* Platforms */}
             <View className="mb-6">
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                Platforms
+                {t('CampaignFilters.platforms')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {filterData.platforms.map(p => (
@@ -126,7 +132,7 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
             {/* Status */}
             <View className="mb-6">
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                Status
+                {t('CampaignFilters.status')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {filterData.statusOptions.map(s => (
@@ -165,7 +171,7 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
                 onPress={onClose}
                 className="py-4 items-center">
                 <Text className="text-white font-bold text-sm">
-                  Apply Filters
+                  {t('CampaignFilters.applyFilters')}
                 </Text>
               </TouchableOpacity>
             </LinearGradient>

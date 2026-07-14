@@ -1,4 +1,5 @@
 import React from 'react';
+import {useTranslation} from 'react-i18next';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {CheckCircle, ShieldCheck, Zap} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -38,6 +39,7 @@ interface Props {
 }
 
 function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
+  const {t} = useTranslation();
   const scoreColor =
     matchScore >= 80
       ? {text: 'text-emerald-500', bg: 'bg-emerald-50'}
@@ -105,8 +107,16 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
       {(() => {
         const score =
           typeof brand.trustScore === 'number' ? brand.trustScore : null;
-        const band =
+        const bandRaw =
           brand.trustBand || (score !== null ? bandForScore(score) : '—');
+        const bandLabels: Record<string, string> = {
+          Excellent: t('BrandCard.bands.excellent'),
+          'Very Good': t('BrandCard.bands.veryGood'),
+          Good: t('BrandCard.bands.good'),
+          Fair: t('BrandCard.bands.fair'),
+          Poor: t('BrandCard.bands.poor'),
+        };
+        const band = bandLabels[bandRaw] || bandRaw;
         return (
           <View className="mt-3">
             <View
@@ -126,7 +136,7 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
               <View className="flex-row items-center" style={{gap: 6}}>
                 <ShieldCheck size={14} color="#fff" />
                 <Text className="text-[10px] font-black uppercase tracking-wider text-white">
-                  Trust
+                  {t('BrandCard.trust')}
                 </Text>
               </View>
               <Text className="text-[11px] font-black text-white tracking-wide">

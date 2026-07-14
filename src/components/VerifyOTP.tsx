@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onNext: (otp: string) => void;
@@ -24,6 +25,7 @@ export default function VerifyOTP({
   setOtp = () => {},
   phoneNumber = '+91 98765 43210',
 }: Props) {
+  const { t } = useTranslation();
   const [timer, setTimer] = useState(RESEND_COOLDOWN_SECONDS);
   const inputs = useRef<Array<TextInput | null>>([]);
 
@@ -103,10 +105,10 @@ export default function VerifyOTP({
     <View className="px-6" style={{gap: 24, paddingTop: 8, paddingBottom: 24}}>
       {/* TITLE */}
       <View className="items-center" style={{gap: 8}}>
-        <Text className="text-2xl font-bold text-slate-900">Verify OTP</Text>
+        <Text className="text-2xl font-bold text-slate-900">{t('VerifyOTP.title')}</Text>
 
         <Text className="text-sm text-slate-500 text-center" style={{lineHeight: 20}}>
-          Enter the 6-digit code sent to{'\n'}
+          {t('VerifyOTP.enterCode')}{'\n'}
           <Text className="font-semibold text-slate-900">{phoneNumber}</Text>
         </Text>
       </View>
@@ -114,7 +116,7 @@ export default function VerifyOTP({
       {/* WhatsApp delivery hint */}
       <View className="px-3 py-2.5 bg-emerald-50 border border-emerald-100 rounded-lg">
         <Text className="text-xs text-emerald-700 text-center" style={{lineHeight: 18}}>
-          Your OTP just slid into WhatsApp — say hi to{' '}
+          {t('VerifyOTP.whatsappHint')}{' '}
           <Text className="font-bold">Rgossips Media</Text>!
         </Text>
       </View>
@@ -158,7 +160,7 @@ export default function VerifyOTP({
         }`}
       >
         <Text className="text-white text-lg font-semibold">
-          {loading ? 'Verifying...' : 'Verify & Continue'}
+          {loading ? t('VerifyOTP.verifying') : t('VerifyOTP.verifyContinue')}
         </Text>
       </Pressable>
 
@@ -173,14 +175,14 @@ export default function VerifyOTP({
       <View className="items-center" style={{paddingTop: 4}}>
         {timer > 0 ? (
           <Text className="text-sm text-slate-400 font-medium">
-            Resend code in{' '}
+            {t('VerifyOTP.resendCodeIn')}{' '}
             <Text className="text-[#6347F9] font-bold">
               {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
             </Text>
           </Text>
         ) : (
           <Pressable onPress={handleResend}>
-            <Text className="text-sm text-[#6347F9] font-bold">Resend OTP</Text>
+            <Text className="text-sm text-[#6347F9] font-bold">{t('VerifyOTP.resendOtp')}</Text>
           </Pressable>
         )}
       </View>

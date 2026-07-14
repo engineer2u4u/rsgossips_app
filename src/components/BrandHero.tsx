@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
 import { Search, Plus } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const BrandHero: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <View className="w-full bg-[#2a1a8f] px-6 pt-12 pb-16 rounded-b-[40px]">
       {/* TOP ROW */}
@@ -16,7 +18,7 @@ const BrandHero: React.FC = () => {
 
           <View>
             <Text className="text-slate-300 text-xs font-medium">
-              Welcome back
+              {t('BrandHero.welcomeBack')}
             </Text>
 
             <Text className="text-white font-bold text-sm">Versace</Text>
@@ -26,7 +28,7 @@ const BrandHero: React.FC = () => {
         {/* Invite Button */}
         <Pressable className="flex-row items-center gap-2 bg-white/10 border border-white/20 py-2 px-4 rounded-full">
           <Text className="text-white text-xs font-bold">
-            Invite & Earn ₹2500
+            {t('BrandHero.inviteAndEarn')}
           </Text>
 
           <View className="bg-white rounded-full p-1">
@@ -38,8 +40,8 @@ const BrandHero: React.FC = () => {
       {/* HERO CONTENT */}
       <View className="gap-6">
         <Text className="text-white text-4xl font-extrabold leading-tight">
-          Connect with the{'\n'}
-          right creators, <Text className="text-indigo-300">fast.</Text>
+          {t('BrandHero.heroTitle')}{' '}
+          <Text className="text-indigo-300">{t('BrandHero.heroEmphasis')}</Text>
         </Text>
 
         {/* ACTION BUTTONS */}
@@ -47,13 +49,13 @@ const BrandHero: React.FC = () => {
           <Pressable className="flex-row items-center justify-center gap-2 bg-white px-8 py-3 rounded-2xl">
             <Search size={16} color="black" />
             <Text className="text-black font-semibold text-sm">
-              Browse Creators
+              {t('BrandHero.browseCreators')}
             </Text>
           </Pressable>
 
           <Pressable className="bg-[#5B3DF5] px-8 py-3 rounded-2xl">
             <Text className="text-white font-semibold text-sm text-center">
-              View Active Campaigns
+              {t('BrandHero.viewActiveCampaigns')}
             </Text>
           </Pressable>
         </View>

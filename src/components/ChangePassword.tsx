@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import {ChevronLeft, Lock} from 'lucide-react-native';
+import {useTranslation} from 'react-i18next';
 
 interface ChangePasswordProps {
   onBack: () => void;
@@ -47,11 +48,12 @@ const PasswordField = ({label, placeholder}: {label: string; placeholder: string
 );
 
 const ChangePassword: React.FC<ChangePasswordProps> = ({onBack}) => {
+  const {t} = useTranslation();
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-slate-50">
-      <PageHeader title="Change Password" onBack={onBack} />
+      <PageHeader title={t('ChangePassword.title')} onBack={onBack} />
 
       <ScrollView className="flex-1 px-6 pt-8" keyboardShouldPersistTaps="handled">
         {/* Info Banner */}
@@ -65,17 +67,28 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({onBack}) => {
             elevation: 3,
           }}>
           <Text className="text-sm text-[#E60076] font-medium">
-            Choose a strong password with at least 8 characters, including uppercase, lowercase, numbers, and symbols.
+            {t('ChangePassword.infoBanner')}
           </Text>
         </View>
 
-        <PasswordField label="Current Password" placeholder="Enter current password" />
-        <PasswordField label="New Password" placeholder="Enter new password" />
-        <PasswordField label="Confirm New Password" placeholder="Re-enter new password" />
+        <PasswordField
+          label={t('ChangePassword.currentPasswordLabel')}
+          placeholder={t('ChangePassword.currentPasswordPlaceholder')}
+        />
+        <PasswordField
+          label={t('ChangePassword.newPasswordLabel')}
+          placeholder={t('ChangePassword.newPasswordPlaceholder')}
+        />
+        <PasswordField
+          label={t('ChangePassword.confirmPasswordLabel')}
+          placeholder={t('ChangePassword.confirmPasswordPlaceholder')}
+        />
 
         {/* Update Button */}
         <TouchableOpacity className="items-center justify-center mt-4 mb-8 py-4 rounded-xl bg-[#E60076]">
-          <Text className="text-white font-bold text-base">Update Password</Text>
+          <Text className="text-white font-bold text-base">
+            {t('ChangePassword.updateButton')}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
