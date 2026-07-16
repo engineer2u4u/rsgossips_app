@@ -84,7 +84,19 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         exists?: boolean;
         profile?: Profile;
         role?: string;
+        error?: string;
       }>('check-profile', {userId});
+
+      // check-profile returns `{error}` (no `exists`/`role`) when its DB read
+      // fails. That is NOT "account removed" — treat it like the catch below
+      // and keep the current session/role. Clearing role here would flip
+      // RootStack to the splash (unmounting the whole navigator mid-flow,
+      // which surfaces as "Couldn't find a navigation context") and the
+      // signOut below would kick a paying user out on a blip.
+      if (data?.error) {
+        console.warn('check-profile transient error, keeping session:', data.error);
+        return;
+      }
 
       if (data?.exists && data.profile) {
         setProfile(data.profile);
@@ -119,10 +131,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         }
       }
     } catch (err) {
-      // Transient error (network / edge fn) — do NOT sign out; just clear.
-      console.error('Failed to fetch profile:', err);
-      setProfile(null);
-      setRole(null);
+      // Transient error (network / edge fn) — do NOT sign out, and do NOT
+      // clear role/profile. Nulling role flips RootStack to the splash, which
+      // unmounts the navigator out from under whatever flow is mid-run (the
+      // post-payment refreshProfile is the common case) and throws
+      // "Couldn't find a navigation context". Keep the last-known good state;
+      // the next successful refresh corrects it.
+      console.error('Failed to fetch profile (keeping session):', err);
     }
   }, []);
 
