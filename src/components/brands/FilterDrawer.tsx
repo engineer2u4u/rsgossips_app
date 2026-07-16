@@ -13,6 +13,7 @@
 import React, {useEffect, useState} from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -314,7 +315,7 @@ const s = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 18,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },

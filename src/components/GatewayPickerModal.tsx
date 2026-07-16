@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, View, Text, Pressable, Image} from 'react-native';
+import {Modal, View, Text, Pressable, Image, Platform} from 'react-native';
 import Svg, {Path, SvgUri} from 'react-native-svg';
 import {useTranslation} from 'react-i18next';
 
@@ -36,7 +36,10 @@ export default function GatewayPickerModal({
         style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
         {/* Inner pressable swallows taps so they don't bubble up and
             dismiss the modal. */}
-        <Pressable onPress={() => {}} className="bg-white rounded-t-[28px] pb-6">
+        <Pressable
+          onPress={() => {}}
+          className="bg-white rounded-t-[28px]"
+          style={{paddingBottom: Platform.OS === 'ios' ? 34 : 24}}>
           <View className="items-center pt-3">
             <View className="w-10 h-1 rounded-full bg-slate-200" />
           </View>

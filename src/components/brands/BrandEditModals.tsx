@@ -535,7 +535,9 @@ const s = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     gap: 8,
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 14,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },

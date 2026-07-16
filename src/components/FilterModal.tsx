@@ -322,8 +322,8 @@ export default function FilterModal({
 
           {/* Footer Buttons */}
           <View
-            className="px-6 py-4 border-t border-slate-100 flex-row"
-            style={{gap: 12}}>
+            className="px-6 pt-4 border-t border-slate-100 flex-row"
+            style={{gap: 12, paddingBottom: Platform.OS === 'ios' ? 32 : 16}}>
             <TouchableOpacity
               onPress={handleReset}
               className="flex-1 h-14 rounded-2xl bg-slate-50 items-center justify-center">
