@@ -509,7 +509,13 @@ export default function InfluencerPricing() {
       (billing === 'annual'
         ? PLAN_PRICING[baseId]?.annual
         : PLAN_PRICING[baseId]?.monthly);
-    const contact = formatPhoneForRazorpay(profile?.phone);
+    // Prefill sources: the influencer_profiles row often has no email/phone
+    // (Supabase keeps the canonical email on the auth user), so fall back to
+    // user.* — matching the web pricing page. Without this the Razorpay sheet
+    // opens with empty email + phone fields.
+    const email = profile?.email || user?.email || '';
+    const contact = formatPhoneForRazorpay(profile?.phone || user?.phone);
+    const name = profile?.full_name || user?.user_metadata?.full_name || '';
     const created = await invokeFn<{
       subscription_id?: string;
       key_id?: string;
@@ -520,8 +526,8 @@ export default function InfluencerPricing() {
       planId: razorpayPlanId,
       plan: baseId,
       cycle: billing,
-      email: profile?.email || '',
-      name: profile?.full_name || '',
+      email,
+      name,
       contact,
       applyRc: applyRc && availableRc > 0,
       planPriceRupees,
@@ -556,9 +562,9 @@ export default function InfluencerPricing() {
           cycle: billing,
         }),
         prefill: {
-          email: profile?.email || '',
+          email,
           contact,
-          name: profile?.full_name || '',
+          name,
         },
         notes: {
           user_id: String(user?.id || ''),
