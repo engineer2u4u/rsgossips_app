@@ -6,9 +6,11 @@
 // or discards.
 //
 // Filter shape matches web (`src/components/brands/FilterDrawer.jsx`):
-//   { Categories[], "Follower Count"[], "Creator Type"[], Location[] }
-// Gender / Content Language are displayed on web but not yet wired —
-// we skip them here too so we don't ship a filter that does nothing.
+//   { Categories[], "Follower Count"[], "Creator Type"[], Location[],
+//     "Content Language"[] }
+// Gender is displayed on web but not yet wired — we skip it here too so we
+// don't ship a filter that does nothing. Content Language IS wired (matches
+// against each influencer's `languages` array from list-influencers).
 
 import React, {useEffect, useState} from 'react';
 import {
@@ -22,6 +24,7 @@ import {
 } from 'react-native';
 import {Check, SlidersHorizontal, X} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import {CONTENT_LANGUAGES} from '../../utils/contentLanguages';
 
 export type FilterValues = Record<string, string[]>;
 
@@ -47,6 +50,8 @@ export const FILTER_DATA: Record<string, string[]> = {
   'Follower Count': ['0 - 10k', '10k - 50k', '50k - 100k', '100k - 500k', '500k - 1M', '1M+'],
   'Creator Type': ['Mega', 'Macro', 'Micro', 'Nano'],
   Location: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Remote'],
+  // Language names are proper nouns — rendered verbatim, never translated.
+  'Content Language': CONTENT_LANGUAGES,
 };
 
 export const FILTER_GROUPS = Object.keys(FILTER_DATA);

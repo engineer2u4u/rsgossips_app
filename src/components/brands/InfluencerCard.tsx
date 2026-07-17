@@ -22,6 +22,7 @@ export type SearchInfluencer = {
   follows_count?: number;
   media_count?: number;
   categories?: string[];
+  languages?: string[];
   city?: string;
 };
 

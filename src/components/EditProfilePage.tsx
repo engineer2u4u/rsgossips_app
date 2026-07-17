@@ -33,6 +33,7 @@ import {invokeFn} from '../lib/api';
 import {pickFromLibrary} from '../lib/image-picker';
 import {uploadProfilePhoto} from '../lib/image-upload';
 import {useProfilePhoto} from '../utils/photoUrl';
+import {CONTENT_LANGUAGES} from '../utils/contentLanguages';
 
 const CATEGORY_OPTIONS = [
   'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
@@ -69,6 +70,9 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const [youtubeUrl, setYoutubeUrl] = useState(profile?.youtube_url || '');
   const [facebookUrl, setFacebookUrl] = useState(profile?.facebook_url || '');
   const [categories, setCategories] = useState<string[]>(profile?.categories || []);
+  const [contentLanguages, setContentLanguages] = useState<string[]>(
+    profile?.content_languages || [],
+  );
   const [services, setServices] = useState<string[]>(profile?.services || []);
   // service_rates from the DB comes back as Record<string, number>; the form
   // works with strings (text inputs). Coerce on init, coerce back on save.
@@ -177,6 +181,7 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
         youtubeUrl,
         facebookUrl,
         categories,
+        contentLanguages,
         services,
         serviceRates,
       });
@@ -458,6 +463,41 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
                       isSelected ? 'text-white' : 'text-slate-600'
                     }`}>
                     {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Content Languages — languages the creator makes content in.
+              Mirrors the Categories chip multi-select above; language names
+              are proper nouns rendered verbatim (never translated). */}
+          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
+            {t('EditProfilePage.section.contentLanguages')}
+          </Text>
+          <View className="flex-row flex-wrap" style={{gap: 8}}>
+            {CONTENT_LANGUAGES.map(lang => {
+              const isSelected = contentLanguages.includes(lang);
+              return (
+                <TouchableOpacity
+                  key={lang}
+                  onPress={() =>
+                    setContentLanguages(prev =>
+                      prev.includes(lang)
+                        ? prev.filter(l => l !== lang)
+                        : [...prev, lang],
+                    )
+                  }
+                  className={`px-4 py-2 rounded-full border ${
+                    isSelected
+                      ? 'bg-[#E60076] border-[#E60076]'
+                      : 'bg-white border-slate-200'
+                  }`}>
+                  <Text
+                    className={`text-xs font-bold ${
+                      isSelected ? 'text-white' : 'text-slate-600'
+                    }`}>
+                    {lang}
                   </Text>
                 </TouchableOpacity>
               );

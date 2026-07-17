@@ -172,6 +172,10 @@ export default function CompleteProfileCard() {
   const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
   const ringOffset = RING_CIRCUMFERENCE - RING_CIRCUMFERENCE * (completedCount / 5);
 
+  // Hide the whole "Get Your First Brand Deal" card once all 5 steps are done.
+  // (Placed after all hooks so the Rules of Hooks aren't violated.)
+  if (completedCount >= 5) return null;
+
   return (
     <View className="w-full mb-4">
       <View

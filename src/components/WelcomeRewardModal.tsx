@@ -16,9 +16,10 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Gift, Heart, Sparkles, Star } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../utils/supabase';
-import { BRAND_GRADIENT_WARM } from '../theme/brand';
+import {useAuth} from '../context/AuthContext';
+import {supabase} from '../utils/supabase';
+import {invokeFn} from '../lib/api';
+import {BRAND_GRADIENT_WARM} from '../theme/brand';
 
 // First-time welcome-reward celebration for new influencer signups. On
 // signup, create-profile grants 50 RC (locked 30 days) + 50% off the first
@@ -42,7 +43,7 @@ const CONFETTI_COLORS = [
 export default function WelcomeRewardModal() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const {user, profile, refreshProfile} = useAuth();
   const [open, setOpen] = useState(false);
   const [referrer, setReferrer] = useState<any>(null);
 
@@ -64,7 +65,10 @@ export default function WelcomeRewardModal() {
   ).current;
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !profile) return;
+    // Server-side flag is authoritative — once dismissed it never re-shows on
+    // any device / after AsyncStorage is cleared.
+    if (profile.welcome_reward_seen) return;
     let cancelled = false;
     (async () => {
       try {
@@ -104,7 +108,7 @@ export default function WelcomeRewardModal() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, profile?.welcome_reward_seen]);
 
   // Kick off animations when the modal opens.
   useEffect(() => {
@@ -159,6 +163,17 @@ export default function WelcomeRewardModal() {
       /* ignore */
     }
     setOpen(false);
+    // Persist server-side so it never re-shows on any device / after a storage
+    // clear. Fire-and-forget; the local suppressor covers this session.
+    if (user?.id) {
+      invokeFn('update-profile', {
+        userId: user.id,
+        table: 'influencer_profiles',
+        welcomeRewardSeen: true,
+      })
+        .then(() => refreshProfile())
+        .catch(() => {});
+    }
     if (goToRefer) navigation.navigate('InfluencerRefer');
   };
 

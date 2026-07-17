@@ -22,6 +22,8 @@ interface Profile {
   follows_count?: number;
   media_count?: number;
   categories?: string[];
+  content_languages?: string[];
+  welcome_reward_seen?: boolean;
   services?: string[];
   service_rates?: Record<string, number>;
   subscription_plan?: string;

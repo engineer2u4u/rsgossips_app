@@ -753,6 +753,7 @@
       "basicInfo": "Basic Information",
       "socialLinks": "Social Links",
       "categories": "Categories",
+      "contentLanguages": "Content Languages",
       "servicesRates": "Services & Rates"
     },
     "field": {
@@ -1083,6 +1084,7 @@
     "save": "Save",
     "expertise": "Expertise",
     "contentCreation": "Content Creation",
+    "languages": "Languages",
     "servicesRates": "Services & Rates",
     "onRequest": "On request",
     "whosWatching": "Who's Watching",
@@ -1253,9 +1255,9 @@
     "pendingBannerAmount": "₹{{amount}} is waiting for you",
     "pendingBannerHint": "Add a UPI ID or bank account to receive your campaign earnings.",
     "validation": {
-      "verified": "Verified",
+      "verified": "Saved",
       "verifyFailed": "Verify failed",
-      "verifying": "Verifying…"
+      "verifying": "Pending review"
     },
     "earningStatus": {
       "pending_creator_info": "Add payout details to receive",

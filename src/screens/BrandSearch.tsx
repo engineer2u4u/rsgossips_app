@@ -80,6 +80,14 @@ function matchesFilters(inf: SearchInfluencer, f: FilterValues, q: string) {
   if (locations.length) {
     if (!inf.city || !locations.includes(inf.city)) return false;
   }
+  // Content Language — match against the influencer's `languages` array
+  // (list-influencers derives it from content_languages). An influencer
+  // matches if they create in at least one of the selected languages.
+  const languages = f['Content Language'] || [];
+  if (languages.length) {
+    const infLangs = Array.isArray(inf.languages) ? inf.languages : [];
+    if (!languages.some(l => infLangs.includes(l))) return false;
+  }
   return true;
 }
 

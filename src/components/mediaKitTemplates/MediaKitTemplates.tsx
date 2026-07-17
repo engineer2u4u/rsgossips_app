@@ -206,6 +206,20 @@ export function TemplateClassic({
           </View>
         </ClassicCard>
 
+        {p.languages.length > 0 && (
+          <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.languages')}>
+            <View className="flex-row flex-wrap" style={{gap: 8}}>
+              {p.languages.map((lang: string) => (
+                <View
+                  key={lang}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
+                  <Text className="text-xs font-bold text-slate-700">{lang}</Text>
+                </View>
+              ))}
+            </View>
+          </ClassicCard>
+        )}
+
         {p.services.length > 0 && (
           <ClassicCard title={t('MediaKitTemplatesMediaKitTemplates.servicesRates')}>
             <View style={{gap: 8}}>
@@ -517,6 +531,32 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
               </View>
             ))}
           </View>
+          {p.languages.length > 0 && (
+            <>
+              <View style={{height: 12}} />
+              <GlassSubhead
+                text={t('MediaKitTemplatesMediaKitTemplates.languages')}
+              />
+              <View className="flex-row flex-wrap" style={{gap: 6}}>
+                {p.languages.map((lang: string) => (
+                  <View
+                    key={lang}
+                    style={{
+                      backgroundColor: 'rgba(255,255,255,0.55)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.7)',
+                      borderRadius: 999,
+                      paddingHorizontal: 12,
+                      paddingVertical: 5,
+                    }}>
+                    <Text style={{color: ink, fontSize: 12, fontWeight: '600'}}>
+                      {lang}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
         </View>
 
         {/* HEADLINE STATS — three columns split by vertical rules */}
@@ -900,6 +940,26 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           line={line}
         />
       </View>
+
+      {/* LANGUAGES */}
+      {p.languages.length > 0 && (
+        <View>
+          <NoirRule line={line} />
+          <NoirSubhead
+            text={t('MediaKitTemplatesMediaKitTemplates.languages')}
+            ink={ink}
+          />
+          <Text
+            style={{
+              color: ink,
+              fontFamily: FONTS.SERIF,
+              fontSize: 16,
+              lineHeight: 24,
+            }}>
+            {p.languages.join(' · ')}
+          </Text>
+        </View>
+      )}
 
       {/* SERVICES */}
       {p.services.length > 0 && (
@@ -1343,6 +1403,29 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
           </View>
         </Tile>
 
+        {/* Languages */}
+        {p.languages.length > 0 && (
+          <Tile>
+            {lbl(t('MediaKitTemplatesMediaKitTemplates.languages'))}
+            <View className="flex-row flex-wrap" style={{gap: 8}}>
+              {p.languages.map((lang: string) => (
+                <View
+                  key={lang}
+                  style={{
+                    backgroundColor: '#faf4ef',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                  }}>
+                  <Text style={{color: ink, fontSize: 12, fontWeight: '700'}}>
+                    {lang}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Tile>
+        )}
+
         {/* Services */}
         {p.services.length > 0 && (
           <Tile>
@@ -1655,6 +1738,38 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
             )}
           </View>
         </View>
+
+        {/* Languages */}
+        {p.languages.length > 0 && (
+          <View style={hardCard()}>
+            <Text style={{...inkChip(ink), alignSelf: 'flex-start', marginBottom: 12}}>
+              {t('MediaKitTemplatesMediaKitTemplates.languages')}
+            </Text>
+            <View className="flex-row flex-wrap" style={{gap: 8}}>
+              {p.languages.map((lang: string) => (
+                <View
+                  key={lang}
+                  style={{
+                    backgroundColor: yellow,
+                    borderWidth: 2,
+                    borderColor: ink,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                  }}>
+                  <Text
+                    style={{
+                      color: ink,
+                      fontFamily: FONTS.MONO_BOLD,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}>
+                    {lang}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Services */}
         {p.services.length > 0 && (
