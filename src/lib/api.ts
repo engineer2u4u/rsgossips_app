@@ -135,9 +135,34 @@ export async function invokeFn<T = any>(
 
   let parsed: any = null;
   try {
-    parsed = await res.json();
-  } catch {
-    // Edge function returned non-JSON — keep parsed null
+    // The abort timeout above only covers fetch() reaching the response
+    // headers; reading the body (res.json) is unbounded, so a stalled body
+    // stream would hang the promise forever and leave the caller's loader
+    // stuck (e.g. the Add-Payment sheet's "Saving…"). Bound the body read too.
+    // Reading the body has no server-side effect, so a race is safe.
+    let bodyTimer: ReturnType<typeof setTimeout> | undefined;
+    parsed = await Promise.race([
+      res.json(),
+      new Promise((_, reject) => {
+        bodyTimer = setTimeout(
+          () =>
+            reject(
+              new EdgeFunctionError(
+                `Request to "${name}" timed out. Check your connection and try again.`,
+                408,
+                null,
+              ),
+            ),
+          timeoutMs,
+        );
+      }),
+    ]).finally(() => {
+      if (bodyTimer !== undefined) clearTimeout(bodyTimer);
+    });
+  } catch (err) {
+    // A body-read timeout is a real failure — surface it. Any other parse
+    // error just means the edge function returned non-JSON; keep parsed null.
+    if (err instanceof EdgeFunctionError) throw err;
   }
 
   if (!res.ok || parsed?.error) {
