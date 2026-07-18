@@ -5,6 +5,15 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+# RN 0.84 defaults to a PREBUILT (Release-compiled) React Native Core. In a
+# Debug build, from-source Fabric components (RNCPicker, RNGestureHandler, …)
+# reference debug-only React core symbols (Sealable, ShadowNode::getDebugName,
+# BaseViewProps::getDebugProps) that the Release prebuilt never emits — the
+# link then fails with "Undefined symbol" for exactly those. Build React core
+# from source so the debug flags match across the whole graph. Override by
+# exporting RCT_USE_PREBUILT_RNCORE=1 before `pod install` if desired.
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '0'
+
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
@@ -17,6 +26,14 @@ end
 
 target 'RGossips' do
   config = use_native_modules!
+
+  # react-native-razorpay 2.3.1 pins razorpay-pod = 1.5.0, whose iOS SDK
+  # renders the subscription checkout sheet blank. We relax that pin via
+  # patch-package (patches/react-native-razorpay+2.3.1.patch) and force the
+  # fixed SDK here. 3.0.0 would upgrade the pin cleanly but its TurboModule
+  # codegen breaks the New-Arch Fabric link on RN 0.84 (undefined Sealable /
+  # ShadowNode / BaseViewProps), so we stay on the 2.3.1 wrapper.
+  pod 'razorpay-pod', '1.5.5'
 
   use_react_native!(
     :path => config[:reactNativePath],
