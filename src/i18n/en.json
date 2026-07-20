@@ -875,7 +875,9 @@
         "title": "Failed",
         "fallback": "Could not revert."
       }
-    }
+    },
+    "aiFill": "Fill with AI",
+    "aiFilling": "Suggesting…"
   },
   "FilterModal": {
     "filters": "Filters",
@@ -1573,7 +1575,8 @@
     "ratingSubtitle": "Share your experience working with {{name}} before approving payment.",
     "ratingSectionLabel": "How would you rate {{name}}?",
     "ratingPrimaryCta": "Submit & Release Payment",
-    "ratingSecondaryCta": "Skip & Approve"
+    "ratingSecondaryCta": "Skip & Approve",
+    "pitchLabel": "Their Pitch"
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -2134,13 +2137,13 @@
           "Creator community & forums",
           "Standard payouts 7-10 days",
           "Verified badge eligibility",
-          "AI caption generator 3/month",
+          "25 AI generations/month (Content Studio + Pitch Assistant)",
           "Brief templates library"
         ],
         "notIncluded": [
           "Priority brand search placement",
           "Unlimited applications",
-          "AI content suite",
+          "AI Match Coach, Media Kit writer & rate benchmarks",
           "Audience insights & demographics",
           "Dedicated support manager"
         ]
@@ -2153,7 +2156,7 @@
           "Priority brand search 3× visibility",
           "Unlimited campaign applications",
           "Unlimited brand DMs",
-          "AI content suite 50/month",
+          "150 AI generations/month — full AI toolkit (pitch, match coach, media kit, compliance)",
           "3 media kit templates (PDF + link)",
           "Advanced analytics & reports",
           "Audience insights age, gender, location",
@@ -2177,7 +2180,7 @@
           "Featured in brand search (top)",
           "Unlimited apps + AI shortlisting",
           "Dedicated account manager",
-          "AI content suite - unlimited",
+          "Unlimited AI generations — full AI toolkit",
           "Custom media kit builder",
           "Deep audience analytics",
           "Monthly engagement audit",
@@ -2199,7 +2202,7 @@
         "features": [
           "All Starter Monthly features, plus:",
           "3 months FREE (pay for 9)",
-          "2× AI content generation",
+          "25 AI generations/month (Content Studio + Pitch Assistant)",
           "2 media kit templates",
           "Annual performance report",
           "Priority access to events",
@@ -2207,7 +2210,7 @@
         ],
         "notIncluded": [
           "Priority brand search",
-          "AI content suite (unlimited)",
+          "AI Match Coach, Media Kit writer & rate benchmarks",
           "Audience insights",
           "Dedicated support manager"
         ]
@@ -2220,7 +2223,7 @@
         "features": [
           "All Pro Monthly features, plus:",
           "~2 months FREE (pay for 10)",
-          "2× AI content suite 100/mo",
+          "150 AI generations/month — full AI toolkit (pitch, match coach, media kit, compliance)",
           "Quarterly audience audit",
           "2 brand newsletter features/yr",
           "Exclusive annual-only campaigns",
@@ -2241,6 +2244,7 @@
         "description": "₹575/month · 22% off",
         "features": [
           "All Elite Monthly features, plus:",
+          "Unlimited AI generations — full AI toolkit",
           "~2 months FREE on annual billing",
           "Dedicated account manager 8hr SLA",
           "Quarterly strategy call",

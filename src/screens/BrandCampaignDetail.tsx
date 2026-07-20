@@ -82,6 +82,8 @@ type Application = {
   campaign_id: string;
   influencer_id: string;
   proposed_rate?: number | null;
+  // The creator's "why choose you" note (AI-draftable; stored by apply-campaign)
+  pitch?: string | null;
   final_agreed_rate?: number | null;
   status: AppStatus;
   rejection_reason?: string | null;
@@ -743,6 +745,22 @@ function BrandApplicationRow({
                 />
               ) : null}
             </View>
+            {app.pitch ? (
+              <View
+                style={{
+                  marginTop: 8,
+                  padding: 8,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(88, 81, 219, 0.06)',
+                }}>
+                <Text style={{fontSize: 10, fontWeight: '800', color: '#5851DB', textTransform: 'uppercase', letterSpacing: 0.5}}>
+                  {t('ScreensBrandCampaignDetail.pitchLabel')}
+                </Text>
+                <Text style={{fontSize: 11, color: '#1e293b', marginTop: 3, lineHeight: 16}}>
+                  {app.pitch}
+                </Text>
+              </View>
+            ) : null}
             {inf.bio ? (
               <Text style={{fontSize: 11, color: '#475569', marginTop: 8, lineHeight: 16}}>
                 {inf.bio}

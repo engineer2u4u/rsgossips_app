@@ -7,6 +7,7 @@ import DealOfDayCarousel from '../components/DealOfDayCarousel';
 import QuickLinks from '../components/QuickLinks';
 import CompleteProfileCard from '../components/CompleteProfileCard';
 import AiMediaKitCard from '../components/AIMediaKitCard';
+import AiToolsGrid from '../components/AIToolsGrid';
 import BrandsCarousel from '../components/BrandsCarousel';
 import TopServices from '../components/TopServices';
 import TopPicksCarousel from '../components/TopPicksCarousel';
@@ -74,11 +75,12 @@ function HomeContent() {
         <DealOfDayCarousel />
       </View>
 
-      {/* Profile Cards Row — Get Your First Brand Deal → AI Media Kit.
-          AI Creator Tools removed per spec. */}
+      {/* Profile Cards Row — Get Your First Brand Deal → AI Media Kit →
+          AI Creator Tools (live Content Studio, mirrors the web home). */}
       <View className="mt-6 px-4" style={{gap: 20}}>
         <CompleteProfileCard />
         <AiMediaKitCard />
+        <AiToolsGrid />
       </View>
 
       {/* Brands Carousel */}

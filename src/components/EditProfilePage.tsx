@@ -22,6 +22,7 @@ import {
   Mail,
   MapPin,
   RotateCcw,
+  Sparkles,
   User,
   Youtube,
 } from 'lucide-react-native';
@@ -34,6 +35,8 @@ import {pickFromLibrary} from '../lib/image-picker';
 import {uploadProfilePhoto} from '../lib/image-upload';
 import {useProfilePhoto} from '../utils/photoUrl';
 import {CONTENT_LANGUAGES} from '../utils/contentLanguages';
+import {useAiTool} from '../hooks/useAiTool';
+import {parseAiRates} from './AiMarkdown';
 
 const CATEGORY_OPTIONS = [
   'Beauty & Skincare', 'Fashion & Lifestyle', 'Food & Beverage',
@@ -88,6 +91,22 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // AI rate suggestions — same rate_card tool as the Content Studio. Parses
+  // the machine-readable RATES_JSON line and fills the inputs; auto-selects
+  // services it priced. Nothing persists until the user hits Save.
+  const {generate: aiSuggest, loading: aiFilling, error: aiError} = useAiTool();
+  const handleAiFill = async () => {
+    const text = await aiSuggest({tool: 'rate_card', inputs: {}});
+    const {rates: suggested} = parseAiRates(text);
+    if (!suggested) return;
+    setServices(prev => [...new Set([...prev, ...Object.keys(suggested)])]);
+    setServiceRates(prev => {
+      const out = {...prev};
+      for (const [k, v] of Object.entries(suggested)) out[k] = String(v);
+      return out;
+    });
+  };
 
   const photo = useProfilePhoto();
   const handle = profile?.instagram_handle || profile?.username || '';
@@ -505,9 +524,28 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
           </View>
 
           {/* Services & Rates */}
-          <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
-            {t('EditProfilePage.section.servicesRates')}
-          </Text>
+          <View className="flex-row items-center justify-between mt-4">
+            <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              {t('EditProfilePage.section.servicesRates')}
+            </Text>
+            <TouchableOpacity
+              onPress={handleAiFill}
+              disabled={aiFilling}
+              className={`flex-row items-center px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 ${aiFilling ? 'opacity-60' : ''}`}
+              style={{gap: 5}}>
+              {aiFilling ? (
+                <ActivityIndicator size="small" color="#7e22ce" />
+              ) : (
+                <Sparkles size={12} color="#7e22ce" />
+              )}
+              <Text className="text-[10px] font-black text-purple-700">
+                {aiFilling ? t('EditProfilePage.aiFilling') : t('EditProfilePage.aiFill')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {!!aiError && (
+            <Text className="text-[10px] font-semibold text-amber-600">{aiError}</Text>
+          )}
           <View style={{gap: 8}}>
             {SERVICE_OPTIONS.map(svc => {
               const isSelected = services.includes(svc.id);
