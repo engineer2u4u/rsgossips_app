@@ -62,6 +62,30 @@
         "title": "Brief Helper",
         "status": "0/50"
       }
+    },
+    "generate": "Generate",
+    "generating": "Generating…",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "leftThisMonth_one": "{{count}} left this month",
+    "leftThisMonth_other": "{{count}} left this month",
+    "unlimited": "Unlimited",
+    "usageLabel": "AI usage this month",
+    "usedOfLimit": "{{used}} / {{limit}} used",
+    "limitTitle": "You've used your AI generations for this month",
+    "limitBody": "Upgrade to Pro for 150 generations a month, or Elite for unlimited — plus the pitch assistant, match coach and more.",
+    "upgradeCta": "See plans",
+    "updatePricing": "Update my pricing",
+    "updatingPricing": "Updating…",
+    "pricingUpdated": "Rates saved to your profile",
+    "placeholders": {
+      "captions": "What is the post about? e.g. “monsoon skincare routine reel for a Bangalore brand, playful tone” — leave blank to use your profile.",
+      "scripts": "What is the reel about? e.g. “30s unboxing of a fitness band, hook first, end with a discount code”.",
+      "hookIdeas": "Topic or niche for the hooks, e.g. “street food tour in Delhi” — leave blank for hooks in your niche.",
+      "hashtags": "Topic of the post, e.g. “cafe hopping reel in Mumbai” — leave blank for your niche + reach sets.",
+      "rateCard": "Anything specific? e.g. “quote for a 3-reel + 2-story bundle” — leave blank to price from your profile stats.",
+      "briefHelper": "Paste the brand brief or describe the campaign — you will get a tickable checklist of deliverables + rules."
     }
   },
   "AddReelFlow": {
@@ -214,7 +238,11 @@
     },
     "why": {
       "label": "Why should we choose you?",
-      "placeholder": "Tell the brand why you're the perfect fit..."
+      "placeholder": "Tell the brand why you're the perfect fit...",
+      "draftAi": "Draft with AI",
+      "drafting": "Drafting…",
+      "required": "Add a short line on why you're a great fit — brands skip blank applications.",
+      "aiLimit": "You've used your AI generations this month. Upgrade for more."
     },
     "footer": {
       "cancel": "Cancel",
@@ -477,7 +505,20 @@
     "pay": "Pay",
     "req": "Req",
     "viewStatus": "View Status",
-    "applyNow": "Apply Now"
+    "applyNow": "Apply Now",
+    "coach": {
+      "title": "Why this match?",
+      "matchWith": "match with {{title}}",
+      "coachButton": "How do I improve this? (AI)",
+      "coaching": "Coaching…",
+      "limitBody": "You've used your AI generations this month.",
+      "upgrade": "Upgrade",
+      "yourCoach": "Your coach",
+      "copy": "Copy",
+      "copied": "Copied",
+      "regenerate": "Regenerate",
+      "remaining": "{{n}} AI generations left this month"
+    }
   },
   "CampaignFilters": {
     "title": "Filters",
@@ -1878,7 +1919,22 @@
     "capUsedAll_other": "You've used all {{count}} template changes. Upgrade to Elite for unlimited switches.",
     "capRemaining_one": "{{remaining}} of {{count}} template change remaining on {{plan}}.",
     "capRemaining_other": "{{remaining}} of {{count}} template changes remaining on {{plan}}.",
-    "unlimitedSwitches": "Unlimited template switches — go wild."
+    "unlimitedSwitches": "Unlimited template switches — go wild.",
+    "ai": {
+      "title": "AI Media Kit Writer",
+      "subtitle": "Turn your stats into a sales page — a positioning line, a bio in your voice, and a plain-language audience story from your demographics.",
+      "generate": "Write my media kit",
+      "regenerate": "Rewrite",
+      "writing": "Writing…",
+      "useBio": "Use as my bio",
+      "applied": "Bio updated ✓",
+      "copy": "Copy",
+      "copied": "Copied",
+      "remaining": "{{count}} AI generations left this month",
+      "limit": "You’ve used your AI generations this month.",
+      "upgrade": "Upgrade",
+      "bioHint": "“Use as my bio” applies only the Bio section (your profile bio is capped at 500 characters). Copy grabs all three sections for your media kit."
+    }
   },
   "ScreensInfluencerNotifications": {
     "title": "Notifications",
@@ -2745,7 +2801,20 @@
     "noDeliverables": "No deliverables on this campaign. Contact the brand if this looks wrong.",
     "cancel": "Cancel",
     "resubmit": "Resubmit",
-    "submit": "Submit"
+    "submit": "Submit",
+    "compliance": {
+      "title": "AI Compliance Pre-Check",
+      "subtitle": "Paste your caption and we’ll check it against the brief — brand tag, required hashtags, and the mandatory #ad disclosure — before the brand sees it.",
+      "placeholder": "Paste your post caption here…",
+      "run": "Check my caption",
+      "checking": "Checking…",
+      "resultTitle": "Compliance result",
+      "recheck": "Check again",
+      "copy": "Copy",
+      "copied": "Copied",
+      "limit": "You’ve used your AI generations this month.",
+      "upgrade": "Upgrade"
+    }
   },
   "SuccessScreen": {
     "title": "You're All Set!",

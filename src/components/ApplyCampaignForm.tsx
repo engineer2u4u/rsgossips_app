@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -21,11 +21,13 @@ import {
   Phone,
   Users,
   Activity,
+  Sparkles,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
+import {useAiTool} from '../hooks/useAiTool';
 
 interface Props {
   visible: boolean;
@@ -49,6 +51,21 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
   const [error, setError] = useState('');
   const [proposedRate, setProposedRate] = useState('');
   const [whyChooseYou, setWhyChooseYou] = useState('');
+  const {generate: draftPitch, loading: drafting, error: draftError, limitReached: draftLimit} = useAiTool();
+
+  // AI Pitch Assistant — drafts a short, campaign-aware "why choose you" note in
+  // the creator's voice, referencing their real past work. Clicking again is a
+  // regenerate: we pass the previous draft + a regenerate flag so the model
+  // returns a distinctly different version instead of lightly rephrasing.
+  const pitchNonceRef = useRef(0);
+  const handleDraftPitch = async () => {
+    const prev = whyChooseYou.trim();
+    const inputs = prev
+      ? {regenerate: true, previousDraft: prev, variation: ++pitchNonceRef.current}
+      : {};
+    const text = await draftPitch({tool: 'pitch', campaignId: campaignData?.id, inputs});
+    if (text) setWhyChooseYou(text);
+  };
 
   const fullName = profile?.full_name || '';
   const email = profile?.email || '';
@@ -60,6 +77,12 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
 
   const handleSubmit = async () => {
     if (submitting) return;
+    // Guardrail: a personalised pitch is mandatory — keeps brands from drowning
+    // in one-click AI-spam applications, so they see better applications.
+    if (!whyChooseYou.trim()) {
+      setError(t('ApplyCampaignForm.why.required'));
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -67,6 +90,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
         campaignId: campaignData?.id,
         influencerId: user?.id,
         proposedRate: proposedRate ? Number(proposedRate) : null,
+        pitch: whyChooseYou.trim(),
       });
 
       if (data?.success) {
@@ -225,9 +249,25 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                     )}
                   </View>
 
-                  {/* Why Choose You */}
+                  {/* Why Choose You + AI Pitch Assistant */}
                   <View style={{gap: 8}}>
-                    <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.why.label')}</Text>
+                    <View className="flex-row items-center justify-between" style={{gap: 12}}>
+                      <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.why.label')}</Text>
+                      <Pressable
+                        onPress={handleDraftPitch}
+                        disabled={drafting}
+                        className="flex-row items-center px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100"
+                        style={{gap: 6, opacity: drafting ? 0.6 : 1}}>
+                        {drafting ? (
+                          <ActivityIndicator size="small" color="#7E22CE" />
+                        ) : (
+                          <Sparkles size={13} color="#7E22CE" />
+                        )}
+                        <Text className="text-[11px] font-black text-purple-700">
+                          {drafting ? t('ApplyCampaignForm.why.drafting') : t('ApplyCampaignForm.why.draftAi')}
+                        </Text>
+                      </Pressable>
+                    </View>
                     <TextInput
                       placeholder={t('ApplyCampaignForm.why.placeholder')}
                       placeholderTextColor="#94A3B8"
@@ -238,6 +278,11 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                       className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700"
                       style={{minHeight: 100}}
                     />
+                    {draftLimit || draftError ? (
+                      <Text className="text-xs font-semibold text-amber-600">
+                        {draftLimit ? t('ApplyCampaignForm.why.aiLimit') : draftError}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 

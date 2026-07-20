@@ -13,7 +13,11 @@
       "Bash(node *)",
       "Bash(mbt *)",
       "Bash(cf *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(git rev-list *)",
+      "Bash(git pull *)",
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(./gradlew.bat assembleRelease --no-daemon)"
     ]
   }
 }

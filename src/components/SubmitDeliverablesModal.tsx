@@ -18,6 +18,7 @@
 import React, {useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Clipboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -29,10 +30,22 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {Upload, X} from 'lucide-react-native';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+  X,
+} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useNavigation} from '@react-navigation/native';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
+import {useAiTool} from '../hooks/useAiTool';
+import {AiMarkdown} from './AiMarkdown';
 import {
   detectInstagramLinkType,
   expectedLinkType,
@@ -41,6 +54,7 @@ import {
 } from '../utils/instagram-url';
 
 interface Campaign {
+  id?: string;
   applicationId?: string;
   applicationStatus?: string;
   title?: string;
@@ -153,6 +167,39 @@ export default function SubmitDeliverablesModal({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // AI compliance pre-check — runs the draft caption against the campaign's
+  // requirements (brand tag, required hashtags, ASCI #ad/#collab disclosure,
+  // dos/donts) BEFORE the brand ever sees it. Optional, campaign-aware.
+  // Mirrors the web SubmitDeliverablesModal compliance section.
+  const navigation = useNavigation<any>();
+  const [caption, setCaption] = useState('');
+  const [checkOpen, setCheckOpen] = useState(false);
+  const [complianceCopied, setComplianceCopied] = useState(false);
+  const {
+    generate: runCompliance,
+    loading: checking,
+    result: complianceResult,
+    error: complianceErr,
+    limitReached: complianceLimit,
+    setResult: setComplianceResult,
+  } = useAiTool();
+
+  const handleCompliance = () => {
+    if (!caption.trim() || checking) return;
+    runCompliance({
+      tool: 'compliance',
+      campaignId: campaign?.id,
+      inputs: {draft_caption: caption.trim()},
+    });
+  };
+
+  const handleComplianceCopy = () => {
+    if (!complianceResult) return;
+    Clipboard.setString(complianceResult);
+    setComplianceCopied(true);
+    setTimeout(() => setComplianceCopied(false), 1500);
+  };
 
   const allFilled =
     deliverables.length > 0 && deliverables.every(d => links[d.key]?.trim());
@@ -351,6 +398,125 @@ export default function SubmitDeliverablesModal({
               {t('SubmitDeliverablesModal.noDeliverables')}
             </Text>
           ) : null}
+
+          {/* AI Compliance Pre-Check — optional, catches missing #ad / brand
+              tag / hashtags before the brand sees it. Collapsed by default. */}
+          <View style={styles.complianceCard}>
+            <TouchableOpacity
+              onPress={() => setCheckOpen(v => !v)}
+              style={styles.complianceHeader}
+              activeOpacity={0.7}>
+              <ShieldCheck size={16} color="#9810FA" />
+              <Text style={styles.complianceTitle}>
+                {t('SubmitDeliverablesModal.compliance.title')}
+              </Text>
+              {checkOpen ? (
+                <ChevronDown size={15} color="#94a3b8" />
+              ) : (
+                <ChevronRight size={15} color="#94a3b8" />
+              )}
+            </TouchableOpacity>
+
+            {checkOpen ? (
+              <View style={styles.complianceBody}>
+                <Text style={styles.complianceSubtitle}>
+                  {t('SubmitDeliverablesModal.compliance.subtitle')}
+                </Text>
+                <TextInput
+                  value={caption}
+                  onChangeText={setCaption}
+                  placeholder={t('SubmitDeliverablesModal.compliance.placeholder')}
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  textAlignVertical="top"
+                  style={styles.complianceInput}
+                />
+
+                {!complianceLimit ? (
+                  <TouchableOpacity
+                    onPress={handleCompliance}
+                    disabled={checking || !caption.trim()}
+                    style={[
+                      styles.complianceRunBtn,
+                      {opacity: checking || !caption.trim() ? 0.5 : 1},
+                    ]}>
+                    <LinearGradient
+                      colors={['#9810FA', '#E60076']}
+                      start={{x: 0, y: 0}}
+                      end={{x: 1, y: 0}}
+                      style={styles.gradientBg}
+                    />
+                    {checking ? (
+                      <ActivityIndicator color="white" size="small" />
+                    ) : (
+                      <Sparkles size={14} color="white" />
+                    )}
+                    <Text style={styles.complianceRunText}>
+                      {checking
+                        ? t('SubmitDeliverablesModal.compliance.checking')
+                        : t('SubmitDeliverablesModal.compliance.run')}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.complianceLimitBox}>
+                    <Text style={styles.complianceLimitText}>
+                      {t('SubmitDeliverablesModal.compliance.limit')}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        onClose();
+                        navigation.navigate('InfluencerPricing');
+                      }}
+                      style={styles.complianceUpgradeBtn}>
+                      <Text style={styles.complianceUpgradeText}>
+                        {t('SubmitDeliverablesModal.compliance.upgrade')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {complianceErr && !complianceLimit ? (
+                  <Text style={styles.complianceError}>{complianceErr}</Text>
+                ) : null}
+
+                {complianceResult ? (
+                  <View style={styles.complianceResultBox}>
+                    <View style={styles.complianceResultHeader}>
+                      <Text style={styles.complianceResultTitle}>
+                        {t('SubmitDeliverablesModal.compliance.resultTitle')}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleComplianceCopy}
+                        style={styles.complianceCopyBtn}
+                        hitSlop={8}>
+                        {complianceCopied ? (
+                          <Check size={12} color="#64748b" />
+                        ) : (
+                          <Copy size={12} color="#64748b" />
+                        )}
+                        <Text style={styles.complianceCopyText}>
+                          {complianceCopied
+                            ? t('SubmitDeliverablesModal.compliance.copied')
+                            : t('SubmitDeliverablesModal.compliance.copy')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <AiMarkdown
+                      text={complianceResult}
+                      textStyle={{fontSize: 11.5, lineHeight: 17}}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setComplianceResult('')}
+                      hitSlop={8}>
+                      <Text style={styles.complianceRecheck}>
+                        {t('SubmitDeliverablesModal.compliance.recheck')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
         </ScrollView>
 
         {/* Footer */}
@@ -494,4 +660,92 @@ const styles = StyleSheet.create({
   },
   gradientBg: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
   btnPrimaryText: {color: 'white', fontSize: 14, fontWeight: '700'},
+  // AI Compliance Pre-Check
+  complianceCard: {
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3e8ff',
+    backgroundColor: '#fdfaff',
+    overflow: 'hidden',
+  },
+  complianceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  complianceTitle: {flex: 1, fontSize: 12, fontWeight: '700', color: '#334155'},
+  complianceBody: {paddingHorizontal: 16, paddingBottom: 16, gap: 12},
+  complianceSubtitle: {fontSize: 11, color: '#64748b', lineHeight: 15},
+  complianceInput: {
+    minHeight: 76,
+    backgroundColor: 'white',
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#334155',
+  },
+  complianceRunBtn: {
+    height: 40,
+    borderRadius: 12,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  complianceRunText: {color: 'white', fontSize: 12, fontWeight: '700'},
+  complianceLimitBox: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    padding: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  complianceLimitText: {fontSize: 11, color: '#475569', textAlign: 'center'},
+  complianceUpgradeBtn: {
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#9810FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  complianceUpgradeText: {color: 'white', fontSize: 11, fontWeight: '700'},
+  complianceError: {fontSize: 11, color: '#f43f5e'},
+  complianceResultBox: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f3e8ff',
+    padding: 12,
+  },
+  complianceResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  complianceResultTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#9810FA',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  complianceCopyBtn: {flexDirection: 'row', alignItems: 'center', gap: 4},
+  complianceCopyText: {fontSize: 10, fontWeight: '700', color: '#64748b'},
+  complianceRecheck: {
+    marginTop: 8,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#9810FA',
+  },
 });

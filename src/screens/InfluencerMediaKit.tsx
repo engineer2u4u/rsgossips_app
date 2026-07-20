@@ -31,6 +31,7 @@ import {
   Lock,
   LayoutTemplate,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
@@ -47,6 +48,8 @@ import {
   type MediaKitTemplate,
 } from '../lib/plans';
 import MediaKitPreview from '../components/mediaKitTemplates/MediaKitTemplates';
+import {useAiTool} from '../hooks/useAiTool';
+import {AiMarkdown} from '../components/AiMarkdown';
 
 // Public media-kit pages live on the web at `rgossips.com/kit/[id]`. Slug
 // resolution mirrors the web (`username → instagram_handle → user.id`) so
@@ -70,7 +73,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 export default function InfluencerMediaKit() {
   const {t} = useTranslation();
-  const {profile, user} = useAuth();
+  const {profile, user, refreshProfile} = useAuth();
   const navigation = useNavigation();
 
   const [bio, setBio] = useState(profile?.bio || '');
@@ -158,6 +161,19 @@ export default function InfluencerMediaKit() {
     setEditingBio(false);
     updateProfile({bio: bioDraft.trim()});
   };
+
+  // "Use as my bio" from the AI Media Kit Writer — applies the extracted Bio
+  // section to local state + the profile, then refreshes the AuthContext
+  // profile so every other surface sees the new bio.
+  const handleAiBioSave = useCallback(
+    async (newBio: string) => {
+      setBio(newBio);
+      setBioDraft(newBio);
+      await updateProfile({bio: newBio});
+      await refreshProfile();
+    },
+    [updateProfile, refreshProfile],
+  );
 
   const handlePublish = async () => {
     if (publishing || published) return;
@@ -265,6 +281,14 @@ export default function InfluencerMediaKit() {
         />
 
         <View className="px-4 py-6" style={{gap: 16}}>
+
+          {/* AI Media Kit Writer — mirror of the web AiMediaKitCard */}
+          <AiMediaKitCard
+            onUseBio={handleAiBioSave}
+            onUpgrade={() =>
+              navigation.navigate('InfluencerPricing' as never)
+            }
+          />
 
           {/* Publish / Share Card */}
           {published ? (
@@ -429,6 +453,185 @@ export default function InfluencerMediaKit() {
         </Pressable>
       </Modal>
     </InfluencerLayout>
+  );
+}
+
+// AI Media Kit v2 — mirror of the web AiMediaKitCard. Turns the stat sheet
+// into a sales page: a positioning line, a bio in the creator's voice, and a
+// plain-language audience narrative from their demographics (tool:
+// media_kit). Only the Bio section can be applied to the profile in one
+// click; the rest is copy-and-paste media-kit copy.
+function AiMediaKitCard({
+  onUseBio,
+  onUpgrade,
+}: {
+  onUseBio: (bio: string) => void;
+  onUpgrade: () => void;
+}) {
+  const {t} = useTranslation();
+  const {generate, loading, result, error, remaining, limitReached} =
+    useAiTool();
+  const [copied, setCopied] = useState(false);
+  const [applied, setApplied] = useState(false);
+
+  const run = () => generate({tool: 'media_kit', inputs: {}});
+
+  const copy = () => {
+    if (!result) return;
+    Clipboard.setString(result);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // The media_kit prompt returns three labelled sections (**Positioning**,
+  // **Bio**, **Audience**). Only the Bio section becomes the profile bio —
+  // positioning + audience narrative are media-kit copy, and the bio field
+  // is capped at 500 chars. Prefer the explicit label; fall back to the
+  // middle block for any older unlabelled generation. (Extraction logic is
+  // a byte-for-byte port of the web version.)
+  const useBio = () => {
+    if (!result) return;
+    const labelled = result.match(
+      /\*\*\s*Bio\s*\*\*:?\s*\n?([\s\S]*?)(?=\n\s*\*\*|$)/i,
+    );
+    let bioBlock: string;
+    if (labelled) {
+      bioBlock = labelled[1].trim();
+    } else {
+      const blocks = result
+        .split(/\n\s*\n/)
+        .map(b => b.trim())
+        .filter(Boolean);
+      bioBlock = blocks.length >= 2 ? blocks[1] : result.trim();
+    }
+    // Strip markdown markers (the bio is stored as plain text) and cap at
+    // 500 chars (matches the editor + server guard).
+    const plain = bioBlock
+      .replace(/\*\*|__|^#+\s*/gm, '')
+      .replace(/^[-*•]\s+/gm, '');
+    onUseBio(plain.slice(0, 500));
+    setApplied(true);
+    setTimeout(() => setApplied(false), 2000);
+  };
+
+  return (
+    <View
+      className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5"
+      style={{gap: 12}}>
+      <View className="flex-row items-center" style={{gap: 8}}>
+        <View
+          className="items-center justify-center"
+          style={{width: 32, height: 32, borderRadius: 12, overflow: 'hidden'}}>
+          <LinearGradient
+            colors={['#9810FA', '#E60076']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Sparkles size={15} color="white" />
+        </View>
+        <Text className="text-sm font-bold text-slate-900 flex-1">
+          {t('ScreensInfluencerMediaKit.ai.title')}
+        </Text>
+      </View>
+      <Text className="text-[11px] text-slate-500 leading-relaxed">
+        {t('ScreensInfluencerMediaKit.ai.subtitle')}
+      </Text>
+
+      {!limitReached && (
+        <TouchableOpacity
+          onPress={run}
+          disabled={loading}
+          className="w-full items-center justify-center flex-row"
+          style={{
+            borderRadius: 12,
+            height: 42,
+            overflow: 'hidden',
+            opacity: loading ? 0.6 : 1,
+            gap: 8,
+          }}>
+          <LinearGradient
+            colors={['#9810FA', '#E60076']}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Sparkles size={14} color="white" />
+          )}
+          <Text className="text-white font-bold text-xs">
+            {loading
+              ? t('ScreensInfluencerMediaKit.ai.writing')
+              : result
+                ? t('ScreensInfluencerMediaKit.ai.regenerate')
+                : t('ScreensInfluencerMediaKit.ai.generate')}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {!!limitReached && (
+        <View className="bg-slate-50 rounded-xl p-3 items-center" style={{gap: 8}}>
+          <Text className="text-[11px] text-slate-600 text-center">
+            {t('ScreensInfluencerMediaKit.ai.limit')}
+          </Text>
+          <TouchableOpacity
+            onPress={onUpgrade}
+            className="items-center justify-center px-3"
+            style={{height: 32, borderRadius: 8, backgroundColor: '#9810FA'}}>
+            <Text className="text-white text-[11px] font-bold">
+              {t('ScreensInfluencerMediaKit.ai.upgrade')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!!error && !limitReached && (
+        <Text className="text-[11px] text-rose-500">{error}</Text>
+      )}
+
+      {!!result && (
+        <View
+          className="rounded-xl p-3 border border-purple-50"
+          style={{gap: 8, backgroundColor: 'rgba(152,16,250,0.04)'}}>
+          <AiMarkdown text={result} textStyle={{fontSize: 12, lineHeight: 18}} />
+          <View className="flex-row items-center" style={{gap: 8}}>
+            <TouchableOpacity
+              onPress={useBio}
+              className="flex-1 items-center justify-center"
+              style={{height: 32, borderRadius: 8, backgroundColor: '#9810FA'}}>
+              <Text className="text-white text-[11px] font-bold">
+                {applied
+                  ? t('ScreensInfluencerMediaKit.ai.applied')
+                  : t('ScreensInfluencerMediaKit.ai.useBio')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={copy}
+              className="flex-row items-center justify-center px-3 border border-slate-200"
+              style={{height: 32, borderRadius: 8, gap: 4}}>
+              {copied ? (
+                <Check size={12} color="#16A34A" />
+              ) : (
+                <Copy size={12} color="#64748B" />
+              )}
+              <Text className="text-[11px] font-bold text-slate-500">
+                {copied
+                  ? t('ScreensInfluencerMediaKit.ai.copied')
+                  : t('ScreensInfluencerMediaKit.ai.copy')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text className="text-[10px] text-slate-400 leading-snug">
+            {t('ScreensInfluencerMediaKit.ai.bioHint')}
+          </Text>
+          {typeof remaining === 'number' && Number.isFinite(remaining) && (
+            <Text className="text-[10px] text-slate-400">
+              {t('ScreensInfluencerMediaKit.ai.remaining', {count: remaining})}
+            </Text>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 

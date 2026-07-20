@@ -110,6 +110,17 @@ export const FEATURE_MATRIX: Record<string, FeatureRow> = {
   analytics_fake_follower_audit:   {starter: false, pro: 'monthly',    elite: 'monthly'},
   analytics_roi_report:            {starter: false, pro: false,        elite: true},
 
+  // AI Creator Tools (metered by ai_generations_limit; see ai-generate edge fn)
+  ai_generations_limit: {starter: 25, pro: 150, elite: Infinity},
+  ai_content_studio: {starter: true, pro: true, elite: true},
+  ai_pitch_assistant: {starter: true, pro: true, elite: true},
+  ai_match_coach: {starter: false, pro: true, elite: true},
+  ai_media_kit_v2: {starter: false, pro: true, elite: true},
+  ai_rate_card_benchmarks: {starter: false, pro: true, elite: true},
+  ai_growth_audit: {starter: false, pro: true, elite: true},
+  ai_preflight_review: {starter: false, pro: false, elite: true},
+  ai_copilot: {starter: false, pro: false, elite: true},
+
   // Payouts
   payout_speed: {starter: '7–10 days', pro: '3–5 days', elite: 'Within 48 hrs'},
 
@@ -384,4 +395,18 @@ export function getProfileTemplateChangeUsage(
     0;
   const remaining = isFinite(limit) ? Math.max(0, limit - used) : Infinity;
   return {used, limit, remaining, plan};
+}
+
+/**
+ * Monthly AI-generation quota status. `usedThisMonth` is fetched by the caller
+ * from `ai_generation_usage` (sum of `count` for the current YYYY-MM). Mirrors
+ * getProfileTemplateChangeUsage. `remaining` is Infinity for unlimited (Elite).
+ */
+export function getAiUsageStatus(profile: PlanProfile, usedThisMonth = 0) {
+  const plan = getEffectivePlan(profile);
+  const limit = getFeatureValue(plan, 'ai_generations_limit');
+  const numeric = typeof limit === 'number' ? limit : 0;
+  const unlimited = !isFinite(numeric);
+  const remaining = unlimited ? Infinity : Math.max(0, numeric - usedThisMonth);
+  return {used: usedThisMonth, limit: numeric, remaining, unlimited, plan};
 }

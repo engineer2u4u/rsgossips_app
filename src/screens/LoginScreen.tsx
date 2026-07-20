@@ -219,9 +219,10 @@ export default function LoginScreen() {
   // --- SHARED: Send OTP via WhatsApp ---
   const sendOtp = async (phoneNumber: string) => {
     const rawDigits = phoneNumber.replace(/\D/g, '');
-    const formattedPhone = rawDigits.startsWith('91')
-      ? rawDigits
-      : `91${rawDigits}`;
+    // Length-based, NOT startsWith('91') — Indian mobiles can legitimately
+    // begin with 91 (e.g. 91136…); the old check skipped the country code
+    // for them and the backend then couldn't match the verification proof.
+    const formattedPhone = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
 
     const { data, error: funcError } = await supabase.functions.invoke(
       'whatsapp-otp-sender',
@@ -263,7 +264,8 @@ export default function LoginScreen() {
     mode: 'signin' | 'signup' = 'signup',
   ) => {
     const rawDigits = phoneNumber.replace(/\D/g, '');
-    const fullPhone = `+${rawDigits.startsWith('91') ? rawDigits : `91${rawDigits}`}`;
+    // Same length-based rule as sendOtp (see comment there).
+    const fullPhone = `+${rawDigits.length === 10 ? `91${rawDigits}` : rawDigits}`;
 
     const { data, error: authError } = await supabase.functions.invoke(
       'whatsapp-otp-verifier',
