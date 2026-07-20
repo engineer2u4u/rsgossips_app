@@ -95,7 +95,12 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   // AI rate suggestions — same rate_card tool as the Content Studio. Parses
   // the machine-readable RATES_JSON line and fills the inputs; auto-selects
   // services it priced. Nothing persists until the user hits Save.
-  const {generate: aiSuggest, loading: aiFilling, error: aiError} = useAiTool();
+  const {
+    generate: aiSuggest,
+    loading: aiFilling,
+    error: aiError,
+    limitReached: aiLimit,
+  } = useAiTool();
   const handleAiFill = async () => {
     const text = await aiSuggest({tool: 'rate_card', inputs: {}});
     const {rates: suggested} = parseAiRates(text);
@@ -543,9 +548,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
               </Text>
             </TouchableOpacity>
           </View>
-          {!!aiError && (
-            <Text className="text-[10px] font-semibold text-amber-600">{aiError}</Text>
-          )}
+          {aiLimit || aiError ? (
+            <Text className="text-[10px] font-semibold text-amber-600">
+              {aiLimit ? t('EditProfilePage.aiLimit') : aiError}
+            </Text>
+          ) : null}
           <View style={{gap: 8}}>
             {SERVICE_OPTIONS.map(svc => {
               const isSelected = services.includes(svc.id);

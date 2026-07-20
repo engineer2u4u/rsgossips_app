@@ -877,7 +877,8 @@
       }
     },
     "aiFill": "Fill with AI",
-    "aiFilling": "Suggesting…"
+    "aiFilling": "Suggesting…",
+    "aiLimit": "You've used your AI generations this month. Upgrade for more."
   },
   "FilterModal": {
     "filters": "Filters",
