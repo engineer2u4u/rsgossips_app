@@ -43,7 +43,17 @@ type Block =
   | { type: 'gap' }
   | { type: 'ul' | 'ol'; items: string[] };
 
-export function AiMarkdown({ text, textStyle }: { text?: string | null; textStyle?: TextStyle }) {
+export function AiMarkdown({
+  text,
+  textStyle,
+  selectable,
+}: {
+  text?: string | null;
+  textStyle?: TextStyle;
+  // Lets the user long-press to select/copy the generated response. Only the
+  // block-level <Text> nodes need it — nested inline spans inherit selection.
+  selectable?: boolean;
+}) {
   if (!text) return null;
   const lines = String(text).replace(/\r/g, '').split('\n');
 
@@ -89,14 +99,20 @@ export function AiMarkdown({ text, textStyle }: { text?: string | null; textStyl
         if (b.type === 'gap') return <View key={i} style={styles.gap} />;
         if (b.type === 'h') {
           return (
-            <Text key={i} style={[styles.base, textStyle, styles.heading]}>
+            <Text
+              key={i}
+              selectable={selectable}
+              style={[styles.base, textStyle, styles.heading]}>
               {renderInline(b.text, i)}
             </Text>
           );
         }
         if (b.type === 'p') {
           return (
-            <Text key={i} style={[styles.base, textStyle, styles.para]}>
+            <Text
+              key={i}
+              selectable={selectable}
+              style={[styles.base, textStyle, styles.para]}>
               {renderInline(b.text, i)}
             </Text>
           );
@@ -108,7 +124,9 @@ export function AiMarkdown({ text, textStyle }: { text?: string | null; textStyl
                 <Text style={[styles.base, textStyle, styles.marker]}>
                   {b.type === 'ul' ? '•' : `${j + 1}.`}
                 </Text>
-                <Text style={[styles.base, textStyle, styles.listText]}>
+                <Text
+                  selectable={selectable}
+                  style={[styles.base, textStyle, styles.listText]}>
                   {renderInline(item, `${i}-${j}`)}
                 </Text>
               </View>

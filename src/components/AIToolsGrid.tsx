@@ -356,6 +356,11 @@ function ToolModal({
 
             <ScrollView
               className="p-5"
+              // The sheet is capped at max-h-80%; without flexShrink the
+              // ScrollView sizes to its content and simply overflows once a
+              // generated response lands, so it never scrolls. Shrinking it
+              // inside the capped parent is what makes scrolling kick in.
+              style={{flexShrink: 1}}
               contentContainerStyle={{paddingBottom: 8}}
               keyboardShouldPersistTaps="handled">
               {limitReached ? (
@@ -389,7 +394,7 @@ function ToolModal({
                   />
                   {!!result && (
                     <View className="rounded-2xl border border-slate-100 bg-slate-50 p-4 mt-4">
-                      <AiMarkdown text={cleanText} />
+                      <AiMarkdown text={cleanText} selectable />
                       {isRateCard && aiRates && (
                         <TouchableOpacity
                           onPress={applyRates}

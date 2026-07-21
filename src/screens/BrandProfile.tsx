@@ -12,7 +12,6 @@ import {
   Image,
   Linking,
   Modal,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -118,7 +117,9 @@ export default function BrandProfile() {
   const handlePickLogo = async () => {
     if (!user?.id) return;
     try {
-      const image = await pickFromLibrary();
+      // Same cropper the influencer avatar uses: the box starts on the full
+      // logo so it can go up uncropped, and stays draggable for a custom trim.
+      const image = await pickFromLibrary({crop: 'free', size: 800});
       if (!image) return;
       await withLoading(
         (async () => {

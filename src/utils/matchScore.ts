@@ -42,10 +42,70 @@ interface Profile {
 
 interface Brand {
   category?: string;
+  categories?: string[];
   platforms?: string[];
   isVerified?: boolean;
   rating?: number;
   [key: string]: any;
+}
+
+// `list-brands` sets `category` to `categories[0]` and falls back to the
+// literal "General" when a brand has no categories at all. Scoring only the
+// singular field meant a brand tagged ['Fashion & Lifestyle','Beauty &
+// Skincare'] was judged purely on "Fashion & Lifestyle" — its beauty tag was
+// invisible, so it dropped to the no-match floor and sorted below unrelated
+// verified brands. Collect every label the brand advertises instead, and drop
+// the "General" placeholder since it carries no signal.
+function brandCategoryLabels(brand: Brand): string[] {
+  const raw = [
+    ...(Array.isArray(brand.categories) ? brand.categories : []),
+    ...(brand.category ? [brand.category] : []),
+  ];
+  const seen = new Set<string>();
+  for (const c of raw) {
+    const v = String(c || '').toLowerCase().trim();
+    if (v && v !== 'general') seen.add(v);
+  }
+  return [...seen];
+}
+
+// 3 = exact/mapped, 2 = partial (substring either way), 1 = related, 0 = none.
+function bestBrandCategoryTier(
+  userCategories: string[],
+  brandCategories: string[],
+): 0 | 1 | 2 | 3 {
+  if (userCategories.length === 0 || brandCategories.length === 0) return 0;
+  let best: 0 | 1 | 2 | 3 = 0;
+  for (const bc of brandCategories) {
+    // CATEGORY_MAP is keyed by the short labels ("Beauty", "Perfume"), so try
+    // a title-cased lookup as well as the canonical long name.
+    const titleCase = bc.charAt(0).toUpperCase() + bc.slice(1);
+    const mapped = (CATEGORY_MAP[titleCase] || CATEGORY_MAP[bc] || []).map(m =>
+      m.toLowerCase(),
+    );
+    if (mapped.some(m => userCategories.includes(m))) return 3;
+
+    for (const uc of userCategories) {
+      if (bc === uc) return 3;
+      const ucHead = uc.split(' ')[0].replace(/[^a-z0-9]/g, '');
+      const bcHead = bc.split(' ')[0].replace(/[^a-z0-9]/g, '');
+      if (
+        (ucHead && bc.includes(ucHead)) ||
+        (bcHead && uc.includes(bcHead)) ||
+        bc.includes(uc) ||
+        uc.includes(bc)
+      ) {
+        if (best < 2) best = 2;
+        continue;
+      }
+      const relOfUser = RELATED_CATEGORIES[uc] || [];
+      const relOfBrand = RELATED_CATEGORIES[bc] || [];
+      if (relOfUser.includes(bc) || relOfBrand.includes(uc)) {
+        if (best < 1) best = 1;
+      }
+    }
+  }
+  return best;
 }
 
 export function calculateBrandMatchScore(
@@ -55,21 +115,14 @@ export function calculateBrandMatchScore(
   if (!profile) return 0;
 
   let score = 0;
-  const userCategories = (profile.categories || []).map(c => c.toLowerCase());
+  const userCategories = (profile.categories || []).map(c =>
+    c.toLowerCase().trim(),
+  );
 
-  // 1. Category match (40 points)
-  const brandCategory = brand.category || '';
-  const mappedCategories = CATEGORY_MAP[brandCategory] || [];
-  const categoryMatch =
-    mappedCategories.some(mc =>
-      userCategories.includes(mc.toLowerCase()),
-    ) ||
-    userCategories.some(uc =>
-      brandCategory.toLowerCase().includes(uc.split(' ')[0].toLowerCase()),
-    );
-
-  if (categoryMatch) score += 40;
-  else score += 10;
+  // 1. Category match (40 points), tiered so near-misses still outrank
+  // unrelated brands instead of everything collapsing onto the 10-pt floor.
+  const tier = bestBrandCategoryTier(userCategories, brandCategoryLabels(brand));
+  score += ({3: 40, 2: 30, 1: 20, 0: 10} as const)[tier];
 
   // 2. Platform overlap (25 points)
   const brandPlatforms = (brand.platforms || []).map(p => p.toLowerCase());

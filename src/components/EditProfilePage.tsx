@@ -125,9 +125,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const handlePickPhoto = async () => {
     if (!user?.id) return;
     try {
-      // crop: 'square' opens the native image-crop-picker UI with a fixed
-      // 1:1 frame so every avatar lands as a square — no skewed photos.
-      const image = await pickFromLibrary({crop: 'square', size: 800});
+      // crop: 'free' opens the cropper with the box already covering the
+      // whole photo — a non-square portrait can be uploaded as-is, or the
+      // user can drag the box to crop it however they want. The old fixed
+      // 1:1 frame silently chopped the sides off non-square photos.
+      const image = await pickFromLibrary({crop: 'free', size: 800});
       if (!image) return;
       await withLoading(
         (async () => {

@@ -14,12 +14,10 @@
 
 import React from 'react';
 import {useTranslation} from 'react-i18next';
-import {View, Text, Image, ScrollView, Pressable, TextInput, Linking} from 'react-native';
+import {View, Text, Image, Pressable, TextInput, Linking} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   Instagram,
-  Youtube,
-  Facebook,
   MapPin,
   Camera,
   Pencil,
@@ -1988,17 +1986,32 @@ function TopContentGrid({
   // typical reel count surfaced by the AddReelFlow on web parity.
   const items = reels.slice(0, 6);
   const meta = variant === 'light' ? '#fff' : '#fff';
+  // Tile size is measured rather than expressed as `width: '48%' +
+  // aspectRatio`: a percentage width inside a flex-wrap row doesn't reliably
+  // resolve a height from aspectRatio, so tiles collapsed to each image's
+  // intrinsic size and the grid came out ragged. Measuring the row gives
+  // every tile identical pixel dimensions and a definite box for the image
+  // to cover — portrait, landscape and undersized thumbs all fill the frame.
+  const GAP = 8;
+  const [rowWidth, setRowWidth] = React.useState(0);
+  const tileW = rowWidth > 0 ? (rowWidth - GAP) / 2 : 0;
+  const tileH = tileW * (5 / 4);
   return (
-    <View className="flex-row flex-wrap" style={{gap: 8}}>
-      {items.map((reel: any, i: number) => {
+    <View
+      className="flex-row flex-wrap"
+      style={{gap: GAP}}
+      onLayout={e => setRowWidth(e.nativeEvent.layout.width)}>
+      {tileW === 0
+        ? null
+        : items.map((reel: any, i: number) => {
         const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
         return (
           <Pressable
             key={reel.id || i}
             onPress={() => open(reel.permalink)}
             style={{
-              width: '48%',
-              aspectRatio: 4 / 5,
+              width: tileW,
+              height: tileH,
               borderRadius: 12,
               overflow: 'hidden',
               backgroundColor: '#0f172a',

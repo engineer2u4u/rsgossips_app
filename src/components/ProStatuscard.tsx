@@ -84,10 +84,51 @@ export default function ProStatusCard() {
       ? t('ProStatuscard.planFree')
       : t('ProStatuscard.planStarterTrial');
 
-  // Approximation: assume the active sub renews `cycleDays` after the last
-  // profile update (bumped on plan change). Stand-in until Stripe's
-  // current_period_end is surfaced. Mirrors web getPlanRenewalInfo().
+  // Exact next-billing date from the gateway (subscription-history's
+  // next_charge_at, unix seconds). While it's in flight we show a
+  // placeholder — the updated_at approximation flashed a wrong "30" for a
+  // few seconds before correcting. Approximation is only the fallback
+  // after the fetch settles without a date. Mirrors web ProStatusCard.
+  const [realRenewalTs, setRealRenewalTs] = useState<number | null>(null);
+  const [renewalFetching, setRenewalFetching] = useState(true);
+  useEffect(() => {
+    if (!user?.id || !hasPaidPlan) {
+      setRenewalFetching(false);
+      return;
+    }
+    let cancelled = false;
+    setRenewalFetching(true);
+    (async () => {
+      try {
+        const hist = await invokeFn<{ invoices?: { next_charge_at?: number }[] }>(
+          'subscription-history',
+          { userId: user.id },
+        );
+        const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
+        const ts = invoices.reduce(
+          (max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max),
+          0,
+        );
+        if (!cancelled && ts > 0) setRealRenewalTs(ts);
+      } catch {
+        // keep the approximation
+      } finally {
+        if (!cancelled) setRenewalFetching(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.subscription_plan]);
+
   const renewalDaysLeft = (() => {
+    if (realRenewalTs) {
+      return Math.max(
+        0,
+        Math.ceil((realRenewalTs * 1000 - Date.now()) / (1000 * 60 * 60 * 24)),
+      );
+    }
     if (!profile?.updated_at) return null;
     const cycleDays = profile?.billing_cycle === 'annual' ? 365 : 30;
     const start = new Date(profile.updated_at).getTime();
@@ -145,9 +186,11 @@ export default function ProStatusCard() {
       ? t('ProStatuscard.trialEnded')
       : t('ProStatuscard.trialPrefix');
   const renewalDays = hasPaidPlan
-    ? renewalDaysLeft != null
-      ? t('ProStatuscard.daysValue', { count: renewalDaysLeft })
-      : '—'
+    ? renewalFetching && !realRenewalTs
+      ? '…' // placeholder while the exact gateway date loads
+      : renewalDaysLeft != null
+        ? t('ProStatuscard.daysValue', { count: renewalDaysLeft })
+        : '—'
     : t('ProStatuscard.daysLeft', { count: trialDaysLeft });
 
   return (

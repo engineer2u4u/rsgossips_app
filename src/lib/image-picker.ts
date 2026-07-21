@@ -29,9 +29,15 @@ export type PickedImage = {
 
 /** Extra pickFromLibrary options for the cropper path. */
 export interface CropOptions {
-  /** Forces a square crop (1:1). Use for avatars / profile photos. */
-  crop?: 'square';
-  /** Output edge length in pixels. Default 800. */
+  /**
+   * 'square' pins the crop box to 1:1.
+   * 'free' opens the cropper with the box covering the whole image and lets
+   * the user drag it to any rectangle — so a portrait/landscape photo can be
+   * uploaded uncropped, or trimmed however they like. Use this for avatars
+   * and logos; a forced 1:1 box silently chopped non-square photos.
+   */
+  crop?: 'square' | 'free';
+  /** Longest output edge in pixels. Default 800. */
   size?: number;
 }
 
@@ -86,16 +92,25 @@ export async function pickFromLibrary(
   // native iOS / Android square cropper UI baked in. The user picks the
   // photo, frames it inside a draggable square, and we get back the cropped
   // file ready for upload.
-  if (opts.crop === 'square') {
+  if (opts.crop === 'square' || opts.crop === 'free') {
     const size = opts.size ?? 800;
+    const free = opts.crop === 'free';
     try {
       const img = await ImageCropPicker.openPicker({
-        width: size,
-        height: size,
+        // Passing width/height pins the crop box to that aspect ratio. For
+        // the free mode we deliberately omit them and bound the output with
+        // compressImageMaxWidth/Height instead, so the crop box starts on the
+        // full image and the user can keep it (no forced chopping) or drag it
+        // to any rectangle.
+        ...(free
+          ? {
+              freeStyleCropEnabled: true,
+              compressImageMaxWidth: size,
+              compressImageMaxHeight: size,
+            }
+          : {width: size, height: size}),
         cropping: true,
         cropperCircleOverlay: false,
-        // Square aspect ratio means the picker can't be skewed to a rect
-        // by pinching — keeps the avatar correctly proportioned.
         compressImageQuality: 0.85,
         mediaType: 'photo',
         forceJpg: true,

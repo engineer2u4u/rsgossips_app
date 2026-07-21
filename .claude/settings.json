@@ -17,7 +17,13 @@
       "Bash(git rev-list *)",
       "Bash(git pull *)",
       "Bash(echo \"=== EXIT: $? ===\")",
-      "Bash(./gradlew.bat assembleRelease --no-daemon)"
+      "Bash(./gradlew.bat assembleRelease --no-daemon)",
+      "Bash(./gradlew.bat assembleRelease)",
+      "PowerShell(npx eslint src/components/AiMarkdown.tsx src/components/AIToolsGrid.tsx src/components/mediaKitTemplates/MediaKitTemplates.tsx src/lib/image-picker.ts src/components/EditProfilePage.tsx src/screens/BrandProfile.tsx src/components/DashboardView.tsx src/screens/InfluencerPricing.tsx --quiet)",
+      "Bash(sed -i '/^  TrendingUp,$/d' src/components/DashboardView.tsx)",
+      "Bash(sed -i '/^  Youtube,$/d;/^  Facebook,$/d' src/components/mediaKitTemplates/MediaKitTemplates.tsx)",
+      "Bash(sed -i 's/import {View, Text, Image, ScrollView, Pressable, TextInput, Linking} from '\\\\''react-native'\\\\'';/import {View, Text, Image, Pressable, TextInput, Linking} from '\\\\''react-native'\\\\'';/' src/components/mediaKitTemplates/MediaKitTemplates.tsx)",
+      "Bash(sed -i '/^  ScrollView,$/d' src/screens/BrandProfile.tsx)"
     ]
   }
 }

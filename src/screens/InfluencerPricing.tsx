@@ -329,24 +329,71 @@ export default function InfluencerPricing() {
   refreshProfileRef.current = refreshProfile;
 
   const currentPlan = profile?.subscription_plan || 'free';
-  const createdAt = profile?.created_at
-    ? new Date(profile.created_at)
-    : new Date();
-  const daysLeft = Math.max(
-    0,
-    TRIAL_DAYS -
-      Math.floor(
-        (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-  );
+  // Until the profile lands there is no created_at; defaulting to `new Date()`
+  // rendered a confident "30 days remaining" that corrected itself a moment
+  // later. Keep it unknown and show a placeholder instead of a wrong number.
+  const createdAtRaw: string | undefined = profile?.created_at;
+  const planReady = !!createdAtRaw;
+  const daysLeft = createdAtRaw
+    ? Math.max(
+        0,
+        TRIAL_DAYS -
+          Math.floor(
+            (Date.now() - new Date(createdAtRaw).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+      )
+    : null;
   const expired = daysLeft === 0;
 
-  // Renewal approximation for paid plans (mirrors ProStatuscard + web
-  // getPlanRenewalInfo): assume the sub renews cycleDays after the last
-  // profile update. Stand-in until current_period_end is surfaced.
+  // Renewal for paid plans. Prefer the EXACT next-billing date from the
+  // gateway (subscription-history's next_charge_at); while it loads, show
+  // nothing rather than the updated_at approximation, which flashed a wrong
+  // "renews in 30 days" before correcting. Approximation is only the
+  // after-fetch fallback. Mirrors web pricing + ProStatusCard.
   const isPaidPlan =
     !!currentPlan && currentPlan !== 'free' && currentPlan !== 'trial';
+  const [realRenewalTs, setRealRenewalTs] = useState<number | null>(null);
+  const [renewalFetching, setRenewalFetching] = useState(true);
+  useEffect(() => {
+    if (!user?.id || !isPaidPlan) {
+      setRenewalFetching(false);
+      return;
+    }
+    let cancelled = false;
+    setRenewalFetching(true);
+    (async () => {
+      try {
+        const hist = await invokeFn<{ invoices?: { next_charge_at?: number }[] }>(
+          'subscription-history',
+          { userId: user.id },
+        );
+        const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
+        const ts = invoices.reduce(
+          (max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max),
+          0,
+        );
+        if (!cancelled && ts > 0) setRealRenewalTs(ts);
+      } catch {
+        // keep the approximation
+      } finally {
+        if (!cancelled) setRenewalFetching(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, currentPlan]);
   const renewalDaysLeft = (() => {
+    if (realRenewalTs) {
+      return Math.max(
+        0,
+        Math.ceil((realRenewalTs * 1000 - Date.now()) / (1000 * 60 * 60 * 24)),
+      );
+    }
+    // Placeholder while the exact date is in flight — render nothing.
+    if (renewalFetching) return null;
     if (!isPaidPlan || !profile?.updated_at) return null;
     const cycleDays = profile?.billing_cycle === 'annual' ? 365 : 30;
     const start = new Date(profile.updated_at).getTime();
@@ -775,11 +822,14 @@ export default function InfluencerPricing() {
                 </View>
                 <Text className="text-sm text-slate-500 mt-0.5">
                   {currentPlan === 'free'
-                    ? expired
-                      ? t('ScreensInfluencerPricing.currentPlan.trialExpired')
-                      : t('ScreensInfluencerPricing.currentPlan.daysRemaining', {
-                          count: daysLeft,
-                        })
+                    ? !planReady
+                      ? '—'
+                      : expired
+                        ? t('ScreensInfluencerPricing.currentPlan.trialExpired')
+                        : t(
+                            'ScreensInfluencerPricing.currentPlan.daysRemaining',
+                            {count: daysLeft},
+                          )
                     : t('ScreensInfluencerPricing.currentPlan.activeSubscription', {
                         cycle: billing,
                       })}

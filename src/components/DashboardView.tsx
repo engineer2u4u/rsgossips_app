@@ -3,7 +3,6 @@ import {View, Text, TouchableOpacity, Image} from 'react-native';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
 import {
   CheckCircle2,
-  TrendingUp,
   CreditCard,
   BarChart3,
   FileText,
@@ -98,10 +97,21 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   const currentPlan = profile?.subscription_plan || 'free';
   const hasPaidPlan = currentPlan !== 'free';
-  const createdAt = profile?.created_at ? new Date(profile.created_at) : new Date();
-  const elapsed = Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, TRIAL_DAYS - elapsed);
-  const trialProgress = Math.min(100, Math.round((elapsed / TRIAL_DAYS) * 100));
+  // Until the profile lands there is no created_at, and falling back to
+  // `new Date()` made elapsed 0 — so the card confidently rendered a full
+  // "30 days" that visibly corrected itself a second later. Treat the
+  // countdown as unknown until the real date is in and show a placeholder.
+  const createdAtRaw: string | undefined = profile?.created_at;
+  const planReady = !!createdAtRaw;
+  const elapsed = createdAtRaw
+    ? Math.floor(
+        (Date.now() - new Date(createdAtRaw).getTime()) / (1000 * 60 * 60 * 24),
+      )
+    : 0;
+  const daysLeft = planReady ? Math.max(0, TRIAL_DAYS - elapsed) : null;
+  const trialProgress = planReady
+    ? Math.min(100, Math.round((elapsed / TRIAL_DAYS) * 100))
+    : 0;
   const expired = daysLeft === 0;
 
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -395,6 +405,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <Text className="text-[10px] text-gray-400 font-medium">
                 {hasPaidPlan
                   ? t('DashboardView.activeSubscription')
+                  : !planReady
+                  ? '—'
                   : expired
                   ? t('DashboardView.trialExpired')
                   : t('DashboardView.daysLeft', {count: daysLeft})}
@@ -418,7 +430,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 </Text>
               </View>
               <Text className={`text-[10px] font-black ${expired ? 'text-red-400' : 'text-purple-600'}`}>
-                {t('DashboardView.daysProgress', {left: daysLeft, total: TRIAL_DAYS})}
+                {planReady
+                  ? t('DashboardView.daysProgress', {
+                      left: daysLeft,
+                      total: TRIAL_DAYS,
+                    })
+                  : '—'}
               </Text>
             </View>
             <View className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
