@@ -13,7 +13,9 @@
 // the Authorization header; otherwise we fall back to the anon key. This
 // matches what the web app does and lets edge functions read auth.uid().
 
+import {DeviceEventEmitter} from 'react-native';
 import {safeGetSession} from '../utils/supabase';
+import {NETWORK_ERROR_EVENT} from '../components/OfflineGate';
 import {
   NEXT_PUBLIC_SUPABASE_URL as SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as SUPABASE_ANON_KEY,
@@ -112,6 +114,11 @@ export async function invokeFn<T = any>(
           408,
           null,
         );
+      }
+      // Network-level failure (no route to host / airplane mode): wake the
+      // OfflineGate overlay, which takes over until connectivity returns.
+      if (/network request failed/i.test(String(err?.message || ''))) {
+        DeviceEventEmitter.emit(NETWORK_ERROR_EVENT);
       }
       throw err;
     } finally {

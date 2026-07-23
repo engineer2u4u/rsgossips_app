@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import OfflineGate from './src/components/OfflineGate';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { LinkingOptions } from '@react-navigation/native';
 import './global.css';
@@ -190,6 +191,10 @@ export default function App() {
             <NavigationContainer linking={linking}>
               <RootStack />
             </NavigationContainer>
+            {/* Offline takeover — sits above the whole navigator; woken by
+                invokeFn on network-level fetch failures, dismisses itself
+                only when a connectivity probe succeeds. */}
+            <OfflineGate />
           </AuthProvider>
         </LoadingProvider>
       </SafeAreaProvider>

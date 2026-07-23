@@ -31,7 +31,7 @@ type BrandCampaign = {
   title: string;
   description?: string;
   bannerImage?: string;
-  status: 'active' | 'draft' | 'paused' | 'completed';
+  status: 'active' | 'draft' | 'paused' | 'completed' | 'under_review';
   campaignType?: string;
   maxInfluencers?: number;
   budgetTotal?: number;
@@ -52,7 +52,10 @@ const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
 
 export default function BrandCampaigns() {
   const {t} = useTranslation();
-  const {user} = useAuth();
+  const {user, profile} = useAuth();
+  // Unverified brands can browse but not create campaigns (server enforces
+  // the same rule; this keeps the UI honest).
+  const brandVerified = (profile as any)?.verification_status === 'verified';
   const navigation = useNavigation<any>();
   const [campaigns, setCampaigns] = useState<BrandCampaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,8 +229,20 @@ export default function BrandCampaigns() {
         )}
       </View>
 
+      {/* Verification gate — unverified brands can't create campaigns */}
+      {profile && !brandVerified ? (
+        <View className="absolute bottom-24 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+          <Text className="text-[13px] font-bold text-amber-900">
+            {t('ScreensBrandCampaigns.verifyGateTitle')}
+          </Text>
+          <Text className="text-[11px] text-amber-700 mt-0.5">
+            {t('ScreensBrandCampaigns.verifyGateBody')}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Floating FAB — full create flow is its own batch */}
-      <View className="absolute bottom-24 right-6 z-50">
+      <View className="absolute bottom-24 right-6 z-50" style={!brandVerified ? {display: 'none'} : undefined}>
         <LinearGradient
           colors={['#5851DB', '#4338CA']}
           className="rounded-2xl shadow-lg shadow-purple-200">
@@ -273,10 +288,12 @@ function RealCampaignCard({
     draft: 'bg-slate-100',
     paused: 'bg-amber-100',
     completed: 'bg-indigo-100',
+    under_review: 'bg-purple-100',
   };
   const statusText: Record<BrandCampaign['status'], string> = {
     active: 'text-emerald-700',
     draft: 'text-slate-600',
+    under_review: 'text-purple-700',
     paused: 'text-amber-700',
     completed: 'text-indigo-700',
   };
@@ -320,7 +337,7 @@ function RealCampaignCard({
             <View className={`${statusBg[campaign.status]} px-2 py-0.5 rounded-full`}>
               <Text
                 className={`text-[10px] font-bold uppercase ${statusText[campaign.status]}`}>
-                {campaign.status}
+                {campaign.status === 'under_review' ? t('ScreensBrandCampaigns.underReview') : campaign.status}
               </Text>
             </View>
           )}

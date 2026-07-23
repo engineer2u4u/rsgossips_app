@@ -1617,7 +1617,10 @@
     "pillSlots": "Slots",
     "pillPending": "Pending",
     "pillDeadline": "Deadline",
-    "applicationsClosed": "Applications Closed"
+    "applicationsClosed": "Applications Closed",
+    "underReview": "under review",
+    "verifyGateTitle": "Your brand is under review",
+    "verifyGateBody": "You can create campaigns as soon as our team verifies your account (usually 1-2 business days)."
   },
   "ScreensBrandChats": {
     "messages": "Messages",
@@ -3363,5 +3366,12 @@
       "total": "Total paid",
       "note": "This is a payment receipt for funds placed in escrow via Razorpay, held by RUDE LABS PVT. LTD. (RGossips) and released to the creator on your approval. It is not a GST tax invoice."
     }
+  },
+  "OfflineGate": {
+    "title": "No signal, no gossip. 📵",
+    "body": "Looks like your internet took a coffee break. We will pick up right where you left off the moment you are back online.",
+    "refresh": "Try again",
+    "checking": "Checking…",
+    "autoNote": "We reconnect automatically when your network returns."
   }
 }

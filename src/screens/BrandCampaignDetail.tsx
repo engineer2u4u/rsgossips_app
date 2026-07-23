@@ -60,7 +60,7 @@ type AppStatus =
   | 'completed'
   | 'rejected';
 
-type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed';
+type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'under_review';
 
 type InfluencerProfile = {
   full_name?: string;
@@ -123,6 +123,7 @@ const STATUS_PILL: Record<
   active: {bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'ACTIVE'},
   paused: {bg: 'bg-amber-100', text: 'text-amber-700', label: 'PAUSED'},
   completed: {bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'COMPLETED'},
+  under_review: {bg: 'bg-purple-100', text: 'text-purple-700', label: 'UNDER REVIEW'},
 };
 
 const APP_STATUS_PILL: Record<AppStatus, {bg: string; text: string; label: string}> = {
