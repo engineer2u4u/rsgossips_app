@@ -281,6 +281,14 @@ function RealCampaignCard({
     completed: 'text-indigo-700',
   };
 
+  // A campaign can be DB-status "active" with its application deadline
+  // already past — creators can't apply anymore, so it gets its own amber
+  // display chip instead of a misleading Active (mirrors web CampaignCard).
+  const appsClosed =
+    campaign.status === 'active' &&
+    !!campaign.applicationDeadline &&
+    new Date(campaign.applicationDeadline).getTime() < Date.now();
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -302,12 +310,20 @@ function RealCampaignCard({
               </Text>
             </View>
           ) : null}
-          <View className={`${statusBg[campaign.status]} px-2 py-0.5 rounded-full`}>
-            <Text
-              className={`text-[10px] font-bold uppercase ${statusText[campaign.status]}`}>
-              {campaign.status}
-            </Text>
-          </View>
+          {appsClosed ? (
+            <View className="bg-amber-100 px-2 py-0.5 rounded-full">
+              <Text className="text-[10px] font-bold uppercase text-amber-700">
+                {t('ScreensBrandCampaigns.applicationsClosed')}
+              </Text>
+            </View>
+          ) : (
+            <View className={`${statusBg[campaign.status]} px-2 py-0.5 rounded-full`}>
+              <Text
+                className={`text-[10px] font-bold uppercase ${statusText[campaign.status]}`}>
+                {campaign.status}
+              </Text>
+            </View>
+          )}
         </View>
         <Text className="text-base font-bold text-gray-900" numberOfLines={1}>
           {campaign.title}

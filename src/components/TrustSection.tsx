@@ -32,12 +32,10 @@ export const TrustSection: React.FC = () => {
           </View>
         </View>
 
-        {/* Score Ring */}
-        <View className="relative items-center justify-center w-16 h-16">
-          <View className="absolute inset-0 rounded-full border-4 border-slate-800" />
-          <View className="absolute inset-0 rounded-full border-4 border-[#5B3DF5] border-t-transparent -rotate-45" />
-
-          <Text className="text-white text-[10px] font-black italic">{t('TrustSection.high')}</Text>
+        {/* Band chip — the progress ring was dropped per design feedback;
+            the numeric score already communicates magnitude. */}
+        <View className="px-3 py-1.5 rounded-full border border-[#5B3DF5]">
+          <Text className="text-[#8B7BF7] text-[10px] font-black italic">{t('TrustSection.high')}</Text>
         </View>
       </View>
     </View>

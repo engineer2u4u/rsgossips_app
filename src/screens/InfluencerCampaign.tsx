@@ -1,4 +1,4 @@
-import React, {useCallback, useState, useMemo, useEffect, useRef} from 'react';
+import React, {useCallback, useState, useMemo, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Search, SlidersHorizontal} from 'lucide-react-native';
@@ -24,8 +22,10 @@ import {useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 
 const TABS = ['Active', 'Applied', 'Completed'];
-const PAGE_SIZE = 10;
-const LOAD_MORE_STEP = 6;
+// Mirrors web's PAGE_SIZE (client-side pagination, 30 per page). Mobile
+// reveals the next window via an explicit "Load more" button instead of
+// numbered pages so scroll position stays natural.
+const PAGE_SIZE = 30;
 
 interface CampaignData {
   id: string;
@@ -125,10 +125,9 @@ export default function InfluencerCampaign() {
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  // Pagination: render `visibleCount` cards, bump by LOAD_MORE_STEP
-  // when the user scrolls past the bottom threshold.
+  // Pagination: render `visibleCount` cards; the "Load more" button under
+  // the list reveals the next PAGE_SIZE window.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const loadingMoreRef = useRef(false);
 
   // Re-seed the brand filter whenever the screen is reopened with a
   // different brand param (back-and-forth navigation between Brands tiles
@@ -340,21 +339,35 @@ export default function InfluencerCampaign() {
     [filteredCampaigns, visibleCount],
   );
   const hasMore = visibleCount < filteredCampaigns.length;
+  const remainingCount = filteredCampaigns.length - visibleCount;
 
-  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (!hasMore || loadingMoreRef.current) return;
-    const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
-    const distanceFromBottom =
-      contentSize.height - (layoutMeasurement.height + contentOffset.y);
-    if (distanceFromBottom < 240) {
-      loadingMoreRef.current = true;
-      setVisibleCount(c =>
-        Math.min(c + LOAD_MORE_STEP, filteredCampaigns.length),
-      );
-      setTimeout(() => {
-        loadingMoreRef.current = false;
-      }, 250);
-    }
+  // Filtered-state strip: "N out of M campaigns" + a Show-all reset,
+  // mirroring web's `tabTotalUnfiltered` / `hasActiveFilters` /
+  // `clearAllFilters`. The total ignores the non-tab filters so the
+  // ratio is honest. (isVerifiedOnly isn't part of the filter predicate,
+  // so it doesn't count as an "active" filter — but Show all clears it
+  // anyway for a clean slate.)
+  const tabTotalUnfiltered = useMemo(
+    () =>
+      campaigns.filter(c =>
+        activeTab === 'Completed'
+          ? c.applicationStatus === 'completed'
+          : c.status === activeTab,
+      ).length,
+    [campaigns, activeTab],
+  );
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    selectedCategories.length > 0 ||
+    selectedBrands.length > 0 ||
+    budgetRange.min > 0 ||
+    budgetRange.max < 200000;
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedCategories([]);
+    setSelectedBrands([]);
+    setBudgetRange({min: 0, max: 200000});
+    setIsVerifiedOnly(false);
   };
 
   return (
@@ -364,8 +377,6 @@ export default function InfluencerCampaign() {
       <ScrollView
         className="flex-1" style={{backgroundColor: '#F5F4F8'}}
         showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={64}
         removeClippedSubviews
         refreshControl={
           <RefreshControl
@@ -435,6 +446,33 @@ export default function InfluencerCampaign() {
             })}
           </View>
 
+          {/* Filtered strip — mirrors web's "{shown} out of {total}
+              campaigns" + gradient Show-all reset; only shown while a
+              non-tab filter is active. */}
+          {hasActiveFilters && !loading && (
+            <View className="flex-row items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-slate-50">
+              <Text className="text-xs font-bold text-[#E60076] flex-1 mr-2">
+                {t('ScreensInfluencerCampaign.filteredOutOf', {
+                  shown: filteredCampaigns.length,
+                  total: tabTotalUnfiltered,
+                })}
+              </Text>
+              <TouchableOpacity
+                onPress={clearAllFilters}
+                style={{borderRadius: 10, overflow: 'hidden'}}>
+                <LinearGradient
+                  colors={['#9810FA', '#E60076']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 0}}
+                  style={{paddingHorizontal: 12, paddingVertical: 7}}>
+                  <Text className="text-[11px] font-bold text-white">
+                    {t('ScreensInfluencerCampaign.showAll')}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Campaign Cards */}
           {loading ? (
             <View className="py-20 items-center" style={{gap: 12}}>
@@ -464,9 +502,19 @@ export default function InfluencerCampaign() {
               )}
 
               {hasMore && (
-                <View className="py-4 items-center">
-                  <ActivityIndicator size="small" color="#9810FA" />
-                </View>
+                <TouchableOpacity
+                  onPress={() =>
+                    setVisibleCount(c =>
+                      Math.min(c + PAGE_SIZE, filteredCampaigns.length),
+                    )
+                  }
+                  className="py-3.5 items-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <Text className="text-sm font-bold text-[#9810FA]">
+                    {t('ScreensInfluencerCampaign.loadMore', {
+                      n: remainingCount,
+                    })}
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
           )}

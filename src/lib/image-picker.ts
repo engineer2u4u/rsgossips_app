@@ -35,8 +35,11 @@ export interface CropOptions {
    * the user drag it to any rectangle — so a portrait/landscape photo can be
    * uploaded uncropped, or trimmed however they like. Use this for avatars
    * and logos; a forced 1:1 box silently chopped non-square photos.
+   * 'banner' pins the crop box to 3:1 and outputs a fixed 1536×512 JPEG —
+   * matches the web campaign-banner cropper so banners render the same on
+   * every surface.
    */
-  crop?: 'square' | 'free';
+  crop?: 'square' | 'free' | 'banner';
   /** Longest output edge in pixels. Default 800. */
   size?: number;
 }
@@ -92,23 +95,27 @@ export async function pickFromLibrary(
   // native iOS / Android square cropper UI baked in. The user picks the
   // photo, frames it inside a draggable square, and we get back the cropped
   // file ready for upload.
-  if (opts.crop === 'square' || opts.crop === 'free') {
+  if (opts.crop === 'square' || opts.crop === 'free' || opts.crop === 'banner') {
     const size = opts.size ?? 800;
     const free = opts.crop === 'free';
+    const banner = opts.crop === 'banner';
     try {
       const img = await ImageCropPicker.openPicker({
         // Passing width/height pins the crop box to that aspect ratio. For
         // the free mode we deliberately omit them and bound the output with
         // compressImageMaxWidth/Height instead, so the crop box starts on the
         // full image and the user can keep it (no forced chopping) or drag it
-        // to any rectangle.
+        // to any rectangle. 'banner' pins 3:1 at the web cropper's fixed
+        // 1536×512 output.
         ...(free
           ? {
               freeStyleCropEnabled: true,
               compressImageMaxWidth: size,
               compressImageMaxHeight: size,
             }
-          : {width: size, height: size}),
+          : banner
+            ? {width: 1536, height: 512}
+            : {width: size, height: size}),
         cropping: true,
         cropperCircleOverlay: false,
         compressImageQuality: 0.85,

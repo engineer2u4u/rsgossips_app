@@ -285,6 +285,19 @@
       "good": "Good",
       "fair": "Fair",
       "poor": "Poor"
+    },
+    "match": {
+      "title": "Why this match?",
+      "matchWith": "match with {{name}}",
+      "coachButton": "How do I improve this? (AI)",
+      "coaching": "Coaching…",
+      "limitBody": "You've used your AI generations this month.",
+      "upgrade": "Upgrade",
+      "yourCoach": "Your coach",
+      "copy": "Copy",
+      "copied": "Copied",
+      "regenerate": "Regenerate",
+      "remaining": "{{n}} AI generations left this month"
     }
   },
   "BrandHero": {
@@ -366,7 +379,12 @@
       "pincodeLabel": "Pincode",
       "pincodePlaceholder": "6-digit pincode",
       "gstHintPrefix": "Auto-filled from GSTIN",
-      "gstHintSuffix": ". Edits override the auto-fill but the original GSTIN stays on file."
+      "gstHintSuffix": ". Edits override the auto-fill but the original GSTIN stays on file.",
+      "aboutLabel": "About the brand",
+      "aboutPlaceholder": "What does your brand do? What makes it special? Creators see this when deciding to apply.",
+      "aboutHint": "Shown to creators on your brand page. Max 1000 characters.",
+      "websiteLabel": "Website",
+      "websitePlaceholder": "https://yourbrand.com"
     },
     "contact": {
       "title": "Edit Contact Details",
@@ -1577,7 +1595,8 @@
     "ratingSectionLabel": "How would you rate {{name}}?",
     "ratingPrimaryCta": "Submit & Release Payment",
     "ratingSecondaryCta": "Skip & Approve",
-    "pitchLabel": "Their Pitch"
+    "pitchLabel": "Their Pitch",
+    "statusApplicationsClosed": "APPLICATIONS CLOSED"
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -1597,7 +1616,8 @@
     "pillBudget": "Budget",
     "pillSlots": "Slots",
     "pillPending": "Pending",
-    "pillDeadline": "Deadline"
+    "pillDeadline": "Deadline",
+    "applicationsClosed": "Applications Closed"
   },
   "ScreensBrandChats": {
     "messages": "Messages",
@@ -1659,7 +1679,17 @@
     "logOut": "Log Out",
     "savingBrandInfo": "Saving brand info…",
     "savingContactDetails": "Saving contact details…",
-    "savingCategories": "Saving categories…"
+    "savingCategories": "Saving categories…",
+    "aboutBrand": "About the brand",
+    "aboutEmpty": "Tell creators about your brand — tap Edit to add",
+    "website": "Website",
+    "websiteEmpty": "Add your website — tap Edit",
+    "transactions": "Transactions & Invoices",
+    "transactionsSub": "Escrow payments, receipts and refunds",
+    "deactivateAccount": "Deactivate Account",
+    "deactivateAccountSub": "Temporarily hide your brand. Sign back in to restore.",
+    "deleteAccount": "Delete Account",
+    "deleteAccountSub": "Soft delete with a 30-day grace period — admin can restore on request."
   },
   "ScreensBrandSearch": {
     "title": "Search",
@@ -1806,12 +1836,13 @@
     },
     "banner": {
       "tapToUpload": "Tap to upload banner",
-      "fileHint": "PNG, JPG up to 10MB"
+      "fileHint": "Recommended 1536×512 (3:1) · PNG, JPG, WebP up to 3MB"
     },
     "gallery": {
       "add": "Add gallery images",
       "count_one": "{{count}} image",
-      "count_other": "{{count}} images"
+      "count_other": "{{count}} images",
+      "fileHint": "Square works best · up to 3MB each"
     },
     "counts": {
       "selected": "{{count}} selected",
@@ -1873,7 +1904,10 @@
       "Active": "active",
       "Applied": "applied",
       "Completed": "completed"
-    }
+    },
+    "filteredOutOf": "{{shown}} out of {{total}} campaigns",
+    "showAll": "Show all",
+    "loadMore": "Load more ({{n}} remaining)"
   },
   "ScreensInfluencerChats": {
     "messages": "Messages",
@@ -1887,7 +1921,12 @@
     "subtitle": "Find the perfect collaboration",
     "searchPlaceholder": "Search brands...",
     "loading": "Loading brands...",
-    "empty": "No brands match these filters."
+    "empty": "No brands match these filters.",
+    "countBrands": "{{n}} brands",
+    "sortMatch": "Match score",
+    "sortAz": "A–Z",
+    "sortCampaigns": "Active campaigns",
+    "loadMore": "Load more ({{n}} remaining)"
   },
   "ScreensInfluencerMediaKit": {
     "shareMessage": "Check out my media kit",
@@ -3129,5 +3168,200 @@
     "giftedBy": "Gifted by",
     "claim": "Claim Your Reward",
     "maybeLater": "Maybe later"
+  },
+  "BrandSupportChatModal": {
+    "header": {
+      "title": "RGossips Brand Support",
+      "online": "Online · usually replies instantly"
+    },
+    "greeting": "Hi {{name}}! 👋 What can I help you with today?",
+    "fallbackName": "there",
+    "pickClosest": "Pick the closest match:",
+    "backLabel": "← Back",
+    "loadingCampaigns": "Loading campaigns…",
+    "requestCallback": "Request a callback",
+    "askAnother": "Ask another question",
+    "talkHuman": "Talk to a human",
+    "callbackIntro": "Tell us how to reach you and we'll call back.",
+    "callbackDone": "Got it ✓ Our team will call back during the time you picked.",
+    "campaigns": {
+      "pullingAll": "Pulling your campaigns…",
+      "noneYet": "You haven't created any campaigns yet. Post your first requirement and matching creators get notified instantly.",
+      "pickCampaign": "Pick the campaign you need help with:",
+      "whatsUp": "Got it — what’s going on with \"{{title}}\"?",
+      "applicationsZero": "No applications",
+      "applicationsCount_one": "{{count}} application",
+      "applicationsCount_other": "{{count}} applications"
+    },
+    "labels": {
+      "my_campaigns": "My campaigns",
+      "payments": "Payments & escrow",
+      "pay_escrow_how": "How does escrow work?",
+      "pay_fund_fail": "Escrow payment not going through",
+      "pay_release_how": "How do I release payment?",
+      "pay_refund": "Refund for a cancelled campaign",
+      "account": "Account & verification",
+      "acct_gstin": "Add or update GSTIN",
+      "acct_verify": "Check my verification status",
+      "acct_edit": "Edit my brand profile",
+      "other": "Something else",
+      "other_callback": "Request a callback",
+      "issue_no_apps": "No applications yet",
+      "issue_review": "How do I review applications?",
+      "issue_deliverables": "Deliverables not submitted",
+      "issue_escrow": "How does escrow work?",
+      "issue_release": "Release payment issue",
+      "issue_callback": "Talk to a human about this"
+    },
+    "responses": {
+      "pay_escrow_how": "Once a creator accepts your offer, you fund the agreed amount into escrow via Razorpay. We hold it safely while the creator delivers; it's only released to them after you approve the live post. If things fall through, the escrow can be resolved via support.",
+      "pay_fund_fail": "Razorpay occasionally declines on the first attempt — retry once, or switch card / UPI / netbanking. Make sure you're signed in to the app (an expired session causes a silent failure). Still stuck? Request a callback and we'll complete it with you.",
+      "pay_release_how": "Open the campaign, review the creator's live links, and approve them — approval moves the escrow to Payment Released and the creator gets paid. You'll find every application on the campaign detail page.",
+      "pay_refund": "Escrowed funds for work that never happened are refundable. Refunds are handled by our team case-by-case — request a callback with the campaign name and we'll process it.",
+      "acct_gstin": "Open your brand profile and edit the Business Details section to add or correct your GSTIN. It appears on invoices, so double-check the 15-character format.",
+      "acct_verify": "Your verification badge and trust score live on your brand profile. Verification usually completes within 1–2 business days of submitting your business details; the trust score grows as you complete campaigns.",
+      "acct_edit": "Everything — logo, description, website, contact details — is editable from your brand profile page. Creators see this profile when they consider your campaigns, so keep it fresh."
+    },
+    "linkLabels": {
+      "pay_release_how": "Go to Campaigns",
+      "acct_gstin": "Go to Profile",
+      "acct_verify": "Go to Profile",
+      "acct_edit": "Go to Profile"
+    },
+    "links": {
+      "createCampaign": "Create a Campaign",
+      "openThisCampaign": "Open this campaign"
+    },
+    "issues": {
+      "noAppsDraft": "This campaign is still a Draft — creators can't see it yet. Publish it from the campaign page to start receiving applications.",
+      "noAppsPaused": "This campaign is Paused, so it's hidden from creators. Resume it to start receiving applications again.",
+      "noAppsCompleted": "This campaign is marked Completed, so it no longer accepts applications.",
+      "noAppsOther": "Matching creators were notified when you published. Check that your categories, follower range and cities aren't too narrow, and that the application deadline hasn't passed — widening them reaches more creators.",
+      "reviewZero": "No one has applied yet — once creators apply, each application appears on the campaign detail page with the creator's profile, rates and pitch.",
+      "reviewSome_one": "You have {{count}} application waiting. Open the campaign detail page to review the creator's profile and pitch, then use Approve with Price to send your offer.",
+      "reviewSome_other": "You have {{count}} applications waiting. Open the campaign detail page to review each creator's profile and pitch, then use Approve with Price to send offers.",
+      "deliverables": "Creators can submit deliverables only after you approve their application and fund the escrow. If an approved creator is late, open the campaign to check their application status — a friendly nudge usually works. If they've gone quiet for 5+ days, request a callback and we'll follow up.",
+      "escrow": "After a creator accepts your offer, you pay the agreed amount into escrow via Razorpay from this campaign's page. We hold the funds while the creator delivers, and release them only after you approve the live post — you never pay for work you haven't seen.",
+      "release": "Payment releases when you approve the creator's live links on the campaign page. If the Release button isn't working or the status looks stuck, note the creator's name and request a callback — we'll resolve the escrow manually."
+    },
+    "time": {
+      "todayAfternoon": "Today afternoon",
+      "todayEvening": "Today evening",
+      "tomorrowMorning": "Tomorrow morning",
+      "tomorrowEvening": "Tomorrow evening",
+      "anytime": "Anytime"
+    },
+    "callback": {
+      "phone": "Phone",
+      "countryCodeHint": "Include country code (e.g. +91 for India)",
+      "bestTime": "Best time to call",
+      "notesLabel": "Anything we should know? (optional)",
+      "notesPlaceholder": "What's the issue?",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "submit": "Request callback",
+      "doneTitle": "Callback requested",
+      "doneMessage": "We'll call {{phone}} {{time}}.",
+      "errSignIn": "Please sign in first.",
+      "errPhone": "Enter a valid phone number with country code.",
+      "errSubmit": "Failed to submit"
+    }
+  },
+  "BrandsBrandAccountActionsModal": {
+    "title": {
+      "deactivate": "Deactivate Account",
+      "delete": "Delete Account"
+    },
+    "subtitle": {
+      "deactivate": "Reversible — sign back in any time",
+      "delete": "30-day grace period — admin can restore on request"
+    },
+    "deactivateInfo": {
+      "heading": "Deactivating is reversible.",
+      "point1": "Your brand stops appearing to creators.",
+      "point2": "Active campaigns are paused.",
+      "point3": "Signing in again with the same number reactivates everything automatically."
+    },
+    "deleteInfo": {
+      "heading": "This is a soft delete with a 30-day grace window.",
+      "point1": "Your brand and all related data is hidden immediately.",
+      "point2": "Sign-in is blocked while the account is pending deletion.",
+      "point3": "Email grievance@rgossips.com within 30 days if you want it restored.",
+      "point4": "After 30 days, the account, campaigns, applications and contact details are permanently removed."
+    },
+    "reasonHeading": {
+      "deactivate": "Tell us why you're taking a break",
+      "delete": "Tell us why you're leaving"
+    },
+    "reasonSubtext": "This helps us improve RGossips.",
+    "reasonsDeactivate": {
+      "break": "Taking a break from campaigns",
+      "otherPlatform": "Found another platform",
+      "privacy": "Privacy concerns",
+      "notFindingCreators": "Not finding the right creators",
+      "tooManyNotifications": "Too many notifications",
+      "security": "Account security issues",
+      "other": "Other"
+    },
+    "reasonsDelete": {
+      "closingBusiness": "Closing the business",
+      "movingPlatform": "Moving to a different platform",
+      "privacy": "Privacy concerns",
+      "createdByMistake": "Created the account by mistake",
+      "duplicate": "Duplicate account",
+      "other": "Other"
+    },
+    "typeToConfirm": "Type DELETE to confirm",
+    "confirmCheckbox": {
+      "deactivate": "I understand my account will be deactivated and creators will no longer see my brand.",
+      "delete": "I understand my account will be hidden now and permanently removed after 30 days unless I contact admin."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "deactivate": "Deactivate",
+      "deleteAccount": "Delete Account"
+    },
+    "errors": {
+      "failedToSubmit": "Failed to submit"
+    }
+  },
+  "ScreensBrandTransactions": {
+    "title": "Transactions & Invoices",
+    "subtitle": "Every escrow payment you've made, with receipts.",
+    "summary": {
+      "totalSpent": "Total spent",
+      "inEscrow": "In escrow",
+      "released": "Released to creators"
+    },
+    "listTitle": "Payment history",
+    "empty": {
+      "title": "No transactions yet",
+      "body": "When you fund an escrow for a creator, it shows up here with a receipt.",
+      "cta": "Go to campaigns"
+    },
+    "row": {
+      "toCreator": "to {{name}}",
+      "campaignFallback": "Campaign"
+    },
+    "status": {
+      "inEscrow": "In escrow",
+      "released": "Released",
+      "refunded": "Refunded",
+      "processing": "Processing"
+    },
+    "receipt": {
+      "title": "Payment receipt",
+      "share": "Share",
+      "shareTitle": "RGossips — Payment Receipt",
+      "receiptNo": "Receipt no.",
+      "date": "Date",
+      "billedTo": "Billed to",
+      "campaign": "Campaign",
+      "paymentRefs": "Payment references",
+      "statusLabel": "Status",
+      "lineItem": "Escrow funding — {{campaign}}",
+      "total": "Total paid",
+      "note": "This is a payment receipt for funds placed in escrow via Razorpay, held by RUDE LABS PVT. LTD. (RGossips) and released to the creator on your approval. It is not a GST tax invoice."
+    }
   }
 }

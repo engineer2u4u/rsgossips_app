@@ -24,6 +24,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import BrandSearch from './src/screens/BrandSearch';
 import BrandCampaigns from './src/screens/BrandCampaigns';
 import BrandProfile from './src/screens/BrandProfile';
+import BrandTransactions from './src/screens/BrandTransactions';
 import BrandChats from './src/screens/BrandChats';
 import InfluencerDiscover from './src/screens/InfluencerDiscover';
 import InfluencerCampaign from './src/screens/InfluencerCampaign';
@@ -131,6 +132,7 @@ function RootStack() {
       />
       <Stack.Screen name="BrandChats" component={BrandChats} />
       <Stack.Screen name="BrandProfile" component={BrandProfile} />
+      <Stack.Screen name="BrandTransactions" component={BrandTransactions} />
       <Stack.Screen name="InfluencerHome" component={InfluencerHome} />
       <Stack.Screen name="InfluencerSearch" component={InfluencerDiscover} />
       <Stack.Screen

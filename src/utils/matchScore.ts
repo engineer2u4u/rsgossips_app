@@ -108,42 +108,125 @@ function bestBrandCategoryTier(
   return best;
 }
 
+/**
+ * Explainable brand-match breakdown — the single source of truth for the
+ * brand-card match % AND its "why this match?" modal, so they always agree.
+ * Mirrors web utils/matchScore.js `explainBrandMatch` (category 40 /
+ * platform 25 / reach 20 / brand quality 15) but keeps the mobile scorer's
+ * richer TIERED category logic (multi-label `brandCategoryLabels` +
+ * `bestBrandCategoryTier`) so scores are unchanged for existing callers.
+ * Labels/reasons are plain English strings by design (same as the campaign
+ * explainers on web + mobile).
+ */
+export function explainBrandMatch(
+  profile: Profile | null,
+  brand: Brand,
+): MatchExplanation {
+  if (!profile) return {score: 0, breakdown: []};
+
+  const userCategories = (profile.categories || []).map(c =>
+    c.toLowerCase().trim(),
+  );
+  const band = (pts: number, max: number): MatchFactorStatus =>
+    pts >= max * 0.75 ? 'strong' : pts >= max * 0.45 ? 'ok' : 'weak';
+  const breakdown: MatchFactor[] = [];
+
+  // 1. Category match (40), tiered so near-misses still outrank unrelated
+  // brands instead of everything collapsing onto the 10-pt floor.
+  const labels = brandCategoryLabels(brand);
+  const tier = bestBrandCategoryTier(userCategories, labels);
+  const catPts = ({3: 40, 2: 30, 1: 20, 0: 10} as const)[tier];
+  const userCatList = (profile.categories || []).join(', ') || 'none set';
+  const brandNiche =
+    brand.category && brand.category.toLowerCase() !== 'general'
+      ? brand.category
+      : labels[0] || '';
+  const catReason =
+    tier === 3
+      ? `${brandNiche || "This brand's niche"} overlaps your categories (${userCatList}).`
+      : tier === 2
+        ? `${brandNiche || "This brand's niche"} partially overlaps your categories (${userCatList}).`
+        : tier === 1
+          ? `${brandNiche || "This brand's niche"} is related to your categories (${userCatList}) — a soft fit.`
+          : labels.length === 0
+            ? 'This brand has no niche set, so only a base score applies.'
+            : `${brandNiche} doesn't overlap your categories (${userCatList}). Add related categories to your profile if you create this content.`;
+  breakdown.push({
+    key: 'category',
+    label: 'Niche fit',
+    points: catPts,
+    max: 40,
+    status: band(catPts, 40),
+    reason: catReason,
+  });
+
+  // 2. Platform overlap (25)
+  const brandPlatforms = (brand.platforms || []).map(p => p.toLowerCase());
+  const hasInstagram =
+    brandPlatforms.includes('instagram') && !!profile.instagram_handle;
+  const platPts = brandPlatforms.length > 0 && hasInstagram ? 25 : 5;
+  breakdown.push({
+    key: 'platform',
+    label: 'Platforms',
+    points: platPts,
+    max: 25,
+    status: band(platPts, 25),
+    reason:
+      platPts === 25
+        ? "You're active on the platform(s) this brand campaigns on."
+        : 'Connect the platform this brand campaigns on (Instagram) to raise this.',
+  });
+
+  // 3. Reach (20)
+  const followers = profile.followers_count || 0;
+  const folPts =
+    followers >= 10000 ? 20 : followers >= 5000 ? 15 : followers >= 1000 ? 10 : 5;
+  breakdown.push({
+    key: 'reach',
+    label: 'Reach',
+    points: folPts,
+    max: 20,
+    status: band(folPts, 20),
+    reason: `You have ${Number(followers).toLocaleString('en-IN')} followers.`,
+  });
+
+  // 4. Brand quality (15) — verified badge + community rating
+  let qualPts = 0;
+  if (brand.isVerified) qualPts += 8;
+  if ((brand.rating || 0) >= 4.5) qualPts += 7;
+  else if ((brand.rating || 0) >= 4.0) qualPts += 4;
+  breakdown.push({
+    key: 'quality',
+    label: 'Brand quality',
+    points: qualPts,
+    max: 15,
+    status: band(qualPts, 15),
+    reason: [
+      brand.isVerified ? 'Verified brand' : 'Not yet verified',
+      brand.rating
+        ? `rated ${Number(brand.rating).toFixed(1)}★ by creators`
+        : 'no creator ratings yet',
+    ].join(' · '),
+  });
+
+  const score = Math.min(
+    100,
+    breakdown.reduce((s, b) => s + b.points, 0),
+  );
+  return {score, breakdown};
+}
+
+/**
+ * Calculate match score between an influencer profile and a brand.
+ * Thin wrapper over {@link explainBrandMatch} so the card badge and the
+ * "why this match?" modal never disagree. Mirrors web utils/matchScore.js.
+ */
 export function calculateBrandMatchScore(
   profile: Profile | null,
   brand: Brand,
 ): number {
   if (!profile) return 0;
-
-  let score = 0;
-  const userCategories = (profile.categories || []).map(c =>
-    c.toLowerCase().trim(),
-  );
-
-  // 1. Category match (40 points), tiered so near-misses still outrank
-  // unrelated brands instead of everything collapsing onto the 10-pt floor.
-  const tier = bestBrandCategoryTier(userCategories, brandCategoryLabels(brand));
-  score += ({3: 40, 2: 30, 1: 20, 0: 10} as const)[tier];
-
-  // 2. Platform overlap (25 points)
-  const brandPlatforms = (brand.platforms || []).map(p => p.toLowerCase());
-  const hasInstagram =
-    brandPlatforms.includes('instagram') && profile.instagram_handle;
-  if (hasInstagram) score += 25;
-  else score += 5;
-
-  // 3. Followers fit (20 points)
-  const followers = profile.followers_count || 0;
-  if (followers >= 10000) score += 20;
-  else if (followers >= 5000) score += 15;
-  else if (followers >= 1000) score += 10;
-  else score += 5;
-
-  // 4. Verified & rating bonus (15 points)
-  if (brand.isVerified) score += 8;
-  if ((brand.rating || 0) >= 4.5) score += 7;
-  else if ((brand.rating || 0) >= 4.0) score += 4;
-
-  return Math.min(score, 100);
+  return explainBrandMatch(profile, brand).score;
 }
 
 interface Campaign {

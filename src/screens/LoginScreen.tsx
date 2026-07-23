@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -155,6 +155,10 @@ export default function LoginScreen() {
     'onboarding',
   );
   const [step, setStep] = useState(1);
+  // The auth bottom-sheet's ScrollView — handed to the signup forms so their
+  // scroll-to-invalid-field logic can drive the actual scroller (the forms'
+  // own nested ScrollViews may not be the ones scrolling).
+  const sheetScrollRef = useRef<ScrollView>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState('');
@@ -701,6 +705,7 @@ export default function LoginScreen() {
 
             {/* Content */}
             <ScrollView
+              ref={sheetScrollRef}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{paddingHorizontal: 32, paddingBottom: 48}}>
@@ -803,6 +808,7 @@ export default function LoginScreen() {
                     otpPreVerified={!!authUserId}
                     instagramProfile={instaProfile}
                     invitation={invitation}
+                    sheetScrollRef={sheetScrollRef}
                   />
                 )}
                 {step === 3 && signupData.role !== 'brand' && (
@@ -820,6 +826,7 @@ export default function LoginScreen() {
                     otpPreVerified={!!authUserId}
                     instagramProfile={instaProfile}
                     initialName={signupData.name}
+                    sheetScrollRef={sheetScrollRef}
                   />
                 )}
                 {step === 4 && (

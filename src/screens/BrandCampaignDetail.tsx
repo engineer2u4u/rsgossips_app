@@ -265,7 +265,20 @@ export default function BrandCampaignDetail() {
   }
 
   const status = campaign.status;
-  const pill = STATUS_PILL[status];
+  // Derived display status: DB-status "active" with a lapsed application
+  // deadline reads as "Applications Closed", not a misleading ACTIVE
+  // (mirrors web /brands/campaign/[id]).
+  const appsClosed =
+    status === 'active' &&
+    !!campaign.applicationDeadline &&
+    new Date(campaign.applicationDeadline).getTime() < Date.now();
+  const pill = appsClosed
+    ? {
+        bg: 'bg-amber-100',
+        text: 'text-amber-700',
+        label: t('ScreensBrandCampaignDetail.statusApplicationsClosed'),
+      }
+    : STATUS_PILL[status];
 
   return (
     <View style={{flex: 1, backgroundColor: '#F8F9FE'}}>

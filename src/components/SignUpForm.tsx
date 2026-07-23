@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  type LayoutChangeEvent,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
@@ -30,6 +31,10 @@ interface Props {
   otpPreVerified?: boolean;
   instagramProfile?: InstaProfile | null;
   initialName?: string;
+  // Ref to the enclosing bottom-sheet ScrollView (LoginScreen). The form's
+  // own ScrollView is nested inside it and may not be the active scroller,
+  // so scroll-to-field drives both.
+  sheetScrollRef?: React.RefObject<ScrollView | null>;
 }
 
 export default function SignUpForm({
@@ -44,6 +49,7 @@ export default function SignUpForm({
   otpPreVerified = false,
   instagramProfile = null,
   initialName = '',
+  sheetScrollRef,
 }: Props) {
   const [formData, setFormData] = useState({
     name: initialName,
@@ -55,12 +61,70 @@ export default function SignUpForm({
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [localError, setLocalError] = useState('');
   const [consentAgreed, setConsentAgreed] = useState(false);
 
   const {t} = useTranslation();
   const navigation = useNavigation();
   const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // Per-field validation errors: { name?, phone?, otp?, consent? }. The old
+  // single top-of-form banner was invisible once the user scrolled down —
+  // now each error highlights its own field and we scroll it into view.
+  // (Web parity: SignUpForm.jsx fieldErrors.)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const scrollRef = useRef<ScrollView>(null);
+  // y-offsets of each field wrapper inside the scroll content, captured via
+  // onLayout (RN has no scrollIntoView). The OTP block is nested inside the
+  // phone wrapper, so its y is phone-y + local-y.
+  const fieldY = useRef<Record<string, number>>({});
+  const rememberY = (field: string) => (e: LayoutChangeEvent) => {
+    fieldY.current[field] = e.nativeEvent.layout.y;
+  };
+  const rememberOtpY = (e: LayoutChangeEvent) => {
+    fieldY.current.otp = (fieldY.current.phone ?? 0) + e.nativeEvent.layout.y;
+  };
+
+  // Whichever ScrollView is actually scrolling (local vs the bottom sheet's)
+  // — driving both is safe; a non-scrolling one just clamps.
+  const scrollers = () =>
+    [scrollRef.current, sheetScrollRef?.current].filter(
+      Boolean,
+    ) as ScrollView[];
+
+  const raiseFieldError = (field: string, message: string) => {
+    setFieldErrors(prev => ({...prev, [field]: message}));
+    // Bring the offending field into view. Consent sits at the bottom of the
+    // form, right above the submit button — scrollToEnd is the reliable way
+    // to reveal it.
+    setTimeout(() => {
+      if (field === 'consent') {
+        scrollers().forEach(s => s.scrollToEnd({animated: true}));
+      } else {
+        const y = fieldY.current[field];
+        if (typeof y === 'number') {
+          scrollers().forEach(s =>
+            s.scrollTo({y: Math.max(0, y - 24), animated: true}),
+          );
+        }
+      }
+    }, 60);
+  };
+  const clearFieldError = (field: string) =>
+    setFieldErrors(prev => (prev[field] ? {...prev, [field]: ''} : prev));
+
+  // Server-side errors (the `error` prop, e.g. create-profile
+  // already_registered) still use the banner — but scroll it into view so it
+  // can't be missed off-screen. The banner sits at the top of the form.
+  useEffect(() => {
+    if (error) {
+      const timeout = setTimeout(
+        () => scrollers().forEach(s => s.scrollTo({y: 0, animated: true})),
+        60,
+      );
+      return () => clearTimeout(timeout);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   // Auto-focus the first OTP slot when the grid first appears (otpSent flips
   // true) so the keyboard pops up without an extra tap. Re-focuses if the
@@ -81,6 +145,8 @@ export default function SignUpForm({
 
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
+    clearFieldError('phone');
+    clearFieldError('otp');
     setFormData(prev => ({...prev, phone: digits}));
     if (otpSent) {
       setOtpSent(false);
@@ -92,14 +158,14 @@ export default function SignUpForm({
   const handleSendOtp = async () => {
     if (formData.phone.length < 10) return;
     setOtpLoading(true);
-    setLocalError('');
+    clearFieldError('phone');
     try {
       const {data: uniqueCheck} = await supabase.functions.invoke(
         'check-uniqueness',
         {body: {phone: formData.phone}},
       );
       if (uniqueCheck?.conflicts?.includes('phone')) {
-        setLocalError(t('SignUpForm.phoneAlreadyRegistered'));
+        raiseFieldError('phone', t('SignUpForm.phoneAlreadyRegistered'));
         setOtpLoading(false);
         return;
       }
@@ -107,7 +173,7 @@ export default function SignUpForm({
       setOtpSent(true);
       setTimer(60);
     } catch (err: any) {
-      setLocalError(err.message || t('SignUpForm.failedSendOtp'));
+      raiseFieldError('phone', err.message || t('SignUpForm.failedSendOtp'));
     } finally {
       setOtpLoading(false);
     }
@@ -115,6 +181,7 @@ export default function SignUpForm({
 
   const handleOtpChange = (value: string, index: number) => {
     if (!/^\d*$/.test(value)) return;
+    clearFieldError('otp');
     const otpArray = otp.split('');
     otpArray[index] = value;
     const newOtp = otpArray.join('').slice(0, 6);
@@ -144,12 +211,12 @@ export default function SignUpForm({
   const handleVerifyOtp = async () => {
     if (otp.length < 6) return;
     setVerifyLoading(true);
-    setLocalError('');
+    clearFieldError('otp');
     try {
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err: any) {
-      setLocalError(err.message || t('SignUpForm.invalidOtp'));
+      raiseFieldError('otp', err.message || t('SignUpForm.invalidOtp'));
     } finally {
       setVerifyLoading(false);
     }
@@ -157,13 +224,13 @@ export default function SignUpForm({
 
   const handleResend = async () => {
     setOtpLoading(true);
-    setLocalError('');
+    clearFieldError('otp');
     try {
       await onResendOtp(formData.phone);
       setTimer(60);
       setOtp('');
     } catch (err: any) {
-      setLocalError(err.message || t('SignUpForm.failedResendOtp'));
+      raiseFieldError('otp', err.message || t('SignUpForm.failedResendOtp'));
     } finally {
       setOtpLoading(false);
     }
@@ -171,24 +238,25 @@ export default function SignUpForm({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError(t('SignUpForm.enterFullName'));
+      raiseFieldError('name', t('SignUpForm.enterFullName'));
       return;
     }
     if (!otpVerified) {
-      setLocalError(t('SignUpForm.verifyPhone'));
+      raiseFieldError('phone', t('SignUpForm.verifyPhone'));
       return;
     }
     if (!consentAgreed) {
-      setLocalError(t('SignUpForm.acceptConsent'));
+      raiseFieldError('consent', t('SignUpForm.acceptConsent'));
       return;
     }
     onSubmit({...formData});
   };
 
-  const displayError = error || localError;
-
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <ScrollView
+      ref={scrollRef}
+      className="flex-1"
+      showsVerticalScrollIndicator={false}>
       <View className="space-y-5 px-1">
         {/* Header */}
         <View className="items-center space-y-2">
@@ -200,10 +268,11 @@ export default function SignUpForm({
           </Text>
         </View>
 
-        {/* Error */}
-        {displayError ? (
+        {/* Server-side error banner (e.g. create-profile already_registered).
+            Validation errors render inline under their own field instead. */}
+        {error ? (
           <View className="p-3 bg-red-50 border border-red-200 rounded-xl">
-            <Text className="text-sm text-red-600">{displayError}</Text>
+            <Text className="text-sm text-red-600">{error}</Text>
           </View>
         ) : null}
 
@@ -240,28 +309,42 @@ export default function SignUpForm({
         )}
 
         {/* Full Name */}
-        <View className="space-y-1.5">
+        <View className="space-y-1.5" onLayout={rememberY('name')}>
           <Text className="text-xs font-semibold text-slate-500 ml-1">
             {t('SignUpForm.fullNameLabel')}
           </Text>
-          <View className="flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
+          <View
+            className={`flex-row items-center border rounded-xl px-4 h-12 ${
+              fieldErrors.name ? 'border-red-400' : 'border-slate-200'
+            }`}>
             <User size={18} color="rgba(99,71,249,0.6)" />
             <TextInput
               placeholder={t('SignUpForm.fullNamePlaceholder')}
               value={formData.name}
-              onChangeText={v => setFormData(prev => ({...prev, name: v}))}
+              onChangeText={v => {
+                clearFieldError('name');
+                setFormData(prev => ({...prev, name: v}));
+              }}
               className="flex-1 ml-3 text-base"
             />
           </View>
+          {fieldErrors.name ? (
+            <Text className="text-xs font-semibold text-red-500 ml-1">
+              {fieldErrors.name}
+            </Text>
+          ) : null}
         </View>
 
         {/* Phone + OTP */}
-        <View className="space-y-1.5">
+        <View className="space-y-1.5" onLayout={rememberY('phone')}>
           <Text className="text-xs font-semibold text-slate-500 ml-1">
             {t('SignUpForm.mobileNumberLabel')}
           </Text>
           <View className="flex-row gap-2">
-            <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl h-12">
+            <View
+              className={`flex-1 flex-row items-center border rounded-xl h-12 ${
+                fieldErrors.phone ? 'border-red-400' : 'border-slate-200'
+              }`}>
               <View className="pl-4 pr-2 border-r border-slate-200 mr-2">
                 <Text className="text-sm font-semibold text-slate-700">
                   +91
@@ -301,10 +384,15 @@ export default function SignUpForm({
               </View>
             )}
           </View>
+          {fieldErrors.phone ? (
+            <Text className="text-xs font-semibold text-red-500 ml-1">
+              {fieldErrors.phone}
+            </Text>
+          ) : null}
 
           {/* OTP Input */}
           {otpSent && !otpVerified && (
-            <View className="space-y-3 pt-2">
+            <View className="space-y-3 pt-2" onLayout={rememberOtpY}>
               <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                 <Text className="text-[11px] text-emerald-700 text-center">
                   {t('SignUpForm.otpWhatsappPrefix')}{' '}
@@ -324,10 +412,17 @@ export default function SignUpForm({
                     value={otp[i] ?? ''}
                     onChangeText={value => handleOtpChange(value, i)}
                     onKeyPress={e => handleOtpKeyPress(e, i)}
-                    className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 text-center"
+                    className={`w-10 h-12 text-lg font-bold border-2 rounded-lg text-center ${
+                      fieldErrors.otp ? 'border-red-400' : 'border-slate-200'
+                    }`}
                   />
                 ))}
               </View>
+              {fieldErrors.otp ? (
+                <Text className="text-xs font-semibold text-red-500 text-center">
+                  {fieldErrors.otp}
+                </Text>
+              ) : null}
 
               <View className="items-center space-y-2">
                 <Pressable
@@ -369,8 +464,17 @@ export default function SignUpForm({
 
         {/* Consent (mandatory) */}
         <Pressable
-          onPress={() => setConsentAgreed(v => !v)}
-          className="flex-row items-start gap-3 px-1 py-1"
+          onPress={() =>
+            setConsentAgreed(v => {
+              if (!v) clearFieldError('consent');
+              return !v;
+            })
+          }
+          className={`flex-row items-start gap-3 px-1 py-1 ${
+            fieldErrors.consent
+              ? 'p-2 rounded-xl border border-red-200 bg-red-50'
+              : ''
+          }`}
           hitSlop={4}>
           <View
             className={`w-5 h-5 rounded border items-center justify-center mt-0.5 ${
@@ -394,6 +498,11 @@ export default function SignUpForm({
             {t('SignUpForm.consentSuffix')}
           </Text>
         </Pressable>
+        {fieldErrors.consent ? (
+          <Text className="text-xs font-semibold text-red-500 px-1">
+            {fieldErrors.consent}
+          </Text>
+        ) : null}
 
         {/* Submit */}
         <Pressable

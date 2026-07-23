@@ -25,17 +25,22 @@ import {
   ChevronRight,
   ExternalLink,
   FileText,
+  Globe,
   HelpCircle,
+  Info,
   Instagram,
   LogOut,
   Mail,
   MapPin,
   Pencil,
   Phone,
+  Receipt,
   RotateCcw,
   ShieldCheck,
   Tag,
+  Trash2,
   User,
+  UserMinus,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import BrandsLayout from '../layouts/BrandLayout';
@@ -45,6 +50,9 @@ import {invokeFn} from '../lib/api';
 import {pickFromLibrary} from '../lib/image-picker';
 import {uploadProfilePhoto} from '../lib/image-upload';
 import LogoutConfirmDialog from '../components/LogoutConfirmDialog';
+import BrandAccountActionsModal, {
+  type AccountActionVariant,
+} from '../components/brands/BrandAccountActionsModal';
 import {BrandTrustWidget} from '../components/brands/BrandTrustWidget';
 import HelpSupport from '../components/HelpAndSupport';
 import {
@@ -67,6 +75,8 @@ export default function BrandProfile() {
   const [contactOpen, setContactOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [accountAction, setAccountAction] =
+    useState<AccountActionVariant | null>(null);
 
   // Refresh on focus so an edit made elsewhere (e.g. signup) shows up.
   useFocusEffect(
@@ -287,16 +297,41 @@ export default function BrandProfile() {
                   .filter(Boolean)
                   .join(', ')}
                 sub={t('ScreensBrandProfile.registeredAddress')}
-                last
               />
             ) : (
               <InfoRow
                 icon={<MapPin size={18} color="#93C5FD" />}
                 label={t('ScreensBrandProfile.noAddressOnFile')}
                 sub={t('ScreensBrandProfile.tapEditToAdd')}
-                last
               />
             )}
+            <InfoRow
+              icon={<Info size={18} color="#6366F1" />}
+              label={
+                profile.full_description || t('ScreensBrandProfile.aboutEmpty')
+              }
+              sub={t('ScreensBrandProfile.aboutBrand')}
+              muted={!profile.full_description}
+            />
+            <InfoRow
+              icon={<Globe size={18} color="#10B981" />}
+              label={
+                profile.website_url || t('ScreensBrandProfile.websiteEmpty')
+              }
+              sub={t('ScreensBrandProfile.website')}
+              muted={!profile.website_url}
+              onPress={
+                profile.website_url
+                  ? () =>
+                      Linking.openURL(
+                        profile.website_url.startsWith('http')
+                          ? profile.website_url
+                          : `https://${profile.website_url}`,
+                      )
+                  : undefined
+              }
+              last
+            />
           </View>
         </Section>
 
@@ -413,6 +448,25 @@ export default function BrandProfile() {
         {/* Account */}
         <Section title={t('ScreensBrandProfile.account')}>
           <TouchableOpacity
+            onPress={() => navigation.navigate('BrandTransactions' as never)}
+            className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm mb-3"
+            style={{gap: 16}}
+            activeOpacity={0.8}>
+            <View className="p-2 bg-violet-50 rounded-xl">
+              <Receipt size={18} color="#5851DB" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-slate-800 font-bold text-sm">
+                {t('ScreensBrandProfile.transactions')}
+              </Text>
+              <Text className="text-[11px] text-slate-400">
+                {t('ScreensBrandProfile.transactionsSub')}
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#CBD5E1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             onPress={() => setHelpOpen(true)}
             className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm mb-3"
             style={{gap: 16}}
@@ -433,7 +487,7 @@ export default function BrandProfile() {
 
           <TouchableOpacity
             onPress={() => setShowLogout(true)}
-            className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm"
+            className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm mb-3"
             style={{gap: 16}}
             activeOpacity={0.8}>
             <View className="p-2 bg-red-50 rounded-xl">
@@ -442,6 +496,44 @@ export default function BrandProfile() {
             <Text className="text-red-500 font-bold text-sm flex-1">
               {t('ScreensBrandProfile.logOut')}
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setAccountAction('deactivate')}
+            className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm mb-3"
+            style={{gap: 16}}
+            activeOpacity={0.8}>
+            <View className="p-2 bg-amber-50 rounded-xl">
+              <UserMinus size={18} color="#F59E0B" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-slate-800 font-bold text-sm">
+                {t('ScreensBrandProfile.deactivateAccount')}
+              </Text>
+              <Text className="text-[11px] text-slate-400">
+                {t('ScreensBrandProfile.deactivateAccountSub')}
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#CBD5E1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setAccountAction('delete')}
+            className="w-full bg-white p-5 rounded-3xl flex-row items-center border border-gray-100/50 shadow-sm"
+            style={{gap: 16}}
+            activeOpacity={0.8}>
+            <View className="p-2 bg-red-50 rounded-xl">
+              <Trash2 size={18} color="#EF4444" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-red-600 font-bold text-sm">
+                {t('ScreensBrandProfile.deleteAccount')}
+              </Text>
+              <Text className="text-[11px] text-slate-400">
+                {t('ScreensBrandProfile.deleteAccountSub')}
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#CBD5E1" />
           </TouchableOpacity>
         </Section>
       </View>
@@ -490,6 +582,11 @@ export default function BrandProfile() {
           saveBrandFields(payload, t('ScreensBrandProfile.savingCategories'))
         }
       />
+
+      <BrandAccountActionsModal
+        variant={accountAction}
+        onClose={() => setAccountAction(null)}
+      />
     </BrandsLayout>
   );
 }
@@ -527,30 +624,59 @@ const InfoRow = ({
   sub,
   last,
   isVerified,
+  muted,
+  onPress,
 }: {
   icon: React.ReactNode;
   label: string;
   sub: string;
   last?: boolean;
   isVerified?: boolean;
-}) => (
-  <View
-    className={`flex-row items-center p-5 ${!last ? 'border-b border-gray-50' : ''}`}
-    style={{gap: 16}}>
-    <View className="p-2.5 bg-blue-50 rounded-xl">{icon}</View>
-    <View className="flex-1">
-      <Text className="text-[11px] font-bold text-gray-900 leading-tight">
-        {label}
-      </Text>
-      <Text className="text-[9px] text-gray-400 font-semibold mt-0.5">
-        {sub}
-      </Text>
+  muted?: boolean;
+  onPress?: () => void;
+}) => {
+  const body = (
+    <>
+      <View className="p-2.5 bg-blue-50 rounded-xl">{icon}</View>
+      <View className="flex-1">
+        <Text
+          className={`text-[11px] leading-tight ${
+            muted
+              ? 'font-medium text-gray-400 italic'
+              : onPress
+                ? 'font-bold text-[#5851DB]'
+                : 'font-bold text-gray-900'
+          }`}>
+          {label}
+        </Text>
+        <Text className="text-[9px] text-gray-400 font-semibold mt-0.5">
+          {sub}
+        </Text>
+      </View>
+      <View className="flex-row items-center" style={{gap: 8}}>
+        {isVerified ? (
+          <View className="w-1.5 h-1.5 rounded-full bg-green-500" />
+        ) : null}
+        {onPress ? (
+          <ExternalLink size={14} color="#94a3b8" />
+        ) : (
+          <ChevronRight size={16} color="#D1D5DB" />
+        )}
+      </View>
+    </>
+  );
+  const cls = `flex-row items-center p-5 ${!last ? 'border-b border-gray-50' : ''}`;
+  return onPress ? (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className={cls}
+      style={{gap: 16}}>
+      {body}
+    </TouchableOpacity>
+  ) : (
+    <View className={cls} style={{gap: 16}}>
+      {body}
     </View>
-    <View className="flex-row items-center" style={{gap: 8}}>
-      {isVerified ? (
-        <View className="w-1.5 h-1.5 rounded-full bg-green-500" />
-      ) : null}
-      <ChevronRight size={16} color="#D1D5DB" />
-    </View>
-  </View>
-);
+  );
+};

@@ -631,7 +631,10 @@ export default function CreateCampaignScreen() {
             <TouchableOpacity
               onPress={async () => {
                 try {
-                  const img = await pickFromLibrary();
+                  // Fixed 3:1 crop (1536×512 JPEG) — mirrors the web
+                  // CreateCampaignDialog banner cropper so the banner
+                  // renders identically on every surface.
+                  const img = await pickFromLibrary({crop: 'banner'});
                   if (img) setBanner(img);
                 } catch (e: any) {
                   Alert.alert(
@@ -683,6 +686,9 @@ export default function CreateCampaignScreen() {
             <ImagePlus size={16} color="#5851DB" />
             <Text style={s.uploadStripeText}>{t('ScreensCreateCampaignScreen.gallery.add')}</Text>
           </TouchableOpacity>
+          <Text style={s.uploadHintSmall}>
+            {t('ScreensCreateCampaignScreen.gallery.fileHint')}
+          </Text>
         </Section>
 
         {/* Platforms */}
@@ -1225,7 +1231,9 @@ const s = StyleSheet.create({
   uploadHint: {fontSize: 12, fontWeight: '700', color: '#64748b'},
   uploadHintSmall: {fontSize: 10, color: '#94a3b8'},
   bannerPreview: {
-    height: 160,
+    // Cropped output is always 3:1 (1536×512) — preview at the same ratio.
+    width: '100%',
+    aspectRatio: 3,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#f1f5f9',

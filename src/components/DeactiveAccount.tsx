@@ -84,16 +84,18 @@ const DeactiveAccount: React.FC<DeactiveAccountProps> = ({onBack}) => {
       const table = role === 'brand' ? 'brand_profiles' : 'influencer_profiles';
       const idCol = role === 'brand' ? 'brand_id' : 'influencer_id';
 
-      const updates: Record<string, any> = {
-        status: 'deactivated',
-        updated_at: new Date().toISOString(),
-      };
-      if (reason) updates.deactivation_reason = reason;
-      if (detail.trim()) updates.deactivation_feedback = detail.trim();
-
+      // Only `status` + `updated_at` are persisted — matching web's
+      // DeactiveAccount.jsx. The reason/detail are collected for the UI but
+      // there are no `deactivation_reason` / `deactivation_feedback` columns
+      // on either profile table; writing them made PostgREST reject the whole
+      // update with "could not find the 'deactivation_reason' column ... in
+      // the schema cache", so deactivation silently failed.
       const {error: profErr} = await supabase
         .from(table)
-        .update(updates)
+        .update({
+          status: 'deactivated',
+          updated_at: new Date().toISOString(),
+        })
         .eq(idCol, user.id);
       if (profErr) throw profErr;
 

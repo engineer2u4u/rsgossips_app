@@ -1,4 +1,4 @@
-import React, {useCallback, useState, useMemo, useEffect, useRef} from 'react';
+import React, {useCallback, useState, useMemo, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Search, SlidersHorizontal} from 'lucide-react-native';
@@ -22,8 +20,11 @@ import {calculateBrandMatchScore} from '../utils/matchScore';
 import {invokeFn} from '../lib/api';
 import {useTranslation} from 'react-i18next';
 
-const PAGE_SIZE = 10;
-const LOAD_MORE_STEP = 6;
+// Mirrors web's 30-per-page brand list — show 30 at a time, "Load more"
+// appends the next 30, and the count resets on any filter/sort change.
+const PAGE_SIZE = 30;
+
+type SortBy = 'match' | 'az' | 'campaigns';
 
 interface Brand {
   id: string;
@@ -137,12 +138,14 @@ export default function InfluencerDiscover() {
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  // Client-side pagination — render `visibleCount` cards, bump by
-  // LOAD_MORE_STEP when the user scrolls past the bottom threshold.
-  // Reset whenever the filtered list shrinks below `visibleCount` so
-  // we never show stale slices after toggling a filter.
+  // Sort order: match score (default) / A–Z / most active campaigns.
+  // Mirrors web src/app/influencer/brands/page.js.
+  const [sortBy, setSortBy] = useState<SortBy>('match');
+
+  // Client-side pagination — render `visibleCount` cards, "Load more"
+  // appends the next PAGE_SIZE. Reset on any filter/sort change so we
+  // never show stale slices after toggling a filter.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const loadingMoreRef = useRef(false);
 
   const loadBrands = useCallback(async () => {
     try {
@@ -235,17 +238,30 @@ export default function InfluencerDiscover() {
       );
     });
 
-    return passes
-      .map(b => ({...b, _matchScore: calculateBrandMatchScore(profile, b)}))
-      .sort((a, b) => (b._matchScore || 0) - (a._matchScore || 0));
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile]);
+    // User-selectable sort. "match" (default) keeps the best-fit brands on
+    // top using the SAME scorer the card badge renders, so position and %
+    // agree. The score is always attached — the cards read it either way.
+    const scored = passes.map(b => ({
+      ...b,
+      _matchScore: calculateBrandMatchScore(profile, b),
+    }));
+    if (sortBy === 'az') {
+      return scored.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    if (sortBy === 'campaigns') {
+      return scored.sort(
+        (a, b) => (b.activeCampaigns || 0) - (a.activeCampaigns || 0),
+      );
+    }
+    return scored.sort((a, b) => (b._matchScore || 0) - (a._matchScore || 0));
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile, sortBy]);
 
-  // Whenever the filtered list changes (filters/search toggled), snap
+  // Whenever the filtered list changes (filters/search/sort toggled), snap
   // visibleCount back to the first page so we never display an empty
   // tail of "phantom" loaded rows.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
+  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, sortBy]);
 
   const visibleBrands = useMemo(
     () => filteredBrands.slice(0, visibleCount),
@@ -253,21 +269,14 @@ export default function InfluencerDiscover() {
   );
   const hasMore = visibleCount < filteredBrands.length;
 
-  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (!hasMore || loadingMoreRef.current) return;
-    const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
-    const distanceFromBottom =
-      contentSize.height - (layoutMeasurement.height + contentOffset.y);
-    if (distanceFromBottom < 240) {
-      loadingMoreRef.current = true;
-      setVisibleCount(c =>
-        Math.min(c + LOAD_MORE_STEP, filteredBrands.length),
-      );
-      setTimeout(() => {
-        loadingMoreRef.current = false;
-      }, 250);
-    }
-  };
+  const loadMore = () =>
+    setVisibleCount(c => Math.min(c + PAGE_SIZE, filteredBrands.length));
+
+  const SORT_OPTIONS: {key: SortBy; label: string}[] = [
+    {key: 'match', label: t('ScreensInfluencerDiscover.sortMatch')},
+    {key: 'az', label: t('ScreensInfluencerDiscover.sortAz')},
+    {key: 'campaigns', label: t('ScreensInfluencerDiscover.sortCampaigns')},
+  ];
 
   return (
     <SafeAreaView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
@@ -276,8 +285,6 @@ export default function InfluencerDiscover() {
       <ScrollView
         className="flex-1" style={{backgroundColor: '#F5F4F8'}}
         showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={64}
         removeClippedSubviews
         refreshControl={
           <RefreshControl
@@ -320,6 +327,42 @@ export default function InfluencerDiscover() {
 
         {/* Brand Cards — two per row, matches web's `sm:grid-cols-2` */}
         <View className="px-4 pt-2 pb-4">
+          {/* Count + sort control (mirrors web's brands page header row) */}
+          {!loading && (
+            <View className="mb-3" style={{gap: 8}}>
+              <Text className="text-xs font-bold text-slate-400">
+                {t('ScreensInfluencerDiscover.countBrands', {
+                  n: filteredBrands.length,
+                })}
+              </Text>
+              <View className="flex-row" style={{gap: 8}}>
+                {SORT_OPTIONS.map(opt => {
+                  const active = sortBy === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      onPress={() => setSortBy(opt.key)}
+                      activeOpacity={0.8}
+                      className={
+                        active
+                          ? 'px-3 py-1.5 rounded-xl bg-[#9810FA]'
+                          : 'px-3 py-1.5 rounded-xl bg-white border border-slate-100'
+                      }>
+                      <Text
+                        className={
+                          active
+                            ? 'text-[11px] font-bold text-white'
+                            : 'text-[11px] font-bold text-slate-500'
+                        }>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
           {loading ? (
             <View className="py-20 items-center" style={{gap: 12}}>
               <ActivityIndicator size="large" color="#9810FA" />
@@ -351,9 +394,16 @@ export default function InfluencerDiscover() {
                 ))}
               </View>
               {hasMore && (
-                <View className="py-6 items-center">
-                  <ActivityIndicator size="small" color="#9810FA" />
-                </View>
+                <TouchableOpacity
+                  onPress={loadMore}
+                  activeOpacity={0.85}
+                  className="mt-4 py-3 items-center bg-white rounded-2xl border border-slate-100">
+                  <Text className="text-sm font-bold text-[#9810FA]">
+                    {t('ScreensInfluencerDiscover.loadMore', {
+                      n: filteredBrands.length - visibleCount,
+                    })}
+                  </Text>
+                </TouchableOpacity>
               )}
             </>
           )}

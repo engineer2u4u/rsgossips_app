@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  type LayoutChangeEvent,
 } from 'react-native';
 import {
   User,
@@ -58,6 +59,10 @@ interface Props {
   otpPreVerified?: boolean;
   instagramProfile?: InstaProfile | null;
   invitation?: Invitation | null;
+  // Ref to the enclosing bottom-sheet ScrollView (LoginScreen). The form's
+  // own ScrollView is nested inside it and may not be the active scroller,
+  // so scroll-to-field drives both.
+  sheetScrollRef?: React.RefObject<ScrollView | null>;
 }
 
 export default function BrandSignUpForm({
@@ -71,6 +76,7 @@ export default function BrandSignUpForm({
   otpPreVerified = false,
   instagramProfile = null,
   invitation = null,
+  sheetScrollRef,
 }: Props) {
   const {t} = useTranslation();
   const [formData, setFormData] = useState({
@@ -84,7 +90,6 @@ export default function BrandSignUpForm({
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [localError, setLocalError] = useState('');
   const [consentAgreed, setConsentAgreed] = useState(false);
 
   // GSTIN state — GST/PAN is OPTIONAL at signup (matches web).
@@ -95,6 +100,74 @@ export default function BrandSignUpForm({
 
   const navigation = useNavigation();
   const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // Per-field validation errors: { name?, gstin?, phone?, otp?, consent? }.
+  // The old single top-of-form banner was invisible once the user scrolled
+  // down — now each error highlights its own field and we scroll it into
+  // view. (Web parity: BrandSignUpForm.jsx fieldErrors.) The GSTIN field
+  // keeps its dedicated `gstinError` state (live GSTN verify shares it) but
+  // gets the same border/scroll treatment via raiseGstinError.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const scrollRef = useRef<ScrollView>(null);
+  // y-offsets of each field wrapper inside the scroll content, captured via
+  // onLayout (RN has no scrollIntoView). The OTP block is nested inside the
+  // phone wrapper, so its y is phone-y + local-y.
+  const fieldY = useRef<Record<string, number>>({});
+  const rememberY = (field: string) => (e: LayoutChangeEvent) => {
+    fieldY.current[field] = e.nativeEvent.layout.y;
+  };
+  const rememberOtpY = (e: LayoutChangeEvent) => {
+    fieldY.current.otp = (fieldY.current.phone ?? 0) + e.nativeEvent.layout.y;
+  };
+
+  // Whichever ScrollView is actually scrolling (local vs the bottom sheet's)
+  // — driving both is safe; a non-scrolling one just clamps.
+  const scrollers = () =>
+    [scrollRef.current, sheetScrollRef?.current].filter(
+      Boolean,
+    ) as ScrollView[];
+
+  const scrollToField = (field: string) => {
+    setTimeout(() => {
+      if (field === 'consent') {
+        scrollers().forEach(s => s.scrollToEnd({animated: true}));
+      } else {
+        const y = fieldY.current[field];
+        if (typeof y === 'number') {
+          scrollers().forEach(s =>
+            s.scrollTo({y: Math.max(0, y - 24), animated: true}),
+          );
+        }
+      }
+    }, 60);
+  };
+  const raiseFieldError = (field: string, message: string) => {
+    setFieldErrors(prev => ({...prev, [field]: message}));
+    scrollToField(field);
+  };
+  const clearFieldError = (field: string) =>
+    setFieldErrors(prev => (prev[field] ? {...prev, [field]: ''} : prev));
+  // Submit-time GST/PAN format errors reuse the inline gstinError slot but
+  // also scroll the field into view (the live Verify button errors don't
+  // need the scroll — the user is already looking at the field).
+  const raiseGstinError = (message: string) => {
+    setGstinError(message);
+    scrollToField('gstin');
+  };
+
+  // Server-side errors (the `error` prop, e.g. create-profile
+  // already_registered) still use the banner — but scroll it into view so it
+  // can't be missed off-screen. The banner sits at the top of the form.
+  useEffect(() => {
+    if (error) {
+      const timeout = setTimeout(
+        () => scrollers().forEach(s => s.scrollTo({y: 0, animated: true})),
+        60,
+      );
+      return () => clearTimeout(timeout);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   // Auto-focus the first OTP slot when the grid first appears (otpSent flips
   // true) so the keyboard pops up without an extra tap. Re-focuses if the
@@ -115,6 +188,8 @@ export default function BrandSignUpForm({
 
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
+    clearFieldError('phone');
+    clearFieldError('otp');
     setFormData(prev => ({...prev, phone: digits}));
     if (otpSent) {
       setOtpSent(false);
@@ -129,9 +204,10 @@ export default function BrandSignUpForm({
       .replace(/[^A-Z0-9]/g, '')
       .slice(0, 15);
     setFormData(prev => ({...prev, gstin: cleaned}));
+    // Editing the value invalidates any prior error/verification state.
+    setGstinError('');
     if (gstinData) {
       setGstinData(null);
-      setGstinError('');
     }
   };
 
@@ -183,14 +259,14 @@ export default function BrandSignUpForm({
   const handleSendOtp = async () => {
     if (formData.phone.length < 10) return;
     setOtpLoading(true);
-    setLocalError('');
+    clearFieldError('phone');
     try {
       const {data: uniqueCheck} = await supabase.functions.invoke(
         'check-uniqueness',
         {body: {phone: formData.phone}},
       );
       if (uniqueCheck?.conflicts?.includes('phone')) {
-        setLocalError(t('BrandSignUpForm.phoneAlreadyRegistered'));
+        raiseFieldError('phone', t('BrandSignUpForm.phoneAlreadyRegistered'));
         setOtpLoading(false);
         return;
       }
@@ -198,7 +274,10 @@ export default function BrandSignUpForm({
       setOtpSent(true);
       setTimer(60);
     } catch (err: any) {
-      setLocalError(err.message || t('BrandSignUpForm.sendOtpFailed'));
+      raiseFieldError(
+        'phone',
+        err.message || t('BrandSignUpForm.sendOtpFailed'),
+      );
     } finally {
       setOtpLoading(false);
     }
@@ -206,6 +285,7 @@ export default function BrandSignUpForm({
 
   const handleOtpChange = (value: string, index: number) => {
     if (!/^\d*$/.test(value)) return;
+    clearFieldError('otp');
     const otpArray = otp.split('');
     otpArray[index] = value;
     const newOtp = otpArray.join('').slice(0, 6);
@@ -233,12 +313,12 @@ export default function BrandSignUpForm({
   const handleVerifyOtp = async () => {
     if (otp.length < 6) return;
     setVerifyLoading(true);
-    setLocalError('');
+    clearFieldError('otp');
     try {
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err: any) {
-      setLocalError(err.message || t('BrandSignUpForm.invalidOtp'));
+      raiseFieldError('otp', err.message || t('BrandSignUpForm.invalidOtp'));
     } finally {
       setVerifyLoading(false);
     }
@@ -246,13 +326,16 @@ export default function BrandSignUpForm({
 
   const handleResend = async () => {
     setOtpLoading(true);
-    setLocalError('');
+    clearFieldError('otp');
     try {
       await onResendOtp(formData.phone);
       setTimer(60);
       setOtp('');
     } catch (err: any) {
-      setLocalError(err.message || t('BrandSignUpForm.resendOtpFailed'));
+      raiseFieldError(
+        'otp',
+        err.message || t('BrandSignUpForm.resendOtpFailed'),
+      );
     } finally {
       setOtpLoading(false);
     }
@@ -260,7 +343,7 @@ export default function BrandSignUpForm({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError(t('BrandSignUpForm.enterFullName'));
+      raiseFieldError('name', t('BrandSignUpForm.enterFullName'));
       return;
     }
     // GST/PAN is optional. If something was entered, validate the format
@@ -268,7 +351,7 @@ export default function BrandSignUpForm({
     if (formData.gstin && !gstinData) {
       const {valid, kind} = classifyGstPan(formData.gstin);
       if (!valid) {
-        setGstinError(
+        raiseGstinError(
           kind === 'pan'
             ? t('BrandSignUpForm.panFormat')
             : kind === 'gst'
@@ -279,20 +362,21 @@ export default function BrandSignUpForm({
       }
     }
     if (!otpVerified) {
-      setLocalError(t('BrandSignUpForm.verifyPhone'));
+      raiseFieldError('phone', t('BrandSignUpForm.verifyPhone'));
       return;
     }
     if (!consentAgreed) {
-      setLocalError(t('BrandSignUpForm.acceptConsent'));
+      raiseFieldError('consent', t('BrandSignUpForm.acceptConsent'));
       return;
     }
     onSubmit({...formData, gstin: formData.gstin || '', gstinData: gstinData as any});
   };
 
-  const displayError = error || localError;
-
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <ScrollView
+      ref={scrollRef}
+      className="flex-1"
+      showsVerticalScrollIndicator={false}>
       <View className="space-y-5 px-1">
         {/* Header */}
         <View className="items-center space-y-2">
@@ -338,10 +422,11 @@ export default function BrandSignUpForm({
           </View>
         )}
 
-        {/* Error */}
-        {displayError ? (
+        {/* Server-side error banner (e.g. create-profile already_registered).
+            Validation errors render inline under their own field instead. */}
+        {error ? (
           <View className="p-3 bg-red-50 border border-red-200 rounded-xl">
-            <Text className="text-sm text-red-600">{displayError}</Text>
+            <Text className="text-sm text-red-600">{error}</Text>
           </View>
         ) : null}
 
@@ -378,23 +463,34 @@ export default function BrandSignUpForm({
         )}
 
         {/* Contact Name */}
-        <View className="space-y-1.5">
+        <View className="space-y-1.5" onLayout={rememberY('name')}>
           <Text className="text-xs font-semibold text-slate-500 ml-1">
             {t('BrandSignUpForm.contactPersonName')}
           </Text>
-          <View className="flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
+          <View
+            className={`flex-row items-center border rounded-xl px-4 h-12 ${
+              fieldErrors.name ? 'border-red-400' : 'border-slate-200'
+            }`}>
             <User size={18} color="rgba(99,71,249,0.6)" />
             <TextInput
               placeholder={t('BrandSignUpForm.fullNamePlaceholder')}
               value={formData.name}
-              onChangeText={v => setFormData(prev => ({...prev, name: v}))}
+              onChangeText={v => {
+                clearFieldError('name');
+                setFormData(prev => ({...prev, name: v}));
+              }}
               className="flex-1 ml-3 text-base"
             />
           </View>
+          {fieldErrors.name ? (
+            <Text className="text-xs font-semibold text-red-500 ml-1">
+              {fieldErrors.name}
+            </Text>
+          ) : null}
         </View>
 
         {/* GST / PAN — OPTIONAL (matches web; boosts trust score later). */}
-        <View className="space-y-1.5">
+        <View className="space-y-1.5" onLayout={rememberY('gstin')}>
           <Text className="text-xs font-semibold text-slate-500 ml-1">
             {t('BrandSignUpForm.gstPanLabel')}{' '}
             <Text className="text-slate-300 font-normal">
@@ -402,7 +498,10 @@ export default function BrandSignUpForm({
             </Text>
           </Text>
           <View className="flex-row gap-2">
-            <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl px-4 h-12">
+            <View
+              className={`flex-1 flex-row items-center border rounded-xl px-4 h-12 ${
+                gstinError ? 'border-red-400' : 'border-slate-200'
+              }`}>
               <Building2 size={18} color="rgba(99,71,249,0.6)" />
               <TextInput
                 placeholder={t('BrandSignUpForm.gstPlaceholder')}
@@ -498,12 +597,15 @@ export default function BrandSignUpForm({
         </View>
 
         {/* Phone + OTP */}
-        <View className="space-y-1.5">
+        <View className="space-y-1.5" onLayout={rememberY('phone')}>
           <Text className="text-xs font-semibold text-slate-500 ml-1">
             {t('BrandSignUpForm.mobileNumber')}
           </Text>
           <View className="flex-row gap-2">
-            <View className="flex-1 flex-row items-center border border-slate-200 rounded-xl h-12">
+            <View
+              className={`flex-1 flex-row items-center border rounded-xl h-12 ${
+                fieldErrors.phone ? 'border-red-400' : 'border-slate-200'
+              }`}>
               <View className="pl-4 pr-2 border-r border-slate-200 mr-2">
                 <Text className="text-sm font-semibold text-slate-700">
                   +91
@@ -543,10 +645,15 @@ export default function BrandSignUpForm({
               </View>
             )}
           </View>
+          {fieldErrors.phone ? (
+            <Text className="text-xs font-semibold text-red-500 ml-1">
+              {fieldErrors.phone}
+            </Text>
+          ) : null}
 
           {/* OTP Input */}
           {otpSent && !otpVerified && (
-            <View className="space-y-3 pt-2">
+            <View className="space-y-3 pt-2" onLayout={rememberOtpY}>
               <View className="px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                 <Text className="text-[11px] text-emerald-700 text-center">
                   {t('BrandSignUpForm.otpWhatsapp')}
@@ -565,10 +672,17 @@ export default function BrandSignUpForm({
                     value={otp[i] ?? ''}
                     onChangeText={value => handleOtpChange(value, i)}
                     onKeyPress={e => handleOtpKeyPress(e, i)}
-                    className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 text-center"
+                    className={`w-10 h-12 text-lg font-bold border-2 rounded-lg text-center ${
+                      fieldErrors.otp ? 'border-red-400' : 'border-slate-200'
+                    }`}
                   />
                 ))}
               </View>
+              {fieldErrors.otp ? (
+                <Text className="text-xs font-semibold text-red-500 text-center">
+                  {fieldErrors.otp}
+                </Text>
+              ) : null}
 
               <View className="items-center space-y-2">
                 <Pressable
@@ -610,8 +724,17 @@ export default function BrandSignUpForm({
 
         {/* Consent (mandatory) */}
         <Pressable
-          onPress={() => setConsentAgreed(v => !v)}
-          className="flex-row items-start gap-3 px-1 py-1"
+          onPress={() =>
+            setConsentAgreed(v => {
+              if (!v) clearFieldError('consent');
+              return !v;
+            })
+          }
+          className={`flex-row items-start gap-3 px-1 py-1 ${
+            fieldErrors.consent
+              ? 'p-2 rounded-xl border border-red-200 bg-red-50'
+              : ''
+          }`}
           hitSlop={4}>
           <View
             className={`w-5 h-5 rounded border items-center justify-center mt-0.5 ${
@@ -633,6 +756,11 @@ export default function BrandSignUpForm({
             {t('BrandSignUpForm.consentSuffix')}
           </Text>
         </Pressable>
+        {fieldErrors.consent ? (
+          <Text className="text-xs font-semibold text-red-500 px-1">
+            {fieldErrors.consent}
+          </Text>
+        ) : null}
 
         {/* Submit */}
         <Pressable

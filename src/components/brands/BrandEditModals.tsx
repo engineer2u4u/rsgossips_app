@@ -126,14 +126,16 @@ export function Field({
   hint,
   type = 'text',
   inputMode,
+  multiline = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   hint?: string;
-  type?: 'text' | 'email';
+  type?: 'text' | 'email' | 'url';
   inputMode?: 'numeric' | 'email' | 'tel';
+  multiline?: boolean;
 }) {
   return (
     <View>
@@ -143,17 +145,21 @@ export function Field({
         onChangeText={onChange}
         placeholder={placeholder}
         placeholderTextColor="#cbd5e1"
-        autoCapitalize={type === 'email' ? 'none' : 'sentences'}
+        autoCapitalize={type === 'email' || type === 'url' ? 'none' : 'sentences'}
         keyboardType={
           inputMode === 'numeric'
             ? 'number-pad'
             : type === 'email' || inputMode === 'email'
               ? 'email-address'
-              : inputMode === 'tel'
-                ? 'phone-pad'
-                : 'default'
+              : type === 'url'
+                ? 'url'
+                : inputMode === 'tel'
+                  ? 'phone-pad'
+                  : 'default'
         }
-        style={s.input}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : undefined}
+        style={[s.input, multiline && s.inputMultiline]}
       />
       {hint ? <Text style={s.hint}>{hint}</Text> : null}
     </View>
@@ -164,6 +170,8 @@ export function Field({
 
 interface BrandProfileShape {
   brand_name?: string;
+  full_description?: string;
+  website_url?: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
@@ -180,6 +188,8 @@ interface BrandProfileShape {
 
 export interface BrandInfoPayload {
   brandName: string;
+  aboutBrand: string;
+  website: string;
   gstinLegalName: string;
   gstinTradeName: string;
   gstinBusinessType: string;
@@ -201,6 +211,8 @@ export function BrandInfoEditModal({
 }) {
   const {t} = useTranslation();
   const [brandName, setBrandName] = useState(profile.brand_name || '');
+  const [about, setAbout] = useState(profile.full_description || '');
+  const [website, setWebsite] = useState(profile.website_url || '');
   const [legalName, setLegalName] = useState(profile.gstin_legal_name || '');
   const [tradeName, setTradeName] = useState(profile.gstin_trade_name || '');
   const [businessType, setBusinessType] = useState(
@@ -219,6 +231,8 @@ export function BrandInfoEditModal({
       onSave={async () => {
         await onSave({
           brandName: brandName.trim(),
+          aboutBrand: about.trim(),
+          website: website.trim(),
           gstinLegalName: legalName.trim(),
           gstinTradeName: tradeName.trim(),
           gstinBusinessType: businessType.trim(),
@@ -234,6 +248,21 @@ export function BrandInfoEditModal({
         onChange={setBrandName}
         placeholder={t('BrandsBrandEditModals.brandInfo.brandNamePlaceholder')}
         hint={t('BrandsBrandEditModals.brandInfo.brandNameHint')}
+      />
+      <Field
+        label={t('BrandsBrandEditModals.brandInfo.aboutLabel')}
+        value={about}
+        onChange={v => setAbout(v.slice(0, 1000))}
+        placeholder={t('BrandsBrandEditModals.brandInfo.aboutPlaceholder')}
+        hint={t('BrandsBrandEditModals.brandInfo.aboutHint')}
+        multiline
+      />
+      <Field
+        label={t('BrandsBrandEditModals.brandInfo.websiteLabel')}
+        value={website}
+        onChange={setWebsite}
+        placeholder={t('BrandsBrandEditModals.brandInfo.websitePlaceholder')}
+        type="url"
       />
       <Field
         label={t('BrandsBrandEditModals.brandInfo.legalNameLabel')}
@@ -496,6 +525,7 @@ const s = StyleSheet.create({
     color: '#0f172a',
     fontWeight: '600',
   },
+  inputMultiline: {minHeight: 96, paddingTop: 12},
   hint: {fontSize: 10, color: '#94a3b8', marginTop: 4},
   errorText: {fontSize: 11, color: '#dc2626', fontWeight: '700'},
   readonlyRow: {
