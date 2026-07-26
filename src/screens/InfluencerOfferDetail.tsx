@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Instagram,
+  Sparkles,
   Youtube,
   Smartphone,
   CheckCircle,
@@ -781,6 +782,25 @@ export default function InfluencerOfferDetail() {
             bottom: (Platform.OS === 'ios' ? 24 : 14) + 68 + 8,
             zIndex: 60,
           }}>
+          {/* Brand-sent invite — highlighted, right above the Apply button.
+              This whole bar is gated on !hasApplied, so it vanishes once the
+              creator applies. */}
+          {campaign.invited ? (
+            <View
+              className="flex-row items-center rounded-2xl px-3 py-2.5 mb-2"
+              style={{gap: 8, overflow: 'hidden'}}>
+              <LinearGradient
+                colors={['#9810FA', '#E60076']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Sparkles size={15} color="white" />
+              <Text className="text-white text-[12px] font-extrabold" style={{flex: 1}}>
+                {(campaign.inviteBrandName || campaign.brandName) + ' invited you — apply below'}
+              </Text>
+            </View>
+          ) : null}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => setShowApplyForm(true)}

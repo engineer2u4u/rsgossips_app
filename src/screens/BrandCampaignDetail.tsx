@@ -40,6 +40,7 @@ import {
   RefreshCw,
   RotateCcw,
   Star,
+  UserPlus,
   Users,
   X,
 } from 'lucide-react-native';
@@ -167,6 +168,13 @@ export default function BrandCampaignDetail() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Brand-sent invites tracking (responded = the invitee applied).
+  const [inviteStats, setInviteStats] = useState<{sent: number; responded: number; total: number}>({
+    sent: 0,
+    responded: 0,
+    total: 0,
+  });
+  const [invitees, setInvitees] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     if (!user?.id || !id) return;
@@ -176,10 +184,14 @@ export default function BrandCampaignDetail() {
       const data = await invokeFn<{
         campaign?: Campaign;
         applications?: Application[];
+        inviteStats?: {sent: number; responded: number; total: number};
+        invitees?: any[];
       }>('brand-campaigns', {action: 'get', campaignId: id, brandId: user.id});
       setCampaign(data?.campaign || null);
       const apps = data?.applications || [];
       setApplications(apps);
+      setInviteStats(data?.inviteStats || {sent: 0, responded: 0, total: 0});
+      setInvitees(Array.isArray(data?.invitees) ? data.invitees : []);
 
       // Pull existing brand-side ratings for all applications in this campaign
       // (one query — RLS lets the brand read its own rows).
@@ -381,6 +393,88 @@ export default function BrandCampaignDetail() {
                 <View key={d.key} style={s.deliverableCell}>
                   <Text style={s.deliverableCount}>{parsedContent[d.key] || 0}</Text>
                   <Text style={s.deliverableLabel}>{d.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Invite creators — grouped right above Applications (mirrors web's
+            aside). Only a live campaign can be invited to (server re-checks). */}
+        {campaign.status === 'active' ? (
+          <Pressable
+            onPress={() =>
+              (navigation as any).navigate('BrandSearch', {inviteCampaignId: id})
+            }
+            className="flex-row items-center justify-center rounded-2xl bg-[#5851DB] py-3"
+            style={{gap: 8}}>
+            <UserPlus size={16} color="white" />
+            <Text className="text-white text-[13px] font-extrabold">
+              Invite creators to this campaign
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {/* Invites tracking — sent + responded (applied). */}
+        {inviteStats.total > 0 ? (
+          <View style={s.card}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 10,
+              }}>
+              <Text style={s.sectionTitle}>Invites</Text>
+              <UserPlus size={14} color="#5851DB" />
+            </View>
+            <View style={{flexDirection: 'row', gap: 8, marginBottom: 10}}>
+              <View style={s.deliverableCell}>
+                <Text style={s.deliverableCount}>{inviteStats.total}</Text>
+                <Text style={s.deliverableLabel}>Invited</Text>
+              </View>
+              <View style={[s.deliverableCell, {backgroundColor: '#ecfdf5'}]}>
+                <Text style={[s.deliverableCount, {color: '#059669'}]}>
+                  {inviteStats.responded}
+                </Text>
+                <Text style={s.deliverableLabel}>Responded</Text>
+              </View>
+            </View>
+            <View style={{gap: 8}}>
+              {invitees.map((iv: any) => (
+                <View
+                  key={iv.influencerId}
+                  style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
+                  {iv.photo ? (
+                    <Image source={{uri: iv.photo}} className="w-8 h-8 rounded-full bg-gray-200" />
+                  ) : (
+                    <View className="w-8 h-8 rounded-full bg-purple-500 items-center justify-center">
+                      <Text className="text-white text-[11px] font-bold">
+                        {(iv.name || '?').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{flex: 1}}>
+                    <Text className="text-[13px] font-bold text-gray-900" numberOfLines={1}>
+                      {iv.name}
+                    </Text>
+                    {iv.handle ? (
+                      <Text className="text-[10px] text-gray-400" numberOfLines={1}>
+                        @{iv.handle}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View
+                    className={`px-2 py-0.5 rounded-full ${
+                      iv.status === 'responded' ? 'bg-emerald-100' : 'bg-amber-100'
+                    }`}>
+                    <Text
+                      className={`text-[10px] font-bold ${
+                        iv.status === 'responded' ? 'text-emerald-700' : 'text-amber-700'
+                      }`}>
+                      {iv.status === 'responded' ? 'Applied' : 'Invited'}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>

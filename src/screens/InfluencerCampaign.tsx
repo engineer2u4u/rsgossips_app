@@ -21,7 +21,18 @@ import {invokeFn} from '../lib/api';
 import {useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 
-const TABS = ['Active', 'Applied', 'Completed'];
+const BASE_TABS = ['Active', 'Applied', 'Completed'];
+
+// Which tab a campaign belongs to. "Invites" = the brand personally invited the
+// creator and they haven't applied yet (once applied → status Applied, so it
+// moves there). Invited campaigns are pulled OUT of Active so they don't double
+// up. Mirrors web src/app/influencer/campaigns/page.js.
+function campaignInTab(c: any, tab: string) {
+  if (tab === 'Completed') return c.applicationStatus === 'completed';
+  if (tab === 'Invites') return !!c.invited && c.status === 'Active';
+  if (tab === 'Active') return c.status === 'Active' && !c.invited;
+  return c.status === tab; // Applied
+}
 // Mirrors web's PAGE_SIZE (client-side pagination, 30 per page). Mobile
 // reveals the next window via an explicit "Load more" button instead of
 // numbered pages so scroll position stays natural.
@@ -36,6 +47,8 @@ interface CampaignData {
   // The web (b5529e5) normalised influencer-side campaigns to Instagram-only.
   // We keep `platforms` for forward-compat but filtering UI is dropped.
   applicationStatus?: string;
+  invited?: boolean;
+  inviteBrandName?: string;
   tags: string[];
   budget: string;
   deadline?: string;
@@ -168,6 +181,8 @@ export default function InfluencerCampaign() {
             // computed against the user's application row.
             status: c.status || 'Active',
             applicationStatus: c.applicationStatus,
+            invited: !!c.invited,
+            inviteBrandName: c.inviteBrandName || '',
             tags: c.tags || [],
             // Edge function returns budget already formatted (₹X,XXX).
             budget: c.budget
@@ -230,10 +245,7 @@ export default function InfluencerCampaign() {
   //    the "no cap" sentinel
   const filteredCampaigns = useMemo(() => {
     const filtered = campaigns.filter(campaign => {
-      const matchesTab =
-        activeTab === 'Completed'
-          ? campaign.applicationStatus === 'completed'
-          : campaign.status === activeTab;
+      const matchesTab = campaignInTab(campaign, activeTab);
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         campaign.title.toLowerCase().includes(q) ||
@@ -309,9 +321,10 @@ export default function InfluencerCampaign() {
     };
     const pool = campaigns.filter(matchesNonTabFilters);
     return {
-      Active: pool.filter(c => c.status === 'Active').length,
-      Applied: pool.filter(c => c.status === 'Applied').length,
-      Completed: pool.filter(c => c.applicationStatus === 'completed').length,
+      Invites: pool.filter(c => campaignInTab(c, 'Invites')).length,
+      Active: pool.filter(c => campaignInTab(c, 'Active')).length,
+      Applied: pool.filter(c => campaignInTab(c, 'Applied')).length,
+      Completed: pool.filter(c => campaignInTab(c, 'Completed')).length,
     };
   }, [
     campaigns,
@@ -348,14 +361,21 @@ export default function InfluencerCampaign() {
   // so it doesn't count as an "active" filter — but Show all clears it
   // anyway for a clean slate.)
   const tabTotalUnfiltered = useMemo(
-    () =>
-      campaigns.filter(c =>
-        activeTab === 'Completed'
-          ? c.applicationStatus === 'completed'
-          : c.status === activeTab,
-      ).length,
+    () => campaigns.filter(c => campaignInTab(c, activeTab)).length,
     [campaigns, activeTab],
   );
+
+  // "Invites" tab only exists when there's at least one invited-not-applied
+  // campaign. If the last invite is applied while the user is on the tab, send
+  // them to Applied (where it moved) instead of an empty view.
+  const hasInvites = useMemo(
+    () => campaigns.some(c => c.invited && c.status === 'Active'),
+    [campaigns],
+  );
+  const TABS = hasInvites ? ['Invites', ...BASE_TABS] : BASE_TABS;
+  useEffect(() => {
+    if (!hasInvites && activeTab === 'Invites') setActiveTab('Applied');
+  }, [hasInvites, activeTab]);
   const hasActiveFilters =
     searchQuery.trim() !== '' ||
     selectedCategories.length > 0 ||
@@ -419,9 +439,12 @@ export default function InfluencerCampaign() {
           {/* Tab Switcher — count appears next to the label in parentheses */}
           <View className="bg-white p-1.5 rounded-2xl flex-row shadow-sm border border-slate-50" style={{gap: 4}}>
             {TABS.map(tab => {
-              const label = t(`ScreensInfluencerCampaign.tabs.${tab}`, {
-                count: tabCounts[tab] ?? 0,
-              });
+              const label =
+                tab === 'Invites'
+                  ? `Invites (${tabCounts.Invites ?? 0})`
+                  : t(`ScreensInfluencerCampaign.tabs.${tab}`, {
+                      count: tabCounts[tab] ?? 0,
+                    });
               return activeTab === tab ? (
                 <LinearGradient
                   key={tab}
@@ -495,7 +518,10 @@ export default function InfluencerCampaign() {
                 <View className="py-20 bg-white rounded-[32px] items-center">
                   <Text className="text-sm font-bold text-slate-400">
                     {t('ScreensInfluencerCampaign.noCampaigns', {
-                      tab: t(`ScreensInfluencerCampaign.tabsLower.${activeTab}`),
+                      tab:
+                        activeTab === 'Invites'
+                          ? 'invites'
+                          : t(`ScreensInfluencerCampaign.tabsLower.${activeTab}`),
                     })}
                   </Text>
                 </View>

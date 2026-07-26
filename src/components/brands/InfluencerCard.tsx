@@ -9,7 +9,7 @@
 
 import React from 'react';
 import {Alert, Image, Linking, Pressable, Text, View} from 'react-native';
-import {Instagram, MapPin, Plus} from 'lucide-react-native';
+import {Check, Instagram, MapPin, Plus} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
 
 export type SearchInfluencer = {
@@ -28,6 +28,13 @@ export type SearchInfluencer = {
 
 interface Props {
   influencer: SearchInfluencer;
+  // Selection mode (additive). When `selectable`, tapping the card toggles
+  // selection; otherwise it opens the media kit. `onQuickInvite` lets the
+  // always-visible Invite button enter select-mode preselecting this creator.
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onQuickInvite?: () => void;
 }
 
 function formatCount(n?: number) {
@@ -37,7 +44,13 @@ function formatCount(n?: number) {
   return String(n);
 }
 
-export function InfluencerCard({influencer}: Props) {
+export function InfluencerCard({
+  influencer,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+  onQuickInvite,
+}: Props) {
   const {t} = useTranslation();
   const name =
     influencer.full_name ||
@@ -70,9 +83,20 @@ export function InfluencerCard({influencer}: Props) {
 
   return (
     <Pressable
-      onPress={openMediaKit}
+      onPress={selectable ? onToggleSelect : openMediaKit}
       android_ripple={{color: '#e2e8f0'}}
-      className="flex-row items-center px-5 py-3.5 border-b border-gray-100">
+      className={`flex-row items-center px-5 py-3.5 border-b border-gray-100 ${
+        selectable && selected ? 'bg-indigo-50' : ''
+      }`}>
+      {/* Selection checkbox */}
+      {selectable ? (
+        <View
+          className={`w-5 h-5 rounded-md mr-3 items-center justify-center border ${
+            selected ? 'bg-[#5851DB] border-[#5851DB]' : 'border-gray-300'
+          }`}>
+          {selected ? <Check size={13} color="white" /> : null}
+        </View>
+      ) : null}
       {/* Avatar */}
       {influencer.profile_photo_url ? (
         <Image
@@ -118,17 +142,20 @@ export function InfluencerCard({influencer}: Props) {
         ) : null}
       </View>
 
-      {/* Invite Button */}
-      <Pressable
-        onPress={invite}
-        hitSlop={4}
-        className="bg-[#4C75BE] px-4 py-2 rounded-full flex-row items-center"
-        style={{gap: 6}}>
-        <Plus size={12} color="white" />
-        <Text className="text-white text-[11px] font-bold">
-          {t('BrandsInfluencerCard.inviteButton')}
-        </Text>
-      </Pressable>
+      {/* Invite Button — hidden in select mode (the checkbox drives it). When
+          not in select mode, it enters select-mode preselecting this creator. */}
+      {selectable ? null : (
+        <Pressable
+          onPress={onQuickInvite || invite}
+          hitSlop={4}
+          className="bg-[#4C75BE] px-4 py-2 rounded-full flex-row items-center"
+          style={{gap: 6}}>
+          <Plus size={12} color="white" />
+          <Text className="text-white text-[11px] font-bold">
+            {t('BrandsInfluencerCard.inviteButton')}
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }

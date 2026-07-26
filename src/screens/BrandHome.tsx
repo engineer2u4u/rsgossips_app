@@ -14,6 +14,7 @@ import CreatorStories from '../components/CreatorStories';
 import PocketFriendlyCreators from '../components/PocketFriendlyCreators';
 import { CreatorCTASection } from '../components/CreatorCTASection';
 import BrandSupportChatModal from '../components/BrandSupportChatModal';
+import BrandMatchPrompt from '../components/brands/BrandMatchPrompt';
 
 import BrandsLayout from '../layouts/BrandLayout';
 
@@ -27,6 +28,7 @@ export default function BrandHome() {
           <BrandHero />
         </View>
         <View className="w-full items-center gap-8 px-4 py-6">
+          <BrandMatchPrompt />
           <TrustSection />
           <CategorySection />
 
