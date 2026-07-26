@@ -57,6 +57,7 @@ const TYPE_STYLES: Record<string, IconBundle> = {
   app_rejected: {Icon: XCircle, color: '#ef4444', bg: '#FEF2F2'},
   app_revision_needed: {Icon: RotateCcw, color: '#f97316', bg: '#FFF7ED'},
   app_payment: {Icon: IndianRupee, color: '#f59e0b', bg: '#FFFBEB'},
+  campaign_invite: {Icon: UserPlus, color: '#5851DB', bg: '#EEF2FF'},
 };
 
 function parseBody(body: string | undefined): {
@@ -130,7 +131,7 @@ function routeFromType(
     'live_submitted',
     'app_payment',
   ];
-  if (offerTypes.includes(type)) {
+  if (offerTypes.includes(type) || type === 'campaign_invite') {
     return campaignId
       ? {name: 'InfluencerOfferDetail', params: {id: campaignId}}
       : {name: 'InfluencerCampaigns'};
@@ -198,10 +199,12 @@ export function NotificationsList({
 
   const markRead = async (ids: string[] | 'all') => {
     if (!user?.id) return;
-    // Optimistic update so the dot disappears instantly.
+    // Optimistic update so the dot disappears instantly. NOTE: the notifications
+    // edge fn markRead matches on created_at (not id), so we key on created_at
+    // here and in the tap handler — passing id silently no-ops server-side.
     setItems(prev =>
       prev.map(n =>
-        ids === 'all' || (n.id && ids.includes(n.id)) ? {...n, is_read: true} : n,
+        ids === 'all' || (n.created_at && ids.includes(n.created_at)) ? {...n, is_read: true} : n,
       ),
     );
     try {
@@ -272,7 +275,7 @@ export function NotificationsList({
           const dest =
             routeFromLink(link) || routeFromType(item.type, campaignId);
           const handleTap = () => {
-            if (item.id) markRead([item.id]);
+            if (item.created_at) markRead([item.created_at]);
             if (dest) {
               try {
                 navigation.navigate(dest.name, dest.params);
