@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { registerForPush, initPushHandlers } from './src/lib/push';
 import OfflineGate from './src/components/OfflineGate';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { LinkingOptions } from '@react-navigation/native';
@@ -61,8 +62,22 @@ const linking: LinkingOptions<any> = {
 // an unfortunate swipe-back inside a sub-pager, or any other client-side
 // flow CANNOT reveal them. Stack swaps happen automatically when
 // AuthContext flips `user` between null and a real value.
+export const navigationRef = createNavigationContainerRef();
+
 function RootStack() {
   const {user, loading, role} = useAuth();
+
+  // Register this device for FCM push once signed in, and wire tap-to-open
+  // deep-linking. No-ops until Firebase native config is present (PUSH_SETUP.md).
+  useEffect(() => {
+    if (!user) return;
+    registerForPush();
+    initPushHandlers((route) => {
+      if (navigationRef.isReady()) {
+        (navigationRef.navigate as any)(route.name, route.params);
+      }
+    });
+  }, [user]);
   // Safety: if check-profile is slow / fails / returns no role, don't sit on
   // the splash forever. After 3s of waiting on role we proceed with whatever
   // we have (defaults to influencer) so the user isn't permanently stuck.
@@ -188,7 +203,7 @@ export default function App() {
       <SafeAreaProvider>
         <LoadingProvider>
           <AuthProvider>
-            <NavigationContainer linking={linking}>
+            <NavigationContainer ref={navigationRef} linking={linking}>
               <RootStack />
             </NavigationContainer>
             {/* Offline takeover — sits above the whole navigator; woken by
