@@ -1,6 +1,8 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+// Firebase (FCM push) — must come after the Android application plugin.
+apply plugin: "com.google.gms.google-services"
 
 // Load release-signing credentials from android/keystore.properties so the
 // store password and key alias never end up in version control. The file is

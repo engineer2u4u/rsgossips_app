@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "494523319134",
+    "project_id": "rgossips-app",
+    "storage_bucket": "rgossips-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494523319134:android:0596e74b60138d7e0f05cf",
+        "android_client_info": {
+          "package_name": "com.rgossips"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLyCHYlVXSbI4_es1GQ84WnXxoy9jqiks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
