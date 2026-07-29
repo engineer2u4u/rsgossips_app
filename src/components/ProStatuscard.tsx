@@ -144,28 +144,28 @@ export default function ProStatusCard() {
     );
   }, [trialProgress]);
 
-  // Count active campaigns matching the creator's categories. We pass
-  // influencerId so list-campaigns returns the same dataset the campaigns
-  // list page sees (it excludes campaigns the user already applied to and
-  // applies the same eligibility cuts) — without it, the home pitch and
-  // the destination tab disagreed (e.g. "20 brands looking for you" then
-  // "Active (18)"). Counting campaigns (not unique brands) also aligns
-  // with the destination tab's "Active (n)" label.
+  // Count UNIQUE BRANDS with an active campaign matching the creator's
+  // categories — mirrors the web ProStatusCard exactly (source of truth):
+  // list-campaigns with NO influencerId (so ALL active campaigns are
+  // considered, not just ones the user hasn't applied to), then de-dupe by
+  // brand. Passing influencerId here made the count exclude already-applied
+  // campaigns, so the home pitch read 0 while web read 1 for the same user.
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
     (async () => {
       try {
-        const data = await invokeFn<{ campaigns?: any[] }>('list-campaigns', {
-          influencerId: user.id,
-        });
+        const data = await invokeFn<{ campaigns?: any[] }>('list-campaigns', {});
         if (cancelled || !Array.isArray(data?.campaigns)) return;
         const matching = data.campaigns.filter((c: any) => {
           if (c.status !== 'Active') return false;
           if (userCategories.length === 0) return true;
           return tagsMatchCategories(c.tags, userCategories);
         });
-        if (!cancelled) setMatchingBrandsCount(matching.length);
+        const brandIds = new Set(
+          matching.map((c: any) => c.brandId || c.brandName).filter(Boolean),
+        );
+        if (!cancelled) setMatchingBrandsCount(brandIds.size);
       } catch {
         if (!cancelled) setMatchingBrandsCount(0);
       }
@@ -321,7 +321,7 @@ export default function ProStatusCard() {
           <Text style={{ color: BRAND.accent, fontWeight: '700' }}>
             {matchingBrandsCount == null
               ? '…'
-              : t('ProStatuscard.campaignsCount', {
+              : t('ProStatuscard.brandsCount', {
                   count: matchingBrandsCount,
                 })}
           </Text>
