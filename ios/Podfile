@@ -35,6 +35,20 @@ target 'RGossips' do
   # ShadowNode / BaseViewProps), so we stay on the 2.3.1 wrapper.
   pod 'razorpay-pod', '1.5.5'
 
+  # @react-native-firebase (FCM) pulls Swift pods (FirebaseCoreInternal,
+  # FirebaseInstallations, …) that import C/ObjC deps which ship no module
+  # maps under static libraries — so `pod install` fails with "GoogleUtilities
+  # does not define modules". Opt just those deps into module maps. Targeted
+  # rather than a global use_modular_headers! so the from-source React core
+  # and razorpay pods are left untouched.
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
