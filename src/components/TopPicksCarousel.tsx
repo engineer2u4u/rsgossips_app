@@ -17,7 +17,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { invokeFn } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { scoreCampaignForUser } from '../utils/matchScore';
+import { scoreCampaignForUser, calculateCampaignMatchScore } from '../utils/matchScore';
 import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
 
 const { width } = Dimensions.get('window');
@@ -88,7 +88,10 @@ export default function RecommendedCampaigns() {
     );
 
     const scored = eligible.map(c => {
-      const { score, categoryTier } = scoreCampaignForUser(profile, c);
+      // Rank by category tier, but DISPLAY the same match % the campaigns list,
+      // card badge and AI coach use, so the score never differs across screens.
+      const { categoryTier } = scoreCampaignForUser(profile, c);
+      const score = calculateCampaignMatchScore(profile, c);
       return { c, score, categoryTier };
     });
 

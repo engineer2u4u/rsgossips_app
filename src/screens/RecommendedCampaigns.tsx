@@ -31,6 +31,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import {invokeFn} from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { calculateCampaignMatchScore } from '../utils/matchScore';
 
 const { width } = Dimensions.get('window');
 
@@ -137,7 +138,7 @@ const SORT_OPTIONS = [
 export default function RecommendedCampaigns() {
   const navigation = useNavigation();
   const { t } = useTranslation();
-  const {user} = useAuth();
+  const {user, profile} = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('recommended');
   const [campaigns, setCampaigns] = useState(DUMMY_OFFERS);
@@ -158,7 +159,9 @@ export default function RecommendedCampaigns() {
               'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600',
             category: c.tags?.[0] || 'General',
             badge: 'Active',
-            match: `${Math.floor(Math.random() * 10 + 88)}% Match`,
+            // Real match % (same scorer as the home carousel + campaigns list +
+            // AI coach), not a random number.
+            match: `${calculateCampaignMatchScore(profile, c)}% Match`,
             brand: c.brandName || 'Brand',
             title: c.title,
             location: c.location || 'India',
@@ -177,7 +180,7 @@ export default function RecommendedCampaigns() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, profile]);
 
   useEffect(() => {
     loadRecommended();
