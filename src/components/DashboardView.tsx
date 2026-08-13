@@ -28,6 +28,7 @@ import {supabase} from '../utils/supabase';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
 import {useProfilePhoto} from '../utils/photoUrl';
+import {openManagePlan} from '../lib/manage-plan';
 
 // Mirrors the web useProfileCompletion hook (CompleteProfileCard.jsx).
 // Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
@@ -451,7 +452,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('InfluencerPricing' as never)}
+          onPress={openManagePlan}
           className="flex-row items-center justify-center"
           style={{borderRadius: 12, height: 44, overflow: 'hidden'}}>
           <LinearGradient
@@ -462,7 +463,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           />
           <Crown size={16} color="white" />
           <Text className="text-white text-sm font-bold ml-2">
-            {hasPaidPlan ? t('DashboardView.managePlan') : t('DashboardView.upgradeNow')}
+            {t('common.managePlan')}
           </Text>
         </TouchableOpacity>
       </View>

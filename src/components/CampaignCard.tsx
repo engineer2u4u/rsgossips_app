@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {openManagePlan} from '../lib/manage-plan';
 import {MapPin, Gift, Users, Zap, Sparkles, X, Copy, Check} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
@@ -82,7 +83,6 @@ function MatchCoachModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
-  const navigation = useNavigation<any>();
   const {generate, loading, result, error, remaining, limitReached, setResult} =
     useAiTool();
   const [copied, setCopied] = useState(false);
@@ -111,8 +111,9 @@ function MatchCoachModal({
   };
 
   const goUpgrade = () => {
+    // Plan changes happen on the web (no in-app purchase). Hand off to browser.
     onClose();
-    navigation.navigate('InfluencerPricing');
+    openManagePlan();
   };
 
   return (
@@ -230,7 +231,7 @@ function MatchCoachModal({
                   onPress={goUpgrade}
                   className="h-9 px-4 rounded-xl bg-[#9810FA] items-center justify-center">
                   <Text className="text-white text-xs font-bold">
-                    {t('CampaignCard.coach.upgrade')}
+                    {t('common.managePlan')}
                   </Text>
                 </TouchableOpacity>
               </View>

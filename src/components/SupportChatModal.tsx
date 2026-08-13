@@ -30,6 +30,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
+import {openManagePlan} from '../lib/manage-plan';
 import {BRAND_GRADIENT_WARM} from '../theme/brand';
 import {useTranslation} from 'react-i18next';
 
@@ -188,20 +189,20 @@ const TREE: TreeNode = {
           label: 'Upgrade my plan',
           response:
             'Pick the plan that fits — Pro unlocks 15 applications/month and richer analytics, Elite is unlimited.',
-          link: {href: 'InfluencerPricing', label: 'View Plans'},
+          link: {href: 'InfluencerPricing', label: 'Manage plan'},
         },
         {
           id: 'plans_compare',
           label: "What's the difference between plans?",
           response:
-            'Open the pricing page for the full feature matrix — applications/month, analytics depth, audience demographics, deal matching priority and support level.',
-          link: {href: 'InfluencerPricing', label: 'Compare Plans'},
+            'Tap Manage plan for the full feature matrix — applications/month, analytics depth, audience demographics, deal matching priority and support level.',
+          link: {href: 'InfluencerPricing', label: 'Manage plan'},
         },
         {
           id: 'plans_cancel',
           label: 'Cancel my subscription',
           response:
-            "Subscriptions can be cancelled directly from Stripe's billing portal. If you can't access it, request a callback and we'll cancel it for you.",
+            "You can manage or cancel your subscription from your account on the web. If you can't access it, request a callback and we'll help.",
         },
       ],
     },
@@ -623,7 +624,10 @@ export default function SupportChatModal({visible, onClose}: Props) {
   const handleLink = (href: string) => {
     onClose?.();
     const [routeName, param] = href.split('::');
-    if (routeName === 'InfluencerOfferDetail' && param) {
+    if (routeName === 'InfluencerPricing') {
+      // Plans live on the web (no in-app pricing screen).
+      openManagePlan();
+    } else if (routeName === 'InfluencerOfferDetail' && param) {
       navigation.navigate(routeName, {id: param});
     } else {
       navigation.navigate(routeName);

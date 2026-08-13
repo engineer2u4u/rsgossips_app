@@ -16,7 +16,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {openManagePlan} from '../lib/manage-plan';
 import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
 import {Copy, MessageCircle, Sparkles, Trophy} from 'lucide-react-native';
@@ -78,7 +78,6 @@ type LedgerRow = {
 };
 
 export default function ReferScreen() {
-  const navigation = useNavigation<any>();
   const {t} = useTranslation();
   const {user, profile, loading: authLoading} = useAuth();
 
@@ -255,7 +254,7 @@ export default function ReferScreen() {
               {t('ScreensReferScreen.gate.body')}
             </Text>
             <Pressable
-              onPress={() => navigation.navigate('InfluencerPricing')}
+              onPress={openManagePlan}
               style={{borderRadius: 16, overflow: 'hidden', marginTop: 16}}>
               <LinearGradient
                 colors={[...BRAND_GRADIENT_WARM]}
@@ -263,7 +262,7 @@ export default function ReferScreen() {
                 end={{x: 1, y: 1}}
                 style={{paddingVertical: 12, paddingHorizontal: 24}}>
                 <Text className="text-white text-sm font-black">
-                  {t('ScreensReferScreen.gate.cta')}
+                  {t('common.managePlan')}
                 </Text>
               </LinearGradient>
             </Pressable>

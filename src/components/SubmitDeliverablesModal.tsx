@@ -42,7 +42,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
-import {useNavigation} from '@react-navigation/native';
+import {openManagePlan} from '../lib/manage-plan';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {useAiTool} from '../hooks/useAiTool';
 import {AiMarkdown} from './AiMarkdown';
@@ -172,7 +172,6 @@ export default function SubmitDeliverablesModal({
   // requirements (brand tag, required hashtags, ASCI #ad/#collab disclosure,
   // dos/donts) BEFORE the brand ever sees it. Optional, campaign-aware.
   // Mirrors the web SubmitDeliverablesModal compliance section.
-  const navigation = useNavigation<any>();
   const [caption, setCaption] = useState('');
   const [checkOpen, setCheckOpen] = useState(false);
   const [complianceCopied, setComplianceCopied] = useState(false);
@@ -465,11 +464,11 @@ export default function SubmitDeliverablesModal({
                     <TouchableOpacity
                       onPress={() => {
                         onClose();
-                        navigation.navigate('InfluencerPricing');
+                        openManagePlan();
                       }}
                       style={styles.complianceUpgradeBtn}>
                       <Text style={styles.complianceUpgradeText}>
-                        {t('SubmitDeliverablesModal.compliance.upgrade')}
+                        {t('common.managePlan')}
                       </Text>
                     </TouchableOpacity>
                   </View>

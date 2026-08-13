@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import {useTranslation} from 'react-i18next';
-import {useNavigation} from '@react-navigation/native';
+import {openManagePlan} from '../lib/manage-plan';
 
 import {
   Type,
@@ -96,7 +96,6 @@ const tools: ToolSpec[] = [
 
 export default function AiToolsGrid() {
   const {t} = useTranslation();
-  const navigation = useNavigation();
   const {user, profile} = useAuth();
   const [open, setOpen] = useState<ToolSpec | null>(null);
   const [usedThisMonth, setUsedThisMonth] = useState(0);
@@ -129,7 +128,8 @@ export default function AiToolsGrid() {
       : Math.min(100, Math.round((usage.used / usage.limit) * 100));
   const exhausted = !usage.unlimited && usage.remaining <= 0;
 
-  const goToPricing = () => navigation.navigate('InfluencerPricing' as never);
+  // Plan changes happen on the web (no in-app purchase). Opens the browser.
+  const goToPricing = () => openManagePlan();
 
   return (
     <View className="w-full">
@@ -212,7 +212,7 @@ export default function AiToolsGrid() {
                     <Text
                       className="text-[10px] font-black"
                       style={{color: BRAND_PURPLE}}>
-                      {t('AIToolsGrid.upgradeCta')}
+                      {t('common.managePlan')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -376,7 +376,7 @@ function ToolModal({
                     className="mt-4 px-6 py-2.5 rounded-full"
                     style={{backgroundColor: BRAND_PURPLE}}>
                     <Text className="text-white text-sm font-black">
-                      {t('AIToolsGrid.upgradeCta')}
+                      {t('common.managePlan')}
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -35,7 +35,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
-import {useNavigation} from '@react-navigation/native';
+import {openManagePlan} from '../lib/manage-plan';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 import {useProfilePhoto} from '../utils/photoUrl';
@@ -74,7 +74,6 @@ const SERVICE_LABELS: Record<string, string> = {
 export default function InfluencerMediaKit() {
   const {t} = useTranslation();
   const {profile, user, refreshProfile} = useAuth();
-  const navigation = useNavigation();
 
   const [bio, setBio] = useState(profile?.bio || '');
   const [editingBio, setEditingBio] = useState(false);
@@ -262,9 +261,7 @@ export default function InfluencerMediaKit() {
               setTemplateError('');
               setTemplateModalOpen(true);
             }}
-            onUpgrade={() =>
-              navigation.navigate('InfluencerPricing' as never)
-            }
+            onUpgrade={openManagePlan}
           />
 
         </View>
@@ -285,9 +282,7 @@ export default function InfluencerMediaKit() {
           {/* AI Media Kit Writer — mirror of the web AiMediaKitCard */}
           <AiMediaKitCard
             onUseBio={handleAiBioSave}
-            onUpgrade={() =>
-              navigation.navigate('InfluencerPricing' as never)
-            }
+            onUpgrade={openManagePlan}
           />
 
           {/* Publish / Share Card */}

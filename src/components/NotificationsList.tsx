@@ -31,6 +31,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
+import {openManagePlan} from '../lib/manage-plan';
 
 type TFunc = (key: string, opts?: any) => string;
 
@@ -103,7 +104,9 @@ function routeFromLink(
   if (/^influencer\/services\/orders/i.test(cleaned))
     return {name: 'InfluencerServiceOrders'};
   if (/^influencer\/services/i.test(cleaned)) return {name: 'InfluencerServices'};
-  if (/^influencer\/pricing/i.test(cleaned)) return {name: 'InfluencerPricing'};
+  // Plans live on the web (no in-app pricing screen). Sentinel handled in
+  // handleTap by opening the browser rather than navigating in-app.
+  if (/^influencer\/pricing/i.test(cleaned)) return {name: 'ManagePlanWeb'};
   if (/^influencer\/media-kit/i.test(cleaned))
     return {name: 'InfluencerMediaKit'};
   if (/^influencer$/i.test(cleaned) || /^influencer\/?$/.test(cleaned))
@@ -276,12 +279,15 @@ export function NotificationsList({
             routeFromLink(link) || routeFromType(item.type, campaignId);
           const handleTap = () => {
             if (item.created_at) markRead([item.created_at]);
-            if (dest) {
-              try {
-                navigation.navigate(dest.name, dest.params);
-              } catch {
-                // Route not registered (e.g. brand-side stack) — silent.
-              }
+            if (!dest) return;
+            if (dest.name === 'ManagePlanWeb') {
+              openManagePlan();
+              return;
+            }
+            try {
+              navigation.navigate(dest.name, dest.params);
+            } catch {
+              // Route not registered (e.g. brand-side stack) — silent.
             }
           };
           return (

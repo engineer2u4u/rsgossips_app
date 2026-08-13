@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { invokeFn } from '../lib/api';
+import { openManagePlan } from '../lib/manage-plan';
 import { useProfilePhoto } from '../utils/photoUrl';
 import {
   BRAND,
@@ -383,7 +384,7 @@ export default function ProStatusCard() {
         {!isTopTierPlan && (
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('InfluencerPricing' as never)}
+            onPress={openManagePlan}
             style={{
               borderRadius: 12,
               paddingHorizontal: 14,
@@ -406,7 +407,7 @@ export default function ProStatusCard() {
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             />
             <Crown size={14} color="white" />
-            <Text className="text-white text-[13px] font-bold">{t('ProStatuscard.upgrade')}</Text>
+            <Text className="text-white text-[13px] font-bold">{t('common.managePlan')}</Text>
           </TouchableOpacity>
         )}
       </View>

@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Clipboard,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {openManagePlan} from '../lib/manage-plan';
 import {
   CheckCircle,
   ShieldCheck,
@@ -78,7 +78,6 @@ function BrandMatchModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
-  const navigation = useNavigation<any>();
   const {generate, loading, result, error, remaining, limitReached, setResult} =
     useAiTool();
   const [copied, setCopied] = useState(false);
@@ -106,9 +105,10 @@ function BrandMatchModal({
   };
 
   const goUpgrade = () => {
-    // Close first — an open RN Modal would cover the pricing screen.
+    // Plan changes happen on the web. Close the sheet, then hand off to the
+    // browser (no in-app purchase UI).
     onClose();
-    navigation.navigate('InfluencerPricing');
+    openManagePlan();
   };
 
   return (
@@ -220,7 +220,7 @@ function BrandMatchModal({
                   onPress={goUpgrade}
                   className="h-9 px-4 rounded-xl bg-[#9810FA] items-center justify-center">
                   <Text className="text-white text-xs font-bold">
-                    {t('BrandCard.match.upgrade')}
+                    {t('common.managePlan')}
                   </Text>
                 </TouchableOpacity>
               </View>

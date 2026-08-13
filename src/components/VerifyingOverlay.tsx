@@ -3,9 +3,9 @@ import {Modal, View, Text, ActivityIndicator} from 'react-native';
 import {useTranslation} from 'react-i18next';
 
 /**
- * Full-screen lock while we wait for the webhook to flip subscription_plan
- * on the profile. The caller polls refreshProfile in a bounded loop and
- * hides this when done — see InfluencerPricing.handleUpgrade.
+ * Full-screen lock while we wait for a payment webhook to settle (used by the
+ * service-order checkout flow). The caller polls in a bounded loop and hides
+ * this when done.
  *
  * `transparent` + `statusBarTranslucent` so the dim covers the whole
  * screen including the status bar / nav bar areas.
