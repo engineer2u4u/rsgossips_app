@@ -13,6 +13,7 @@ import PrivacySecurityPage from '../components/PrivacySettings';
 import ChangePassword from '../components/ChangePassword';
 import TrustedDevices from '../components/TrustedDevices';
 import DeactivateAccount from '../components/DeactiveAccount';
+import InfluencerAccountActionsModal from '../components/InfluencerAccountActionsModal';
 import HelpSupport from '../components/HelpAndSupport';
 import PaymentMethods from '../components/PaymentMethods';
 import BottomNav from '../components/BottomNav';
@@ -53,6 +54,9 @@ const BACK_PARENT: Record<string, ViewType> = {
 export default function InfluencerProfile() {
   const nav = useNavigation<any>();
   const [view, setView] = useState<ViewType>('dashboard');
+  // Deletion is a modal rather than a `view`, because it signs the user out on
+  // success — there is no screen to navigate back to.
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const {refreshProfile} = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -154,6 +158,7 @@ export default function InfluencerProfile() {
             onBack={() => navigate('dashboard')}
             onTrustedDevices={() => navigate('trusted-devices')}
             onDeactiveAccount={() => navigate('deactivate-account')}
+            onDeleteAccount={() => setDeleteOpen(true)}
             onPasswordChange={() => navigate('password-change')}
           />
         )}
@@ -186,6 +191,11 @@ export default function InfluencerProfile() {
           <BottomNav />
         </View>
       )}
+
+      <InfluencerAccountActionsModal
+        visible={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+      />
     </SafeAreaView>
   );
 }

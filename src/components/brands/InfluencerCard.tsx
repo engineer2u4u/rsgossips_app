@@ -7,10 +7,11 @@
 // viewer yet). "Invite" is stubbed — there's no invite edge function on
 // the web either; brands invite via campaigns instead.
 
-import React from 'react';
+import React, {useState} from 'react';
 import {Alert, Image, Linking, Pressable, Text, View} from 'react-native';
-import {Check, Instagram, MapPin, Plus} from 'lucide-react-native';
+import {Check, Instagram, MapPin, MoreVertical, Plus} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import ReportBlockSheet from '../ReportBlockSheet';
 
 export type SearchInfluencer = {
   influencer_id: string;
@@ -35,6 +36,10 @@ interface Props {
   selected?: boolean;
   onToggleSelect?: () => void;
   onQuickInvite?: () => void;
+  // Fires after this creator is blocked, so the list can drop the row without
+  // waiting for a refetch. The edge functions filter blocked users too, but
+  // the row would otherwise sit there until the next load.
+  onBlocked?: (userId: string) => void;
 }
 
 function formatCount(n?: number) {
@@ -50,7 +55,9 @@ export function InfluencerCard({
   selected = false,
   onToggleSelect,
   onQuickInvite,
+  onBlocked,
 }: Props) {
+  const [safetyOpen, setSafetyOpen] = useState(false);
   const {t} = useTranslation();
   const name =
     influencer.full_name ||
@@ -156,6 +163,30 @@ export function InfluencerCard({
           </Text>
         </Pressable>
       )}
+
+      {/* Safety menu. Play's UGC policy and Apple 1.2 require report/block to
+          be reachable where the content is seen, so it lives on the card
+          itself rather than only on a detail screen. Hidden in select mode so
+          it can't be hit while bulk-inviting. */}
+      {selectable ? null : (
+        <Pressable
+          onPress={() => setSafetyOpen(true)}
+          hitSlop={8}
+          className="ml-1.5 p-1"
+          accessibilityRole="button"
+          accessibilityLabel={t('ReportBlock.menuTitle')}>
+          <MoreVertical size={16} color="#94a3b8" />
+        </Pressable>
+      )}
+
+      <ReportBlockSheet
+        visible={safetyOpen}
+        onClose={() => setSafetyOpen(false)}
+        targetUserId={influencer.influencer_id}
+        targetName={name}
+        entityType="user"
+        onBlocked={onBlocked}
+      />
     </Pressable>
   );
 }

@@ -9,7 +9,62 @@
     "next": "Next",
     "retry": "Try again",
     "somethingWentWrong": "Something went wrong. Please try again.",
-    "managePlan": "Manage plan"
+    "managePlan": "Manage plan",
+    "done": "Done"
+  },
+  "InfluencerAccountActions": {
+    "title": "Delete Account",
+    "info": {
+      "heading": "This is a soft delete with a 30-day grace window.",
+      "point1": "Your profile and all related data is hidden immediately.",
+      "point2": "Sign-in is blocked while the account is pending deletion.",
+      "point3": "Email grievance@rgossips.com within 30 days if you want it restored.",
+      "point4": "After 30 days, the account, applications, media kit and contact details are permanently removed."
+    },
+    "reasonHeading": "Tell us why you're leaving",
+    "reasonSubtext": "This helps us improve RGossips.",
+    "reasons": {
+      "leavingCreating": "Stepping away from creating",
+      "movingPlatform": "Moving to a different platform",
+      "privacy": "Privacy concerns",
+      "createdByMistake": "Created the account by mistake",
+      "duplicate": "Duplicate account",
+      "other": "Other"
+    },
+    "confirmTypePrompt": "Type {{word}} to confirm.",
+    "confirmCheckbox": "I understand my account will be hidden now and permanently removed after 30 days unless I contact admin.",
+    "deleteButton": "Delete Account",
+    "errorFallback": "Failed to delete account. Please try again."
+  },
+  "ReportBlock": {
+    "menuTitle": "Safety",
+    "reportAction": "Report",
+    "reportSubtitle": "Tell us if something here breaks our rules",
+    "blockAction": "Block",
+    "blockSubtitle": "You won't see each other on RGossips",
+    "reportTitle": "Report",
+    "reportPrompt": "What's wrong with this? Pick the closest reason.",
+    "detailsPlaceholder": "Anything else we should know? (optional)",
+    "submitReport": "Submit report",
+    "reportThanks": "Thanks — our team will review this within 24 hours.",
+    "blockTitle": "Block",
+    "blockConfirmBody": "{{name}} won't appear in your searches, campaigns or applications, and you won't appear in theirs. You can undo this in Settings.",
+    "confirmBlock": "Block",
+    "blockDone": "Blocked. You won't see each other on RGossips.",
+    "thisUser": "This user",
+    "doneTitle": "Thanks",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "reasons": {
+      "spam": "Spam or misleading",
+      "harassment": "Harassment or bullying",
+      "hateSpeech": "Hate speech",
+      "sexualContent": "Sexual or explicit content",
+      "violence": "Violence or threats",
+      "scam": "Scam or fraud",
+      "impersonation": "Pretending to be someone else",
+      "ip": "Copyright or trademark",
+      "other": "Something else"
+    }
   },
   "language": {
     "label": "Language",
@@ -1442,6 +1497,10 @@
     "deactivateAccount": {
       "title": "Deactivate Account",
       "description": "Temporarily disable your account"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "description": "Permanently remove your account and data"
     },
     "securityTips": {
       "title": "Security Tips",

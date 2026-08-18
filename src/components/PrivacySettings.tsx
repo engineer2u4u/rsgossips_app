@@ -23,6 +23,7 @@ import {
   Shield,
   ShieldCheck,
   Smartphone,
+  Trash2,
   UserMinus,
 } from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
@@ -34,6 +35,7 @@ interface PrivacySecurityPageProps {
   onBack: () => void;
   onTrustedDevices: () => void;
   onDeactiveAccount: () => void;
+  onDeleteAccount: () => void;
   /** Kept optional for back-compat with the existing nav graph; the link
    *  itself isn't rendered because web's PrivacySettings has no password
    *  change row. */
@@ -231,6 +233,7 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
   onBack,
   onTrustedDevices,
   onDeactiveAccount,
+  onDeleteAccount,
 }) => {
   const {t} = useTranslation();
   const {user} = useAuth();
@@ -348,6 +351,16 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
                 title={t('PrivacySettings.deactivateAccount.title')}
                 description={t('PrivacySettings.deactivateAccount.description')}
                 onPress={onDeactiveAccount}
+                isDestructive
+              />
+              {/* Deletion, distinct from the reversible deactivate above.
+                  Play requires every user to be able to request account
+                  deletion; brands already could, creators could not. */}
+              <SecurityLink
+                icon={<Trash2 size={18} color="#DC2626" />}
+                title={t('PrivacySettings.deleteAccount.title')}
+                description={t('PrivacySettings.deleteAccount.description')}
+                onPress={onDeleteAccount}
                 isDestructive
               />
             </View>
