@@ -353,16 +353,31 @@ typical utility, and the declaration is long. Baseline:
 | Personal info → Name | Yes | No | App functionality, Account management | Required |
 | Personal info → Email address | Yes | No | App functionality, Account management | Required |
 | Personal info → Phone number | Yes | No | App functionality, Account management | Required |
-| Personal info → Other info (bio, city, categories) | Yes | No | App functionality | Optional |
-| Financial info → Payment info (UPI VPA, bank account, IFSC) | Yes | No | App functionality | Optional |
+| Personal info → Other info (bio, categories) | Yes | No | App functionality | Optional |
+| Location → Approximate location (profile city) | Yes | No | App functionality | Optional |
+| Location → Precise location | **No** — no location permission in the manifest | | | |
+| Financial info → User payment info (UPI VPA, bank account, IFSC) | Yes | No | App functionality | Optional |
+| Financial info → Purchase history (escrow, payouts, service orders) | Yes | No | App functionality | Optional |
+| Financial info → Other financial info (rate cards, PAN, GSTIN) | Yes | No | App functionality | Optional |
 | Photos and videos → Photos | Yes | No | App functionality | Optional |
 | Messages → Other in-app messages | Yes | No | App functionality | Optional |
 | *(covers application pitches and support chat — there is no user-to-user chat)* | | | | |
-| App activity → App interactions | Yes | No | Analytics, App functionality | Required |
-| App info and performance → Crash logs, Diagnostics | Yes | No | Analytics | Required |
+| App activity → App interactions | Yes | No | App functionality | Required |
+| Device or other IDs → Device or other IDs | Yes | No | App functionality, Account management | Required |
 
 Supporting answers:
 
+- **Processed ephemerally? No — for every row.** Ephemeral means held in memory and discarded once
+  the real-time request is served. Everything here is persisted server-side in Supabase. Answering
+  Yes hides a type from the public Store Listing, which makes it the tempting answer and a false
+  one.
+- **Do NOT declare crash logs or diagnostics.** There is no crash-reporting or analytics SDK in the
+  app — only `@react-native-firebase/app` and `messaging`, with no Crashlytics, Sentry, Firebase
+  Analytics or `logEvent` calls anywhere. Google Play collects crash data itself through Android
+  vitals, but data collected by Google Play is explicitly excluded from your declaration.
+- **App interactions is App functionality, not Analytics.** There is no analytics pipeline; the row
+  exists only because of server-side usage counters — AI tool quotas (`useAiTool`'s `limitReached`)
+  and `054_landing_match_usage` — which record actions to enforce limits.
 - **Encrypted in transit? Yes** — all traffic is HTTPS to Supabase, and the merged **release**
   manifest sets `android:usesCleartextTraffic="false"` (debug sets it true, which does not ship).
   Verified in `build/intermediates/merged_manifest/release/`. Note the iOS side still sets
@@ -374,21 +389,56 @@ Supporting answers:
 
 Notes on the rows most likely to be got wrong:
 
-- **Payment info.** `PaymentMethods` collects a UPI VPA, or a bank account number plus IFSC, and
-  stores them server-side through `register-payout-method`. That is financial information under
-  Play's definitions even though the app takes no payment — payouts *to* the user still count.
+- **Financial info — three of the four sub-types apply, not one.** *User payment info*:
+  `PaymentMethods` collects a UPI VPA, or a bank account number plus IFSC, stored server-side via
+  `register-payout-method` — financial information under Play's definitions even though the app
+  charges nobody, because payouts *to* the user count the same. *Purchase history*:
+  `BrandTransactions` plus escrow funding, releases, payouts, and in-app Razorpay service orders.
+  *Other financial info*: creator rate cards (`rate_card`, `service_rates`) and the PAN / GSTIN
+  collected for payout compliance. Only **Credit score** is left unticked — the Brand Trust Score is
+  a reputation metric computed from reviews and campaign execution, not a credit score, and nothing
+  in the app touches credit or CIBIL data.
 - **Instagram data** (handle, follower count, engagement rate, media count) is collected. It has no
   dedicated Play category; declare it under Personal info → Other info and describe it explicitly in
   the privacy policy.
+- **Device or other IDs — yes, despite there being no ads SDK.** Two independent grounds: FCM
+  registration tokens (`push.ts` calls `messaging().getToken()`), and the app's own persisted
+  `rg.device_id`, upserted as `(user_id, device_id)` into `device_sessions` to power Trusted Devices
+  and session revocation. An advertising ID is not required for this to apply.
+- **Approximate location — yes; Precise — no.** Play's definition covers "the city a user is in"
+  *or* `ACCESS_COARSE_LOCATION`, and the profile `location` field is city-level data shown to brands
+  and filtered on in `list-influencers`. The manifest declares no location permission at all, so
+  nothing precise exists. This is deliberately a different answer from the content-rating question,
+  which asks only about *current and precise* location shared with other users — that one is No.
+- **Web browsing history — no.** The app opens external URLs via `Linking` but records nothing about
+  where users go.
 - **Shared = No throughout** is correct only if no third party receives this data as an independent
   controller. Supabase and Firebase act as processors, which is not "sharing" in Play's sense.
   Revisit this the moment an analytics or attribution SDK is added.
 
 ### Financial features
 
-RGossips takes no payment in the app — subscriptions were deliberately moved to the web — but it
-does hold campaign funds in escrow and pay creators out. Work through Play's list rather than
-defaulting to "None of these"; the payout flow is the part that may map onto a listed feature.
+**Select "My app doesn't provide any financial features"** — the exclusive option at the bottom of
+the list.
+
+Every option on that page describes a financial *product or service* the app provides. RGossips
+provides none: no lending or banking, no trading or crypto, no insurance, credit monitoring or
+financial advice.
+
+Two are close enough to be worth having an answer ready for:
+
+- **Money transfer / digital wallets.** Money does move — brands fund escrow, creators are paid out
+  — but that is marketplace settlement, not a transfer service offered to users. Upwork, Fiverr and
+  Etsy all pay sellers without declaring as money-transfer providers. The test is whether a user can
+  send money to an arbitrary person for its own sake; here they can only settle a campaign.
+- **Rewards, points and other incentives.** The referral programme issues Reward Credits, which is
+  literally a points scheme — the closest call on the page. But RC is a discount against our own
+  subscription, non-transferable and not convertible to cash, which puts it alongside ordinary SaaS
+  referral credit rather than a rewards product.
+
+If a conservative answer is preferred, *Rewards, points and other incentives* is the one box with a
+real argument. The cost is routing the submission to a financial-services review team — more
+scrutiny, slower first review. Not worth it on this reading.
 
 > **Open item, and the one worth resolving first.** Play's Payments policy requires Play Billing for
 > in-app digital subscriptions, and "Manage plan" opens `rgossips.com/influencer/pricing` in the
