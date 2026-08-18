@@ -331,7 +331,7 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -370,7 +370,7 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = U96VUH7TD6;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
