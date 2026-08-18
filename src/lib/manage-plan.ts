@@ -15,7 +15,14 @@ import {Linking} from 'react-native';
 const WEB_BASE_URL = 'https://rgossips.com';
 const MANAGE_PLAN_PATH = '/influencer/pricing';
 
-export const MANAGE_PLAN_URL = `${WEB_BASE_URL}${MANAGE_PLAN_PATH}`;
+// Tells the web app this visitor arrived from the mobile app so it can skip
+// its "for a better experience use our mobile app" nudge — the user is
+// coming *from* that app, so the prompt is confusing. The web side latches
+// this into sessionStorage on first load (src/lib/app-handoff.js) because
+// the param does not survive its logged-out redirect to /login.
+const APP_HANDOFF_QUERY = 'from=app';
+
+export const MANAGE_PLAN_URL = `${WEB_BASE_URL}${MANAGE_PLAN_PATH}?${APP_HANDOFF_QUERY}`;
 
 export async function openManagePlan(): Promise<void> {
   try {

@@ -4,7 +4,7 @@ Working notes for the RGossips React Native app. Keep this in sync as the codeba
 
 ## What this app is
 
-RGossips is an influencer marketing marketplace. Creators discover brand campaigns, apply, submit deliverables, and get paid. Brands can also sell "Services" (Reels, story takeovers, ambassadorships, etc.) with a quote flow. The Next.js web app at `D:/Development/React/RS_Gossips` is the source of truth for UX and edge functions; this mobile app is a React Native port that must stay in feature/element parity where possible.
+RGossips is an influencer marketing marketplace. Creators discover brand campaigns, apply, submit deliverables, and get paid. Brands can also sell "Services" (Reels, story takeovers, ambassadorships, etc.) with a quote flow. The Next.js web app at `D:/Development/React/rgossips_web` is the source of truth for UX and edge functions; this mobile app is a React Native port that must stay in feature/element parity where possible.
 
 ## Tech stack
 
@@ -79,7 +79,7 @@ npm run lint
 
 ## Web parity checklist
 
-Whenever building or updating a screen that has a web equivalent, cross-check `D:/Development/React/RS_Gossips/src/{app,components}` for the corresponding file. Notable pairs:
+Whenever building or updating a screen that has a web equivalent, cross-check `D:/Development/React/rgossips_web/src/{app,components}` for the corresponding file. Notable pairs:
 
 | Mobile file | Web counterpart |
 |---|---|
@@ -107,6 +107,7 @@ Whenever building or updating a screen that has a web equivalent, cross-check `D
 - **Match scoring** — `utils/matchScore.ts` exposes `calculateBrandMatchScore` and `calculateCampaignMatchScore` used by both cards and list sorting. Brands list sorts by `_matchScore` descending; cache the score on the row so the sort and the badge stay in lockstep.
 - **Payment methods CRUD** — always route **add** through the `register-payout-method` edge function (not a direct `supabase.from('payment_methods').insert(...)`). It validates the payload shape server-side (NPCI VPA / 11-char IFSC / 9–18 digit account), inserts the row with every NOT NULL column populated (`validation_status`: `success` for UPI, `manual` for bank — admin verifies at payout time), auto-primaries the user's first method, and resumes `pending_creator_info` payouts for validated primaries. Payouts are manual: it makes **no RazorpayX calls** and inserts `razorpay_fund_account_id` as null. There is no edit mode — to change details, delete and re-add. Set-primary/delete stay as direct table writes (matching web), but always check the returned `error` — supabase-js resolves failed writes instead of throwing, so an unchecked result is a silent no-op.
 - **Notifications** — the `NotificationsList` tap handler resolves a destination from the body `link` (web hrefs → RN routes via `routeFromLink`) or falls back to a type + campaign_id router. Tap always marks the row read; navigation happens after.
+- **App→web hand-off** — the app opens the web portal for plan management (`src/lib/manage-plan.ts`). Any such outbound URL carries `?from=app`; the web app latches it into sessionStorage (`src/lib/app-handoff.js`) and `OpenInAppGate` skips its "use our mobile app" nudge for that tab. The param must be latched on first load because `ProtectedRoute.loginUrlFor()` builds its redirect from `usePathname()`, which drops the query string. Do NOT add `from=app` to shareable URLs (media-kit `/kit/` links, referral links) — those get forwarded to people who don't have the app.
 - **Instagram share** — `Share.share` on iOS treats `message` and `url` as separate components and concatenates them. Send them as separate keys on iOS; keep the URL inline in `message` on Android.
 
 ## Commit style
