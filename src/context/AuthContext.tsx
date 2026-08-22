@@ -11,6 +11,13 @@ import {
   registerDeviceSession,
   isCurrentDeviceActive,
 } from '../utils/device-session';
+import {
+  getRememberedRole,
+  rememberRole,
+  forgetRole,
+  tableForRole,
+  type AppRole,
+} from '../utils/role-storage';
 
 interface Profile {
   id: string;
@@ -48,6 +55,12 @@ interface AuthContextType {
   refreshInstagram: (userId?: string) => Promise<void>;
   instagramTokenMissing: boolean;
   setInstagramTokenMissing: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Set when a role-scoped profile lookup found nothing — e.g. signing in as
+   *  a brand on an account that only has a creator profile. The session is
+   *  ended in that case, so this is copy for the login screen rather than a
+   *  state the app keeps running in. */
+  roleError: string | null;
+  setRoleError: React.Dispatch<React.SetStateAction<string | null>>;
   /** Bumped every time refreshProfile() runs. Used as a fallback cache
    *  buster for the profile photo URL when the DB's updated_at column
    *  hasn't changed (some upload edge functions only touch
@@ -66,6 +79,8 @@ const AuthContext = createContext<AuthContextType>({
   refreshInstagram: async () => {},
   instagramTokenMissing: false,
   setInstagramTokenMissing: () => {},
+  roleError: null,
+  setRoleError: () => {},
   photoVersion: 0,
 });
 
@@ -79,15 +94,29 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [instagramTokenMissing, setInstagramTokenMissing] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, roleHint?: AppRole) => {
     try {
+      // Scope the lookup to ONE profile table whenever we know the role —
+      // passed in at sign-in, or remembered from the last one on restore.
+      //
+      // Without a `table`, check-profile queries both tables and returns
+      // whichever it finds, checking influencer FIRST. A brand who also has an
+      // influencer row would resolve as an influencer, and even without one the
+      // unscoped path made role resolution slower and less certain. Scoping it
+      // also turns "not found" into a truthful answer: no brand profile on this
+      // account, rather than a silent fall-through to the other role.
+      const role = roleHint || (await getRememberedRole());
       const data = await invokeFn<{
         exists?: boolean;
         profile?: Profile;
         role?: string;
         error?: string;
-      }>('check-profile', {userId});
+      }>('check-profile', {
+        userId,
+        ...(role ? {table: tableForRole(role)} : {}),
+      });
 
       // check-profile returns `{error}` (no `exists`/`role`) when its DB read
       // fails. That is NOT "account removed" — treat it like the catch below
@@ -102,7 +131,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
       if (data?.exists && data.profile) {
         setProfile(data.profile);
-        setRole(data.role || data.profile.role || null);
+        const resolved = data.role || data.profile.role || null;
+        setRole(resolved);
+        // Remember it so the next restore can scope its lookup the same way.
+        rememberRole(resolved);
+        setRoleError(null);
 
         // check-profile now returns a derived `instagram_connected` boolean
         // (raw token stripped server-side). Only flag missing when the
@@ -120,11 +153,28 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       } else {
         setProfile(null);
         setRole(null);
-        // Profile gone but the session is still live → the account was removed
-        // (e.g. admin deletion). A signed-in user always has a profile
-        // (create-profile issues the session only after writing it), so sign
-        // out rather than let the stale JWT linger until it expires —
-        // onAuthStateChange then routes back to login.
+        // Two different situations reach here, and they need different copy.
+        //
+        // Scoped lookup (we asked for one table): the account exists but has
+        // no profile of THAT role — signing in as a brand on a creator-only
+        // account, say. Say so plainly instead of silently handing back the
+        // other role's dashboard, which is what the unscoped lookup used to do.
+        //
+        // Unscoped lookup: no profile in either table, so the account really
+        // is gone (e.g. admin deletion). A signed-in user always has a profile
+        // — create-profile issues the session only after writing one.
+        setRoleError(
+          role
+            ? role === 'brand'
+              ? 'No brand profile found for this account.'
+              : 'No creator profile found for this account.'
+            : null,
+        );
+        // Either way the session is no longer usable, so don't leave a stale
+        // JWT lingering until it expires — onAuthStateChange routes back to
+        // login. Drop the remembered role too, or the next sign-in would be
+        // scoped to the role that just failed.
+        await forgetRole();
         try {
           const session = await safeGetSession();
           if (session?.user) await supabase.auth.signOut();
@@ -219,6 +269,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     setUser(null);
     setProfile(null);
     setRole(null);
+    // Drop the remembered role, or the next account signed in on this device
+    // would have its profile looked up under the previous user's role.
+    await forgetRole();
   }, []);
 
   useEffect(() => {
@@ -315,6 +368,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         refreshInstagram,
         instagramTokenMissing,
         setInstagramTokenMissing,
+        roleError,
+        setRoleError,
         photoVersion,
       }}>
       {children}

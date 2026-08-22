@@ -26,6 +26,7 @@ import CategorySelection from '../components/CategorySelection';
 import Preferences from '../components/Preferences';
 import SignInPhone from '../components/SignInPhone';
 import VerifyOTP from '../components/VerifyOTP';
+import {rememberRole} from '../utils/role-storage';
 
 // "+918743898976" / "8743898976" → "+91 87438 98976"
 function formatDisplayPhone(raw: string): string {
@@ -63,7 +64,13 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ Login: LoginRouteParams }, 'Login'>>();
-  const {user: authedUser, role: authedRole, loading: authLoading} = useAuth();
+  const {
+    user: authedUser,
+    role: authedRole,
+    loading: authLoading,
+    roleError,
+    setRoleError,
+  } = useAuth();
 
   // If AuthContext restored a session from AsyncStorage (cold start with a
   // persisted login), redirect past the login UI to the role-appropriate home.
@@ -162,6 +169,17 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState('');
+
+  // A role-scoped profile lookup that found nothing signs the user out and
+  // lands them back here. Surface why — otherwise they bounce to Login with
+  // no explanation and assume the OTP failed. Cleared once shown so it does
+  // not reappear on the next attempt.
+  useEffect(() => {
+    if (roleError) {
+      setError(roleError);
+      setRoleError(null);
+    }
+  }, [roleError, setRoleError]);
 
   // --- AUTH STATE ---
   const [phone, setPhone] = useState('');
@@ -392,6 +410,11 @@ export default function LoginScreen() {
       }
 
       setLoadingMsg(t('ScreensLoginScreen.settingUpSession'));
+      // Remember the role BEFORE the session lands. setSession fires
+      // onAuthStateChange, which calls fetchProfile — and that reads the
+      // remembered role to scope its check-profile lookup to one table.
+      // Writing it after would leave the very first lookup unscoped.
+      await rememberRole(detectedRole || requestedRole);
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -564,6 +587,9 @@ export default function LoginScreen() {
       if (newSession?.access_token) {
         setPendingSession(newSession);
         setLoadingMsg(t('ScreensLoginScreen.settingUpSessionDots'));
+        // Same ordering as sign-in: remember the role before setSession, so
+        // the fetchProfile it triggers scopes its lookup to the right table.
+        await rememberRole(signupData.role);
         await supabase.auth.setSession({
           access_token: newSession.access_token,
           refresh_token: newSession.refresh_token,

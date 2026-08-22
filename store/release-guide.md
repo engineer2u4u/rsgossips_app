@@ -189,8 +189,13 @@ the apply flow, the media kit, brand discover, the transactions screen.
 
 *Production → Countries / regions → Add countries / regions*
 
-India at minimum. The platform is India-focused — payouts are UPI/IFSC and tax handling is
-PAN/GSTIN — so a global release would attract users the payout pipeline cannot serve.
+**India only.** This is a technical constraint, not a commercial one: both OTP edge functions
+hardcode the country code (`91${digits.slice(-10)}`), so any non-Indian number normalises to a
+nonsense Indian one and never receives a code. Sign-up is impossible outside India. Payouts agree —
+`register-payout-method` validates NPCI VPAs and 11-character IFSC codes.
+
+Releasing more widely ships an app those users cannot register for. Expanding later is freely
+editable.
 
 ### 4b. App signing
 
