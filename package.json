@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "test:findings": "jest --config jest.findings.config.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.0",
