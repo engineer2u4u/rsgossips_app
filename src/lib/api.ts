@@ -33,6 +33,49 @@ export type InvokeOptions = {
 
 const DEFAULT_TIMEOUT_MS = 20000;
 
+/**
+ * Edge functions that MUST carry a real user session, never the publishable key.
+ * F-10 / assertion A-43.
+ *
+ * getAuthToken() below deliberately falls back to the anon key when the session
+ * read is slow — see the comment there for why. The gap that made it a finding
+ * is that nothing distinguished a privileged call from a public one, so an
+ * escrow or profile mutation could go out on the publishable key and, if the
+ * server happened to answer 2xx, be treated as success.
+ *
+ * With this list, a privileged call fails CLOSED: one fully-awaited retry for a
+ * session, and if there still isn't one, it throws before the request is made.
+ *
+ * Only functions this app actually calls are listed — every entry was checked
+ * against the callers in src/. Two groups:
+ *   - deployed with verify_jwt: true, so the platform already rejects the anon
+ *     key; listing them turns a confusing server 401 into a clear client error
+ *   - deployed with verify_jwt: false but doing their own auth.getUser() check,
+ *     which is where the silent-anon-call risk actually lives
+ *
+ * Deliberately NOT listed: list-*, check-profile, public-media-kit and
+ * notifications, which are legitimately callable pre-auth.
+ */
+const REQUIRES_SESSION = new Set([
+  // verify_jwt: true — platform-gated
+  'submit-deliverables',
+  'update-application-status',
+  'send-account-event-email',
+  'verify-service-payment',
+  // caller-JWT: the function derives the user from the token itself, so an anon
+  // call is refused server-side but only after the round trip
+  'ai-generate',
+  'register-push',
+  'update-profile',
+  'register-payout-method',
+  'apply-campaign',
+  'brand-campaigns',
+  'request-revision',
+  'respond-to-quote',
+  'submit-quote-request',
+  'submit-service-review',
+]);
+
 export class EdgeFunctionError extends Error {
   status: number;
   data: any;
@@ -68,8 +111,28 @@ export async function invokeFn<T = any>(
   options: InvokeOptions = {},
 ): Promise<T> {
   const method = options.method || 'POST';
-  const token = await getAuthToken();
+  let token = await getAuthToken();
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  // F-10 / A-43: a privileged call must never go out on the publishable key.
+  // getAuthToken's 3s race can hand back the anon key for a user who IS signed
+  // in, so take one fully-awaited look before giving up — the same recovery the
+  // 401 retry below performs, moved ahead of the request for calls where an
+  // anon attempt has no legitimate meaning. If there is genuinely no session,
+  // fail closed here rather than letting the request go and interpreting
+  // whatever comes back.
+  if (REQUIRES_SESSION.has(name) && token === SUPABASE_ANON_KEY) {
+    const session = await safeGetSession().catch(() => null);
+    if (session?.access_token) {
+      token = session.access_token;
+    } else {
+      throw new EdgeFunctionError(
+        `"${name}" requires you to be signed in. Please sign in and try again.`,
+        401,
+        {error: 'no_session'},
+      );
+    }
+  }
 
   let url = `${SUPABASE_URL}/functions/v1/${name}`;
 

@@ -63,13 +63,22 @@ describe('F-10 / A-43 — privileged calls under the publishable-key fallback', 
   });
 
   it('the helper distinguishes privileged functions from public ones', () => {
-    // THE OPEN HALF. api.ts treats every function identically: there is no list
-    // of functions that require a user token, so nothing stops a privileged call
-    // from going out on the anon key. A-43 asks for that distinction to exist.
-    const hasPrivilegedList =
-      /PRIVILEGED|REQUIRES_AUTH|requiresSession|AUTH_REQUIRED|needsSession/.test(src);
-    expect({ privilegedFunctionList: hasPrivilegedList }).toEqual({
-      privilegedFunctionList: true,
-    });
+    // A-43's actual requirement. Asserted as the mechanism, not a name: a list
+    // of session-requiring functions must exist AND be consulted before the
+    // request goes out.
+    const hasList =
+      /REQUIRES_SESSION|PRIVILEGED|REQUIRES_AUTH|requiresSession|AUTH_REQUIRED|needsSession/.test(
+        src,
+      );
+    expect({ privilegedFunctionList: hasList }).toEqual({ privilegedFunctionList: true });
+  });
+
+  it('a privileged call with no session fails closed, before the request', () => {
+    // The list is only worth having if it gates something. This checks the
+    // guard throws rather than logging a warning and carrying on — a call that
+    // proceeds on the anon key and gets a 2xx would still read as success.
+    const guardThrows =
+      /REQUIRES_SESSION\.has\([\s\S]{0,400}?throw new EdgeFunctionError/.test(src);
+    expect({ failsClosed: guardThrows }).toEqual({ failsClosed: true });
   });
 });
