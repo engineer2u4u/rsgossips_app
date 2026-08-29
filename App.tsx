@@ -27,10 +27,8 @@ import BrandSearch from './src/screens/BrandSearch';
 import BrandCampaigns from './src/screens/BrandCampaigns';
 import BrandProfile from './src/screens/BrandProfile';
 import BrandTransactions from './src/screens/BrandTransactions';
-import BrandChats from './src/screens/BrandChats';
 import InfluencerDiscover from './src/screens/InfluencerDiscover';
 import InfluencerCampaign from './src/screens/InfluencerCampaign';
-import InfluencerChats from './src/screens/InfluencerChats';
 import InfluencerProfile from './src/screens/InfluencerProfile';
 import InfluencerMediaKit from './src/screens/InfluencerMediaKit';
 import InfluencerNotifications from './src/screens/InfluencerNotifications';
@@ -90,6 +88,30 @@ function RootStack() {
     return () => clearTimeout(t);
   }, [user, role]);
 
+  // Correct the route when the role arrives after that timeout already fired.
+  //
+  // initialRouteName is read ONCE, when the Navigator mounts. If the 3s
+  // fallback let it mount with role=null, homeRoute resolved to
+  // InfluencerHome — and a brand whose check-profile came back at 4s stayed
+  // there permanently, looking at influencer screens filled with brand data.
+  // React Navigation will not re-read initialRouteName, so nothing corrected
+  // it on its own.
+  //
+  // Only fires when the mounted route actually disagrees with the resolved
+  // role, so ordinary navigation is never yanked out from under the user.
+  useEffect(() => {
+    if (!user || !role || !navigationRef.isReady()) return;
+    const current = navigationRef.getCurrentRoute()?.name;
+    const wrongHome =
+      (role === 'brand' && current === 'InfluencerHome') ||
+      (role !== 'brand' && current === 'BrandHome');
+    if (!wrongHome) return;
+    navigationRef.reset({
+      index: 0,
+      routes: [{name: role === 'brand' ? 'BrandHome' : 'InfluencerHome'}],
+    });
+  }, [user, role]);
+
   // Keep the spinner up while we don't yet have role information for a
   // signed-in user. Otherwise the authed Navigator mounts with role=null,
   // initialRouteName falls through to the InfluencerHome default, and on
@@ -145,7 +167,6 @@ function RootStack() {
         name="BrandNotifications"
         component={BrandNotifications}
       />
-      <Stack.Screen name="BrandChats" component={BrandChats} />
       <Stack.Screen name="BrandProfile" component={BrandProfile} />
       <Stack.Screen name="BrandTransactions" component={BrandTransactions} />
       <Stack.Screen name="InfluencerHome" component={InfluencerHome} />
@@ -154,7 +175,6 @@ function RootStack() {
         name="InfluencerCampaigns"
         component={InfluencerCampaign}
       />
-      <Stack.Screen name="InfluencerChats" component={InfluencerChats} />
       <Stack.Screen name="InfluencerProfile" component={InfluencerProfile} />
       <Stack.Screen name="InfluencerMediaKit" component={InfluencerMediaKit} />
       <Stack.Screen

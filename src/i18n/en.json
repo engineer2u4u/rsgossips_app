@@ -1510,7 +1510,11 @@
     },
     "savingPreferences": "Saving preferences…",
     "saved": "Saved ✓",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "blockedAccounts": {
+      "title": "Blocked Accounts",
+      "description": "Review and unblock people you've blocked"
+    }
   },
   "ProStatuscard": {
     "creatorFallback": "Creator",
@@ -3433,5 +3437,13 @@
     "refresh": "Try again",
     "checking": "Checking…",
     "autoNote": "We reconnect automatically when your network returns."
+  },
+  "BlockedAccounts": {
+    "title": "Blocked Accounts",
+    "unblock": "Unblock",
+    "emptyTitle": "No blocked accounts",
+    "emptyBody": "People you block won't see you on RGossips, and you won't see them. They'll appear here so you can undo it.",
+    "errorLoad": "Could not load your blocked list.",
+    "errorUnblock": "Could not unblock. Please try again."
   }
 }

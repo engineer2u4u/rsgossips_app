@@ -76,3 +76,8 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Supabase CLI scratch state. The real supabase/ project lives in
+# rgossips_web; running `npx supabase` from this repo drops a .temp cache
+# here that has been committed by accident twice.
+supabase/

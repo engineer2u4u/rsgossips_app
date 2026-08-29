@@ -12,6 +12,7 @@ import NotificationSettings from '../components/NotificationSettings';
 import PrivacySecurityPage from '../components/PrivacySettings';
 import ChangePassword from '../components/ChangePassword';
 import TrustedDevices from '../components/TrustedDevices';
+import BlockedAccounts from '../components/BlockedAccounts';
 import DeactivateAccount from '../components/DeactiveAccount';
 import InfluencerAccountActionsModal from '../components/InfluencerAccountActionsModal';
 import HelpSupport from '../components/HelpAndSupport';
@@ -28,6 +29,7 @@ type ViewType =
   | 'privacy'
   | 'password-change'
   | 'trusted-devices'
+  | 'blocked-accounts'
   | 'deactivate-account'
   | 'help&support'
   | 'payments';
@@ -46,6 +48,7 @@ const BACK_PARENT: Record<string, ViewType> = {
   'privacy': 'dashboard',
   'password-change': 'privacy',
   'trusted-devices': 'privacy',
+  'blocked-accounts': 'privacy',
   'deactivate-account': 'privacy',
   'help&support': 'dashboard',
   'payments': 'dashboard',
@@ -157,6 +160,7 @@ export default function InfluencerProfile() {
           <PrivacySecurityPage
             onBack={() => navigate('dashboard')}
             onTrustedDevices={() => navigate('trusted-devices')}
+            onBlockedAccounts={() => navigate('blocked-accounts')}
             onDeactiveAccount={() => navigate('deactivate-account')}
             onDeleteAccount={() => setDeleteOpen(true)}
             onPasswordChange={() => navigate('password-change')}
@@ -165,6 +169,10 @@ export default function InfluencerProfile() {
 
         {view === 'password-change' && (
           <ChangePassword onBack={() => navigate('privacy')} />
+        )}
+
+        {view === 'blocked-accounts' && (
+          <BlockedAccounts onBack={() => navigate('privacy')} />
         )}
 
         {view === 'trusted-devices' && (

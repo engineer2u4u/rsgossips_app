@@ -6,7 +6,6 @@ import {
   Search,
   Briefcase,
   User,
-  MessageSquare,
   Bell,
   Settings,
   HelpCircle,
@@ -22,7 +21,11 @@ const navLinks = [
   {key: 'home', label: 'Home', icon: Home, screen: 'InfluencerHome'},
   {key: 'brands', label: 'Brands', icon: Search, screen: 'InfluencerSearch'},
   {key: 'campaigns', label: 'Campaigns', icon: Briefcase, screen: 'InfluencerCampaigns'},
-  {key: 'chats', label: 'Chats', icon: MessageSquare, screen: 'InfluencerChats', badge: 3},
+  // 'chats' → InfluencerChats removed: that screen is a static mockup with no
+  // backend, and it carried a hardcoded `badge: 3` advertising three unread
+  // messages that never existed. Shipping it fails Play's minimum
+  // functionality policy and contradicts the "no messaging" answer in both
+  // stores' content questionnaires. Restore alongside a real chat backend.
   {key: 'notifications', label: 'Notifications', icon: Bell, screen: 'InfluencerNotifications', dot: true},
   {key: 'profile', label: 'Profile', icon: User, screen: 'InfluencerProfile'},
 ];
@@ -102,13 +105,9 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
                 }`}>
                 {t(`SidebarContent.nav.${item.key}`)}
               </Text>
-              {item.badge && (
-                <View className="bg-pink-500 w-5 h-5 rounded-full items-center justify-center">
-                  <Text className="text-white text-[9px] font-bold">
-                    {item.badge}
-                  </Text>
-                </View>
-              )}
+              {/* The count badge went with the Chats entry — it was the only
+                  item that carried one, and the value was hardcoded. Re-add it
+                  with a real unread count if chat ever ships. */}
               {item.dot && (
                 <View className="w-2 h-2 bg-pink-500 rounded-full" />
               )}

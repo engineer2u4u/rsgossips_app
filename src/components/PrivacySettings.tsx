@@ -22,6 +22,7 @@ import {
   Eye,
   Shield,
   ShieldCheck,
+  Ban,
   Smartphone,
   Trash2,
   UserMinus,
@@ -34,6 +35,7 @@ import {useGlobalLoading} from '../context/LoadingContext';
 interface PrivacySecurityPageProps {
   onBack: () => void;
   onTrustedDevices: () => void;
+  onBlockedAccounts: () => void;
   onDeactiveAccount: () => void;
   onDeleteAccount: () => void;
   /** Kept optional for back-compat with the existing nav graph; the link
@@ -232,6 +234,7 @@ const cardShadow = {
 const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
   onBack,
   onTrustedDevices,
+  onBlockedAccounts,
   onDeactiveAccount,
   onDeleteAccount,
 }) => {
@@ -345,6 +348,15 @@ const PrivacySecurityPage: React.FC<PrivacySecurityPageProps> = ({
                 title={t('PrivacySettings.trustedDevices.title')}
                 description={t('PrivacySettings.trustedDevices.description')}
                 onPress={onTrustedDevices}
+              />
+              {/* Blocking is required by Play's UGC policy and Apple 1.2, and
+                  both expect it to be reversible. Without this the block was
+                  one-way from the user's side. */}
+              <SecurityLink
+                icon={<Ban size={18} color="#6B7280" />}
+                title={t('PrivacySettings.blockedAccounts.title')}
+                description={t('PrivacySettings.blockedAccounts.description')}
+                onPress={onBlockedAccounts}
               />
               <SecurityLink
                 icon={<UserMinus size={18} color="#EF4444" />}

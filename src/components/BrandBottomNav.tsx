@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Home, Search, Briefcase, User, Bell } from 'lucide-react-native';
+import { Home, Search, Briefcase, User } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -13,7 +13,10 @@ const BottomNav = () => {
     { key: 'home', icon: Home, screen: 'BrandHome' },
     { key: 'search', icon: Search, screen: 'BrandSearch' },
     { key: 'campaigns', icon: Briefcase, screen: 'BrandCampaigns' },
-    { key: 'messages', icon: Bell, screen: 'BrandChats' },
+    // 'messages' → BrandChats removed: that screen is a static mockup with a
+    // hardcoded contact list and no backend. Shipping it fails Play's minimum
+    // functionality policy and contradicts the "no messaging" answer in both
+    // stores' content questionnaires. Restore alongside a real chat backend.
     { key: 'profile', icon: User, screen: 'BrandProfile' },
   ];
 
