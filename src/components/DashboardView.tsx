@@ -27,6 +27,7 @@ import {useNavigation} from '@react-navigation/native';
 import {supabase} from '../utils/supabase';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
 import {formatINRCompact} from '../lib/influencer-stats';
+import {REWARDS_ENABLED} from '../lib/features';
 import {useProfilePhoto} from '../utils/photoUrl';
 import {openManagePlan} from '../lib/manage-plan';
 
@@ -388,7 +389,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           {onPaymentsClick && (
             <SettingsItem icon={CreditCard} title={t('DashboardView.paymentMethods')} sub={t('DashboardView.paymentMethodsSub')} color="#F97316" onPress={onPaymentsClick} />
           )}
-          {onReferClick && (
+          {/* Refer & Earn — hidden while the rewards programme is off. Its
+              subtitle promises "earn Reward Credits", which no checkout can
+              honour under store billing. See lib/features.ts. */}
+          {REWARDS_ENABLED && onReferClick && (
             <SettingsItem icon={Gift} title={t('DashboardView.referEarn')} sub={t('DashboardView.referEarnSub')} color="#E60076" onPress={onReferClick} />
           )}
         </View>
@@ -580,6 +584,10 @@ function RewardCreditsCard() {
     };
   }, [user?.id]);
 
+  // Rewards programme off → never render the wallet strip, regardless of any
+  // balance still sitting in the ledger. Showing a spendable-looking balance
+  // that no checkout will accept is worse than showing nothing.
+  if (!REWARDS_ENABLED) return null;
   if (!loaded || (avail <= 0 && locked <= 0)) return null;
 
   return (

@@ -15,6 +15,7 @@ import StayCarousel from '../components/StayCarousel';
 import CreatorsCarouselWithLink from '../components/CreatorCarouselWithLink';
 import InfluencerLayout, {useLayoutScroll} from '../layouts/InfluencerLayout';
 import ReferBalanceCard from '../components/ReferBalanceCard';
+import {REWARDS_ENABLED} from '../lib/features';
 import WelcomeRewardModal from '../components/WelcomeRewardModal';
 
 function HomeContent() {
@@ -62,10 +63,15 @@ function HomeContent() {
       {/* First-time welcome-reward celebration for new signups. */}
       <WelcomeRewardModal />
 
-      {/* Refer & Earn wallet strip — self-hides when balance is 0. */}
-      <View className="mt-4 px-4">
-        <ReferBalanceCard />
-      </View>
+      {/* Refer & Earn wallet strip — self-hides when balance is 0.
+          Hidden entirely while the rewards programme is off: store billing
+          cannot honour RC as a discount, so showing a balance would promise
+          something no checkout can deliver. See lib/features.ts. */}
+      {REWARDS_ENABLED && (
+        <View className="mt-4 px-4">
+          <ReferBalanceCard />
+        </View>
+      )}
 
       {/* Quick Links — replaces the chip-row category filters */}
       <QuickLinks onScroll={scrollToSection} />
