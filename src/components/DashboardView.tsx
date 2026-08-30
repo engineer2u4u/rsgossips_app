@@ -386,6 +386,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         <View className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-50">
           <SettingsItem icon={Bell} title={t('DashboardView.notifications')} sub={t('DashboardView.notificationsSub')} color="#8B5CF6" onPress={onNotificationClick} />
           <SettingsItem icon={Lock} title={t('DashboardView.privacy')} sub={t('DashboardView.privacySub')} color="#10B981" onPress={onPrivacyClick} />
+          {/* Plans — the only durable way into the pricing screen. Every other
+              route in is an upgrade CTA shown conditionally (feature gates,
+              limit warnings), so without this a subscriber had no way to
+              change or review their plan. openManagePlan navigates in-app now
+              rather than opening the website. */}
+          <SettingsItem icon={Crown} title={t('DashboardView.plans')} sub={t('DashboardView.plansSub')} color="#E60076" onPress={openManagePlan} />
           {onPaymentsClick && (
             <SettingsItem icon={CreditCard} title={t('DashboardView.paymentMethods')} sub={t('DashboardView.paymentMethodsSub')} color="#F97316" onPress={onPaymentsClick} />
           )}

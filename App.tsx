@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
+// Lives in src/lib so non-component modules (manage-plan.ts) can navigate
+// without importing this file, which would be circular.
+import { navigationRef } from './src/lib/navigation';
 import { registerForPush, initPushHandlers } from './src/lib/push';
 import OfflineGate from './src/components/OfflineGate';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -36,6 +39,7 @@ import InfluencerOfferDetail from './src/screens/InfluencerOfferDetail';
 import InfluencerResume from './src/screens/InfluencerResume';
 import RecommendedCampaigns from './src/screens/RecommendedCampaigns';
 import ReferScreen from './src/screens/ReferScreen';
+import InfluencerPricing from './src/screens/InfluencerPricing';
 
 const Stack = createNativeStackNavigator();
 
@@ -59,7 +63,6 @@ const linking: LinkingOptions<any> = {
 // an unfortunate swipe-back inside a sub-pager, or any other client-side
 // flow CANNOT reveal them. Stack swaps happen automatically when
 // AuthContext flips `user` between null and a real value.
-export const navigationRef = createNavigationContainerRef();
 
 function RootStack() {
   const {user, loading, role} = useAuth();
@@ -182,6 +185,7 @@ function RootStack() {
         component={InfluencerNotifications}
       />
       <Stack.Screen name="InfluencerRefer" component={ReferScreen} />
+      <Stack.Screen name="InfluencerPricing" component={InfluencerPricing} />
       <Stack.Screen
         name="InfluencerOfferDetail"
         component={InfluencerOfferDetail}

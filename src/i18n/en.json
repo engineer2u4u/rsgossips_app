@@ -806,7 +806,9 @@
     "accountCreated": "Account created",
     "instagramConnected": "Instagram connected",
     "mediaKitPublished": "Media kit published",
-    "rateCardSet": "Rate card set"
+    "rateCardSet": "Rate card set",
+    "plans": "Plans",
+    "plansSub": "View and change your subscription"
   },
   "DeactiveAccount": {
     "headerTitle": "Deactivate Account",
@@ -3445,5 +3447,28 @@
     "emptyBody": "People you block won't see you on RGossips, and you won't see them. They'll appear here so you can undo it.",
     "errorLoad": "Could not load your blocked list.",
     "errorUnblock": "Could not unblock. Please try again."
+  },
+  "Pricing": {
+    "title": "Plans",
+    "cycle": {
+      "monthly": "Monthly",
+      "annual": "Annual"
+    },
+    "per": {
+      "monthly": "month",
+      "annual": "year"
+    },
+    "plans": {
+      "starter": "Starter",
+      "pro": "Pro",
+      "elite": "Elite"
+    },
+    "current": "Current",
+    "yourPlan": "Your plan",
+    "choose": "Choose plan",
+    "restore": "Restore purchases",
+    "manage": "Manage subscription",
+    "connecting": "Connecting to the store…",
+    "legal": "Payment is charged to your store account. Subscriptions renew automatically unless cancelled at least 24 hours before the period ends. Manage or cancel in your store account settings."
   }
 }
