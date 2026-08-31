@@ -44,6 +44,7 @@ export type VerifyResult = {
   success?: boolean;
   entitled?: boolean;
   plan?: PlanId | null;
+  detail?: string;
   status?: string;
   expiresAt?: string | null;
   error?: string;

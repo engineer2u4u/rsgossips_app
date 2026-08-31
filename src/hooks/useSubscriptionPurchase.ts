@@ -26,7 +26,7 @@ import {useAuth} from '../context/AuthContext';
 type Status = 'idle' | 'purchasing' | 'verifying' | 'restoring';
 
 export function useSubscriptionPurchase() {
-  const {refreshProfile} = useAuth();
+  const {refreshProfile, user} = useAuth();
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
   // Purchases arrive on a listener that also fires for transactions restored
@@ -51,8 +51,16 @@ export function useSubscriptionPurchase() {
         if (!res?.success) {
           // Do NOT finish the transaction — leaving it open means the store
           // replays it, giving verification another chance rather than
-          // stranding a paid purchase.
-          setError(res?.error || 'We could not verify that purchase.');
+          // stranding a paid purchase. Android also auto-refunds anything
+          // unacknowledged after 3 days, so the user cannot end up charged
+          // with nothing.
+          //
+          // `detail` carries the store's own reason ("Google verification
+          // failed: 401", "GOOGLE_SERVICE_ACCOUNT is not configured"). It is
+          // configuration text with no key material, and showing it turns a
+          // dead-end error into something diagnosable without a server log.
+          const base = res?.error || 'We could not verify that purchase.';
+          setError(res?.detail ? `${base}\n\n(${res.detail})` : base);
           return;
         }
         await finishTransaction({purchase, isConsumable: false});
@@ -93,16 +101,33 @@ export function useSubscriptionPurchase() {
         setError('That plan is unavailable.');
         return;
       }
+      if (!user?.id) {
+        setError('Please sign in again before subscribing.');
+        return;
+      }
       setError('');
       setStatus('purchasing');
       expectingPurchase.current = true;
       try {
+        // Attach our user id to the purchase so the STORE can tell the server
+        // who bought it, independently of this app ever calling back.
+        //
+        // Google publishes SUBSCRIPTION_PURCHASED the instant payment
+        // completes, before verify-iap-purchase has run, so iap-notifications
+        // sees a token it has no row for. That self-corrects when the client
+        // call lands — but if this app dies mid-payment, the purchase exists
+        // at the store and nowhere else, and the user is charged with no plan
+        // until they think to tap Restore. With the id attached, the webhook
+        // resolves the buyer from the store's own record and repairs it.
+        //
+        // Apple requires appAccountToken to be a UUID; auth user ids already
+        // are. Google caps obfuscatedAccountId at 64 chars — also fine.
         await requestPurchase({
           type: 'subs',
           request:
             Platform.OS === 'ios'
-              ? {apple: {sku}}
-              : {google: {skus: [sku]}},
+              ? {apple: {sku, appAccountToken: user.id}}
+              : {google: {skus: [sku], obfuscatedAccountId: user.id}},
         });
       } catch (e: any) {
         expectingPurchase.current = false;
@@ -110,7 +135,7 @@ export function useSubscriptionPurchase() {
         setError(e?.message || 'Could not open the store.');
       }
     },
-    [requestPurchase],
+    [requestPurchase, user?.id],
   );
 
   /**
