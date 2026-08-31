@@ -20,12 +20,9 @@ These gate submission. Play will not let you past "Preview and confirm" without 
 - [ ] **Delete account URL** — `https://rgossips.com/consent/delete-account`, live only once the
       web app is deployed (see Phase 2)
 
-Still open in the code, all tracked in `listing.md`:
-
-- [ ] Unblock UI — users can block with no way to reverse it
-- [ ] Moderation queue in `rsgossips_admin` — reports are collected but never actioned
-- [ ] Mock chat screens finished or unrouted from `App.tsx` — they ship non-functional today
-- [ ] Play Billing position decided for the external subscription hand-off
+The code items that used to sit here — unblock UI, the moderation queue, the mock chat screens, and
+the Play Billing position — are all done. `listing.md` carries the current checklist; what remains
+is store-listing work rather than code.
 
 And one that gates production access itself:
 
@@ -100,7 +97,12 @@ validates that the URL resolves.
 Deploy `rgossips_web` however you normally do, then confirm both:
 
 - `https://rgossips.com/consent/delete-account` renders **without signing in**
+- `https://rgossips.com/support` renders **without signing in** — the Support URL on both listings
 - `https://rgossips.com/influencer/pricing?from=app` does **not** show the "use our mobile app" popup
+
+The `?from=app` hand-off still exists for links the app opens that are *not* purchases (media kits,
+policies). Subscriptions no longer use it — those go through store billing, and pointing a mobile
+user at the web pricing page to subscribe is the steering both stores prohibit.
 
 ---
 

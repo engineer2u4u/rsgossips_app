@@ -270,11 +270,20 @@ Add notes covering the three guidelines most likely to be raised:
   Account), with a 30-day grace window, and give the public URL
   `https://rgossips.com/consent/delete-account`. Apple requires deletion to be initiated **from
   inside the app** — a web-only route is not sufficient here, which is stricter than Play.
-- **Guideline 3.1.1 — external purchases.** This is the highest-risk item in the submission.
-  "Manage plan" opens `rgossips.com/influencer/pricing` in the browser, and 3.1.1 restricts links
-  steering users to non-IAP purchasing. Decide the position before submitting: either apply for the
-  External Link Account Entitlement, or argue the app is consumption-only with no purchasing UI and
-  no steering copy. Write whichever into the review notes.
+- **Guideline 3.1.1 — in-app purchase.** Resolved by shipping IAP, and worth stating plainly in the
+  review notes: creator subscriptions are sold through **StoreKit auto-renewable subscriptions**
+  (`rgossips.{starter|pro|elite}.{monthly|annual}` in the RGossips Plans group). "Manage plan" opens
+  the in-app pricing screen, cancellation links to the system subscription settings, and nothing in
+  the app directs a user to a website to subscribe.
+- **Guideline 3.1.5(a) — real-world services.** Explain the second payment rail before a reviewer
+  asks. Brand escrow funding and service orders go through **Razorpay**, deliberately: those buy a
+  real-world service performed by a person (a creator making a Reel), which store billing may not be
+  used for. That is why the app contains both an IAP flow and a Razorpay flow — they serve different
+  purchases, and neither is an alternative to the other.
+- **Restore Purchases** exists on the pricing screen, as 3.1.1 requires.
+- **Sandbox** — `IAP_ALLOW_SANDBOX=true` is set on the backend. Reviewers purchase in the sandbox
+  environment, and the server would otherwise reject their receipts and fail the subscription flow.
+  Do not turn it off before review.
 
 ### 4e. Screenshots
 
@@ -343,6 +352,15 @@ turns it into a multi-round conversation.
 | Version gate | `versionCode`, permanently burned | Build number, per marketing version |
 | Signing | Your upload key; Google re-signs | Apple distribution certificate + profile |
 | Account deletion | Public URL sufficient | Must also be initiated **in-app** |
-| External payments | Play Billing policy | Guideline 3.1.1, enforced harder |
+| Subscriptions | Product + base plan, two objects | One product per subscription, in a group |
+| Store billing | Play Billing | StoreKit — same entitlement, one `subscription_plan` field |
+| Restore Purchases | Not required | **Required**; review fails without it |
+| IAP review assets | None | A **screenshot of the purchase sheet** per subscription |
 | Screenshots | One phone set | One set per required display size |
 | First review | Several days | Usually 24–48 hours |
+
+The subscription modelling difference is the one that bites: Google nests base plans inside a
+subscription, so six SKUs could be three subscriptions with two plans each — but
+`purchases.subscriptionsv2.get` reports the *subscription* id, not the base plan id, so that shape
+would make monthly and annual indistinguishable to the verifier. Play therefore has six separate
+subscriptions with one base plan apiece, mirroring Apple one-to-one.

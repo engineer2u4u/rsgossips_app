@@ -68,7 +68,7 @@ VERIFIED INSTAGRAM DATA
 Creator profiles are backed by a real Instagram Business connection, so follower counts and
 engagement rates come from Instagram itself rather than a self-reported number.
 
-RGossips is operated by RUDE LABS PVT. LTD. Subscription plans are managed on rgossips.com.
+RGossips is operated by RUDE LABS PVT. LTD.
 ```
 
 ### Graphics
@@ -431,21 +431,22 @@ Two are close enough to be worth having an answer ready for:
   — but that is marketplace settlement, not a transfer service offered to users. Upwork, Fiverr and
   Etsy all pay sellers without declaring as money-transfer providers. The test is whether a user can
   send money to an arbitrary person for its own sake; here they can only settle a campaign.
-- **Rewards, points and other incentives.** The referral programme issues Reward Credits, which is
-  literally a points scheme — the closest call on the page. But RC is a discount against our own
-  subscription, non-transferable and not convertible to cash, which puts it alongside ordinary SaaS
-  referral credit rather than a rewards product.
+- **Rewards, points and other incentives.** No longer applies. The referral programme and Reward
+  Credits are switched off everywhere (`REWARDS_ENABLED`, defaulting to off in
+  `supabase/functions/_shared/rewards.ts` and both clients), because store billing charges a fixed
+  price from a price point set when the SKU is created and cannot express a per-user discount
+  computed from a wallet balance. Nothing in the app issues or redeems points.
 
-If a conservative answer is preferred, *Rewards, points and other incentives* is the one box with a
-real argument. The cost is routing the submission to a financial-services review team — more
-scrutiny, slower first review. Not worth it on this reading.
-
-> **Open item, and the one worth resolving first.** Play's Payments policy requires Play Billing for
-> in-app digital subscriptions, and "Manage plan" opens `rgossips.com/influencer/pricing` in the
-> browser. This is the Google-side mirror of the Apple 3.1.1 problem in the launch readiness notes.
-> India's user-choice-billing position and the CCI ruling change the calculus, but not to "no rules
-> apply". Decide the position and write it into the review notes before submitting, rather than
-> after a rejection.
+> **Resolved — this was the highest-risk item in the submission.** Creator subscriptions now go
+> through **Google Play Billing** and Apple IAP. "Manage plan" navigates to the in-app pricing
+> screen, and cancellation links to the store's own subscription settings; nothing sends a user to
+> the website to subscribe. The steering exposure under Play's Payments policy and Apple guideline
+> 3.1.1 is gone, and no External Link Account Entitlement or user-choice-billing enrolment is
+> needed.
+>
+> Razorpay is unchanged and still correct for **brand escrow funding and service orders** — those
+> buy a real-world service from a person, and store billing is *prohibited* for them (Apple
+> 3.1.5(a)). Both rails coexist by design, serving different purchases.
 
 ### Remaining declarations
 
@@ -462,18 +463,31 @@ scrutiny, slower first review. Not worth it on this reading.
 
 - [ ] Feature graphic produced (1024×500)
 - [ ] 6–8 phone screenshots captured from a release build
-- [ ] `REVIEW_TEST_PHONES` and `REVIEW_TEST_OTP` set, and `whatsapp-otp-sender` deployed
+Done:
+
+- [x] `REVIEW_TEST_PHONES` / `REVIEW_TEST_OTP` set, `whatsapp-otp-sender` deployed
+- [x] `rgossips.com/consent/delete-account` and `/support` live and publicly reachable
+- [x] Creator account deletion — `InfluencerAccountActionsModal`, Profile → Privacy &amp; Security
+- [x] Migrations `059` and `064`–`065` applied
+- [x] `report-content`, `block-user` and the four `list-*` functions deployed
+- [x] Unblock UI — `BlockedAccounts`, Profile → Privacy &amp; Security
+- [x] Moderation queue in `rsgossips_admin` at `/dashboard/reports`
+- [x] Mock chat screens unrouted from `App.tsx`, nav entries removed
+- [x] Store billing shipped — Play Billing and Apple IAP replace the web hand-off, closing the
+      Payments-policy and 3.1.1 exposure
+- [x] `versionCode` at `4`, signed `CN=RGossips`, verified in the merged bundle manifest
+- [x] RTDN wired to `iap-notifications`; `iap-expiry-sweep` scheduled hourly
+
+Remaining:
+
+- [ ] `versionCode 4` uploaded to Internal testing and retested — orphan repair and trial→Pro are
+      new since the `3` currently on the track
 - [ ] Review account signs in end to end on a real device, with no Instagram wall
-- [x] `rgossips.com/consent/delete-account` page written — deploy the web app, then paste the URL
-- [x] Creator account deletion built — `InfluencerAccountActionsModal`, reached from
-      Profile → Privacy &amp; Security → Delete Account
-- [ ] Migration `059` applied (`supabase db push`)
-- [ ] `report-content`, `block-user` and the four edited `list-*` functions deployed
-- [ ] Unblock UI added — blocking is currently one-way with no reversal
-- [ ] Moderation queue in `rsgossips_admin` — reports are collected but never actioned
-- [ ] **App rebuilt and re-signed** — the current AAB predates `ReportBlockSheet`
-- [ ] Mock chat screens either finished or unrouted from `App.tsx` — they ship non-functional today
-- [ ] Play Billing position decided and written into review notes
-- [ ] `versionCode` bumped past `1`
-- [ ] Release AAB uploaded, signature confirmed as `CN=RGossips` — not `CN=Android Debug`
+- [ ] **Online content → Yes** (currently No, and wrong — see the Content rating section)
+- [ ] Age rating **overridden to 18+** — the questionnaire calculates 4+
+- [ ] 6–8 phone screenshots from a release build
 - [ ] `AD_ID` permission confirmed absent from the built artifact
+- [ ] Content policy prohibiting alcohol, tobacco and real-money-gaming campaigns — what keeps the
+      five "No" content answers durable rather than accidentally true
+- [ ] Privacy Policy §14 resolved — it promises a guardian-consent path for 13–17s that the app has
+      no mechanism to honour
