@@ -32,16 +32,12 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.rgossips</string>
+				<string>rgossips</string>
 			</array>
 		</dict>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RGossips needs access to your photo library so you can pick a profile picture and upload media to your media kit.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
