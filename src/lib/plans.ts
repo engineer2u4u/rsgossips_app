@@ -227,7 +227,20 @@ export function getEffectivePlan(profile: PlanProfile): PlanId {
   if (plan === PLAN_IDS.PRO || plan === PLAN_IDS.ELITE || plan === PLAN_IDS.STARTER) {
     return plan as PlanId;
   }
-  if (isWithinTrial(profile)) return PLAN_IDS.ELITE;
+  // Trial = PRO, matching the web (src/lib/plans.js getEffectivePlan).
+  //
+  // This used to return ELITE here, so the same account resolved to a
+  // different tier depending on which surface you opened — the app handed out
+  // Elite-only perks (bento_sunset / neo_brutalist media-kit templates,
+  // homepage spotlight) that the web then refused. Per the web's spec comment,
+  // Pro is deliberate: the trial should preview the tier most creators
+  // actually land on, without giving the top tier away for free.
+  //
+  // Keep the two in step. A user's plan is now resolved from one field
+  // (subscription_plan) written by whichever rail they paid on, so any
+  // divergence in the fallback shows up as the app and web disagreeing about
+  // an account that has not changed.
+  if (isWithinTrial(profile)) return PLAN_IDS.PRO;
   return PLAN_IDS.STARTER;
 }
 
