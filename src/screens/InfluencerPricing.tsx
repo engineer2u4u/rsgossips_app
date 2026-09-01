@@ -1,15 +1,19 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import LinearGradient from 'react-native-linear-gradient';
-import {Check, ChevronLeft, Crown} from 'lucide-react-native';
+import {Check, ChevronLeft, Crown, Info} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useSubscriptionPurchase} from '../hooks/useSubscriptionPurchase';
 import {IAP_SKUS, MANAGE_SUBSCRIPTION_URL} from '../lib/iap';
@@ -53,11 +57,41 @@ const HIGHLIGHT_KEYS = [
 export default function InfluencerPricing() {
   const {t} = useTranslation();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const {profile} = useAuth();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
 
-  const {connected, subscriptions, status, busy, error, buy, restore} =
-    useSubscriptionPurchase();
+  const {
+    connected,
+    subscriptions,
+    status,
+    busy,
+    error,
+    subscribedPlan,
+    clearSubscribed,
+    buy,
+    restore,
+  } = useSubscriptionPurchase();
+
+  // Store-specific wording for the info tooltips — the flow is identical, only
+  // the store name differs between platforms.
+  const storeName = Platform.OS === 'ios' ? 'the App Store' : 'Google Play';
+  const storeAccount = Platform.OS === 'ios' ? 'Apple ID' : 'Google account';
+
+  // Confirm a completed subscription. subscribedPlan is set by the hook only
+  // after the server verified the receipt and granted the tier.
+  useEffect(() => {
+    if (!subscribedPlan) return;
+    const planName = t(`Pricing.plans.${subscribedPlan}`, {
+      defaultValue: subscribedPlan,
+    });
+    Alert.alert(
+      t('Pricing.successTitle', {plan: planName}),
+      t('Pricing.successBody'),
+    );
+    clearSubscribed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscribedPlan]);
 
   const currentPlan = getEffectivePlan(profile);
   const isSubscribed =
@@ -100,7 +134,9 @@ export default function InfluencerPricing() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <View className="flex-row items-center px-5 py-4 bg-white border-b border-slate-100">
+      <View
+        className="flex-row items-center px-5 py-4 bg-white border-b border-slate-100"
+        style={{paddingTop: insets.top + 12}}>
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={10}
@@ -234,38 +270,107 @@ export default function InfluencerPricing() {
         {/* Restore is REQUIRED by Apple for any app selling subscriptions —
             review fails without it — and it is the recovery path after a
             reinstall or on a new device. */}
-        <Pressable
-          onPress={restore}
-          disabled={busy}
-          className="h-12 items-center justify-center mt-1"
-          accessibilityRole="button">
-          {status === 'restoring' ? (
-            <ActivityIndicator />
-          ) : (
-            <Text className="text-[14px] font-bold text-slate-600">
-              {t('Pricing.restore')}
-            </Text>
-          )}
-        </Pressable>
+        <View
+          className="flex-row items-center justify-center mt-1"
+          style={{gap: 6}}>
+          <Pressable
+            onPress={restore}
+            disabled={busy}
+            className="h-12 items-center justify-center"
+            accessibilityRole="button">
+            {status === 'restoring' ? (
+              <ActivityIndicator />
+            ) : (
+              <Text className="text-[14px] font-bold text-slate-600">
+                {t('Pricing.restore')}
+              </Text>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                t('Pricing.restoreInfoTitle'),
+                t('Pricing.restoreInfo', {account: storeAccount}),
+              )
+            }
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('Pricing.restoreInfoTitle')}>
+            <Info size={15} color="#94a3b8" />
+          </Pressable>
+        </View>
 
         {/* Cancellation and payment method belong to the store once billing
             runs through it, and both stores forbid sending users elsewhere to
             manage that. */}
         {isSubscribed && (
-          <Pressable
-            onPress={() => Linking.openURL(MANAGE_SUBSCRIPTION_URL).catch(() => {})}
-            className="h-11 items-center justify-center"
-            accessibilityRole="button">
-            <Text className="text-[13px] font-bold text-slate-400">
-              {t('Pricing.manage')}
-            </Text>
-          </Pressable>
+          <View
+            className="flex-row items-center justify-center"
+            style={{gap: 6}}>
+            <Pressable
+              onPress={() =>
+                Linking.openURL(MANAGE_SUBSCRIPTION_URL).catch(() => {})
+              }
+              className="h-11 items-center justify-center"
+              accessibilityRole="button">
+              <Text className="text-[13px] font-bold text-slate-400">
+                {t('Pricing.manage')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  t('Pricing.manageInfoTitle'),
+                  t('Pricing.manageInfo', {store: storeName}),
+                )
+              }
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('Pricing.manageInfoTitle')}>
+              <Info size={15} color="#94a3b8" />
+            </Pressable>
+          </View>
         )}
 
         <Text className="text-[11px] text-slate-400 text-center mt-3 leading-4">
           {t('Pricing.legal')}
         </Text>
       </ScrollView>
+
+      {/* Whole-screen blocking overlay while a purchase / verification / restore
+          is in flight — the store sheet dismisses first, and verification can
+          take a beat, so the whole screen shows progress rather than three
+          separate button spinners. */}
+      <Modal visible={busy} transparent animationType="fade" onRequestClose={() => {}}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(15,23,42,0.45)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}>
+          <View
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              paddingVertical: 26,
+              paddingHorizontal: 34,
+              alignItems: 'center',
+              gap: 14,
+              minWidth: 200,
+            }}>
+            <ActivityIndicator size="large" color="#9810FA" />
+            <Text className="text-[14px] font-bold text-slate-700 text-center">
+              {status === 'verifying'
+                ? t('Pricing.overlayVerifying')
+                : status === 'restoring'
+                  ? t('Pricing.overlayRestoring')
+                  : t('Pricing.overlayPurchasing')}
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

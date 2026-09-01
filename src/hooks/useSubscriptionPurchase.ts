@@ -29,6 +29,10 @@ export function useSubscriptionPurchase() {
   const {refreshProfile, user} = useAuth();
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
+  // Set to the granted plan id once a purchase (or restore) is verified and
+  // entitled, so the screen can show a success confirmation. Cleared by the
+  // screen after it's shown.
+  const [subscribedPlan, setSubscribedPlan] = useState<string | null>(null);
   // Purchases arrive on a listener that also fires for transactions restored
   // at launch. Without this the screen would show "purchase complete" for
   // something the user did days ago on another device.
@@ -67,6 +71,7 @@ export function useSubscriptionPurchase() {
         // The server wrote subscription_plan; pull it so the UI reflects the
         // new tier without a restart.
         await refreshProfile();
+        if (res.entitled && res.plan) setSubscribedPlan(String(res.plan));
       } catch (e: any) {
         setError(e?.message || 'Something went wrong completing your purchase.');
       } finally {
@@ -165,6 +170,7 @@ export function useSubscriptionPurchase() {
     }
     (async () => {
       let entitled = false;
+      let restoredPlan: string | null = null;
       for (const p of availablePurchases) {
         try {
           const res = await verifyPurchase(p);
@@ -172,14 +178,18 @@ export function useSubscriptionPurchase() {
             // Finish even a lapsed one — it is verified and recorded, and
             // leaving it open makes the store replay it forever.
             await finishTransaction({purchase: p, isConsumable: false});
-            if (res.entitled) entitled = true;
+            if (res.entitled) {
+              entitled = true;
+              if (res.plan) restoredPlan = String(res.plan);
+            }
           }
         } catch {
           // One bad receipt must not abandon the rest.
         }
       }
       await refreshProfile();
-      if (!entitled) setError('No active subscription found to restore.');
+      if (entitled && restoredPlan) setSubscribedPlan(restoredPlan);
+      else if (!entitled) setError('No active subscription found to restore.');
       setStatus('idle');
     })();
   }, [availablePurchases, status, finishTransaction, refreshProfile]);
@@ -192,6 +202,9 @@ export function useSubscriptionPurchase() {
     busy: status !== 'idle',
     error,
     clearError: () => setError(''),
+    /** Granted plan id after a verified, entitled purchase/restore. */
+    subscribedPlan,
+    clearSubscribed: () => setSubscribedPlan(null),
     buy,
     restore,
   };

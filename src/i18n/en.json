@@ -3469,6 +3469,15 @@
     "restore": "Restore purchases",
     "manage": "Manage subscription",
     "connecting": "Connecting to the store…",
+    "overlayPurchasing": "Completing your purchase…",
+    "overlayVerifying": "Verifying your purchase…",
+    "overlayRestoring": "Restoring your purchases…",
+    "successTitle": "You're on {{plan}}!",
+    "successBody": "Your subscription is active. Enjoy your new plan.",
+    "restoreInfoTitle": "Restore purchases",
+    "restoreInfo": "Already subscribed with this {{account}}? Tap Restore to re-apply your active plan — handy after reinstalling or on a new device. It never charges you again.",
+    "manageInfoTitle": "Manage subscription",
+    "manageInfo": "Opens {{store}}, where you can upgrade, downgrade, or cancel. Your subscription is billed and managed there — not inside the app.",
     "legal": "Payment is charged to your store account. Subscriptions renew automatically unless cancelled at least 24 hours before the period ends. Manage or cancel in your store account settings."
   }
 }
