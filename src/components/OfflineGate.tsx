@@ -87,17 +87,28 @@ export default function OfflineGate() {
       <Text style={styles.title}>{t('OfflineGate.title')}</Text>
       <Text style={styles.body}>{t('OfflineGate.body')}</Text>
 
-      <TouchableOpacity onPress={tryReconnect} disabled={checking} activeOpacity={0.85}>
-        <LinearGradient colors={['#9810FA', '#E60076']} style={styles.button}>
-          {checking ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <RefreshCw size={16} color="#FFFFFF" />
-          )}
-          <Text style={styles.buttonText}>
-            {checking ? t('OfflineGate.checking') : t('OfflineGate.refresh')}
-          </Text>
-        </LinearGradient>
+      {/* Gradient is an absolute background with the icon/label as siblings —
+          BVLinearGradient collapses/shrinks on iOS new-arch when it sizes
+          itself from padding + children, so the button drives its own size. */}
+      <TouchableOpacity
+        onPress={tryReconnect}
+        disabled={checking}
+        activeOpacity={0.85}
+        style={styles.button}>
+        <LinearGradient
+          colors={['#9810FA', '#E60076']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={StyleSheet.absoluteFill}
+        />
+        {checking ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <RefreshCw size={16} color="#FFFFFF" />
+        )}
+        <Text style={styles.buttonText}>
+          {checking ? t('OfflineGate.checking') : t('OfflineGate.refresh')}
+        </Text>
       </TouchableOpacity>
 
       <Text style={styles.note}>{t('OfflineGate.autoNote')}</Text>
@@ -126,11 +137,13 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    height: 50,
     paddingHorizontal: 30,
-    paddingVertical: 14,
     borderRadius: 18,
     marginTop: 28,
+    overflow: 'hidden',
   },
   buttonText: {color: '#FFFFFF', fontSize: 14, fontWeight: '900'},
   note: {fontSize: 11, color: '#94a3b8', marginTop: 14, textAlign: 'center'},

@@ -97,6 +97,11 @@ export default function InfluencerPricing() {
   const isSubscribed =
     !!profile?.subscription_plan &&
     !['trial', 'free', ''].includes(String(profile.subscription_plan).toLowerCase());
+  // The current plan is a tier + a cycle. Pro Monthly and Pro Annual are
+  // different products, so "Current" must match BOTH — otherwise switching a
+  // Pro Monthly user to the Annual tab wrongly marks Pro Annual as their plan.
+  const currentCycle: BillingCycle =
+    profile?.billing_cycle === 'annual' ? 'annual' : 'monthly';
 
   // Store product by SKU, so each card can show the real localised price.
   const bySku = useMemo(() => {
@@ -191,7 +196,8 @@ export default function InfluencerPricing() {
 
         {PLAN_ORDER.map(plan => {
           const price = priceFor(plan);
-          const isCurrent = currentPlan === plan && isSubscribed;
+          const isCurrent =
+            currentPlan === plan && isSubscribed && currentCycle === cycle;
           const highlights = highlightsFor(plan);
           return (
             <View
