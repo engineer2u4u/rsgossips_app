@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		006FBE6B301A74270064114A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 006FBE6A301A74270064114A /* GoogleService-Info.plist */; };
+		006FBE6B301A74270064114A /* RGossips/GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 006FBE6A301A74270064114A /* RGossips/GoogleService-Info.plist */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1B7CD021E2E1A126ACB95B63 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		22F2BE7366B1FF3E553B5F7C /* libPods-RGossips.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D95AB286FE850FF4BA7592F /* libPods-RGossips.a */; };
@@ -22,7 +22,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		006FBE6A301A74270064114A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		006FBE6A301A74270064114A /* RGossips/GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RGossips/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		006FBE6C301A78290064114A /* RGossips.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = RGossips.entitlements; path = RGossips/RGossips.entitlements; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* RGossips.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RGossips.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = RGossips/Images.xcassets; sourceTree = "<group>"; };
@@ -58,7 +58,7 @@
 			isa = PBXGroup;
 			children = (
 				006FBE6C301A78290064114A /* RGossips.entitlements */,
-				006FBE6A301A74270064114A /* GoogleService-Info.plist */,
+				006FBE6A301A74270064114A /* RGossips/GoogleService-Info.plist */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -197,7 +197,7 @@
 				9B234E155793403DBDDA5433 /* Cardo-Bold.ttf in Resources */,
 				5EC8B01321CB4A5D9B9DF985 /* Cardo-Italic.ttf in Resources */,
 				72B5F6CB03C648E88556E0AD /* Cardo-Regular.ttf in Resources */,
-				006FBE6B301A74270064114A /* GoogleService-Info.plist in Resources */,
+				006FBE6B301A74270064114A /* RGossips/GoogleService-Info.plist in Resources */,
 				A12DE238DFC64DDDA5E2F906 /* SpaceMono-Bold.ttf in Resources */,
 				54314DFEC0294747AAD80D97 /* SpaceMono-Regular.ttf in Resources */,
 			);
@@ -323,11 +323,9 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RGossips/RGossips.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 14;
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = U96VUH7TD6;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = U96VUH7TD6;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
@@ -346,7 +344,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgossips;
 				PRODUCT_NAME = RGossips;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Rgossips;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -363,11 +360,9 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RGossips/RGossips.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 14;
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = U96VUH7TD6;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = U96VUH7TD6;
 				INFOPLIST_FILE = RGossips/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RGossips;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
@@ -385,7 +380,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgossips;
 				PRODUCT_NAME = RGossips;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Rgossips;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
