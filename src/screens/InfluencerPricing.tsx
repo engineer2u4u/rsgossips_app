@@ -341,6 +341,32 @@ export default function InfluencerPricing() {
         <Text className="text-[11px] text-slate-400 text-center mt-3 leading-4">
           {t('Pricing.legal')}
         </Text>
+
+        {/* Terms of Use + Privacy Policy links are REQUIRED on the paywall for
+            auto-renewable subscriptions (App Store guideline 3.1.2). */}
+        <View
+          className="flex-row items-center justify-center mt-2"
+          style={{gap: 8}}>
+          <Pressable
+            onPress={() =>
+              Linking.openURL('https://rgossips.com/terms').catch(() => {})
+            }
+            accessibilityRole="link">
+            <Text className="text-[11px] font-bold text-slate-500 underline">
+              {t('Pricing.terms')}
+            </Text>
+          </Pressable>
+          <Text className="text-[11px] text-slate-400">·</Text>
+          <Pressable
+            onPress={() =>
+              Linking.openURL('https://rgossips.com/privacy').catch(() => {})
+            }
+            accessibilityRole="link">
+            <Text className="text-[11px] font-bold text-slate-500 underline">
+              {t('Pricing.privacy')}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* Whole-screen blocking overlay while a purchase / verification / restore

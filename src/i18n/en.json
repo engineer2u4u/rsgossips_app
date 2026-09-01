@@ -3474,6 +3474,8 @@
     "overlayRestoring": "Restoring your purchases…",
     "successTitle": "You're on {{plan}}!",
     "successBody": "Your subscription is active. Enjoy your new plan.",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
     "restoreInfoTitle": "Restore purchases",
     "restoreInfo": "Already subscribed with this {{account}}? Tap Restore to re-apply your active plan — handy after reinstalling or on a new device. It never charges you again.",
     "manageInfoTitle": "Manage subscription",
