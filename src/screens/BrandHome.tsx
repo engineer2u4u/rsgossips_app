@@ -4,7 +4,7 @@ import { Headphones } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import BrandHero from '../components/BrandHero';
-import { TrustSection } from '../components/TrustSection';
+import BrandStatRow from '../components/brands/BrandStatRow';
 import { CategorySection } from '../components/CategorySection';
 import { TopCreatorsCarousel } from '../components/TopCreatorCarousel';
 import { RecentlyConnected } from '../components/RecentlyConnected';
@@ -15,6 +15,7 @@ import PocketFriendlyCreators from '../components/PocketFriendlyCreators';
 import { CreatorCTASection } from '../components/CreatorCTASection';
 import BrandSupportChatModal from '../components/BrandSupportChatModal';
 import BrandMatchPrompt from '../components/brands/BrandMatchPrompt';
+import { HOME_BG } from '../theme/brandHome';
 
 import BrandsLayout from '../layouts/BrandLayout';
 
@@ -24,27 +25,33 @@ export default function BrandHome() {
   return (
     <View className="flex-1">
       <BrandsLayout>
-        <View>
-          <BrandHero />
-        </View>
-        <View className="w-full items-center gap-8 px-4 py-6">
+        {/* Redesigned Home feed (RGossips Explore): navy + violet→blue language
+            on a light ground. Above-the-fold is the new top bar → AI-matching
+            hero → trust stat row; the sections below carry over for now. */}
+        <View style={{ backgroundColor: HOME_BG }}>
+          <BrandHero onSupport={() => setSupportOpen(true)} />
+          <View style={{ height: 12 }} />
           <BrandMatchPrompt />
-          <TrustSection />
-          <CategorySection />
+          <View style={{ height: 14 }} />
+          <BrandStatRow />
+          {/* Sections self-pad (14px) and span full width — no parent padding. */}
+          <View className="w-full gap-8 pt-8">
+            <CategorySection />
 
-          <TopCreatorsCarousel />
+            <BeyondInfluencers />
 
-          <RecentlyConnected />
+            <TopCreatorsCarousel />
 
-          <CreatorsByLocation />
+            <RecentlyConnected />
 
-          <BeyondInfluencers />
+            <CreatorsByLocation />
 
-          <CreatorStories />
+            <PocketFriendlyCreators />
 
-          <PocketFriendlyCreators />
+            <CreatorStories />
 
-          <CreatorCTASection />
+            <CreatorCTASection />
+          </View>
         </View>
       </BrandsLayout>
 

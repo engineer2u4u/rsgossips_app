@@ -111,7 +111,8 @@ export default function BrandCampaigns() {
   }, [campaigns, activeTab, query]);
 
   return (
-    <BrandsLayout>
+    <View className="flex-1">
+      <BrandsLayout>
       {/* Header */}
       <View className="relative mb-16">
         <LinearGradient
@@ -228,8 +229,11 @@ export default function BrandCampaigns() {
           ))
         )}
       </View>
+      </BrandsLayout>
 
-      {/* Verification gate — unverified brands can't create campaigns */}
+      {/* Verification gate — unverified brands can't create campaigns.
+          These sit OUTSIDE BrandsLayout's ScrollView so `absolute` anchors to
+          the screen, not the (short, in the empty state) scroll content. */}
       {profile && !brandVerified ? (
         <View className="absolute bottom-24 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
           <Text className="text-[13px] font-bold text-amber-900">
@@ -258,7 +262,7 @@ export default function BrandCampaigns() {
           </TouchableOpacity>
         </LinearGradient>
       </View>
-    </BrandsLayout>
+    </View>
   );
 }
 

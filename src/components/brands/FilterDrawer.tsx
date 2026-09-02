@@ -163,7 +163,8 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
               {/* Group sidebar */}
               <ScrollView
                 style={s.sidebar}
-                contentContainerStyle={{paddingVertical: 8}}>
+                contentContainerStyle={{paddingVertical: 10}}
+                showsVerticalScrollIndicator={false}>
                 {FILTER_GROUPS.map(group => {
                   const active = activeGroup === group;
                   const count = (draft[group] || []).length;
@@ -172,7 +173,9 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
                       key={group}
                       onPress={() => setActiveGroup(group)}
                       style={[s.groupItem, active && s.groupItemActive]}>
+                      {active ? <View style={s.groupActiveBar} /> : null}
                       <Text
+                        numberOfLines={2}
                         style={[
                           s.groupItemText,
                           active && s.groupItemTextActive,
@@ -180,8 +183,18 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
                         {group}
                       </Text>
                       {count > 0 ? (
-                        <View style={s.groupItemBadge}>
-                          <Text style={s.groupItemBadgeText}>{count}</Text>
+                        <View
+                          style={[
+                            s.groupItemBadge,
+                            !active && s.groupItemBadgeInactive,
+                          ]}>
+                          <Text
+                            style={[
+                              s.groupItemBadgeText,
+                              !active && s.groupItemBadgeTextInactive,
+                            ]}>
+                            {count}
+                          </Text>
                         </View>
                       ) : null}
                     </Pressable>
@@ -263,22 +276,41 @@ const s = StyleSheet.create({
   },
   title: {fontSize: 17, fontWeight: '800', color: '#0f172a'},
   sidebar: {
-    width: 140,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: '#e2e8f0',
-    backgroundColor: '#F8F9FE',
+    width: 152,
+    backgroundColor: '#F6F7FB',
   },
   groupItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 10,
+    paddingVertical: 13,
+    marginHorizontal: 8,
+    marginVertical: 2,
+    borderRadius: 12,
     gap: 6,
   },
-  groupItemActive: {backgroundColor: 'white'},
-  groupItemText: {fontSize: 12, fontWeight: '600', color: '#64748b'},
-  groupItemTextActive: {color: '#5851DB', fontWeight: '800'},
+  // Active tab: a soft brand-tinted pill with a rounded left accent bar —
+  // reads clearly against the rail without the flat full-width divider look.
+  groupItemActive: {backgroundColor: '#ECEAFF'},
+  groupActiveBar: {
+    position: 'absolute',
+    left: 6,
+    top: 12,
+    bottom: 12,
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: '#5851DB',
+  },
+  groupItemText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: 0.1,
+  },
+  groupItemTextActive: {color: '#4F46E5', fontWeight: '800'},
   groupItemBadge: {
     backgroundColor: '#5851DB',
     minWidth: 18,
@@ -288,7 +320,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 5,
   },
+  groupItemBadgeInactive: {backgroundColor: '#E2E4EC'},
   groupItemBadgeText: {color: 'white', fontSize: 10, fontWeight: '800'},
+  groupItemBadgeTextInactive: {color: '#64748b'},
   optionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

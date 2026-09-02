@@ -242,9 +242,10 @@ export default function BrandSearch({route}: any) {
         </View>
       </LinearGradient>
 
-      {/* Trust card */}
+      {/* Trust card — hide TrustSection's decorative search bar here; this
+          screen already has the real username search in its header above. */}
       <View className="pt-4">
-        <TrustSection />
+        <TrustSection showSearch={false} />
       </View>
 
       {/* Category quick filters (toggles Categories[] in filter state) */}

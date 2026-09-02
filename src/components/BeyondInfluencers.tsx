@@ -1,79 +1,53 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Film, Newspaper, Handshake } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 
-type Category = {
-  key: string;
-  bgColor: string;
-  textColor: string;
-  Icon: any;
-};
+import { ANGLE_120, HOME_COLORS } from '../theme/brandHome';
 
-const categories: Category[] = [
+// Feature cards from the RGossips Explore design: two tinted promo tiles that
+// send the brand into the directory pre-focused on a segment.
+const CARDS = [
   {
-    key: 'celebsActors',
-    Icon: Film,
-    bgColor: '#FFF9F1',
-    textColor: '#D97706',
+    key: 'meme',
+    emoji: '😂',
+    colors: ['#F2ECFB', '#E4E7F7'],
+    border: '#E1DAF3',
+    tagColor: '#7A5AB8',
   },
   {
-    key: 'publishersMedia',
-    Icon: Newspaper,
-    bgColor: '#F1F7FF',
-    textColor: '#2563EB',
-  },
-  {
-    key: 'talentAgencies',
-    Icon: Handshake,
-    bgColor: '#F9F5FF',
-    textColor: '#9333EA',
-  },
-  {
-    key: 'memePages',
-    Icon: Film, // replace with another icon if needed
-    bgColor: '#F0FDF4',
-    textColor: '#16A34A',
+    key: 'celeb',
+    emoji: '🎬',
+    colors: ['#EAECFA', '#E0E6F7'],
+    border: '#D8DEF2',
+    tagColor: '#43589E',
   },
 ];
 
 export const BeyondInfluencers = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
 
   return (
-    <View className="w-full px-4 py-6">
-      {/* Title */}
-      <Text className="text-xl font-black text-[#1C115A] mb-6">
-        {t('BeyondInfluencers.title')}
-      </Text>
-
-      {/* Grid */}
-      <View className="flex-row flex-wrap justify-between gap-y-3">
-        {categories.map((item, index) => {
-          const IconComponent = item.Icon;
-
-          return (
-            <Pressable
-              key={index}
-              style={{ backgroundColor: item.bgColor }}
-              className="w-[48%] rounded-3xl py-8 px-5 shadow-sm"
-            >
-              {/* Icon */}
-              <View className="w-10 h-10 mb-4 justify-center">
-                <IconComponent size={24} color="#1f2937" />
-              </View>
-
-              {/* Label */}
-              <Text
-                style={{ color: item.textColor }}
-                className="font-black text-[15px] leading-tight"
-              >
-                {t(`BeyondInfluencers.categories.${item.key}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <View style={{ flexDirection: 'row', gap: 11, paddingHorizontal: 14 }}>
+      {CARDS.map(c => (
+        <Pressable key={c.key} style={{ flex: 1 }} onPress={() => navigation.navigate('BrandSearch' as never)}>
+          <LinearGradient
+            colors={c.colors}
+            start={ANGLE_120.start}
+            end={ANGLE_120.end}
+            style={{ padding: 16, borderRadius: 18, borderWidth: 1, borderColor: c.border }}>
+            <Text style={{ fontSize: 20 }}>{c.emoji}</Text>
+            <Text style={{ marginTop: 9, fontSize: 15, fontWeight: '700', color: HOME_COLORS.ink }}>
+              {t(`BeyondInfluencers.${c.key}.title`)}
+            </Text>
+            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 1, color: c.tagColor, marginTop: 2 }}>
+              {t(`BeyondInfluencers.${c.key}.tag`)}
+            </Text>
+          </LinearGradient>
+        </Pressable>
+      ))}
     </View>
   );
 };

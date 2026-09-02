@@ -1,59 +1,81 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { MessageCircle, Instagram, Hash } from 'lucide-react-native';
+import { View, Text, Pressable, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import LinearGradient from 'react-native-linear-gradient';
+
+import {
+  ANGLE_96,
+  ANGLE_120,
+  NAVY_GRADIENT,
+  NAVY_LOCATIONS,
+  VIOLET_BLUE,
+  VIOLET_BLUE_LOCATIONS,
+} from '../theme/brandHome';
+
+const FOOTER_LINKS = ['For Brands', 'For Influencers', 'Pricing', 'Support', 'Privacy Policy'];
 
 export function CreatorCTASection() {
   const { t } = useTranslation();
+
   return (
-    <View className="w-full px-4 pb-20">
-      {/* CTA Card */}
-      <View className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm">
-        {/* Top Section */}
-        <View className="flex-row items-center gap-4 mb-6">
-          {/* Icon */}
-          <View className="w-16 h-16 bg-[#131722] rounded-2xl items-center justify-center">
-            <Text className="text-white text-3xl font-bold">#</Text>
-          </View>
-
-          {/* Heading */}
-          <View className="flex-1">
-            <Text className="text-xl font-bold text-slate-900">
-              {t('CreatorCTASection.heading')}
-            </Text>
-
-            <Text className="text-slate-500 text-sm mt-1">
-              {t('CreatorCTASection.subheading')}
-            </Text>
-          </View>
-        </View>
-
-        {/* Buttons */}
-        <View className="gap-4">
-          {/* WhatsApp */}
-          <Pressable className="flex-row items-center justify-center gap-2 bg-[#25D366] py-4 rounded-2xl">
-            <MessageCircle size={20} color="white" />
-            <Text className="text-white font-bold text-sm">{t('CreatorCTASection.whatsappUs')}</Text>
-          </Pressable>
-
-          {/* Instagram */}
-          <Pressable className="flex-row items-center justify-center gap-2 border border-slate-200 py-4 rounded-2xl bg-white">
-            <Instagram size={20} color="#475569" />
-            <Text className="text-slate-700 font-bold text-sm">{t('CreatorCTASection.followUs')}</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View className="mt-10 items-center gap-2">
-        <View className="flex-row items-center gap-2">
-          <Hash size={14} color="#9ca3af" />
-          <Text className="text-gray-400 text-xs">Recentgossips</Text>
-        </View>
-
-        <Text className="text-gray-400 text-xs">
-          {t('CreatorCTASection.copyright')}
+    <View style={{ width: '100%' }}>
+      {/* Navy CTA card */}
+      <LinearGradient
+        colors={NAVY_GRADIENT}
+        locations={NAVY_LOCATIONS}
+        start={ANGLE_120.start}
+        end={ANGLE_120.end}
+        style={{ marginHorizontal: 14, padding: 20, borderRadius: 20, overflow: 'hidden' }}>
+        <LinearGradient
+          colors={VIOLET_BLUE}
+          locations={VIOLET_BLUE_LOCATIONS}
+          start={ANGLE_96.start}
+          end={ANGLE_96.end}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3 }}
+        />
+        <Text style={{ fontSize: 18, fontWeight: '700', letterSpacing: -0.5, lineHeight: 23, color: '#fff' }}>
+          {t('CreatorCTASection.heading')}
         </Text>
+        <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.72)', marginTop: 5 }}>
+          {t('CreatorCTASection.subheading')}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 9, marginTop: 15 }}>
+          <Pressable style={{ flex: 1 }} onPress={() => Linking.openURL('https://wa.me/919999999999').catch(() => {})}>
+            <LinearGradient
+              colors={VIOLET_BLUE}
+              locations={VIOLET_BLUE_LOCATIONS}
+              start={ANGLE_96.start}
+              end={ANGLE_96.end}
+              style={{ height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{t('CreatorCTASection.whatsappUs')}</Text>
+            </LinearGradient>
+          </Pressable>
+          <Pressable
+            style={{ flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' }}
+            onPress={() => Linking.openURL('https://instagram.com/rgossips').catch(() => {})}>
+            <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{t('CreatorCTASection.followUs')}</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+
+      {/* Dark footer */}
+      <View style={{ marginTop: 12, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 24, backgroundColor: '#0B1129' }}>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 }}>RGossips</Text>
+        <Text style={{ marginTop: 11, fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.6)' }}>
+          {t('CreatorCTASection.footerBlurb')}
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+          {FOOTER_LINKS.map(l => (
+            <View key={l} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.09)' }}>
+              <Text style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.78)' }}>{l}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={{ marginTop: 16, paddingTop: 13, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 16 }}>
+            {t('CreatorCTASection.copyright')}
+          </Text>
+        </View>
       </View>
     </View>
   );

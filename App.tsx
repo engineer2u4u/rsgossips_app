@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 // Lives in src/lib so non-component modules (manage-plan.ts) can navigate
 // without importing this file, which would be circular.
@@ -65,7 +65,7 @@ const linking: LinkingOptions<any> = {
 // AuthContext flips `user` between null and a real value.
 
 function RootStack() {
-  const {user, loading, role} = useAuth();
+  const {user, loading, role, refreshProfile} = useAuth();
 
   // Register this device for FCM push once signed in, and wire tap-to-open
   // deep-linking. No-ops until Firebase native config is present (PUSH_SETUP.md).
@@ -78,51 +78,36 @@ function RootStack() {
       }
     });
   }, [user]);
-  // Safety: if check-profile is slow / fails / returns no role, don't sit on
-  // the splash forever. After 3s of waiting on role we proceed with whatever
-  // we have (defaults to influencer) so the user isn't permanently stuck.
-  const [roleTimeout, setRoleTimeout] = useState(false);
-  useEffect(() => {
-    if (!user || role) {
-      setRoleTimeout(false);
-      return;
-    }
-    const t = setTimeout(() => setRoleTimeout(true), 3000);
-    return () => clearTimeout(t);
-  }, [user, role]);
-
-  // Correct the route when the role arrives after that timeout already fired.
+  // We route ONLY on the role check-profile confirmed — never a guess. The
+  // splash below stays up until `role` is set, so the navigator can only ever
+  // mount on the home that matches the server's answer. No AsyncStorage
+  // fallback, no influencer default: the loading screen decides after the
+  // server confirms, then shows the correct UI once.
   //
-  // initialRouteName is read ONCE, when the Navigator mounts. If the 3s
-  // fallback let it mount with role=null, homeRoute resolved to
-  // InfluencerHome — and a brand whose check-profile came back at 4s stayed
-  // there permanently, looking at influencer screens filled with brand data.
-  // React Navigation will not re-read initialRouteName, so nothing corrected
-  // it on its own.
-  //
-  // Only fires when the mounted route actually disagrees with the resolved
-  // role, so ordinary navigation is never yanked out from under the user.
+  // The one failure mode that leaves `role` null with a live session is a
+  // TRANSIENT check-profile error (network blip / edge fn hiccup) — fetchProfile
+  // deliberately keeps the session in that case rather than signing the user
+  // out. Without a retry the user would sit on the splash until they kill the
+  // app. So while we're signed in but still un-confirmed, re-ask the server on
+  // a short cadence; the first successful response sets `role` and this stops.
+  // (A definitive "no profile of this role" answer signs the user out inside
+  // fetchProfile, which flips `user` to null and routes to Login — so this only
+  // ever retries genuine transient failures.)
   useEffect(() => {
-    if (!user || !role || !navigationRef.isReady()) return;
-    const current = navigationRef.getCurrentRoute()?.name;
-    const wrongHome =
-      (role === 'brand' && current === 'InfluencerHome') ||
-      (role !== 'brand' && current === 'BrandHome');
-    if (!wrongHome) return;
-    navigationRef.reset({
-      index: 0,
-      routes: [{name: role === 'brand' ? 'BrandHome' : 'InfluencerHome'}],
-    });
-  }, [user, role]);
+    if (!user || role) return;
+    const t = setInterval(() => {
+      refreshProfile();
+    }, 2500);
+    return () => clearInterval(t);
+  }, [user, role, refreshProfile]);
 
-  // Keep the spinner up while we don't yet have role information for a
-  // signed-in user. Otherwise the authed Navigator mounts with role=null,
-  // initialRouteName falls through to the InfluencerHome default, and on
-  // some sign-in paths React Navigation briefly renders the first declared
-  // screen (BrandHome) before settling — which the user sees as
-  // "BrandHome flashed then InfluencerHome loaded". Holding the splash
-  // until role is known eliminates the flash entirely.
-  if (loading || (user && !role && !roleTimeout)) {
+  // Keep the spinner up until check-profile has CONFIRMED the role for a
+  // signed-in user. Because we never drop the splash while `role` is null, the
+  // authed Navigator can only ever mount with `initialRouteName` already set to
+  // the correct home — there is no window in which the influencer default shows
+  // and no post-mount correction to flash the user across. The retry above is
+  // what guarantees this resolves even if the first check-profile call failed.
+  if (loading || (user && !role)) {
     return (
       <View
         style={{
@@ -149,9 +134,10 @@ function RootStack() {
     );
   }
 
-  // Authed: pick the right home based on role. We keep the existing screen
-  // graph intact — any forward-nav from a dashboard still works, but the
-  // user can never go "back" to Login because Login isn't in the stack.
+  // Authed: pick the right home based on the CONFIRMED role. We keep the
+  // existing screen graph intact — any forward-nav from a dashboard still
+  // works, but the user can never go "back" to Login because Login isn't in
+  // the stack.
   const homeRoute = role === 'brand' ? 'BrandHome' : 'InfluencerHome';
 
   return (
@@ -223,6 +209,13 @@ export default function App() {
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>
+        {/* App-wide default: dark icons on a light status bar. The safe-area
+            behind the bar is white on every layout, so dark-content keeps the
+            clock/battery legible. Screens that mount their own <StatusBar>
+            (a few influencer screens) already use the same dark-content, so
+            this only fixes the brand screens, which previously set nothing and
+            inherited the OS default (white-on-white, invisible). */}
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <LoadingProvider>
           <AuthProvider>
             <NavigationContainer ref={navigationRef} linking={linking}>

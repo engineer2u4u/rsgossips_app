@@ -1,105 +1,96 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, Pressable } from 'react-native';
-import { MapPin, Star } from 'lucide-react-native';
+import { Star } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
+
+import BrandSectionHeader from './brands/BrandSectionHeader';
+import {
+  ANGLE_96,
+  HOME_COLORS,
+  VIOLET_BLUE,
+  VIOLET_BLUE_LOCATIONS,
+} from '../theme/brandHome';
 
 const topCreators = [
-  {
-    name: 'sahilanandofficial',
-    rating: '4.2',
-    image:
-      'https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL',
-    followers: '1.4M',
-  },
-  {
-    name: 'nonaberrry',
-    rating: '4.2',
-    image:
-      'https://lh3.googleusercontent.com/d/17FV8146Zu6KAYNxfTEj-SGxj40nlyo_5',
-    followers: '798K',
-  },
-  {
-    name: 'aditirajputofficial',
-    rating: '4.2',
-    image:
-      'https://lh3.googleusercontent.com/d/18IKmd6vgmGBOz9T5KVBAm8Oozl5iQyyo',
-    followers: '166K',
-  },
+  { name: 'sahilanandofficial', rating: '4.9', image: 'https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL', followers: '1.4M' },
+  { name: 'nonaberrry', rating: '5.0', image: 'https://lh3.googleusercontent.com/d/17FV8146Zu6KAYNxfTEj-SGxj40nlyo_5', followers: '798K' },
+  { name: 'aditirajputofficial', rating: '4.8', image: 'https://lh3.googleusercontent.com/d/18IKmd6vgmGBOz9T5KVBAm8Oozl5iQyyo', followers: '166K' },
 ];
 
 export const TopCreatorsCarousel = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
+  const goSearch = () => navigation.navigate('BrandSearch' as never);
+
   return (
-    <View className="w-full bg-white py-8">
-      {/* Header */}
-      <View className="px-6 mb-6 flex-row justify-between items-start">
-        <View>
-          <Text className="text-2xl font-black text-[#1C115A]">
-            {t('TopCreatorCarousel.title')}
-          </Text>
+    <View style={{ width: '100%', gap: 11 }}>
+      <BrandSectionHeader
+        title={t('TopCreatorCarousel.title')}
+        subtitle={t('TopCreatorCarousel.subtitle')}
+        action={t('TopCreatorCarousel.seeAll')}
+        onAction={goSearch}
+      />
 
-          <Text className="text-slate-500 font-medium text-sm">
-            {t('TopCreatorCarousel.subtitle')}
-          </Text>
-        </View>
-
-        <Pressable>
-          <Text className="text-[#5B3DF5] font-bold text-sm">{t('TopCreatorCarousel.seeAll')}</Text>
-        </Pressable>
-      </View>
-
-      {/* Horizontal Carousel */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingLeft: 24, paddingRight: 24, gap: 16 }}
-      >
+        contentContainerStyle={{ paddingHorizontal: 14, gap: 12, paddingBottom: 4 }}>
         {topCreators.map((creator, index) => (
           <View
             key={index}
-            className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden w-[280px]"
-          >
-            {/* Image */}
-            <View className="relative">
-              <Image
-                source={{ uri: creator.image }}
-                className="w-full h-64"
-                resizeMode="cover"
-              />
-
-              {/* Rating Badge */}
-              <View className="absolute top-4 right-4 bg-white px-2 py-1 rounded-xl flex-row items-center gap-1">
-                <Star size={14} color="#fb923c" fill="#fb923c" />
-
-                <Text className="text-xs font-black text-slate-800">
-                  {creator.rating}
-                </Text>
+            style={{
+              width: 216,
+              backgroundColor: HOME_COLORS.card,
+              borderWidth: 1,
+              borderColor: HOME_COLORS.cardBorder,
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}>
+            <View style={{ position: 'relative', height: 232, backgroundColor: '#EEF1F8' }}>
+              <Image source={{ uri: creator.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <LinearGradient
+                colors={['#9B5FC4', '#6A66C9']}
+                style={{ position: 'absolute', top: 10, left: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99 }}>
+                <Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '700', letterSpacing: 0.7 }}>AI PICK</Text>
+              </LinearGradient>
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
+                  borderRadius: 99,
+                  backgroundColor: 'rgba(255,255,255,0.94)',
+                }}>
+                <Star size={11} color="#fb923c" fill="#fb923c" />
+                <Text style={{ fontSize: 10.5, fontWeight: '700', color: HOME_COLORS.ink }}>{creator.rating}</Text>
               </View>
             </View>
 
-            {/* Content */}
-            <View className="p-5 gap-4">
-              <View className="flex-row justify-between items-start">
-                <View className="gap-1">
-                  <Text className="font-black text-[#1C115A] text-lg">
-                    {creator.name}
-                  </Text>
-
-                  <View className="flex-row items-center gap-1">
-                    <MapPin size={12} color="#94a3b8" />
-
-                    <Text className="text-slate-400 text-xs font-bold">
-                      {t('TopCreatorCarousel.followers', { followers: creator.followers })}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Button */}
-              <Pressable className="w-full py-3.5 rounded-2xl bg-slate-50 items-center">
-                <Text className="text-[#1C115A] font-black text-sm">
-                  {t('TopCreatorCarousel.viewProfile')}
+            <View style={{ padding: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: HOME_COLORS.ink }} numberOfLines={1}>
+                  {creator.name}
                 </Text>
+                <Text style={{ fontSize: 10.5, color: HOME_COLORS.muted, marginTop: 2 }} numberOfLines={1}>
+                  ◍ {t('TopCreatorCarousel.followers', { followers: creator.followers })}
+                </Text>
+              </View>
+              <Pressable onPress={goSearch}>
+                <LinearGradient
+                  colors={VIOLET_BLUE}
+                  locations={VIOLET_BLUE_LOCATIONS}
+                  start={ANGLE_96.start}
+                  end={ANGLE_96.end}
+                  style={{ height: 34, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '700' }}>{t('TopCreatorCarousel.invite')}</Text>
+                </LinearGradient>
               </Pressable>
             </View>
           </View>

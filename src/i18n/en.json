@@ -313,6 +313,14 @@
       "publishersMedia": "Publishers & Media",
       "talentAgencies": "Talent Agencies",
       "memePages": "Meme Pages & More"
+    },
+    "meme": {
+      "title": "Meme Pages",
+      "tag": "VIRAL & TRENDING"
+    },
+    "celeb": {
+      "title": "Celebrities",
+      "tag": "A-LIST ARTISTS"
     }
   },
   "BottomNav": {
@@ -358,6 +366,7 @@
   },
   "BrandHero": {
     "welcomeBack": "Welcome back",
+    "searchPlaceholder": "Search creators, category or city",
     "inviteAndEarn": "Invite & Earn ₹2500",
     "heroTitle": "Connect with the\nright creators,",
     "heroEmphasis": "fast.",
@@ -603,8 +612,8 @@
     "applyFilters": "Apply Filters"
   },
   "CategorySection": {
-    "title": "Creator Categories",
-    "viewAll": "View All",
+    "title": "Browse by category",
+    "viewAll": "All",
     "categories": {
       "lifestyle": "Lifestyle & Living",
       "tech": "Tech",
@@ -630,7 +639,8 @@
       "subtitle": "Unlock premium features",
       "lockedNotice": "You cannot contact creators yet. Verify your work email to start connecting.",
       "verifyEmail": "Verify My Email"
-    }
+    },
+    "subtitle": "Or skip the search and start from a niche"
   },
   "CategorySelection": {
     "heading": "What Do You Create?",
@@ -717,10 +727,11 @@
   },
   "CreatorCTASection": {
     "heading": "Home of creator collaborations.",
-    "subheading": "One place. Every Creator Need 🎯",
+    "subheading": "One place. Every creator need.",
     "whatsappUs": "WhatsApp Us",
     "followUs": "Follow Us",
-    "copyright": "© 2026 recentgossips. All rights reserved."
+    "copyright": "© 2026 RGossips · 250,000+ influencers · ISO 27001 certified",
+    "footerBlurb": "The all-in-one influencer campaign platform connecting brands with verified creators globally."
   },
   "CreatorCard": {
     "rankThisWeek": "#{{rank}} this week",
@@ -737,7 +748,7 @@
     "title": "Top Creator Stories"
   },
   "CreatorsByLocation": {
-    "title": "Creators by Location",
+    "title": "Creators by location",
     "subtitle": "Discover local talent right now",
     "cities": {
       "mumbai": "Mumbai",
@@ -748,7 +759,8 @@
       "kolkata": "Kolkata",
       "pune": "Pune",
       "gurgaon": "Gurgaon"
-    }
+    },
+    "creatorsCount": "{{count}} creators"
   },
   "DashboardView": {
     "title": "Profile",
@@ -1455,8 +1467,8 @@
     "reply": "Reply"
   },
   "PocketFriendlyCreators": {
-    "title": "Pocket Friendly Creators",
-    "subtitle": "High engagement creators within your budget",
+    "title": "Pocket friendly creators",
+    "subtitle": "₹1,000 – ₹5,000 per reel",
     "viewProfile": "View Profile",
     "followers": "{{count}} followers",
     "categories": {
@@ -1465,7 +1477,8 @@
       "fitness": "Fitness & Health",
       "travel": "Travel & Lifestyle",
       "food": "Food & Cafe"
-    }
+    },
+    "perReel": "{{rate}} / reel"
   },
   "Preferences": {
     "title": "Collaboration Preferences",
@@ -1575,9 +1588,10 @@
     "failedToSubmit": "Failed to submit rating"
   },
   "RecentlyConnected": {
-    "title": "Influencers Recently Connected",
+    "title": "Recently connected",
     "subtitle": "Direct connects happening right now",
-    "connect": "Connect"
+    "connect": "Connect",
+    "mediaKit": "Media Kit"
   },
   "ReferBalanceCard": {
     "rewardCredits": "Reward Credits",
@@ -3148,9 +3162,10 @@
   "TopCreatorCarousel": {
     "title": "Top Creators",
     "subtitle": "High impact, low cost",
-    "seeAll": "See all",
+    "seeAll": "View all",
     "followers": "{{followers}} followers",
-    "viewProfile": "View Profile"
+    "viewProfile": "View Profile",
+    "invite": "Invite"
   },
   "TopPicksCarousel": {
     "headerTitle": "Campaigns for you",
