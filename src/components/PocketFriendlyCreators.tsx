@@ -55,29 +55,41 @@ export default function PocketFriendlyCreators() {
             <Text style={{ width: '100%', fontSize: 12, fontWeight: '700', color: HOME_COLORS.ink, textAlign: 'center' }} numberOfLines={1}>
               {c.name}
             </Text>
-            <LinearGradient
-              colors={CHIP_TINT}
-              start={ANGLE_96.start}
-              end={ANGLE_96.end}
-              style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+            <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={CHIP_TINT}
+                start={ANGLE_96.start}
+                end={ANGLE_96.end}
+                style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+              />
               <Text style={{ fontSize: 8.5, fontWeight: '700', letterSpacing: 1, color: HOME_COLORS.violetDeep }}>
                 {t(`PocketFriendlyCreators.categories.${c.categoryKey}`)}
               </Text>
-            </LinearGradient>
+            </View>
             <Text style={{ fontSize: 10.5, color: HOME_COLORS.muted }}>
               {t('PocketFriendlyCreators.followers', { count: c.followers })}
             </Text>
-            <Pressable style={{ width: '100%', marginTop: 2 }} onPress={() => navigation.navigate('BrandSearch' as never)}>
+            <Pressable
+              style={{
+                width: '100%',
+                marginTop: 2,
+                borderRadius: 10,
+                overflow: 'hidden',
+                paddingVertical: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => navigation.navigate('BrandSearch' as never)}>
               <LinearGradient
                 colors={VIOLET_BLUE}
                 locations={VIOLET_BLUE_LOCATIONS}
                 start={ANGLE_96.start}
                 end={ANGLE_96.end}
-                style={{ borderRadius: 10, paddingVertical: 8, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '700' }}>
-                  {t('PocketFriendlyCreators.perReel', { rate: c.rate })}
-                </Text>
-              </LinearGradient>
+                style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+              />
+              <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '700' }}>
+                {t('PocketFriendlyCreators.perReel', { rate: c.rate })}
+              </Text>
             </Pressable>
           </View>
         ))}

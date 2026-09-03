@@ -44,11 +44,14 @@ export const CreatorsByLocation = () => {
               borderColor: HOME_COLORS.cardBorder,
             }}>
             <Image source={{ uri: loc.image }} style={{ width: '100%', height: 96, backgroundColor: '#EEF1F8' }} resizeMode="cover" />
-            <LinearGradient
-              colors={CITY_GRADIENT}
-              start={ANGLE_96.start}
-              end={ANGLE_96.end}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 12, paddingVertical: 10 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 12, paddingVertical: 10, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={CITY_GRADIENT}
+                start={ANGLE_96.start}
+                end={ANGLE_96.end}
+                style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+              />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }} numberOfLines={1}>
                   {t(`CreatorsByLocation.cities.${loc.key}`)}
@@ -68,7 +71,7 @@ export const CreatorsByLocation = () => {
                 }}>
                 <Text style={{ color: '#fff', fontSize: 10 }}>→</Text>
               </View>
-            </LinearGradient>
+            </View>
           </Pressable>
         ))}
       </View>

@@ -281,26 +281,28 @@ export default function ReportBlockSheet({
                 onPress={submitReport}
                 disabled={!reason || busy}
                 className="mt-4"
-                accessibilityRole="button">
+                accessibilityRole="button"
+                style={{
+                  height: 50,
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: !reason || busy ? 0.5 : 1,
+                }}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{
-                    height: 50,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: !reason || busy ? 0.5 : 1,
-                  }}>
-                  {busy ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text className="text-white text-[15px] font-black">
-                      {t('ReportBlock.submitReport')}
-                    </Text>
-                  )}
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                {busy ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white text-[15px] font-black">
+                    {t('ReportBlock.submitReport')}
+                  </Text>
+                )}
               </Pressable>
             </View>
           )}

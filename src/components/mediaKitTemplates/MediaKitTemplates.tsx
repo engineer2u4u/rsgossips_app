@@ -487,11 +487,17 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
   const accent = '#1564d6';
 
   return (
-    <LinearGradient
-      colors={['#dce9f8', '#bcd6ef', '#a4c7e9']}
-      start={{x: 0.2, y: 0}}
-      end={{x: 1, y: 1}}
-      style={{minHeight: 200}}>
+    // Wrapping View carries the size; the gradient is an absolute background.
+    // BVLinearGradient has no Fabric support on RN 0.84 and a gradient that
+    // sizes itself from its children mis-sizes through the interop layer
+    // (same fix as the Classic hero above).
+    <View style={{minHeight: 200, overflow: 'hidden'}}>
+      <LinearGradient
+        colors={['#dce9f8', '#bcd6ef', '#a4c7e9']}
+        start={{x: 0.2, y: 0}}
+        end={{x: 1, y: 1}}
+        style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+      />
       <View className="px-4 py-7" style={{gap: 14}}>
         {/* HEADER */}
         <View
@@ -689,7 +695,7 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
           {t('MediaKitTemplatesMediaKitTemplates.generatedOn')}
         </Text>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -2025,7 +2031,7 @@ function TopContentGrid({
             ) : (
               <LinearGradient
                 colors={['#EDE9FE', '#FCE7F3']}
-                style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+                style={{position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center'}}>
                 <Instagram size={28} color="#C4B5FD" />
               </LinearGradient>
             )}

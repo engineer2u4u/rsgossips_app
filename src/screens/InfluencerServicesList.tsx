@@ -375,17 +375,21 @@ function ServiceCard({
             resizeMode="cover"
           />
         ) : (
-          <LinearGradient
-            colors={['#9810FA', '#E60076']}
+          <View
             style={{
               aspectRatio: 2.4 / 1,
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 12,
+              overflow: 'hidden',
             }}
           >
+            <LinearGradient
+              colors={['#9810FA', '#E60076']}
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
             <Icon size={48} color="rgba(255,255,255,0.85)" />
-          </LinearGradient>
+          </View>
         )}
       </View>
 

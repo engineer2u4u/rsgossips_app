@@ -1142,20 +1142,21 @@ export default function InfluencerServiceOrderDetail() {
                 style={{
                   opacity: revisionNote.trim().length < 5 ? 0.5 : 1,
                   flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
                 }}>
                 <LinearGradient
                   colors={['#F97316', '#F43F5E']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{
-                    paddingVertical: 12,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                  }}>
-                  <Text className="text-white text-sm font-black">
-                    {t('ScreensInfluencerServiceOrderDetail.revisionPrompt.send')}
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                <Text className="text-white text-sm font-black">
+                  {t('ScreensInfluencerServiceOrderDetail.revisionPrompt.send')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1238,20 +1239,24 @@ export default function InfluencerServiceOrderDetail() {
               <TouchableOpacity
                 onPress={submitCounter}
                 disabled={!counterAmount}
-                style={{opacity: !counterAmount ? 0.5 : 1, flex: 1}}>
+                style={{
+                  opacity: !counterAmount ? 0.5 : 1,
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}>
                 <LinearGradient
                   colors={['#F97316', '#F43F5E']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{
-                    paddingVertical: 12,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                  }}>
-                  <Text className="text-white text-sm font-black">
-                    {t('ScreensInfluencerServiceOrderDetail.counter.send')}
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                <Text className="text-white text-sm font-black">
+                  {t('ScreensInfluencerServiceOrderDetail.counter.send')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

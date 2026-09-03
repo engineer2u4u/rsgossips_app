@@ -255,28 +255,29 @@ export default function ReferScreen() {
             </Text>
             <Pressable
               onPress={openManagePlan}
-              style={{borderRadius: 16, overflow: 'hidden', marginTop: 16}}>
+              style={{borderRadius: 16, overflow: 'hidden', marginTop: 16, paddingVertical: 12, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center'}}>
               <LinearGradient
                 colors={[...BRAND_GRADIENT_WARM]}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
-                style={{paddingVertical: 12, paddingHorizontal: 24}}>
-                <Text className="text-white text-sm font-black">
-                  {t('common.managePlan')}
-                </Text>
-              </LinearGradient>
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Text className="text-white text-sm font-black">
+                {t('common.managePlan')}
+              </Text>
             </Pressable>
           </View>
         ) : (
           <>
             {/* Balance card */}
-            <View style={{borderRadius: 24, overflow: 'hidden', ...CARD_SHADOW}}>
+            <View style={{borderRadius: 24, overflow: 'hidden', padding: 24, ...CARD_SHADOW}}>
               <LinearGradient
                 colors={[...BRAND_GRADIENT_WARM]}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
-                style={{padding: 24}}>
-                <Text className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Text className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">
                   {t('ScreensReferScreen.balance.available')}
                 </Text>
                 <Text className="text-white text-4xl font-black mt-1">
@@ -313,7 +314,6 @@ export default function ReferScreen() {
                     ? t('ScreensReferScreen.balance.noteLocked')
                     : t('ScreensReferScreen.balance.noteDefault')}
                 </Text>
-              </LinearGradient>
             </View>
 
             {/* Share card */}

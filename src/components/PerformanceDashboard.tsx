@@ -134,22 +134,19 @@ export default function PerformanceDashboard() {
 
         <Text className="text-white text-3xl font-bold mt-1">₹1,50,000</Text>
 
-        <Pressable className="mt-4 bg-gradient-to-r from-pink-500 to-purple-600 py-3 rounded-xl">
+        <Pressable
+          className="mt-4 rounded-2xl overflow-hidden items-center justify-center"
+          style={{paddingTop: 14, paddingBottom: 14}}
+        >
           <LinearGradient
             colors={['#9810fa', '#e60076']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="py-3.5 rounded-2xl items-center"
-            style={{
-              borderRadius: 16,
-              paddingBottom: 14,
-              paddingTop: 14,
-            }}
-          >
-            <Text className="text-center text-white font-bold">
-              {t('PerformanceDashboard.withdrawFunds')}
-            </Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Text className="text-center text-white font-bold">
+            {t('PerformanceDashboard.withdrawFunds')}
+          </Text>
         </Pressable>
       </View>
 

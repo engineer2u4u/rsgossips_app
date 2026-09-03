@@ -115,9 +115,11 @@ export default function BrandCampaigns() {
       <BrandsLayout>
       {/* Header */}
       <View className="relative mb-16">
-        <LinearGradient
-          colors={['#4C75BE', '#4A3996']}
-          className="px-6 pt-12 pb-16 rounded-b-[40px]">
+        <View className="px-6 pt-12 pb-16 rounded-b-[40px] overflow-hidden">
+          <LinearGradient
+            colors={['#4C75BE', '#4A3996']}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
           <View className="flex-row justify-between items-start mb-6">
             <View>
               <Text className="text-2xl font-bold text-white">
@@ -136,7 +138,7 @@ export default function BrandCampaigns() {
               </TouchableOpacity>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         <View className="absolute left-6 right-6 -bottom-12">
           <View className="flex-row items-center bg-white rounded-3xl p-2 shadow-md shadow-gray-200 mb-4">
@@ -147,32 +149,34 @@ export default function BrandCampaigns() {
               onChangeText={setQuery}
               className="flex-1 pl-4 text-sm text-gray-800"
             />
-            <LinearGradient colors={['#5851DB', '#4338CA']} className="rounded-full">
-              <TouchableOpacity className="p-2.5">
-                <ArrowRight size={18} color="#FFFFFF" />
-              </TouchableOpacity>
-            </LinearGradient>
+            <TouchableOpacity className="p-2.5 rounded-full overflow-hidden items-center justify-center">
+              <LinearGradient
+                colors={['#5851DB', '#4338CA']}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <ArrowRight size={18} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row" style={{gap: 8}}>
               {TABS.map(tab =>
                 activeTab === tab ? (
-                  <LinearGradient
+                  <TouchableOpacity
                     key={tab}
-                    colors={['#5851DB', '#4338CA']}
-                    className="rounded-full shadow-lg shadow-purple-100">
-                    <TouchableOpacity
-                      onPress={() => setActiveTab(tab)}
-                      className="px-5 py-2 flex-row items-center gap-2">
-                      {tab === 'Active' && (
-                        <View className="w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                      <Text className="text-xs font-semibold text-white">
-                        {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
-                      </Text>
-                    </TouchableOpacity>
-                  </LinearGradient>
+                    onPress={() => setActiveTab(tab)}
+                    className="px-5 py-2 flex-row items-center gap-2 rounded-full overflow-hidden shadow-lg shadow-purple-100">
+                    <LinearGradient
+                      colors={['#5851DB', '#4338CA']}
+                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                    />
+                    {tab === 'Active' && (
+                      <View className="w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                    <Text className="text-xs font-semibold text-white">
+                      {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     key={tab}
@@ -247,20 +251,20 @@ export default function BrandCampaigns() {
 
       {/* Floating FAB — full create flow is its own batch */}
       <View className="absolute bottom-24 right-6 z-50" style={!brandVerified ? {display: 'none'} : undefined}>
-        <LinearGradient
-          colors={['#5851DB', '#4338CA']}
-          className="rounded-2xl shadow-lg shadow-purple-200">
-          <TouchableOpacity
-            onPress={() => navigation.navigate('CreateCampaign')}
-            className="px-6 py-3 flex-row items-center gap-2"
-            activeOpacity={0.8}>
-            <Plus size={20} color="#FFFFFF" />
-            <Text className="text-white font-bold text-sm">
-              {t('ScreensBrandCampaigns.postRequest')}
-            </Text>
-            <ArrowUpRight size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        </LinearGradient>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('CreateCampaign')}
+          className="px-6 py-3 flex-row items-center gap-2 rounded-2xl overflow-hidden shadow-lg shadow-purple-200"
+          activeOpacity={0.8}>
+          <LinearGradient
+            colors={['#5851DB', '#4338CA']}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <Plus size={20} color="#FFFFFF" />
+          <Text className="text-white font-bold text-sm">
+            {t('ScreensBrandCampaigns.postRequest')}
+          </Text>
+          <ArrowUpRight size={18} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
     </View>
   );

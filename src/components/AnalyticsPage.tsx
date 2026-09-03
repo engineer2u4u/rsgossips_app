@@ -177,16 +177,18 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
               </Text>
             </View>
             {stats.earningsTrend !== null ? (
-              <LinearGradient
-                colors={['#E94560', '#7F47CD']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={{paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999}}>
+              <View style={{paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden'}}>
+                <LinearGradient
+                  colors={['#E94560', '#7F47CD']}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 0}}
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
                 <Text className="text-white text-[11px] font-bold">
                   {stats.earningsTrend >= 0 ? '+' : ''}
                   {stats.earningsTrend}%
                 </Text>
-              </LinearGradient>
+              </View>
             ) : null}
           </View>
 

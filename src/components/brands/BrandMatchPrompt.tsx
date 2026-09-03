@@ -14,6 +14,7 @@ import {
   Pressable,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -57,6 +58,12 @@ const CHIPS = [
 
 export default function BrandMatchPrompt() {
   const {user} = useAuth();
+  // BVLinearGradient has no Fabric support (RN 0.84 new-arch runs it via the
+  // interop layer) and won't stretch to the parent width — it sizes to its
+  // content, so the navy card rendered wider than the screen and clipped on
+  // the right. Pin the card to an explicit width (screen − 28 for the
+  // wrapper's 14px side padding) so its text wraps.
+  const {width: winW} = useWindowDimensions();
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchRow[]>([]);
@@ -99,7 +106,7 @@ export default function BrandMatchPrompt() {
   const canRun = !!prompt.trim() && !loading;
 
   return (
-    <View className="w-full" style={{paddingHorizontal: 14}}>
+    <View style={{paddingHorizontal: 14}}>
       {/* Navy AI-matching hero */}
       <LinearGradient
         colors={NAVY_GRADIENT}
@@ -107,6 +114,7 @@ export default function BrandMatchPrompt() {
         start={ANGLE_120.start}
         end={ANGLE_120.end}
         style={{
+          width: winW - 28,
           borderRadius: 22,
           padding: 18,
           overflow: 'hidden',
@@ -182,24 +190,32 @@ export default function BrandMatchPrompt() {
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={{flex: 1, color: '#fff', fontSize: 12.5, paddingVertical: 8}}
           />
-          <Pressable onPress={run} disabled={!canRun} style={{opacity: canRun ? 1 : 0.6}}>
+          {/* Gradient as an absolute background — BVLinearGradient collapses on
+              iOS new-arch when it sizes from padding + children ("Match" was
+              clipped to "Mat"). */}
+          <Pressable
+            onPress={run}
+            disabled={!canRun}
+            style={{
+              opacity: canRun ? 1 : 0.6,
+              height: 36,
+              borderRadius: 10,
+              paddingHorizontal: 16,
+              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              gap: 6,
+            }}>
             <LinearGradient
               colors={VIOLET_BLUE}
               locations={VIOLET_BLUE_LOCATIONS}
               start={ANGLE_96.start}
               end={ANGLE_96.end}
-              style={{
-                height: 36,
-                borderRadius: 10,
-                paddingHorizontal: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-                gap: 6,
-              }}>
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : null}
-              <Text style={{color: '#fff', fontSize: 12, fontWeight: '700'}}>Match</Text>
-            </LinearGradient>
+              style={{position: 'absolute', left: 0, right: 0, top: 0, bottom: 0}}
+            />
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : null}
+            <Text style={{color: '#fff', fontSize: 12, fontWeight: '700'}}>Match</Text>
           </Pressable>
         </View>
 

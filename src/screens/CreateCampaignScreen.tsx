@@ -1375,8 +1375,11 @@ const s = StyleSheet.create({
   footerDraftText: {color: '#5851DB', fontWeight: '700', fontSize: 13},
   footerPublish: {},
   publishGradient: {
-    flex: 1,
-    alignSelf: 'stretch',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

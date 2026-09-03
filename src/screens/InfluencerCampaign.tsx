@@ -446,16 +446,17 @@ export default function InfluencerCampaign() {
                       count: tabCounts[tab] ?? 0,
                     });
               return activeTab === tab ? (
-                <LinearGradient
+                <TouchableOpacity
                   key={tab}
-                  colors={['#E60076', '#D500F9']}
-                  style={{borderRadius: 12, flex: 1}}>
-                  <TouchableOpacity
-                    onPress={() => setActiveTab(tab)}
-                    className="py-2.5 items-center">
-                    <Text className="text-xs font-bold text-white">{label}</Text>
-                  </TouchableOpacity>
-                </LinearGradient>
+                  onPress={() => setActiveTab(tab)}
+                  className="py-2.5 items-center"
+                  style={{borderRadius: 12, flex: 1, overflow: 'hidden'}}>
+                  <LinearGradient
+                    colors={['#E60076', '#D500F9']}
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  />
+                  <Text className="text-xs font-bold text-white">{label}</Text>
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   key={tab}
@@ -482,16 +483,16 @@ export default function InfluencerCampaign() {
               </Text>
               <TouchableOpacity
                 onPress={clearAllFilters}
-                style={{borderRadius: 10, overflow: 'hidden'}}>
+                style={{borderRadius: 10, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 7, alignItems: 'center', justifyContent: 'center'}}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{paddingHorizontal: 12, paddingVertical: 7}}>
-                  <Text className="text-[11px] font-bold text-white">
-                    {t('ScreensInfluencerCampaign.showAll')}
-                  </Text>
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                <Text className="text-[11px] font-bold text-white">
+                  {t('ScreensInfluencerCampaign.showAll')}
+                </Text>
               </TouchableOpacity>
             </View>
           )}

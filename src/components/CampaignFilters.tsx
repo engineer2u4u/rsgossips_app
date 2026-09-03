@@ -164,17 +164,17 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
 
           {/* Apply Button */}
           <View className="px-6 py-4 border-t border-slate-100">
-            <LinearGradient
-              colors={['#E60076', '#D500F9']}
-              className="rounded-2xl">
-              <TouchableOpacity
-                onPress={onClose}
-                className="py-4 items-center">
-                <Text className="text-white font-bold text-sm">
-                  {t('CampaignFilters.applyFilters')}
-                </Text>
-              </TouchableOpacity>
-            </LinearGradient>
+            <TouchableOpacity
+              onPress={onClose}
+              className="py-4 items-center justify-center rounded-2xl overflow-hidden">
+              <LinearGradient
+                colors={['#E60076', '#D500F9']}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
+              <Text className="text-white font-bold text-sm">
+                {t('CampaignFilters.applyFilters')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

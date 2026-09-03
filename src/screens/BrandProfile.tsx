@@ -187,15 +187,17 @@ export default function BrandProfile() {
   return (
     <BrandsLayout>
       {/* Header */}
-      <LinearGradient
-        colors={['#4C75BE', '#4A3996']}
-        className="pt-12 pb-8 px-6 rounded-b-[40px] mb-20">
+      <View className="pt-12 pb-8 px-6 rounded-b-[40px] mb-20 overflow-hidden">
+        <LinearGradient
+          colors={['#4C75BE', '#4A3996']}
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
         <View className="flex-row items-center mb-4">
           <Text className="text-2xl font-bold text-white">
             {t('ScreensBrandProfile.myProfile')}
           </Text>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Profile card */}
       <View className="px-6 -mt-4 mb-8">

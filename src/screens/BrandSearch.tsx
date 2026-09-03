@@ -204,9 +204,11 @@ export default function BrandSearch({route}: any) {
   return (
     <BrandsLayout>
       {/* Header */}
-      <LinearGradient
-        colors={['#4C75BE', '#4A3996']}
-        className="w-full px-6 pt-12 pb-10 rounded-b-[40px]">
+      <View className="w-full px-6 pt-12 pb-10 rounded-b-[40px] overflow-hidden">
+        <LinearGradient
+          colors={['#4C75BE', '#4A3996']}
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
         <View className="flex-row justify-between items-start mb-6">
           <View>
             <Text className="text-2xl font-bold text-white">
@@ -240,7 +242,7 @@ export default function BrandSearch({route}: any) {
             className="flex-1 ml-2 text-sm text-gray-800"
           />
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Trust card — hide TrustSection's decorative search bar here; this
           screen already has the real username search in its header above. */}

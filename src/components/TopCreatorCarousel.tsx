@@ -50,11 +50,14 @@ export const TopCreatorsCarousel = () => {
             }}>
             <View style={{ position: 'relative', height: 232, backgroundColor: '#EEF1F8' }}>
               <Image source={{ uri: creator.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              <LinearGradient
-                colors={['#9B5FC4', '#6A66C9']}
-                style={{ position: 'absolute', top: 10, left: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99 }}>
+              <View
+                style={{ position: 'absolute', top: 10, left: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99, overflow: 'hidden' }}>
+                <LinearGradient
+                  colors={['#9B5FC4', '#6A66C9']}
+                  style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                />
                 <Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '700', letterSpacing: 0.7 }}>AI PICK</Text>
-              </LinearGradient>
+              </View>
               <View
                 style={{
                   position: 'absolute',
@@ -82,15 +85,27 @@ export const TopCreatorsCarousel = () => {
                   ◍ {t('TopCreatorCarousel.followers', { followers: creator.followers })}
                 </Text>
               </View>
-              <Pressable onPress={goSearch}>
+              {/* Gradient as an absolute background — BVLinearGradient
+                  collapses on iOS new-arch when it sizes from padding +
+                  children, which clipped "Invite" to "Inv". */}
+              <Pressable
+                onPress={goSearch}
+                style={{
+                  height: 34,
+                  paddingHorizontal: 14,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                 <LinearGradient
                   colors={VIOLET_BLUE}
                   locations={VIOLET_BLUE_LOCATIONS}
                   start={ANGLE_96.start}
                   end={ANGLE_96.end}
-                  style={{ height: 34, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '700' }}>{t('TopCreatorCarousel.invite')}</Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                />
+                <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '700' }}>{t('TopCreatorCarousel.invite')}</Text>
               </Pressable>
             </View>
           </View>

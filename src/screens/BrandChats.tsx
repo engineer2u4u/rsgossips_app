@@ -290,9 +290,11 @@ export default function BrandChats() {
         {showChatList && (
           <View className={`${isTablet ? 'w-[380px] border-r border-slate-100' : 'flex-1'}`}>
             {/* Header */}
-            <LinearGradient
-              colors={['#4C75BE', '#4A3996']}
-              className="px-6 pt-8 pb-14 rounded-b-[40px]">
+            <View className="px-6 pt-8 pb-14 rounded-b-[40px] overflow-hidden">
+              <LinearGradient
+                colors={['#4C75BE', '#4A3996']}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
               <View className="flex-row justify-between items-start mb-5">
                 <View>
                   <Text className="text-2xl font-bold text-white">
@@ -303,7 +305,7 @@ export default function BrandChats() {
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Search Bar - overlapping header */}
             <View className="mx-6 -mt-6 flex-row items-center bg-white rounded-full p-2 shadow-lg shadow-gray-200/50 z-10">

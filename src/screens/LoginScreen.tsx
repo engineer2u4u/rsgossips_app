@@ -931,30 +931,30 @@ function InvitationInterrupt({
       {block.kind === 'claimed' ? (
         <Pressable
           onPress={onSwitchToSignIn}
-          style={{ borderRadius: 16, overflow: 'hidden' }}>
+          style={{ borderRadius: 16, overflow: 'hidden', paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}>
           <LinearGradient
             colors={['#9810FA', '#E60076']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ paddingVertical: 14, alignItems: 'center' }}>
-            <Text className="text-white text-sm font-black">{t('ScreensLoginScreen.signInInstead')}</Text>
-          </LinearGradient>
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <Text className="text-white text-sm font-black">{t('ScreensLoginScreen.signInInstead')}</Text>
         </Pressable>
       ) : block.kind === 'use-link' ? (
         <View style={{ gap: 12 }}>
           {!!block.inviteHandle && (
             <Pressable
               onPress={() => onUseInvitation(block.inviteHandle!)}
-              style={{ borderRadius: 16, overflow: 'hidden' }}>
+              style={{ borderRadius: 16, overflow: 'hidden', paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}>
               <LinearGradient
                 colors={['#9810FA', '#E60076']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ paddingVertical: 14, alignItems: 'center' }}>
-                <Text className="text-white text-sm font-black">
-                  {t('ScreensLoginScreen.continueWithInvitation')}
-                </Text>
-              </LinearGradient>
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              />
+              <Text className="text-white text-sm font-black">
+                {t('ScreensLoginScreen.continueWithInvitation')}
+              </Text>
             </Pressable>
           )}
           <Pressable

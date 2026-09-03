@@ -248,26 +248,28 @@ export default function InfluencerPricing() {
                 onPress={() => buy(plan, cycle)}
                 disabled={busy || !connected || isCurrent || !price}
                 className="mt-4"
-                accessibilityRole="button">
+                accessibilityRole="button"
+                style={{
+                  height: 48,
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: busy || !connected || isCurrent || !price ? 0.45 : 1,
+                }}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 0}}
-                  style={{
-                    height: 48,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: busy || !connected || isCurrent || !price ? 0.45 : 1,
-                  }}>
-                  {busy && status !== 'restoring' ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text className="text-white text-[15px] font-black">
-                      {isCurrent ? t('Pricing.yourPlan') : t('Pricing.choose')}
-                    </Text>
-                  )}
-                </LinearGradient>
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+                {busy && status !== 'restoring' ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white text-[15px] font-black">
+                    {isCurrent ? t('Pricing.yourPlan') : t('Pricing.choose')}
+                  </Text>
+                )}
               </Pressable>
             </View>
           );

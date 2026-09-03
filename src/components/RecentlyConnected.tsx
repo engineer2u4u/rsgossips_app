@@ -64,17 +64,25 @@ export const RecentlyConnected = () => {
                 {inf.handle}
               </Text>
             </View>
-            <Pressable style={{ width: '100%' }}>
+            <Pressable
+              style={{
+                width: '100%',
+                height: 32,
+                borderRadius: 9,
+                overflow: 'hidden',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
               <LinearGradient
                 colors={VIOLET_BLUE}
                 locations={VIOLET_BLUE_LOCATIONS}
                 start={ANGLE_96.start}
                 end={ANGLE_96.end}
-                style={{ height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 10.5, fontWeight: '700' }}>
-                  {t('RecentlyConnected.mediaKit')}
-                </Text>
-              </LinearGradient>
+                style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+              />
+              <Text style={{ color: '#fff', fontSize: 10.5, fontWeight: '700' }}>
+                {t('RecentlyConnected.mediaKit')}
+              </Text>
             </Pressable>
           </View>
         ))}

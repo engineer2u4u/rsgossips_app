@@ -153,12 +153,13 @@ export default function InfluencerResume() {
         {/* Resume Card */}
         <View className="mx-4 bg-[#1a1a20] rounded-2xl border border-white/5 overflow-hidden">
           {/* Profile Header */}
-          <LinearGradient
-            colors={['#9810FA', '#E60076', '#f472b6']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
-            className="p-6 flex-row items-center"
-            style={{gap: 16}}>
+          <View className="p-6 flex-row items-center" style={{gap: 16, overflow: 'hidden'}}>
+            <LinearGradient
+              colors={['#9810FA', '#E60076', '#f472b6']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
             {photo ? (
               <Image
                 source={{uri: photo}}
@@ -185,7 +186,7 @@ export default function InfluencerResume() {
                 </View>
               )}
             </View>
-          </LinearGradient>
+          </View>
 
           {/* Stats Grid */}
           <View className="p-5" style={{gap: 16}}>

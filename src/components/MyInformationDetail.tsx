@@ -152,12 +152,17 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Profile Card with gradient border */}
+        {/* Profile Card with gradient border — sizing on the wrapping View,
+            gradient as an absolute background so BVLinearGradient doesn't
+            collapse to its content on RN 0.84 new-arch. */}
+        <View
+          style={{marginHorizontal: 20, marginTop: 8, borderRadius: 20, padding: 2, overflow: 'hidden'}}>
         <LinearGradient
           colors={['#9810FA', '#E60076', '#FF6BA1']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
-          style={{marginHorizontal: 20, marginTop: 8, borderRadius: 20, padding: 2}}>
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
         <View
           className="bg-white items-center"
           style={{paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, borderRadius: 18}}>
@@ -253,7 +258,7 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
             <Text className="text-white font-bold text-sm">{t('MyInformationDetail.editProfile')}</Text>
           </TouchableOpacity>
         </View>
-        </LinearGradient>
+        </View>
 
         {/* Engagement Metrics */}
         <View className="mx-5 mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">

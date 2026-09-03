@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, useWindowDimensions } from 'react-native';
 import { Headphones } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -21,6 +21,10 @@ import BrandsLayout from '../layouts/BrandLayout';
 
 export default function BrandHome() {
   const [supportOpen, setSupportOpen] = useState(false);
+  // Pin the feed to the exact device width so every full-bleed section
+  // (100%-width cards: AI match hero, CTA, etc.) resolves to the screen width
+  // and can't render wider than the viewport / clip on the right.
+  const { width } = useWindowDimensions();
 
   return (
     <View className="flex-1">
@@ -28,7 +32,7 @@ export default function BrandHome() {
         {/* Redesigned Home feed (RGossips Explore): navy + violet→blue language
             on a light ground. Above-the-fold is the new top bar → AI-matching
             hero → trust stat row; the sections below carry over for now. */}
-        <View style={{ backgroundColor: HOME_BG }}>
+        <View style={{ backgroundColor: HOME_BG, width }}>
           <BrandHero onSupport={() => setSupportOpen(true)} />
           <View style={{ height: 12 }} />
           <BrandMatchPrompt />

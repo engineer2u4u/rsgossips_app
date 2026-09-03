@@ -186,20 +186,23 @@ export default function InstagramRequiredGate() {
           <Pressable
             onPress={handleConnect}
             disabled={connecting}
-            style={{ borderRadius: 16, overflow: 'hidden' }}>
+            style={{
+              borderRadius: 16,
+              overflow: 'hidden',
+              paddingVertical: 14,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 8,
+              opacity: connecting ? 0.6 : 1,
+            }}>
             <LinearGradient
               colors={['#FCAF45', '#E1306C', '#833AB4']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{
-                paddingVertical: 14,
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                gap: 8,
-                opacity: connecting ? 0.6 : 1,
-              }}>
-              {connecting ? (
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            {connecting ? (
                 <>
                   <ActivityIndicator size="small" color="white" />
                   <Text className="text-white text-sm font-black">
@@ -214,7 +217,6 @@ export default function InstagramRequiredGate() {
                   </Text>
                 </>
               )}
-            </LinearGradient>
           </Pressable>
 
           {!!error && (

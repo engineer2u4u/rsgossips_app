@@ -361,11 +361,18 @@ export default function InfluencerMediaKit() {
             </View>
           )}
 
-          {/* Tips */}
-          <LinearGradient
-            colors={['#FAF5FF', '#FDF2F8']}
+          {/* Tips — padding + border on the wrapping View, gradient as an
+              absolute background. BVLinearGradient has no Fabric support on
+              RN 0.84 and a gradient that sizes itself from padding + children
+              mis-sizes through the interop layer, so drive the size from a
+              plain View. */}
+          <View
             className="rounded-2xl border border-purple-100 p-5"
-            style={{gap: 12, borderRadius: 16}}>
+            style={{gap: 12, borderRadius: 16, overflow: 'hidden'}}>
+            <LinearGradient
+              colors={['#FAF5FF', '#FDF2F8']}
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
             <Text className="text-sm font-bold text-slate-900">
               {t('ScreensInfluencerMediaKit.tipsTitle')}
             </Text>
@@ -384,7 +391,7 @@ export default function InfluencerMediaKit() {
                 </Text>
               </View>
             ))}
-          </LinearGradient>
+          </View>
         </View>
 
         <View className="h-20" />

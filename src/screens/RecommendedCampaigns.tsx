@@ -258,8 +258,9 @@ export default function RecommendedCampaigns() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{
+                  width: 32,
+                  height: 32,
                   borderRadius: 999,
-                  padding: 8,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -276,8 +277,9 @@ export default function RecommendedCampaigns() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{
+                  width: 32,
+                  height: 32,
                   borderRadius: 999,
-                  padding: 8,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -554,19 +556,15 @@ export default function RecommendedCampaigns() {
               <TouchableOpacity
                 onPress={() => setShowSortModal(false)}
                 className="flex-1 overflow-hidden rounded-2xl"
+                style={{ paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}
               >
                 <LinearGradient
                   colors={['#8E2DE2', '#F6339A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -791,21 +789,17 @@ export default function RecommendedCampaigns() {
               <TouchableOpacity
                 onPress={() => setShowFilterModal(false)}
                 className="flex-1 overflow-hidden rounded-2xl"
+                style={{ paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}
               >
                 <LinearGradient
                   colors={['#8E2DE2', '#F6339A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text className="text-white text-sm font-bold">
-                    {t('ScreensRecommendedCampaigns.applyFilters')}
-                  </Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <Text className="text-white text-sm font-bold">
+                  {t('ScreensRecommendedCampaigns.applyFilters')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -889,19 +883,15 @@ export default function RecommendedCampaigns() {
               <TouchableOpacity
                 onPress={() => setShowBudgetModal(false)}
                 className="flex-1 overflow-hidden rounded-2xl"
+                style={{ paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}
               >
                 <LinearGradient
                   colors={['#8E2DE2', '#F6339A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -970,19 +960,15 @@ export default function RecommendedCampaigns() {
               <TouchableOpacity
                 onPress={() => setShowPlatformModal(false)}
                 className="flex-1 overflow-hidden rounded-2xl"
+                style={{ paddingVertical: 14, alignItems: 'center', justifyContent: 'center' }}
               >
                 <LinearGradient
                   colors={['#8E2DE2', '#F6339A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 14,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
-                </LinearGradient>
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <Text className="text-white text-sm font-bold">{t('ScreensRecommendedCampaigns.apply')}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -212,22 +212,23 @@ export default function CreatorCard({
       {/* FOLLOW CREATOR BUTTON */}
       <Pressable
         onPress={() => link && Linking.openURL(link).catch(() => {})}
-        style={{ borderRadius: 16, overflow: 'hidden', height: 48 }}
+        style={{
+          borderRadius: 16,
+          overflow: 'hidden',
+          height: 48,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <LinearGradient
           colors={['#FA288A', '#8B5CF6']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text className="text-white text-sm font-black tracking-widest">
-            {t('CreatorCard.followCreator')}
-          </Text>
-        </LinearGradient>
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+        />
+        <Text className="text-white text-sm font-black tracking-widest">
+          {t('CreatorCard.followCreator')}
+        </Text>
       </Pressable>
     </View>
   );

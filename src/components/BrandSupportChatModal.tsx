@@ -1148,25 +1148,23 @@ function CallbackForm({
             borderRadius: 12,
             overflow: 'hidden',
             opacity: submitting ? 0.6 : 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            gap: 6,
           }}>
           <LinearGradient
             colors={[...ACCENT_GRADIENT]}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 0}}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'row',
-              gap: 6,
-            }}>
-            {submitting ? <ActivityIndicator size="small" color="#fff" /> : null}
-            <Text className="text-white text-sm font-bold">
-              {submitting
-                ? t('BrandSupportChatModal.callback.sending')
-                : t('BrandSupportChatModal.callback.submit')}
-            </Text>
-          </LinearGradient>
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          {submitting ? <ActivityIndicator size="small" color="#fff" /> : null}
+          <Text className="text-white text-sm font-bold">
+            {submitting
+              ? t('BrandSupportChatModal.callback.sending')
+              : t('BrandSupportChatModal.callback.submit')}
+          </Text>
         </Pressable>
       </View>
     </View>

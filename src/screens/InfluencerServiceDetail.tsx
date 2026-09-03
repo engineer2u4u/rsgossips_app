@@ -108,11 +108,14 @@ export default function InfluencerServiceDetail() {
             resizeMode="cover"
           />
         ) : (
-          <LinearGradient
-            colors={['#9810FA', '#E60076']}
-            style={{aspectRatio: 2.4 / 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center'}}>
+          <View
+            style={{aspectRatio: 2.4 / 1, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center'}}>
+            <LinearGradient
+              colors={['#9810FA', '#E60076']}
+              style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+            />
             <Icon size={68} color="rgba(255,255,255,0.85)" />
-          </LinearGradient>
+          </View>
         )}
 
         {/* Title + meta */}
