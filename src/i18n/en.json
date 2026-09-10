@@ -1388,8 +1388,7 @@
     "pendingBannerHint": "Add a UPI ID or bank account to receive your campaign earnings.",
     "validation": {
       "verified": "Saved",
-      "verifyFailed": "Verify failed",
-      "verifying": "Pending review"
+      "verifyFailed": "Details failed"
     },
     "earningStatus": {
       "pending_creator_info": "Add payout details to receive",

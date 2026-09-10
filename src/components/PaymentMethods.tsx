@@ -165,15 +165,6 @@ function ValidationChip({
   status?: 'pending' | 'success' | 'failed' | 'manual';
 }) {
   const { t } = useTranslation();
-  if (status === 'success') {
-    return (
-      <Chip
-        bg="#D1FAE5"
-        fg="#047857"
-        label={t('PaymentMethods.validation.verified')}
-      />
-    );
-  }
   if (status === 'failed') {
     return (
       <Chip
@@ -183,11 +174,16 @@ function ValidationChip({
       />
     );
   }
+  // Anything not KNOWN BAD reads as saved — matching web and, more
+  // importantly, matching escrow-release, which treats "not failed" as
+  // usable. "Pending review" implied a queue that does not exist: the only
+  // code that could clear it listened for RazorpayX validation events, and
+  // RazorpayX was removed.
   return (
     <Chip
-      bg="#FEF3C7"
-      fg="#92400E"
-      label={t('PaymentMethods.validation.verifying')}
+      bg="#D1FAE5"
+      fg="#047857"
+      label={t('PaymentMethods.validation.verified')}
     />
   );
 }
