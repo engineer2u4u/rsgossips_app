@@ -10,7 +10,9 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {
   X,
   Instagram,
@@ -46,6 +48,7 @@ function formatCount(n: number | undefined) {
 export default function ApplyCampaignForm({visible, onClose, campaignData, onSubmitSuccess}: Props) {
   const {t} = useTranslation();
   const {profile, user} = useAuth();
+  const navigation = useNavigation<any>();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +77,18 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
   const mediaKitPublished = profile?.media_kit_published;
+
+  // Media kit CTAs. Unpublished → close this modal and open the media-kit
+  // builder. Published → open the public kit page. (The block was previously a
+  // plain View, so "Generate media kit" looked tappable but did nothing.)
+  const goToMediaKit = () => {
+    onClose();
+    navigation.navigate('InfluencerMediaKit');
+  };
+  const openPublishedKit = () => {
+    if (!instagramHandle) return;
+    Linking.openURL(`https://rgossips.com/kit/${instagramHandle}`).catch(() => {});
+  };
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -210,7 +225,10 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                   <View style={{gap: 8}}>
                     <Text className="text-sm font-bold text-slate-900">{t('ApplyCampaignForm.mediaKit.title')}</Text>
                     {mediaKitPublished && instagramHandle ? (
-                      <View className="flex-row items-center p-4 border border-purple-100 bg-purple-50/30 rounded-xl" style={{gap: 12}}>
+                      <Pressable
+                        onPress={openPublishedKit}
+                        className="flex-row items-center p-4 border border-purple-100 bg-purple-50/30 rounded-xl"
+                        style={{gap: 12}}>
                         <View className="w-10 h-10 rounded-xl bg-purple-100 items-center justify-center">
                           <ExternalLink size={18} color="#9333EA" />
                         </View>
@@ -221,12 +239,14 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                         <View className="bg-emerald-50 px-2 py-1 rounded-full">
                           <Text className="text-[9px] font-bold text-emerald-600">{t('ApplyCampaignForm.mediaKit.published')}</Text>
                         </View>
-                      </View>
+                      </Pressable>
                     ) : (
-                      <View className="p-4 border border-dashed border-slate-200 rounded-xl items-center">
+                      <Pressable
+                        onPress={goToMediaKit}
+                        className="p-4 border border-dashed border-slate-200 rounded-xl items-center">
                         <Text className="text-xs text-slate-400">{t('ApplyCampaignForm.mediaKit.notPublished')}</Text>
                         <Text className="text-xs font-bold text-purple-500 mt-1">{t('ApplyCampaignForm.mediaKit.generate')}</Text>
-                      </View>
+                      </Pressable>
                     )}
                   </View>
 

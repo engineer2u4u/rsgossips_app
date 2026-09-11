@@ -125,11 +125,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
   const handlePickPhoto = async () => {
     if (!user?.id) return;
     try {
-      // crop: 'free' opens the cropper with the box already covering the
-      // whole photo — a non-square portrait can be uploaded as-is, or the
-      // user can drag the box to crop it however they want. The old fixed
-      // 1:1 frame silently chopped the sides off non-square photos.
-      const image = await pickFromLibrary({crop: 'free', size: 800});
+      // Fixed 1:1 square crop. Profile avatars render inside square/round
+      // frames everywhere in the app (cards, header, media kit), so the crop
+      // box is pinned to 1:1 and the output is a clean square — no letterboxing
+      // or off-centre framing from a free-form crop.
+      const image = await pickFromLibrary({crop: 'square', size: 800});
       if (!image) return;
       await withLoading(
         (async () => {
@@ -280,7 +280,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
         )}
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{paddingBottom: 110}}>
         {/* Avatar (tappable for upload) */}
         <View className="items-center py-6">
           <TouchableOpacity onPress={handlePickPhoto} activeOpacity={0.85}>
@@ -410,7 +414,10 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
 
           <InputGroup
             label={t('EditProfilePage.field.phone.label')}
-            value={profile?.phone || ''}
+            // Phone lives on the profile row for most accounts, but WhatsApp-OTP
+            // signups only carry it on the auth user — fall back to that so the
+            // field isn't blank for them.
+            value={profile?.phone || user?.phone || ''}
             onChange={() => {}}
             placeholder={t('EditProfilePage.field.phone.placeholder')}
             icon={<User size={16} color="#9810FA" />}
@@ -590,7 +597,13 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
                             setServiceRates(prev => ({...prev, [svc.id]: v}))
                           }
                           placeholder="0"
+                          placeholderTextColor="#94A3B8"
                           className="w-16 text-sm font-bold text-slate-800"
+                          // The field lives in a 36px (h-9) pill; strip the
+                          // TextInput's default vertical padding + Android font
+                          // padding so the number sits centred and doesn't look
+                          // taller than the box.
+                          style={{paddingVertical: 0, includeFontPadding: false}}
                         />
                       </View>
                     )}
