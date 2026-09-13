@@ -23,7 +23,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
-import {isSubscribed} from '../lib/plans';
+import {isSubscribed, getSubscriptionStatus} from '../lib/plans';
 import {useFreeApplications} from '../hooks/useFreeApplications';
 import {useNavigation} from '@react-navigation/native';
 import {supabase} from '../utils/supabase';
@@ -103,6 +103,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   // almost every unsubscribed row stores the string 'trial', so this card
   // told them they had an active subscription. Resolve the plan properly.
   const hasPaidPlan = isSubscribed(profile);
+  // A paid plan that is no longer renewing must say so here too, or the
+  // home card contradicts the pricing screen.
+  const subStatus = getSubscriptionStatus(profile);
   const freeApps = useFreeApplications();
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const planLabel = hasPaidPlan
@@ -402,7 +405,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <View>
               <Text className="font-bold text-sm text-[#1A1A1A]">{planLabel}</Text>
               <Text className="text-[10px] text-gray-400 font-medium">
-                {hasPaidPlan
+                {subStatus.cancelled
+                  ? t('DashboardView.autoRenewOff', {
+                      count: subStatus.daysLeft ?? 0,
+                    })
+                  : hasPaidPlan
                   ? t('DashboardView.activeSubscription')
                   : freeApps.known
                     ? t('DashboardView.freeRemaining', {

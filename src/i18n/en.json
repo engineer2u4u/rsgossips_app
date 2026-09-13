@@ -826,7 +826,10 @@
     "freeRemaining_zero": "No free applications left",
     "freeRemaining_one": "{{count}} free application left",
     "freeRemaining_other": "{{count}} free applications left",
-    "freeBlurb": "{{limit}} free barter applications"
+    "freeBlurb": "{{limit}} free barter applications",
+    "autoRenewOff_zero": "Auto-renew cancelled · ends today",
+    "autoRenewOff_one": "Auto-renew cancelled · ends in {{count}} day",
+    "autoRenewOff_other": "Auto-renew cancelled · ends in {{count}} days"
   },
   "DeactiveAccount": {
     "headerTitle": "Deactivate Account",
@@ -1556,7 +1559,8 @@
     "freeUsedUp": "Free applications used",
     "freeLeft_zero": "0 left",
     "freeLeft_one": "{{count}} left",
-    "freeLeft_other": "{{count}} left"
+    "freeLeft_other": "{{count}} left",
+    "endsOn": "Auto-renew off · ends in"
   },
   "ProfileDetails": {
     "title": "Set Up Your Creator Profile",

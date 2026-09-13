@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import { isSubscribed } from '../lib/plans';
+import { isSubscribed, getSubscriptionStatus } from '../lib/plans';
 import { useFreeApplications } from '../hooks/useFreeApplications';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +64,10 @@ export default function ProStatusCard() {
   // Mirrors web: only the three paid tiers count. The string "trial" is
   // the signup default most rows still carry and buys nothing.
   const hasPaidPlan = isSubscribed(profile);
+  // A plan that is paid but no longer renewing has to say so here too.
+  // Showing a plain "renews in N days" on a cancelled subscription is
+  // the opposite of what is about to happen.
+  const subStatus = getSubscriptionStatus(profile);
   // Elite is the top tier — once a creator is on it there's nothing to
   // upgrade to, so the CTA hides itself.
   const isTopTierPlan = currentPlan === 'elite';
@@ -176,12 +180,16 @@ export default function ProStatusCard() {
   }));
 
   // Render-time helpers
-  const renewalCopy = hasPaidPlan
+  const renewalCopy = subStatus.cancelled
+    ? t('ProStatuscard.endsOn')
+    : hasPaidPlan
     ? t('ProStatuscard.renewsIn', { cycle: billingCycle })
     : freeApps.exhausted
       ? t('ProStatuscard.freeUsedUp')
       : t('ProStatuscard.freePrefix');
-  const renewalDays = hasPaidPlan
+  const renewalDays = subStatus.cancelled
+    ? t('ProStatuscard.daysValue', { count: subStatus.daysLeft ?? 0 })
+    : hasPaidPlan
     ? renewalFetching && !realRenewalTs
       ? '…' // placeholder while the exact gateway date loads
       : renewalDaysLeft != null
