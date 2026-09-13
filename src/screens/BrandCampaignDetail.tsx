@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   Calendar,
   Check,
+  AlertCircle,
   CheckCircle,
   ChevronDown,
   ExternalLink,
@@ -61,7 +62,13 @@ type AppStatus =
   | 'completed'
   | 'rejected';
 
-type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'under_review';
+type CampaignStatus =
+  | 'draft'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'under_review'
+  | 'rejected';
 
 type InfluencerProfile = {
   full_name?: string;
@@ -114,6 +121,8 @@ type Campaign = {
   targetFollowerMin?: number;
   targetFollowerMax?: number;
   minEngagementRate?: number;
+  /** Why an admin turned the campaign down. Empty on every other status. */
+  reviewReason?: string;
 };
 
 const STATUS_PILL: Record<
@@ -125,6 +134,7 @@ const STATUS_PILL: Record<
   paused: {bg: 'bg-amber-100', text: 'text-amber-700', label: 'PAUSED'},
   completed: {bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'COMPLETED'},
   under_review: {bg: 'bg-purple-100', text: 'text-purple-700', label: 'UNDER REVIEW'},
+  rejected: {bg: 'bg-red-100', text: 'text-red-700', label: 'REJECTED'},
 };
 
 const APP_STATUS_PILL: Record<AppStatus, {bg: string; text: string; label: string}> = {
@@ -227,13 +237,27 @@ export default function BrandCampaignDetail() {
     await withLoading(
       (async () => {
         try {
-          await invokeFn('brand-campaigns', {
-            action: 'updateStatus',
-            campaignId: campaign.id,
-            brandId: user.id,
-            status: newStatus,
-          });
-          setCampaign(prev => (prev ? {...prev, status: newStatus} : prev));
+          const res = await invokeFn<{underReview?: boolean}>(
+            'brand-campaigns',
+            {
+              action: 'updateStatus',
+              campaignId: campaign.id,
+              brandId: user.id,
+              status: newStatus,
+            },
+          );
+          // Publishing a draft goes to moderation unless the brand is on
+          // auto-approve, so take the status the server actually applied.
+          const applied = res?.underReview ? 'under_review' : newStatus;
+          setCampaign(prev =>
+            prev ? {...prev, status: applied as CampaignStatus} : prev,
+          );
+          if (res?.underReview) {
+            Alert.alert(
+              t('ScreensCreateCampaignScreen.alerts.underReviewTitle'),
+              t('ScreensCreateCampaignScreen.alerts.underReviewMessage'),
+            );
+          }
         } catch (err: any) {
           Alert.alert(
             t('ScreensBrandCampaignDetail.alertFailedTitle'),
@@ -338,6 +362,30 @@ export default function BrandCampaignDetail() {
           <Text style={s.title}>{campaign.title}</Text>
           {campaign.description ? (
             <Text style={s.description}>{campaign.description}</Text>
+          ) : null}
+
+          {/* Why the campaign was turned down. The reason used to live only
+              in a notification, so a brand who missed it saw a bare status
+              and had nothing to act on. Cleared server-side the moment the
+              campaign leaves `rejected`. */}
+          {status === 'rejected' ? (
+            <View className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <View className="flex-row" style={{gap: 12}}>
+                <AlertCircle size={16} color="#dc2626" />
+                <View className="flex-1">
+                  <Text className="text-[13px] font-black text-red-800">
+                    {t('ScreensBrandCampaignDetail.rejectedTitle')}
+                  </Text>
+                  <Text className="text-[12px] text-red-700 mt-1">
+                    {campaign.reviewReason ||
+                      t('ScreensBrandCampaignDetail.rejectedNoReason')}
+                  </Text>
+                  <Text className="text-[11px] text-red-600 mt-2">
+                    {t('ScreensBrandCampaignDetail.rejectedNext')}
+                  </Text>
+                </View>
+              </View>
+            </View>
           ) : null}
 
           {/* Status actions */}
@@ -571,6 +619,20 @@ function StatusActions({
           onPress={() => onChange('completed')}
         />
       </>
+    );
+  }
+  // A rejected campaign is fixed by editing it, then resubmitting.
+  // Resubmit goes to `under_review`, never straight to active — the server
+  // enforces that too.
+  if (status === 'rejected') {
+    return (
+      <ActionBtn
+        label={t('ScreensBrandCampaignDetail.resubmit')}
+        Icon={Play}
+        color="#16a34a"
+        bg="#dcfce7"
+        onPress={() => onChange('active')}
+      />
     );
   }
   if (status === 'paused') {

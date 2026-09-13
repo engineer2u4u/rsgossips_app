@@ -23,7 +23,14 @@ import BrandsLayout from '../layouts/BrandLayout';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 
-const TABS = ['Active', 'Draft', 'Paused', 'Completed'] as const;
+const TABS = [
+  'Active',
+  'Review',
+  'Rejected',
+  'Draft',
+  'Paused',
+  'Completed',
+] as const;
 type Tab = (typeof TABS)[number];
 
 type BrandCampaign = {
@@ -31,7 +38,13 @@ type BrandCampaign = {
   title: string;
   description?: string;
   bannerImage?: string;
-  status: 'active' | 'draft' | 'paused' | 'completed' | 'under_review';
+  status:
+    | 'active'
+    | 'draft'
+    | 'paused'
+    | 'completed'
+    | 'under_review'
+    | 'rejected';
   campaignType?: string;
   maxInfluencers?: number;
   budgetTotal?: number;
@@ -45,6 +58,8 @@ type BrandCampaign = {
 
 const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
   Active: 'active',
+  Review: 'under_review',
+  Rejected: 'rejected',
   Draft: 'draft',
   Paused: 'paused',
   Completed: 'completed',
@@ -94,7 +109,14 @@ export default function BrandCampaigns() {
   );
 
   const counts = useMemo(() => {
-    const c: Record<Tab, number> = {Active: 0, Draft: 0, Paused: 0, Completed: 0};
+    const c: Record<Tab, number> = {
+      Active: 0,
+      Review: 0,
+      Rejected: 0,
+      Draft: 0,
+      Paused: 0,
+      Completed: 0,
+    };
     for (const k of campaigns) {
       const t = (Object.keys(TAB_STATUS) as Tab[]).find(x => TAB_STATUS[x] === k.status);
       if (t) c[t] += 1;
@@ -297,11 +319,13 @@ function RealCampaignCard({
     paused: 'bg-amber-100',
     completed: 'bg-indigo-100',
     under_review: 'bg-purple-100',
+    rejected: 'bg-red-100',
   };
   const statusText: Record<BrandCampaign['status'], string> = {
     active: 'text-emerald-700',
     draft: 'text-slate-600',
     under_review: 'text-purple-700',
+    rejected: 'text-red-700',
     paused: 'text-amber-700',
     completed: 'text-indigo-700',
   };
@@ -345,7 +369,11 @@ function RealCampaignCard({
             <View className={`${statusBg[campaign.status]} px-2 py-0.5 rounded-full`}>
               <Text
                 className={`text-[10px] font-bold uppercase ${statusText[campaign.status]}`}>
-                {campaign.status === 'under_review' ? t('ScreensBrandCampaigns.underReview') : campaign.status}
+                {campaign.status === 'under_review'
+                  ? t('ScreensBrandCampaigns.underReview')
+                  : campaign.status === 'rejected'
+                    ? t('ScreensBrandCampaigns.rejected')
+                    : campaign.status}
               </Text>
             </View>
           )}

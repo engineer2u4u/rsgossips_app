@@ -370,16 +370,25 @@ export default function CreateCampaignScreen() {
               target_languages: languages,
             },
           };
-          const data = await invokeFn<{campaignId?: string}>(
+          const data = await invokeFn<{campaignId?: string; underReview?: boolean}>(
             'brand-campaigns',
             payload,
           );
           if (data?.campaignId) {
+            // Publishing does not mean live. Unless the brand is on
+            // auto-approve the server parks the campaign in `under_review`,
+            // and telling them "creators can now see and apply" then sends
+            // them looking for a campaign that is not in the feed yet.
+            const underReview = publish && !!data.underReview;
             Alert.alert(
-              publish
+              underReview
+                ? t('ScreensCreateCampaignScreen.alerts.underReviewTitle')
+                : publish
                 ? t('ScreensCreateCampaignScreen.alerts.publishedTitle')
                 : t('ScreensCreateCampaignScreen.alerts.draftSavedTitle'),
-              publish
+              underReview
+                ? t('ScreensCreateCampaignScreen.alerts.underReviewMessage')
+                : publish
                 ? t('ScreensCreateCampaignScreen.alerts.publishedMessage')
                 : t('ScreensCreateCampaignScreen.alerts.draftSavedMessage'),
               [
