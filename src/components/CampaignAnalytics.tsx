@@ -22,7 +22,7 @@ import {
   Target,
   Activity,
   Eye,
-  DollarSign,
+  IndianRupee,
 } from 'lucide-react-native';
 import {BarChart, PieChart} from 'react-native-chart-kit';
 import {useTranslation} from 'react-i18next';
@@ -308,7 +308,7 @@ const DetailedCampaignAnalytics: React.FC<DetailedCampaignAnalyticsProps> = ({
           </View>
           <View style={{width: '48%'}}>
             <StatMiniCard
-              icon={<DollarSign size={16} color="#fff" />}
+              icon={<IndianRupee size={16} color="#fff" />}
               label={t('CampaignAnalytics.stats.totalEarnings')}
               value="$24.5K"
               trend="+20%"

@@ -19,7 +19,7 @@ import {
   Search,
   SlidersHorizontal,
   ArrowUpDown,
-  DollarSign,
+  IndianRupee,
   Users,
   MapPin,
   Check,
@@ -331,7 +331,7 @@ export default function RecommendedCampaigns() {
             onPress={() => setShowBudgetModal(true)}
             className="flex-row items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 mr-2"
           >
-            <DollarSign size={12} color="#475569" />
+            <IndianRupee size={12} color="#475569" />
             <Text className="text-xs font-semibold text-slate-600">{t('ScreensRecommendedCampaigns.pills.budget')}</Text>
             {(budgetMin || budgetMax) ? (
               <View className="w-1.5 h-1.5 rounded-full bg-pink-500" />
@@ -444,7 +444,7 @@ export default function RecommendedCampaigns() {
               {/* Pay + Followers row */}
               <View className="flex-row items-center gap-3 mb-3">
                 <View className="flex-row items-center gap-1">
-                  <DollarSign size={12} color="#22c55e" />
+                  <IndianRupee size={12} color="#22c55e" />
                   <Text className="text-xs font-semibold text-slate-500">
                     {item.pay}
                   </Text>

@@ -8,7 +8,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { MapPin, DollarSign, Users } from 'lucide-react-native';
+import { MapPin, IndianRupee, Users } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import Carousel, {
   type ICarouselInstance,
@@ -328,7 +328,7 @@ function CampaignCardSlide({
         <View className="flex-row mb-4" style={{ gap: 8 }}>
           <View className="flex-1 bg-slate-50 p-3 rounded-2xl border border-slate-50">
             <View className="flex-row items-center mb-1" style={{ gap: 4 }}>
-              <DollarSign size={10} color="#22C55E" />
+              <IndianRupee size={10} color="#22C55E" />
               <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                 {t('TopPicksCarousel.pay')}
               </Text>

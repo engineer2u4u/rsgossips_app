@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-chart-kit';
 import {
-  DollarSign,
+  IndianRupee,
   Users,
   Eye,
   Activity,
@@ -70,7 +70,7 @@ export default function PerformanceDashboard() {
       {/* METRICS */}
       <View className="flex-row flex-wrap justify-between mb-6">
         <MetricCard
-          icon={<DollarSign size={18} color="#16A34A" />}
+          icon={<IndianRupee size={18} color="#16A34A" />}
           title={t('PerformanceDashboard.totalEarnings')}
           value="₹2,00,000"
           growth="+12.5%"
