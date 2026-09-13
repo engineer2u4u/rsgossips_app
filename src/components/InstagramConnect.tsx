@@ -56,6 +56,13 @@ export default function InstagramConnect({
   const [error, setError] = useState('');
   const [showWebView, setShowWebView] = useState(false);
   const webViewRef = useRef<WebView>(null);
+  // Instagram authorisation codes are single-use, and
+  // onNavigationStateChange fires more than once for the same URL (the
+  // WebView reports loading and loaded states, plus any redirect inside the
+  // callback). Re-sending the code gets "code has been used" back from
+  // Instagram, so a connection that actually succeeded showed the creator a
+  // failure. Remember what we have already exchanged.
+  const exchangedCodes = useRef<Set<string>>(new Set());
 
   const isSignIn = mode === 'signin';
   const displayError = externalError || error;
@@ -97,6 +104,10 @@ export default function InstagramConnect({
 
   const handleConnect = () => {
     setError('');
+    // A fresh authorisation issues a fresh code, so the old ones stop being
+    // relevant. Without this, retrying after a real failure would be
+    // mistaken for a replay and silently do nothing.
+    exchangedCodes.current.clear();
     setShowWebView(true);
   };
 
@@ -113,7 +124,12 @@ export default function InstagramConnect({
         const errorParam = urlObj.searchParams.get('error');
 
         if (code) {
-          exchangeCode(code.replace('#_', ''));
+          const clean = code.replace('#_', '');
+          // Checked and claimed in one synchronous step, before any await.
+          if (!exchangedCodes.current.has(clean)) {
+            exchangedCodes.current.add(clean);
+            exchangeCode(clean);
+          }
         } else if (errorParam) {
           setError(
             urlObj.searchParams.get('error_description')?.replace(/\+/g, ' ') ||
