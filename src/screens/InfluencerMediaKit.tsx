@@ -45,6 +45,7 @@ import {
   profileCanUseMediaKitTemplate,
   getProfileTemplateChangeUsage,
   getEffectivePlan,
+  isSubscribed,
   type MediaKitTemplate,
 } from '../lib/plans';
 import MediaKitPreview from '../components/mediaKitTemplates/MediaKitTemplates';
@@ -240,6 +241,16 @@ export default function InfluencerMediaKit() {
     },
     [user?.id],
   );
+
+  // The media kit is a subscriber feature. A free creator sees the pitch
+  // for it rather than a half-working editor: update-profile refuses their
+  // template saves, so an editable screen would only produce dead ends.
+  //
+  // Gated on a LOADED profile — it is null while AuthContext resolves, and
+  // locking on null would flash the paywall at subscribers.
+  if (profile && !isSubscribed(profile)) {
+    return <MediaKitLocked />;
+  }
 
   return (
     <InfluencerLayout>
@@ -1041,5 +1052,59 @@ function TemplatePicker({
         </Text>
       )}
     </View>
+  );
+}
+
+
+// Full-screen upsell shown instead of the editor to unsubscribed creators.
+// Deliberately concrete about what a media kit does for them — this is the
+// single most-cited reason creators give for subscribing, so the screen is
+// the pitch, not an error message.
+function MediaKitLocked() {
+  const {t} = useTranslation();
+  const benefits = [
+    t('ScreensInfluencerMediaKit.locked.benefit1'),
+    t('ScreensInfluencerMediaKit.locked.benefit2'),
+    t('ScreensInfluencerMediaKit.locked.benefit3'),
+  ];
+
+  return (
+    <InfluencerLayout>
+      <ScrollView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+        <View className="px-4 py-8">
+          <View className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+            <View className="w-14 h-14 rounded-2xl bg-purple-100 items-center justify-center self-center">
+              <Lock size={26} color="#9333EA" />
+            </View>
+            <Text className="mt-4 text-xl font-black text-slate-900 text-center">
+              {t('ScreensInfluencerMediaKit.locked.title')}
+            </Text>
+            <Text className="mt-2 text-sm text-slate-500 text-center">
+              {t('ScreensInfluencerMediaKit.locked.body')}
+            </Text>
+
+            <View className="mt-6" style={{gap: 12}}>
+              {benefits.map(b => (
+                <View key={b} className="flex-row" style={{gap: 12}}>
+                  <Sparkles size={16} color="#9333EA" />
+                  <Text className="flex-1 text-sm text-slate-600">{b}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              onPress={openManagePlan}
+              accessibilityRole="button"
+              className="mt-7 rounded-2xl items-center justify-center flex-row"
+              style={{height: 48, backgroundColor: '#9810fa', gap: 8}}>
+              <Crown size={16} color="#fff" />
+              <Text className="text-white text-sm font-bold">
+                {t('ScreensInfluencerMediaKit.locked.cta')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+    </InfluencerLayout>
   );
 }

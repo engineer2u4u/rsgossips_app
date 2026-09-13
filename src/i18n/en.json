@@ -285,7 +285,11 @@
       "view": "View Media Kit",
       "published": "Published",
       "notPublished": "Media kit not published yet",
-      "generate": "Generate Media Kit"
+      "generate": "Generate Media Kit",
+      "upsellTitle": "Add a media kit to stand out",
+      "upsellBody": "Brands shortlist creators whose reach, engagement and best reels are one click away. Your media kit is unlocked on any plan.",
+      "upsellCta": "Unlock my media kit",
+      "upsellOptional": "Optional — you can submit this application without one."
     },
     "rate": {
       "label": "Your Proposed Rate",
@@ -792,15 +796,10 @@
     "referEarn": "Refer & Earn",
     "referEarnSub": "Share your link, earn Reward Credits",
     "free": "Free",
-    "starterTrial": "Starter Trial",
     "activeSubscription": "Active subscription",
-    "trialExpired": "Trial expired",
     "daysLeft_one": "{{count}} day left",
     "daysLeft_other": "{{count}} days left",
     "active": "Active",
-    "expired": "Expired",
-    "trialProgress": "Trial Progress",
-    "daysProgress": "{{left}}/{{total}} days",
     "managePlan": "Manage Plan",
     "upgradeNow": "Upgrade Now",
     "support": "Support",
@@ -820,7 +819,14 @@
     "mediaKitPublished": "Media kit published",
     "rateCardSet": "Rate card set",
     "plans": "Plans",
-    "plansSub": "View and change your subscription"
+    "plansSub": "View and change your subscription",
+    "freeApplications": "Free applications",
+    "freeUsedUp": "All used",
+    "freeCount": "{{used}} / {{total}}",
+    "freeRemaining_zero": "No free applications left",
+    "freeRemaining_one": "{{count}} free application left",
+    "freeRemaining_other": "{{count}} free applications left",
+    "freeBlurb": "{{limit}} free barter applications"
   },
   "DeactiveAccount": {
     "headerTitle": "Deactivate Account",
@@ -1535,7 +1541,6 @@
     "billingAnnual": "Annual",
     "billingMonthly": "Monthly",
     "planFree": "Free",
-    "planStarterTrial": "Starter Trial",
     "greeting": "Hi, {{name}}",
     "planPill": "{{plan}} plan",
     "brandsCount_one": "{{count}} brand",
@@ -1544,13 +1549,14 @@
     "activeTail": " are active right now",
     "activePlanLabel": "Active Plan",
     "renewsIn": "{{cycle}} · renews in ",
-    "trialEnded": "Trial ended — ",
-    "trialPrefix": "Trial · ",
     "daysValue_one": "{{count}} days",
     "daysValue_other": "{{count}} days",
-    "daysLeft_one": "{{count}} days left",
-    "daysLeft_other": "{{count}} days left",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "freePrefix": "Free plan",
+    "freeUsedUp": "Free applications used",
+    "freeLeft_zero": "0 left",
+    "freeLeft_one": "{{count}} left",
+    "freeLeft_other": "{{count}} left"
   },
   "ProfileDetails": {
     "title": "Set Up Your Creator Profile",
@@ -1675,7 +1681,11 @@
     "ratingPrimaryCta": "Submit & Release Payment",
     "ratingSecondaryCta": "Skip & Approve",
     "pitchLabel": "Their Pitch",
-    "statusApplicationsClosed": "APPLICATIONS CLOSED"
+    "statusApplicationsClosed": "APPLICATIONS CLOSED",
+    "rejectedTitle": "This campaign was not approved",
+    "rejectedNoReason": "Our team sent it back without a note. Check the brief against our campaign guidelines and resubmit.",
+    "rejectedNext": "Edit the campaign to address this, then resubmit it for review.",
+    "resubmit": "Resubmit for review"
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -1686,7 +1696,9 @@
       "Active": "Active",
       "Draft": "Draft",
       "Paused": "Paused",
-      "Completed": "Completed"
+      "Completed": "Completed",
+      "Review": "In review",
+      "Rejected": "Rejected"
     },
     "emptyTitle": "No {{status}} campaigns",
     "emptyActiveSubtitle": "Post a campaign request to start receiving creator applications.",
@@ -1699,7 +1711,8 @@
     "applicationsClosed": "Applications Closed",
     "underReview": "under review",
     "verifyGateTitle": "Your brand is under review",
-    "verifyGateBody": "You can create campaigns as soon as our team verifies your account (usually 1-2 business days)."
+    "verifyGateBody": "You can create campaigns as soon as our team verifies your account (usually 1-2 business days).",
+    "rejected": "Rejected"
   },
   "ScreensBrandChats": {
     "messages": "Messages",
@@ -1955,7 +1968,9 @@
       "draftSavedTitle": "Draft saved",
       "publishedMessage": "Creators can now see and apply.",
       "draftSavedMessage": "You can publish it from the campaigns list.",
-      "ok": "OK"
+      "ok": "OK",
+      "underReviewTitle": "Campaign submitted for review",
+      "underReviewMessage": "Kindly wait for the campaign to be reviewed before creators can see it. We usually get through this within a few hours."
     },
     "errors": {
       "signedIn": "You must be signed in",
@@ -2059,6 +2074,14 @@
       "limit": "You’ve used your AI generations this month.",
       "upgrade": "Upgrade",
       "bioHint": "“Use as my bio” applies only the Bio section (your profile bio is capped at 500 characters). Copy grabs all three sections for your media kit."
+    },
+    "locked": {
+      "title": "Your media kit is a subscriber feature",
+      "body": "A media kit is the one-link profile brands ask for before they shortlist. Pick any plan to build and share yours.",
+      "benefit1": "A shareable link with your reach, engagement and best reels — no PDF to keep updating.",
+      "benefit2": "Designer templates that make your numbers look like a pitch, not a screenshot.",
+      "benefit3": "Applications with a media kit attached get shortlisted noticeably more often.",
+      "cta": "See plans"
     }
   },
   "ScreensInfluencerNotifications": {
@@ -2176,13 +2199,9 @@
       "subtitle": "Upgrade anytime to unlock more features"
     },
     "currentPlan": {
-      "freeTrial": "Free Trial",
       "badge": "CURRENT",
       "renewsIn_one": "Renews in {{count}} day",
       "renewsIn_other": "Renews in {{count}} days",
-      "trialExpired": "Your free trial has expired",
-      "daysRemaining_one": "{{count}} day remaining",
-      "daysRemaining_other": "{{count}} days remaining",
       "activeSubscription": "Active {{cycle}} subscription"
     },
     "billing": {
@@ -2847,7 +2866,6 @@
   },
   "SidebarContent": {
     "userFallback": "User",
-    "freeTrial": "Free Trial",
     "proMember": "Pro Member",
     "nav": {
       "home": "Home",
@@ -2859,7 +2877,8 @@
     },
     "settings": "Settings",
     "helpSupport": "Help & Support",
-    "logOut": "Log Out"
+    "logOut": "Log Out",
+    "freePlan": "Free plan"
   },
   "SignInPhone": {
     "titleSignup": "Create Account",

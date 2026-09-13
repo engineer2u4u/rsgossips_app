@@ -12,7 +12,14 @@
  *  - `hasFeature(plan, key)` — boolean gate for UI / edge-function checks.
  *  - `getFeatureValue(plan, key)` — for tiered values like
  *    "campaign_applications_limit" (number, or Infinity for Unlimited).
- *  - `isWithinTrial(profile)` — true when a user is in their first 30 days.
+ *  - `isSubscribed(profile)` — true when the user holds any paid plan.
+ *
+ * There is NO free trial. Anything that is not one of the three paid
+ * tiers resolves to `free`, whose only entitlement is
+ * FREE_BARTER_APPLICATIONS barter applications for the life of the
+ * account. Most existing rows literally store "trial" in
+ * subscription_plan — that was the signup default and now means nothing
+ * more than "has not paid".
  */
 
 import {
@@ -32,6 +39,8 @@ import {
 } from '@env';
 
 export const PLAN_IDS = {
+  // Not a purchasable plan — the state of having bought nothing.
+  FREE: 'free',
   STARTER: 'starter',
   PRO: 'pro',
   ELITE: 'elite',
@@ -39,7 +48,22 @@ export const PLAN_IDS = {
 
 export type PlanId = (typeof PLAN_IDS)[keyof typeof PLAN_IDS];
 
-export const TRIAL_DAYS = 30;
+/** A tier a creator can actually pay for — `PlanId` minus `free`. */
+export type PaidPlanId = Exclude<PlanId, 'free'>;
+
+/** The three tiers a creator can actually buy. */
+export const PAID_PLAN_IDS: string[] = [
+  PLAN_IDS.STARTER,
+  PLAN_IDS.PRO,
+  PLAN_IDS.ELITE,
+];
+
+/**
+ * How many barter campaigns an unsubscribed creator may apply to.
+ * Lifetime, not monthly. Enforced server-side in apply-campaign
+ * (supabase/functions/_shared/plan.ts); everything here is presentation.
+ */
+export const FREE_BARTER_APPLICATIONS = 3;
 
 export const PLAN_PRICING = {
   starter: {monthly: 99, annual: 899, monthlyEquivalent: 75},
@@ -53,7 +77,7 @@ export type BillingCycle = 'monthly' | 'annual';
 
 export const RAZORPAY_KEY_ID = NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
-export const PLAN_RAZORPAY_IDS: Record<PlanId, Record<BillingCycle, string>> = {
+export const PLAN_RAZORPAY_IDS: Record<PaidPlanId, Record<BillingCycle, string>> = {
   starter: {
     monthly: NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY,
     annual:  NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL,
@@ -68,7 +92,7 @@ export const PLAN_RAZORPAY_IDS: Record<PlanId, Record<BillingCycle, string>> = {
   },
 };
 
-export const PLAN_STRIPE_PRICES: Record<PlanId, Record<BillingCycle, string>> = {
+export const PLAN_STRIPE_PRICES: Record<PaidPlanId, Record<BillingCycle, string>> = {
   starter: {
     monthly: NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY,
     annual:  NEXT_PUBLIC_STRIPE_PRICE_STARTER_ANNUAL,
@@ -84,7 +108,13 @@ export const PLAN_STRIPE_PRICES: Record<PlanId, Record<BillingCycle, string>> = 
 };
 
 export type FeatureCell = boolean | number | string;
-export type FeatureRow = Record<PlanId, FeatureCell>;
+export type FeatureRow = {
+  starter: FeatureCell;
+  pro: FeatureCell;
+  elite: FeatureCell;
+  /** Derived from the FREE_TIER allowlist below, not written by hand. */
+  free?: FeatureCell;
+};
 
 export const FEATURE_MATRIX: Record<string, FeatureRow> = {
   // Discovery & Visibility
@@ -129,6 +159,33 @@ export const FEATURE_MATRIX: Record<string, FeatureRow> = {
   support_priority:          {starter: false, pro: true,  elite: true},
   support_dedicated_manager: {starter: false, pro: false, elite: true},
   support_strategy_call:     {starter: false, pro: false, elite: true},
+};
+
+// Everything the free tier includes, and nothing else. Any key absent here
+// is locked for free — the default is deny, so a feature added to the matrix
+// later cannot leak into the free tier by omission.
+//
+// Discovery stays on deliberately: being findable by brands is supply for
+// the marketplace, not a perk the creator is buying.
+const FREE_TIER: Record<string, FeatureCell> = {
+  discovery_listed: true,
+  badge_verified_eligible: true,
+  campaign_applications_limit: FREE_BARTER_APPLICATIONS,
+  support_standard: true,
+};
+
+for (const [key, row] of Object.entries(FEATURE_MATRIX)) {
+  row.free = Object.prototype.hasOwnProperty.call(FREE_TIER, key)
+    ? FREE_TIER[key]
+    : typeof row.starter === 'number'
+      ? 0
+      : false;
+}
+
+// The matrix stores a bare number for applications, but the free tier's three
+// are lifetime AND barter-only — "3/month" would be a lie.
+export const FREE_TIER_LABELS: Record<string, string> = {
+  campaign_applications_limit: `${FREE_BARTER_APPLICATIONS} barter, one-time`,
 };
 
 export const FEATURE_GROUPS = [
@@ -179,7 +236,14 @@ export const FEATURE_GROUPS = [
   },
 ];
 
-export function formatFeatureValue(value: FeatureCell | null | undefined): string {
+export function formatFeatureValue(
+  value: FeatureCell | null | undefined,
+  opts?: {plan?: PlanId; key?: string},
+): string {
+  // Free-tier values a generic formatter would misdescribe.
+  if (opts?.plan === PLAN_IDS.FREE && opts.key && FREE_TIER_LABELS[opts.key]) {
+    return FREE_TIER_LABELS[opts.key];
+  }
   if (value === true) return '✓';
   if (value === false || value === undefined || value === null) return '—';
   if (typeof value === 'number') {
@@ -199,49 +263,56 @@ type PlanProfile = {
   updated_at?: string | null;
 } | null | undefined;
 
-export function isWithinTrial(profile: PlanProfile): boolean {
-  if (!profile) return false;
-  if (profile.subscription_plan && profile.subscription_plan !== 'trial') return false;
-  const createdAt = profile.created_at || profile.updated_at;
-  if (!createdAt) return false;
-  const created = new Date(createdAt).getTime();
-  if (!isFinite(created)) return false;
-  const days = (Date.now() - created) / (1000 * 60 * 60 * 24);
-  return days >= 0 && days < TRIAL_DAYS;
-}
-
-export function trialDaysLeft(profile: PlanProfile): number {
-  if (!profile) return 0;
-  const createdAt = profile.created_at || profile.updated_at;
-  if (!createdAt) return 0;
-  const created = new Date(createdAt).getTime();
-  if (!isFinite(created)) return 0;
-  const days =
-    TRIAL_DAYS - Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
-  return Math.max(0, days);
-}
-
+/**
+ * Returns the plan ID a user is effectively on.
+ *
+ * An explicit paid tier wins; everything else — null, '', 'free', and the
+ * legacy 'trial' most rows still carry — is `free`. No dates are consulted:
+ * the trial was removed, so signup age no longer buys anything.
+ *
+ * Keep this identical to the web (src/lib/plans.js). A user's plan is
+ * resolved from one field written by whichever rail they paid on, so any
+ * divergence shows up as the app and web disagreeing about an unchanged
+ * account.
+ */
 export function getEffectivePlan(profile: PlanProfile): PlanId {
-  if (!profile) return PLAN_IDS.STARTER;
-  const plan = (profile.subscription_plan || '').toLowerCase();
-  if (plan === PLAN_IDS.PRO || plan === PLAN_IDS.ELITE || plan === PLAN_IDS.STARTER) {
-    return plan as PlanId;
-  }
-  // Trial = PRO, matching the web (src/lib/plans.js getEffectivePlan).
-  //
-  // This used to return ELITE here, so the same account resolved to a
-  // different tier depending on which surface you opened — the app handed out
-  // Elite-only perks (bento_sunset / neo_brutalist media-kit templates,
-  // homepage spotlight) that the web then refused. Per the web's spec comment,
-  // Pro is deliberate: the trial should preview the tier most creators
-  // actually land on, without giving the top tier away for free.
-  //
-  // Keep the two in step. A user's plan is now resolved from one field
-  // (subscription_plan) written by whichever rail they paid on, so any
-  // divergence in the fallback shows up as the app and web disagreeing about
-  // an account that has not changed.
-  if (isWithinTrial(profile)) return PLAN_IDS.PRO;
-  return PLAN_IDS.STARTER;
+  const plan = (profile?.subscription_plan || '').toLowerCase();
+  return PAID_PLAN_IDS.includes(plan) ? (plan as PlanId) : PLAN_IDS.FREE;
+}
+
+/** True when the creator holds any paid plan. The gate for everything. */
+export function isSubscribed(profile: PlanProfile): boolean {
+  return getEffectivePlan(profile) !== PLAN_IDS.FREE;
+}
+
+export interface FreeApplicationStatus {
+  subscribed: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  exhausted: boolean;
+}
+
+/**
+ * Free-tier application allowance. `used` is the creator's LIFETIME
+ * application count, so the caller has to supply it — nothing on the profile
+ * carries it.
+ */
+export function getFreeApplicationStatus(
+  profile: PlanProfile,
+  used = 0,
+): FreeApplicationStatus {
+  const subscribed = isSubscribed(profile);
+  const remaining = subscribed
+    ? Infinity
+    : Math.max(0, FREE_BARTER_APPLICATIONS - used);
+  return {
+    subscribed,
+    used,
+    limit: FREE_BARTER_APPLICATIONS,
+    remaining,
+    exhausted: !subscribed && remaining === 0,
+  };
 }
 
 export function hasFeature(plan: PlanId, key: string): boolean {
@@ -257,7 +328,7 @@ export function hasFeature(plan: PlanId, key: string): boolean {
 export function getFeatureValue(plan: PlanId, key: string): FeatureCell | null {
   const row = FEATURE_MATRIX[key];
   if (!row) return null;
-  return row[plan];
+  return row[plan] ?? null;
 }
 
 export function profileHasFeature(profile: PlanProfile, key: string): boolean {
@@ -276,8 +347,9 @@ export function profileFeatureValue(profile: PlanProfile, key: string): FeatureC
 //   Pro     — Classic + Glass Blue + Editorial Noir (3 designs),
 //             capped at 3 lifetime saves between them
 //   Elite   — all five designs, unlimited saves
-// On mobile, trial users land on Elite (see getEffectivePlan above), so
-// they get the full five-template experience with no change cap.
+//   Free    — no media kit at all. It is a subscriber feature, so an
+//             unsubscribed creator can pick no template (PLAN_RANK has no
+//             `free` entry, so every template ranks above them).
 // ─────────────────────────────────────────────────────────────────────────
 export interface MediaKitTemplate {
   id: string;
@@ -362,12 +434,16 @@ export const MEDIA_KIT_TEMPLATES: MediaKitTemplate[] = [
 ];
 
 const PLAN_RANK: Record<PlanId, number> = {
+  // Rank 0: every template sits above free, so an unsubscribed creator
+  // can pick none of them.
+  [PLAN_IDS.FREE]: 0,
   [PLAN_IDS.STARTER]: 1,
   [PLAN_IDS.PRO]: 2,
   [PLAN_IDS.ELITE]: 3,
 };
 
 export const MEDIA_KIT_TEMPLATE_CHANGE_LIMITS: Record<PlanId, number> = {
+  [PLAN_IDS.FREE]: 0,
   [PLAN_IDS.STARTER]: 0,
   [PLAN_IDS.PRO]: 3,
   [PLAN_IDS.ELITE]: Infinity,

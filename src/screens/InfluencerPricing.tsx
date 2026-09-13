@@ -25,6 +25,7 @@ import {
   getFeatureValue,
   type BillingCycle,
   type PlanId,
+  type PaidPlanId,
 } from '../lib/plans';
 import {CARD_SHADOW} from '../theme/brand';
 import {Linking} from 'react-native';
@@ -42,7 +43,9 @@ import {Linking} from 'react-native';
 // adjustments — and displaying anything else is both wrong and a review risk.
 // PLAN_PRICING stays the web's concern.
 
-const PLAN_ORDER: PlanId[] = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
+// Purchasable tiers only — `free` is the absence of a purchase, so it has no
+// card, no price and nothing to buy.
+const PLAN_ORDER: PaidPlanId[] = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
 
 // A short highlight per tier rather than the full FEATURE_MATRIX — the
 // comparison table is a web-sized layout, and a phone needs the three or four
@@ -113,7 +116,7 @@ export default function InfluencerPricing() {
     return map;
   }, [subscriptions]);
 
-  const priceFor = (plan: PlanId): string | null => {
+  const priceFor = (plan: PaidPlanId): string | null => {
     const sku = IAP_SKUS[plan][cycle];
     const product = bySku.get(sku);
     if (!product) return null;

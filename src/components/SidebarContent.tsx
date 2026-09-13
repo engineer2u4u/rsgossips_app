@@ -15,6 +15,7 @@ import {
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
+import {isSubscribed} from '../lib/plans';
 import {useProfilePhoto} from '../utils/photoUrl';
 
 const navLinks = [
@@ -67,9 +68,9 @@ export default function SidebarContent({closeSidebar}: {closeSidebar: () => void
               {profile?.full_name || t('SidebarContent.userFallback')}
             </Text>
             <Text className="text-[11px] text-emerald-600 font-semibold">
-              {profile?.subscription_plan === 'free'
-                ? t('SidebarContent.freeTrial')
-                : t('SidebarContent.proMember')}
+              {isSubscribed(profile)
+                ? t('SidebarContent.proMember')
+                : t('SidebarContent.freePlan')}
             </Text>
           </View>
         </View>

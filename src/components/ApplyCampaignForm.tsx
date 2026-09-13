@@ -24,10 +24,12 @@ import {
   Users,
   Activity,
   Sparkles,
+  Crown,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 import {useAuth} from '../context/AuthContext';
+import {isSubscribed} from '../lib/plans';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {useAiTool} from '../hooks/useAiTool';
 
@@ -76,7 +78,11 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
   const instagramHandle = profile?.instagram_handle || profile?.username || '';
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
-  const mediaKitPublished = profile?.media_kit_published;
+  // The media kit is a subscriber feature, so a free creator has nothing
+  // to link to. They can still submit — the kit raises their odds, it is
+  // not a requirement — so this section becomes a nudge, never a block.
+  const subscribed = isSubscribed(profile);
+  const mediaKitPublished = subscribed && profile?.media_kit_published;
 
   // Media kit CTAs. Unpublished → close this modal and open the media-kit
   // builder. Published → open the public kit page. (The block was previously a
@@ -101,7 +107,11 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
     setSubmitting(true);
     setError('');
     try {
-      const data = await invokeFn<{success?: boolean}>('apply-campaign', {
+      const data = await invokeFn<{
+        success?: boolean;
+        error?: string;
+        message?: string;
+      }>('apply-campaign', {
         campaignId: campaignData?.id,
         influencerId: user?.id,
         proposedRate: proposedRate ? Number(proposedRate) : null,
@@ -113,6 +123,17 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
         setTimeout(() => {
           onSubmitSuccess();
         }, 2000);
+      } else if (data?.error) {
+        // apply-campaign reports refusals with HTTP 200 and an `error`
+        // key, so they land here rather than in the catch below. Its
+        // `message` is already written for the creator; the generic
+        // fallbacks only cover a code we have no copy for.
+        setError(
+          data.message ||
+            (data.error === 'already_applied'
+              ? t('ApplyCampaignForm.errors.alreadyApplied')
+              : t('ApplyCampaignForm.errors.submitFailed')),
+        );
       } else {
         setError(t('ApplyCampaignForm.errors.unexpectedResponse'));
       }
@@ -240,6 +261,38 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                           <Text className="text-[9px] font-bold text-emerald-600">{t('ApplyCampaignForm.mediaKit.published')}</Text>
                         </View>
                       </Pressable>
+                    ) : !subscribed ? (
+                      // Highlighted, not dimmed: this is the strongest upgrade
+                      // moment in the product — the creator is mid-application
+                      // and can see what they are competing without.
+                      <View className="p-4 rounded-xl border border-purple-200 bg-purple-50">
+                        <View className="flex-row" style={{gap: 12}}>
+                          <View className="w-10 h-10 rounded-xl bg-white items-center justify-center">
+                            <Sparkles size={18} color="#9333EA" />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-sm font-bold text-slate-800">
+                              {t('ApplyCampaignForm.mediaKit.upsellTitle')}
+                            </Text>
+                            <Text className="text-xs text-slate-600 mt-1">
+                              {t('ApplyCampaignForm.mediaKit.upsellBody')}
+                            </Text>
+                            <Pressable
+                              onPress={goToMediaKit}
+                              accessibilityRole="button"
+                              className="mt-3 self-start flex-row items-center rounded-xl px-3 py-2"
+                              style={{backgroundColor: '#9810fa', gap: 6}}>
+                              <Crown size={13} color="#fff" />
+                              <Text className="text-white text-xs font-bold">
+                                {t('ApplyCampaignForm.mediaKit.upsellCta')}
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                        <Text className="text-[10px] text-slate-400 mt-3">
+                          {t('ApplyCampaignForm.mediaKit.upsellOptional')}
+                        </Text>
+                      </View>
                     ) : (
                       <Pressable
                         onPress={goToMediaKit}

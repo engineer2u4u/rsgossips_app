@@ -14,13 +14,13 @@
 import {Platform} from 'react-native';
 import type {Purchase} from 'react-native-iap';
 import {invokeFn} from './api';
-import type {PlanId, BillingCycle} from './plans';
+import type {PaidPlanId, PlanId, BillingCycle} from './plans';
 
 // Must match PRODUCT_MAP in supabase/functions/_shared/iap.ts exactly, and the
 // SKUs created in App Store Connect and Play Console. A mismatch fails
 // verification loudly rather than granting the wrong tier — which is the
 // intended behaviour, so keep all three in step.
-export const IAP_SKUS: Record<PlanId, Record<BillingCycle, string>> = {
+export const IAP_SKUS: Record<PaidPlanId, Record<BillingCycle, string>> = {
   starter: {
     monthly: 'rgossips.starter.monthly',
     annual: 'rgossips.starter.annual',
@@ -68,9 +68,9 @@ export async function verifyPurchase(purchase: Purchase): Promise<VerifyResult> 
 }
 
 /** SKU → plan, for showing the right tier after a restore. */
-export function planForSku(sku: string): {plan: PlanId; cycle: BillingCycle} | null {
+export function planForSku(sku: string): {plan: PaidPlanId; cycle: BillingCycle} | null {
   for (const [plan, cycles] of Object.entries(IAP_SKUS) as [
-    PlanId,
+    PaidPlanId,
     Record<BillingCycle, string>,
   ][]) {
     for (const [cycle, id] of Object.entries(cycles) as [BillingCycle, string][]) {

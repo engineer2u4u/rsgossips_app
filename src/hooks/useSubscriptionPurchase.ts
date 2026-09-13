@@ -20,7 +20,7 @@ import {Platform} from 'react-native';
 import {useIAP} from 'react-native-iap';
 import type {Purchase, PurchaseError} from 'react-native-iap';
 import {ALL_IAP_SKUS, IAP_SKUS, verifyPurchase} from '../lib/iap';
-import type {PlanId, BillingCycle} from '../lib/plans';
+import type {PaidPlanId, BillingCycle} from '../lib/plans';
 import {useAuth} from '../context/AuthContext';
 
 type Status = 'idle' | 'purchasing' | 'verifying' | 'restoring';
@@ -100,7 +100,7 @@ export function useSubscriptionPurchase() {
   }, [connected, fetchProducts]);
 
   const buy = useCallback(
-    async (plan: PlanId, cycle: BillingCycle) => {
+    async (plan: PaidPlanId, cycle: BillingCycle) => {
       const sku = IAP_SKUS[plan]?.[cycle];
       if (!sku) {
         setError('That plan is unavailable.');

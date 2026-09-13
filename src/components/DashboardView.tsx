@@ -23,6 +23,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
+import {isSubscribed} from '../lib/plans';
+import {useFreeApplications} from '../hooks/useFreeApplications';
 import {useNavigation} from '@react-navigation/native';
 import {supabase} from '../utils/supabase';
 import {useInfluencerCampaigns} from '../hooks/useInfluencerCampaigns';
@@ -72,7 +74,6 @@ function formatCount(n: number | undefined) {
   return String(n);
 }
 
-const TRIAL_DAYS = 30;
 
 const DashboardView: React.FC<DashboardViewProps> = ({
   onNotificationClick,
@@ -98,28 +99,15 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const posts = profile?.media_count || 0;
 
   const currentPlan = profile?.subscription_plan || 'free';
-  const hasPaidPlan = currentPlan !== 'free';
-  // Until the profile lands there is no created_at, and falling back to
-  // `new Date()` made elapsed 0 — so the card confidently rendered a full
-  // "30 days" that visibly corrected itself a second later. Treat the
-  // countdown as unknown until the real date is in and show a placeholder.
-  const createdAtRaw: string | undefined = profile?.created_at;
-  const planReady = !!createdAtRaw;
-  const elapsed = createdAtRaw
-    ? Math.floor(
-        (Date.now() - new Date(createdAtRaw).getTime()) / (1000 * 60 * 60 * 24),
-      )
-    : 0;
-  const daysLeft = planReady ? Math.max(0, TRIAL_DAYS - elapsed) : null;
-  const trialProgress = planReady
-    ? Math.min(100, Math.round((elapsed / TRIAL_DAYS) * 100))
-    : 0;
-  const expired = daysLeft === 0;
-
+  // `currentPlan !== 'free'` used to stand in for this and was wrong:
+  // almost every unsubscribed row stores the string 'trial', so this card
+  // told them they had an active subscription. Resolve the plan properly.
+  const hasPaidPlan = isSubscribed(profile);
+  const freeApps = useFreeApplications();
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const planLabel = hasPaidPlan
     ? currentPlan.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-    : expired ? t('DashboardView.free') : t('DashboardView.starterTrial');
+    : t('DashboardView.free');
 
   const completion = computeProfileCompletion(profile);
   const openMediaKit = () => navigation.navigate('InfluencerMediaKit' as never);
@@ -416,11 +404,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <Text className="text-[10px] text-gray-400 font-medium">
                 {hasPaidPlan
                   ? t('DashboardView.activeSubscription')
-                  : !planReady
-                  ? '—'
-                  : expired
-                  ? t('DashboardView.trialExpired')
-                  : t('DashboardView.daysLeft', {count: daysLeft})}
+                  : freeApps.known
+                    ? t('DashboardView.freeRemaining', {
+                        count: freeApps.remaining ?? 0,
+                      })
+                    : t('DashboardView.freeBlurb', {limit: freeApps.limit})}
               </Text>
             </View>
           </View>
@@ -435,26 +423,48 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <View>
             <View className="flex-row items-center justify-between mb-1.5">
               <View className="flex-row items-center" style={{gap: 6}}>
-                <Zap size={12} color={expired ? '#F87171' : '#9333EA'} fill={expired ? '#F87171' : '#9333EA'} />
+                <Zap
+                  size={12}
+                  color={freeApps.exhausted ? '#F87171' : '#9333EA'}
+                  fill={freeApps.exhausted ? '#F87171' : '#9333EA'}
+                />
                 <Text className="text-[10px] font-bold text-gray-400 uppercase">
-                  {expired ? t('DashboardView.expired') : t('DashboardView.trialProgress')}
+                  {freeApps.exhausted
+                    ? t('DashboardView.freeUsedUp')
+                    : t('DashboardView.freeApplications')}
                 </Text>
               </View>
-              <Text className={`text-[10px] font-black ${expired ? 'text-red-400' : 'text-purple-600'}`}>
-                {planReady
-                  ? t('DashboardView.daysProgress', {
-                      left: daysLeft,
-                      total: TRIAL_DAYS,
+              <Text
+                className={`text-[10px] font-black ${
+                  freeApps.exhausted ? 'text-red-400' : 'text-purple-600'
+                }`}>
+                {freeApps.known
+                  ? t('DashboardView.freeCount', {
+                      used: freeApps.used,
+                      total: freeApps.limit,
                     })
                   : '—'}
               </Text>
             </View>
             <View className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
               <LinearGradient
-                colors={expired ? ['#F87171', '#F87171'] : ['#9810fa', '#e60076']}
+                colors={
+                  freeApps.exhausted
+                    ? ['#F87171', '#F87171']
+                    : ['#9810fa', '#e60076']
+                }
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
-                style={{width: `${trialProgress}%`, height: '100%', borderRadius: 100}}
+                style={{
+                  width: freeApps.known
+                    ? `${Math.min(
+                        100,
+                        Math.round((freeApps.used / freeApps.limit) * 100),
+                      )}%`
+                    : '0%',
+                  height: '100%',
+                  borderRadius: 100,
+                }}
               />
             </View>
           </View>

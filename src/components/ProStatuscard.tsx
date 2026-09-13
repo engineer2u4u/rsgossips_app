@@ -9,6 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import { isSubscribed } from '../lib/plans';
+import { useFreeApplications } from '../hooks/useFreeApplications';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { invokeFn } from '../lib/api';
@@ -49,24 +51,19 @@ export default function ProStatusCard() {
   );
   const userCategories = profile?.categories || [];
 
-  const createdAt = profile?.created_at
-    ? new Date(profile.created_at)
-    : new Date();
-  const now = new Date();
-  const daysSinceCreation = Math.floor(
-    (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  const trialDaysLeft = Math.max(0, 30 - daysSinceCreation);
-  const trialProgress = Math.min(1, daysSinceCreation / 30);
-  const expired = trialDaysLeft === 0;
+  // What an unsubscribed creator has left is a number of applications,
+  // not a number of days — the trial was removed.
+  const freeApps = useFreeApplications();
+  const freeProgress = freeApps.known
+    ? Math.min(1, freeApps.used / freeApps.limit)
+    : 0;
 
   const displayName = profile?.full_name || t('ProStatuscard.creatorFallback');
   const avatarUrl = useProfilePhoto();
   const currentPlan = (profile?.subscription_plan || '').toLowerCase();
-  // Mirrors web: any explicit non-empty plan other than the "free"/"trial"
-  // placeholders counts as paid (including the ₹99/mo Starter tier).
-  const hasPaidPlan =
-    !!currentPlan && currentPlan !== 'free' && currentPlan !== 'trial';
+  // Mirrors web: only the three paid tiers count. The string "trial" is
+  // the signup default most rows still carry and buys nothing.
+  const hasPaidPlan = isSubscribed(profile);
   // Elite is the top tier — once a creator is on it there's nothing to
   // upgrade to, so the CTA hides itself.
   const isTopTierPlan = currentPlan === 'elite';
@@ -75,15 +72,13 @@ export default function ProStatusCard() {
       ? t('ProStatuscard.billingAnnual')
       : t('ProStatuscard.billingMonthly');
 
-  // Resolved plan name shown on the trial/upgrade strip — same logic as the
+  // Resolved plan name shown on the upgrade strip — same logic as the
   // small "PLAN: …" pill in the header.
   const planLabel = hasPaidPlan
     ? currentPlan
         .replace('_', ' ')
         .replace(/\b\w/g, (c: string) => c.toUpperCase())
-    : trialDaysLeft === 0
-      ? t('ProStatuscard.planFree')
-      : t('ProStatuscard.planStarterTrial');
+    : t('ProStatuscard.planFree');
 
   // Exact next-billing date from the gateway (subscription-history's
   // next_charge_at, unix seconds). While it's in flight we show a
@@ -141,9 +136,9 @@ export default function ProStatusCard() {
     opacity.value = withTiming(1, { duration: 600 });
     progress.value = withDelay(
       500,
-      withTiming(trialProgress, { duration: 1000 }),
+      withTiming(freeProgress, { duration: 1000 }),
     );
-  }, [trialProgress]);
+  }, [freeProgress]);
 
   // Count UNIQUE BRANDS with an active campaign matching the creator's
   // categories — mirrors the web ProStatusCard exactly (source of truth):
@@ -183,16 +178,18 @@ export default function ProStatusCard() {
   // Render-time helpers
   const renewalCopy = hasPaidPlan
     ? t('ProStatuscard.renewsIn', { cycle: billingCycle })
-    : expired
-      ? t('ProStatuscard.trialEnded')
-      : t('ProStatuscard.trialPrefix');
+    : freeApps.exhausted
+      ? t('ProStatuscard.freeUsedUp')
+      : t('ProStatuscard.freePrefix');
   const renewalDays = hasPaidPlan
     ? renewalFetching && !realRenewalTs
       ? '…' // placeholder while the exact gateway date loads
       : renewalDaysLeft != null
         ? t('ProStatuscard.daysValue', { count: renewalDaysLeft })
         : '—'
-    : t('ProStatuscard.daysLeft', { count: trialDaysLeft });
+    : freeApps.known
+      ? t('ProStatuscard.freeLeft', { count: freeApps.remaining ?? 0 })
+      : '—';
 
   return (
     <Animated.View
@@ -361,7 +358,7 @@ export default function ProStatusCard() {
             <Text className="font-bold text-slate-900">{renewalDays}</Text>
           </Text>
 
-          {/* Trial progress bar — only when on trial */}
+          {/* How much of the free application allowance is spent */}
           {!hasPaidPlan && (
             <View
               className="h-1.5 w-full rounded-full overflow-hidden mt-2"
@@ -370,7 +367,9 @@ export default function ProStatusCard() {
               <Animated.View style={[progressStyle]} className="h-full">
                 <LinearGradient
                   colors={
-                    expired ? ['#F87171', '#F87171'] : [...BRAND_GRADIENT_WARM]
+                    freeApps.exhausted
+                      ? ['#F87171', '#F87171']
+                      : [...BRAND_GRADIENT_WARM]
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
