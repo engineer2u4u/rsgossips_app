@@ -76,6 +76,44 @@ const REQUIRES_SESSION = new Set([
   'submit-service-review',
 ]);
 
+// Mobile half of the error log (migration 066). Every edge-function failure
+// in the app funnels through invokeFn, so reporting here covers the whole
+// surface without touching individual screens.
+//
+// Fire-and-forget, never throws, and never reports itself — a failure to log
+// that produced a log entry would be an infinite loop.
+function reportEdgeError(
+  fn: string,
+  message: string,
+  status: number,
+  parsed: any,
+): void {
+  if (fn === 'log-client-error') return;
+  try {
+    fetch(`${SUPABASE_URL}/functions/v1/log-client-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        source: 'mobile',
+        area: 'edge_call',
+        event: `${fn}.http_${status}`,
+        // A 4xx is usually the system refusing correctly; a 5xx never is.
+        severity: status >= 500 ? 'error' : 'warn',
+        message,
+        statusCode: status,
+        path: fn,
+        context: {code: parsed?.error ?? null},
+      }),
+    }).catch(() => {});
+  } catch {
+    /* logging must never break the caller */
+  }
+}
+
 export class EdgeFunctionError extends Error {
   status: number;
   data: any;
@@ -240,6 +278,7 @@ export async function invokeFn<T = any>(
       parsed?.message ||
       parsed?.error ||
       `Edge function "${name}" failed (${res.status})`;
+    reportEdgeError(name, msg, res.status, parsed);
     throw new EdgeFunctionError(msg, res.status, parsed);
   }
 
@@ -278,6 +317,7 @@ export async function invokeFormFn<T = any>(
       parsed?.message ||
       parsed?.error ||
       `Edge function "${name}" failed (${res.status})`;
+    reportEdgeError(name, msg, res.status, parsed);
     throw new EdgeFunctionError(msg, res.status, parsed);
   }
   return parsed as T;
