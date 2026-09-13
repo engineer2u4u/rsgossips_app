@@ -261,6 +261,10 @@ type PlanProfile = {
   subscription_plan?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  /** Paid through. NULL/absent = no known end, which never lapses. */
+  plan_expires_at?: string | null;
+  /** False once the recurring charge is stopped at the gateway. */
+  auto_renew?: boolean | null;
 } | null | undefined;
 
 /**
@@ -277,7 +281,56 @@ type PlanProfile = {
  */
 export function getEffectivePlan(profile: PlanProfile): PlanId {
   const plan = (profile?.subscription_plan || '').toLowerCase();
-  return PAID_PLAN_IDS.includes(plan) ? (plan as PlanId) : PLAN_IDS.FREE;
+  if (!PAID_PLAN_IDS.includes(plan)) return PLAN_IDS.FREE;
+  // A cancelled subscription keeps its plan until the paid period ends,
+  // then drops to free — never to `starter`, which is itself a paid tier.
+  return isPlanExpired(profile) ? PLAN_IDS.FREE : (plan as PlanId);
+}
+
+/**
+ * True when a paid plan has run past the period it was paid for.
+ *
+ * Only a NON-NULL date in the past lapses anyone. Rows predating
+ * migration 069 have plan_expires_at NULL and must keep their plan.
+ */
+export function isPlanExpired(profile: PlanProfile): boolean {
+  const raw = profile?.plan_expires_at;
+  if (!raw) return false;
+  const at = Date.parse(String(raw));
+  return Number.isFinite(at) && at < Date.now();
+}
+
+export interface SubscriptionStatus {
+  plan: PlanId;
+  subscribed: boolean;
+  autoRenew: boolean;
+  expiresAt: Date | null;
+  daysLeft: number | null;
+  cancelled: boolean;
+  lapsed: boolean;
+}
+
+/** Renewal standing for the UI. Mirrors web getSubscriptionStatus. */
+export function getSubscriptionStatus(profile: PlanProfile): SubscriptionStatus {
+  const plan = getEffectivePlan(profile);
+  const subscribed = plan !== PLAN_IDS.FREE;
+  const raw = profile?.plan_expires_at;
+  const parsed = raw ? new Date(String(raw)) : null;
+  const expiresAt = parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+  // auto_renew defaults true, so a row predating 069 reads as renewing.
+  const autoRenew = profile?.auto_renew !== false;
+  const daysLeft = expiresAt
+    ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000))
+    : null;
+  return {
+    plan,
+    subscribed,
+    autoRenew,
+    expiresAt,
+    daysLeft,
+    cancelled: subscribed && !autoRenew,
+    lapsed: !subscribed && !!profile?.subscription_plan && isPlanExpired(profile),
+  };
 }
 
 /** True when the creator holds any paid plan. The gate for everything. */

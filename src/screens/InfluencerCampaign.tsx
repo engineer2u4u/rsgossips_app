@@ -8,17 +8,19 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
+  Pressable,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Search, SlidersHorizontal} from 'lucide-react-native';
+import {Search, SlidersHorizontal, Lock, Sparkles, Crown} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {CampaignCard} from '../components/CampaignCard';
 import FilterModal from '../components/FilterModal';
 import BottomNav from '../components/BottomNav';
 import {useAuth} from '../context/AuthContext';
+import {useFreeApplications} from '../hooks/useFreeApplications';
 import {calculateCampaignMatchScore} from '../utils/matchScore';
 import {invokeFn} from '../lib/api';
-import {useRoute} from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 
 const BASE_TABS = ['Active', 'Applied', 'Completed'];
@@ -110,6 +112,8 @@ const FALLBACK_CAMPAIGNS: CampaignData[] = [
 export default function InfluencerCampaign() {
   const {t} = useTranslation();
   const {profile, user} = useAuth();
+  const freeApps = useFreeApplications();
+  const navigation = useNavigation();
   const route = useRoute<any>();
   // Optional brand-name param — coming from "Brands you'll love" tiles or
   // any other deep link. Web's equivalent reads `?brand=` from the URL and
@@ -496,6 +500,53 @@ export default function InfluencerCampaign() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* What a free creator's allowance actually is. Self-hides for
+              subscribers and until the count has loaded. */}
+          {!freeApps.subscribed && freeApps.known ? (
+            <View
+              className="flex-row items-start mb-4 px-4 py-3 border"
+              style={{
+                gap: 12,
+                borderRadius: 16,
+                backgroundColor: freeApps.exhausted ? '#FFFBEB' : '#FAF5FF',
+                borderColor: freeApps.exhausted ? '#FDE68A' : '#F3E8FF',
+              }}>
+              <View
+                className="items-center justify-center bg-white"
+                style={{width: 36, height: 36, borderRadius: 12}}>
+                {freeApps.exhausted ? (
+                  <Lock size={16} color="#D97706" />
+                ) : (
+                  <Sparkles size={16} color="#9333EA" />
+                )}
+              </View>
+              <View className="flex-1">
+                <Text className="text-[13px] font-black text-slate-900">
+                  {freeApps.exhausted
+                    ? t('ScreensInfluencerCampaign.freeBannerExhausted')
+                    : t('ScreensInfluencerCampaign.freeBannerTitle', {
+                        count: freeApps.remaining ?? 0,
+                      })}
+                </Text>
+                <Text className="text-[11px] text-slate-500 mt-0.5">
+                  {t('ScreensInfluencerCampaign.freeBannerBody')}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate('InfluencerPricing' as never)
+                  }
+                  accessibilityRole="button"
+                  className="mt-2 self-start flex-row items-center px-3 py-2"
+                  style={{borderRadius: 12, backgroundColor: '#9810fa', gap: 6}}>
+                  <Crown size={12} color="#fff" />
+                  <Text className="text-white text-[11px] font-bold">
+                    {t('ScreensInfluencerCampaign.freeBannerCta')}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
 
           {/* Campaign Cards */}
           {loading ? (

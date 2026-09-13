@@ -22,6 +22,7 @@ import {
   PLAN_IDS,
   formatFeatureValue,
   getEffectivePlan,
+  getSubscriptionStatus,
   getFeatureValue,
   type BillingCycle,
   type PlanId,
@@ -97,9 +98,10 @@ export default function InfluencerPricing() {
   }, [subscribedPlan]);
 
   const currentPlan = getEffectivePlan(profile);
-  const isSubscribed =
-    !!profile?.subscription_plan &&
-    !['trial', 'free', ''].includes(String(profile.subscription_plan).toLowerCase());
+  // One source of truth, so a lapsed plan cannot still read as current
+  // here while every other surface has already dropped it to free.
+  const subStatus = getSubscriptionStatus(profile);
+  const isSubscribed = subStatus.subscribed;
   // The current plan is a tier + a cycle. Pro Monthly and Pro Annual are
   // different products, so "Current" must match BOTH — otherwise switching a
   // Pro Monthly user to the Annual tab wrongly marks Pro Annual as their plan.
@@ -193,6 +195,22 @@ export default function InfluencerPricing() {
           <View className="rounded-xl bg-amber-50 px-4 py-3 mb-4">
             <Text className="text-[13px] text-amber-700">
               {t('Pricing.connecting')}
+            </Text>
+          </View>
+        )}
+
+        {/* Cancelled at the gateway but still inside the paid period. The
+            creator keeps everything until the date; this is the only place
+            that tells them it is going to stop. */}
+        {subStatus.cancelled && (
+          <View className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-4">
+            <Text className="text-[13px] font-bold text-amber-800">
+              {t('Pricing.autoRenewOffTitle')}
+            </Text>
+            <Text className="text-[12px] text-amber-700 mt-1">
+              {subStatus.daysLeft != null
+                ? t('Pricing.autoRenewOffBody', {count: subStatus.daysLeft})
+                : t('Pricing.autoRenewOffBodyNoDate')}
             </Text>
           </View>
         )}

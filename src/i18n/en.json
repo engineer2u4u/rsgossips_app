@@ -2004,7 +2004,12 @@
     },
     "filteredOutOf": "{{shown}} out of {{total}} campaigns",
     "showAll": "Show all",
-    "loadMore": "Load more ({{n}} remaining)"
+    "loadMore": "Load more ({{n}} remaining)",
+    "freeBannerTitle_one": "{{count}} free barter application left",
+    "freeBannerTitle_other": "{{count}} free barter applications left",
+    "freeBannerExhausted": "You have used all your free applications",
+    "freeBannerBody": "Free accounts can apply to barter campaigns, where brands pay in product. Paid campaigns, your media kit and analytics unlock on any plan.",
+    "freeBannerCta": "See plans"
   },
   "ScreensInfluencerChats": {
     "messages": "Messages",
@@ -2191,7 +2196,13 @@
       "engagement": "Engagement",
       "reach": "Reach",
       "saves": "Saves"
-    }
+    },
+    "freeNoteKindPaid": "paid",
+    "freeNoteKindHybrid": "paid + product",
+    "freeNotePaid": "This is a {{kind}} campaign — subscribers only. Your free applications cover barter campaigns.",
+    "freeNoteRemaining_one": "{{count}} free barter application left",
+    "freeNoteRemaining_other": "{{count}} free barter applications left",
+    "freeNoteExhausted": "You have used all your free applications. Subscribe to keep applying."
   },
   "ScreensInfluencerPricing": {
     "header": {
@@ -3513,6 +3524,28 @@
     "restoreInfo": "Already subscribed with this {{account}}? Tap Restore to re-apply your active plan — handy after reinstalling or on a new device. It never charges you again.",
     "manageInfoTitle": "Manage subscription",
     "manageInfo": "Opens {{store}}, where you can upgrade, downgrade, or cancel. Your subscription is billed and managed there — not inside the app.",
-    "legal": "Payment is charged to your store account. Subscriptions renew automatically unless cancelled at least 24 hours before the period ends. Manage or cancel in your store account settings."
+    "legal": "Payment is charged to your store account. Subscriptions renew automatically unless cancelled at least 24 hours before the period ends. Manage or cancel in your store account settings.",
+    "autoRenewOffTitle": "Auto-renew is cancelled",
+    "autoRenewOffBody_zero": "Your plan ends today — after that you go back to the free plan. Resubscribe below to stay on.",
+    "autoRenewOffBody_one": "Your plan ends in {{count}} day — after that you go back to the free plan. Resubscribe below to stay on.",
+    "autoRenewOffBody_other": "Your plan ends in {{count}} days — after that you go back to the free plan. Resubscribe below to stay on.",
+    "autoRenewOffBodyNoDate": "Your plan will end when the paid period finishes, then you go back to the free plan. Resubscribe below to stay on."
+  },
+  "UpgradeRequired": {
+    "close": "Close",
+    "kindPaid": "paid",
+    "kindHybrid": "paid + product",
+    "paidTitle": "This one is for subscribers",
+    "paidBody": "Your {{limit}} free applications cover barter campaigns, where brands pay in product. This is a {{kind}} campaign, so it needs a plan.",
+    "quotaTitle": "You have used all {{limit}} free applications",
+    "quotaBody": "Free accounts get {{limit}} barter campaign applications. Subscribe to keep applying.",
+    "perk1": "Apply to paid campaigns, not just barter",
+    "perk2": "Unlock your media kit — the profile brands ask for before shortlisting",
+    "perk3": "Analytics, AI tools and faster payouts",
+    "ctaFrom": "See plans — from ₹{{price}}/month",
+    "cta": "See plans",
+    "browseBarter_one": "Browse barter campaigns ({{count}} free left)",
+    "browseBarter_other": "Browse barter campaigns ({{count}} free left)",
+    "notNow": "Not now"
   }
 }

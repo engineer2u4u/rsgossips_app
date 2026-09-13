@@ -19,6 +19,7 @@ import {
   CheckCircle,
   CheckCircle2,
   Clock,
+  Lock,
   Star,
   Users,
   TrendingUp,
@@ -38,6 +39,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import ApplyCampaignForm from '../components/ApplyCampaignForm';
+import UpgradeRequiredModal, {
+  type UpgradeReason,
+} from '../components/UpgradeRequiredModal';
+import {useFreeApplications} from '../hooks/useFreeApplications';
 import RatingModal, {type RatingValues} from '../components/RatingModal';
 import ApplicationStatusBar from '../components/ApplicationStatusBar';
 import BottomNav from '../components/BottomNav';
@@ -98,6 +103,35 @@ export default function InfluencerOfferDetail() {
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showApplyForm, setShowApplyForm] = useState(false);
+  // Why the Apply press was refused: 'paid_campaign' | 'quota' | null.
+  const [upgradeReason, setUpgradeReason] = useState<UpgradeReason>(null);
+  const freeApps = useFreeApplications();
+
+  // Free applications cover barter only. `hybrid` is NOT barter — it
+  // carries cash — and apply-campaign draws the line in the same place.
+  const isBarter =
+    String(campaign?.campaignType || '').toLowerCase() === 'barter';
+  const showFreeNote = !freeApps.subscribed && freeApps.known;
+
+  // The server refuses both of these, but only after the creator has
+  // written a pitch. Check them on the press so nothing is wasted.
+  //
+  // `known` guards the still-loading case: refusing before the count has
+  // landed would block a creator with applications to spare, and the
+  // server is the real boundary, so erring open here costs nothing.
+  const requestApply = () => {
+    if (!freeApps.subscribed && freeApps.known) {
+      if (!isBarter) {
+        setUpgradeReason('paid_campaign');
+        return;
+      }
+      if (freeApps.exhausted) {
+        setUpgradeReason('quota');
+        return;
+      }
+    }
+    setShowApplyForm(true);
+  };
   const [showRating, setShowRating] = useState(false);
   const [myRating, setMyRating] = useState<RatingValues | null>(null);
   const [refetchFlag, setRefetchFlag] = useState(0);
@@ -801,9 +835,47 @@ export default function InfluencerOfferDetail() {
               </Text>
             </View>
           ) : null}
+          {showFreeNote ? (
+            <View
+              className="flex-row items-start mb-2 px-3 py-2 border"
+              style={{
+                gap: 8,
+                borderRadius: 12,
+                backgroundColor:
+                  !isBarter || freeApps.exhausted ? '#FFFBEB' : '#FAF5FF',
+                borderColor:
+                  !isBarter || freeApps.exhausted ? '#FDE68A' : '#F3E8FF',
+              }}>
+              {!isBarter || freeApps.exhausted ? (
+                <Lock size={13} color="#D97706" />
+              ) : (
+                <Sparkles size={13} color="#9333EA" />
+              )}
+              <Text
+                className="flex-1 text-[11px] font-semibold"
+                style={{
+                  color:
+                    !isBarter || freeApps.exhausted ? '#92400E' : '#6B21A8',
+                }}>
+                {!isBarter
+                  ? t('ScreensInfluencerOfferDetail.freeNotePaid', {
+                      kind:
+                        String(campaign?.campaignType || '').toLowerCase() ===
+                        'hybrid'
+                          ? t('ScreensInfluencerOfferDetail.freeNoteKindHybrid')
+                          : t('ScreensInfluencerOfferDetail.freeNoteKindPaid'),
+                    })
+                  : freeApps.exhausted
+                    ? t('ScreensInfluencerOfferDetail.freeNoteExhausted')
+                    : t('ScreensInfluencerOfferDetail.freeNoteRemaining', {
+                        count: freeApps.remaining ?? 0,
+                      })}
+              </Text>
+            </View>
+          ) : null}
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => setShowApplyForm(true)}
+            onPress={requestApply}
             className="flex-row items-center justify-center"
             style={{borderRadius: 16, height: 48, overflow: 'hidden'}}>
             <LinearGradient
@@ -824,6 +896,21 @@ export default function InfluencerOfferDetail() {
       </View>
 
       {/* Apply Form Modal */}
+      <UpgradeRequiredModal
+        reason={upgradeReason}
+        remaining={freeApps.remaining ?? 0}
+        campaignType={campaign?.campaignType}
+        onClose={() => setUpgradeReason(null)}
+        onSeePlans={() => {
+          // Close first — an RN Modal would sit over the pricing screen.
+          setUpgradeReason(null);
+          navigation.navigate('InfluencerPricing' as never);
+        }}
+        onBrowseBarter={() => {
+          setUpgradeReason(null);
+          navigation.navigate('InfluencerCampaigns' as never);
+        }}
+      />
       <ApplyCampaignForm
         visible={showApplyForm}
         onClose={() => setShowApplyForm(false)}
