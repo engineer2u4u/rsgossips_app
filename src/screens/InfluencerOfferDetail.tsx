@@ -19,7 +19,6 @@ import {
   CheckCircle,
   CheckCircle2,
   Clock,
-  Lock,
   Star,
   Users,
   TrendingUp,
@@ -111,7 +110,6 @@ export default function InfluencerOfferDetail() {
   // carries cash — and apply-campaign draws the line in the same place.
   const isBarter =
     String(campaign?.campaignType || '').toLowerCase() === 'barter';
-  const showFreeNote = !freeApps.subscribed && freeApps.known;
 
   // The server refuses both of these, but only after the creator has
   // written a pitch. Check them on the press so nothing is wasted.
@@ -832,44 +830,6 @@ export default function InfluencerOfferDetail() {
               <Sparkles size={15} color="white" />
               <Text className="text-white text-[12px] font-extrabold" style={{flex: 1}}>
                 {(campaign.inviteBrandName || campaign.brandName) + ' invited you — apply below'}
-              </Text>
-            </View>
-          ) : null}
-          {showFreeNote ? (
-            <View
-              className="flex-row items-start mb-2 px-3 py-2 border"
-              style={{
-                gap: 8,
-                borderRadius: 12,
-                backgroundColor:
-                  !isBarter || freeApps.exhausted ? '#FFFBEB' : '#FAF5FF',
-                borderColor:
-                  !isBarter || freeApps.exhausted ? '#FDE68A' : '#F3E8FF',
-              }}>
-              {!isBarter || freeApps.exhausted ? (
-                <Lock size={13} color="#D97706" />
-              ) : (
-                <Sparkles size={13} color="#9333EA" />
-              )}
-              <Text
-                className="flex-1 text-[11px] font-semibold"
-                style={{
-                  color:
-                    !isBarter || freeApps.exhausted ? '#92400E' : '#6B21A8',
-                }}>
-                {!isBarter
-                  ? t('ScreensInfluencerOfferDetail.freeNotePaid', {
-                      kind:
-                        String(campaign?.campaignType || '').toLowerCase() ===
-                        'hybrid'
-                          ? t('ScreensInfluencerOfferDetail.freeNoteKindHybrid')
-                          : t('ScreensInfluencerOfferDetail.freeNoteKindPaid'),
-                    })
-                  : freeApps.exhausted
-                    ? t('ScreensInfluencerOfferDetail.freeNoteExhausted')
-                    : t('ScreensInfluencerOfferDetail.freeNoteRemaining', {
-                        count: freeApps.remaining ?? 0,
-                      })}
               </Text>
             </View>
           ) : null}
