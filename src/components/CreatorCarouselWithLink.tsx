@@ -9,10 +9,12 @@ import { useTranslation } from 'react-i18next';
 import CreatorCard from './CreatorCard';
 import { supabase } from '../utils/supabase';
 import { BRAND_GRADIENT_WARM } from '../theme/brand';
+import { fetchEliteSpotlight, mergeSpotlight } from '../lib/spotlight';
 
 interface Creator {
   name: string;
   verified: boolean;
+  elite?: boolean;
   image: string;
   posts: string;
   followers: string;
@@ -118,28 +120,32 @@ export default function CreatorsCarouselWithLink() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('featured_creators')
-        .select(
-          'username, display_name, avatar_url, followers_label, verified, instagram_url',
-        )
-        .eq('is_active', true)
-        .order('position', { ascending: true });
+      // Elite spotlight and the admin's picks load together; Elite leads.
+      const [{ data }, elite] = await Promise.all([
+        supabase
+          .from('featured_creators')
+          .select(
+            'username, display_name, avatar_url, followers_label, verified, instagram_url',
+          )
+          .eq('is_active', true)
+          .order('position', { ascending: true }),
+        fetchEliteSpotlight(),
+      ]);
       if (cancelled) return;
-      if (data && data.length > 0) {
-        setCreators(
-          data.map((r: any) => ({
-            name: r.username,
-            verified: !!r.verified,
-            image: r.avatar_url || '',
-            followers: r.followers_label || '',
-            posts: '',
-            following: '',
-            bio: r.display_name || '',
-            link: r.instagram_url,
-          })),
-        );
-      }
+      const curated: Creator[] =
+        data && data.length > 0
+          ? data.map((r: any) => ({
+              name: r.username,
+              verified: !!r.verified,
+              image: r.avatar_url || '',
+              followers: r.followers_label || '',
+              posts: '',
+              following: '',
+              bio: r.display_name || '',
+              link: r.instagram_url,
+            }))
+          : fallbackCreators;
+      setCreators(mergeSpotlight(elite, curated) as Creator[]);
     })();
     return () => {
       cancelled = true;

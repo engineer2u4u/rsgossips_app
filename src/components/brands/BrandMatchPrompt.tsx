@@ -22,6 +22,7 @@ import {Check, Send, Sparkles, Users} from 'lucide-react-native';
 import {invokeFn} from '../../lib/api';
 import {useAuth} from '../../context/AuthContext';
 import CampaignPickerModal from './CampaignPickerModal';
+import EliteBadge from '../EliteBadge';
 import {
   ANGLE_96,
   ANGLE_120,
@@ -41,6 +42,7 @@ type MatchRow = {
   photo?: string;
   followers?: number;
   fit?: number;
+  isElite?: boolean;
 };
 
 function fmt(n?: number) {
@@ -282,9 +284,14 @@ export default function BrandMatchPrompt() {
                   </LinearGradient>
                 )}
                 <View style={{flex: 1, minWidth: 0}}>
-                  <Text style={{fontSize: 13, fontWeight: '700', color: HOME_COLORS.ink}} numberOfLines={1}>
-                    {r.name}
-                  </Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+                    <Text
+                      style={{fontSize: 13, fontWeight: '700', color: HOME_COLORS.ink, flexShrink: 1}}
+                      numberOfLines={1}>
+                      {r.name}
+                    </Text>
+                    {r.isElite ? <EliteBadge /> : null}
+                  </View>
                   <Text style={{fontSize: 11, color: HOME_COLORS.muted}} numberOfLines={1}>
                     {[r.category, `${fmt(r.followers)} followers`].filter(Boolean).join(' · ')}
                   </Text>

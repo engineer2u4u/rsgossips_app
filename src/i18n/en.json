@@ -3551,5 +3551,9 @@
     "browseBarter_one": "Browse barter campaigns ({{count}} free left)",
     "browseBarter_other": "Browse barter campaigns ({{count}} free left)",
     "notNow": "Not now"
+  },
+  "EliteBadge": {
+    "label": "Elite",
+    "title": "Verified Elite creator"
   }
 }

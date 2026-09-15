@@ -187,7 +187,11 @@ export default function BrandSearch({route}: any) {
         ),
       );
     }
-    return list;
+    // Elite "Featured · top spot": Elite creators lead whichever sort is
+    // picked. Sort is stable, so each group keeps the order chosen above.
+    return [...list].sort(
+      (a, b) => (b.is_elite ? 1 : 0) - (a.is_elite ? 1 : 0),
+    );
   }, [influencers, filters, searchText, sort]);
 
   const countForDraft = useCallback(

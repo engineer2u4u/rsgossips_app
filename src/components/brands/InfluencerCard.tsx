@@ -12,6 +12,7 @@ import {Alert, Image, Linking, Pressable, Text, View} from 'react-native';
 import {Check, Instagram, MapPin, MoreVertical, Plus} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
 import ReportBlockSheet from '../ReportBlockSheet';
+import EliteBadge from '../EliteBadge';
 
 export type SearchInfluencer = {
   influencer_id: string;
@@ -25,6 +26,8 @@ export type SearchInfluencer = {
   categories?: string[];
   languages?: string[];
   city?: string;
+  /** Elite perks — server-computed, date-aware. */
+  is_elite?: boolean;
 };
 
 interface Props {
@@ -118,9 +121,15 @@ export function InfluencerCard({
 
       {/* Info */}
       <View className="flex-1 ml-3.5" style={{gap: 2}}>
-        <Text className="text-sm font-bold text-gray-900" numberOfLines={1}>
-          {name}
-        </Text>
+        <View className="flex-row items-center" style={{gap: 6}}>
+          <Text
+            className="text-sm font-bold text-gray-900"
+            numberOfLines={1}
+            style={{flexShrink: 1}}>
+            {name}
+          </Text>
+          {influencer.is_elite ? <EliteBadge /> : null}
+        </View>
         {handle ? (
           <Text className="text-[11px] text-gray-400" numberOfLines={1}>
             @{handle}

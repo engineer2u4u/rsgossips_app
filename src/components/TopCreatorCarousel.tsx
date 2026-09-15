@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, Pressable } from 'react-native';
 import { Star } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -12,8 +12,12 @@ import {
   VIOLET_BLUE,
   VIOLET_BLUE_LOCATIONS,
 } from '../theme/brandHome';
+import EliteBadge from './EliteBadge';
+import { fetchEliteSpotlight, mergeSpotlight } from '../lib/spotlight';
 
-const topCreators = [
+type TopCreator = { name: string; rating?: string; image: string; followers: string; elite?: boolean };
+
+const curatedCreators: TopCreator[] = [
   { name: 'sahilanandofficial', rating: '4.9', image: 'https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL', followers: '1.4M' },
   { name: 'nonaberrry', rating: '5.0', image: 'https://lh3.googleusercontent.com/d/17FV8146Zu6KAYNxfTEj-SGxj40nlyo_5', followers: '798K' },
   { name: 'aditirajputofficial', rating: '4.8', image: 'https://lh3.googleusercontent.com/d/18IKmd6vgmGBOz9T5KVBAm8Oozl5iQyyo', followers: '166K' },
@@ -23,6 +27,20 @@ export const TopCreatorsCarousel = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const goSearch = () => navigation.navigate('BrandSearch' as never);
+  // Elite spotlight leads the curated picks.
+  const [topCreators, setTopCreators] = useState<TopCreator[]>(curatedCreators);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchEliteSpotlight().then(elite => {
+      if (!cancelled && elite.length > 0) {
+        setTopCreators(mergeSpotlight(elite, curatedCreators) as TopCreator[]);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <View style={{ width: '100%', gap: 11 }}>
@@ -49,7 +67,15 @@ export const TopCreatorsCarousel = () => {
               overflow: 'hidden',
             }}>
             <View style={{ position: 'relative', height: 232, backgroundColor: '#EEF1F8' }}>
-              <Image source={{ uri: creator.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              {creator.image ? (
+                <Image source={{ uri: creator.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              ) : (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#C084FC' }}>
+                  <Text style={{ color: '#fff', fontSize: 48, fontWeight: '900' }}>
+                    {(creator.name || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
               <View
                 style={{ position: 'absolute', top: 10, left: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 99, overflow: 'hidden' }}>
                 <LinearGradient
@@ -58,6 +84,11 @@ export const TopCreatorsCarousel = () => {
                 />
                 <Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '700', letterSpacing: 0.7 }}>AI PICK</Text>
               </View>
+              {creator.elite ? (
+                <View style={{ position: 'absolute', top: 10, right: 10 }}>
+                  <EliteBadge size="md" />
+                </View>
+              ) : (
               <View
                 style={{
                   position: 'absolute',
@@ -74,6 +105,7 @@ export const TopCreatorsCarousel = () => {
                 <Star size={11} color="#fb923c" fill="#fb923c" />
                 <Text style={{ fontSize: 10.5, fontWeight: '700', color: HOME_COLORS.ink }}>{creator.rating}</Text>
               </View>
+              )}
             </View>
 
             <View style={{ padding: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>

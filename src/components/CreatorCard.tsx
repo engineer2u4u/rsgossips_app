@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Crown, TrendingUp } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
+import EliteBadge from './EliteBadge';
 
 interface CreatorCardProps {
   name: string;
   verified?: boolean;
+  /** Live Elite creator in the homepage spotlight. */
+  elite?: boolean;
   image: string;
   posts: string | number;
   followers: string | number;
@@ -40,6 +43,7 @@ function avatarTone(seed: string): [string, string] {
 export default function CreatorCard({
   name,
   verified,
+  elite = false,
   image,
   posts,
   followers,
@@ -152,7 +156,11 @@ export default function CreatorCard({
         style={{ gap: 6, marginBottom: 6 }}
       >
         <Text className="text-base font-black text-slate-900">{name}</Text>
-        {verified ? <CheckCircle2 size={14} color={BRAND.accent} /> : null}
+        {elite ? (
+          <EliteBadge />
+        ) : verified ? (
+          <CheckCircle2 size={14} color={BRAND.accent} />
+        ) : null}
       </View>
 
       {/* HERO FOLLOWER COUNT */}
