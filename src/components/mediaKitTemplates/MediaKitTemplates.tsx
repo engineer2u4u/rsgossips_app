@@ -44,6 +44,7 @@ import {
   readDemographics,
   readSocials,
   readInsights,
+  readHeadlineStats,
   toServiceLabel,
   formatCount,
   type InsightItem,
@@ -83,6 +84,9 @@ export function TemplateClassic({
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = t('MediaKitInsights.headline.last30', {days: ins.days});
 
   return (
     <View>
@@ -278,9 +282,9 @@ export function TemplateClassic({
           </Text>
           <View className="flex-row flex-wrap" style={{gap: 8}}>
             <ClassicStat
-              label={t('MediaKitTemplatesMediaKitTemplates.accountsReached')}
-              value={formatCount(p.totalReach || p.totalImpressions || p.followers * 2)}
-              sub={t('MediaKitTemplatesMediaKitTemplates.last30Days')}
+              label={t('MediaKitInsights.headline.viewers')}
+              value={hs.viewers.display}
+              sub={last30}
             />
             <View
               className="flex-1 min-w-[45%] rounded-2xl p-4 overflow-hidden"
@@ -290,24 +294,22 @@ export function TemplateClassic({
                 style={{position: 'absolute', inset: 0}}
               />
               <Text className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">
-                {t('MediaKitTemplatesMediaKitTemplates.engagementRate')}
+                {t('MediaKitInsights.headline.reelViews')}
               </Text>
-              <Text className="text-2xl font-black text-white">
-                {p.engagementRate || 0}%
+              <Text className="text-2xl font-black text-white" numberOfLines={1} adjustsFontSizeToFit>
+                {hs.reelViews.display}
               </Text>
-              <Text className="text-[10px] text-white/70 mt-1">
-                {t('MediaKitTemplatesMediaKitTemplates.categoryAvg')}
-              </Text>
+              <Text className="text-[10px] text-white/70 mt-1">{last30}</Text>
             </View>
             <ClassicStat
-              label={t('MediaKitTemplatesMediaKitTemplates.nonFollowerReach')}
-              value={`${p.nonFollowerReachPct}%`}
-              sub={t('MediaKitTemplatesMediaKitTemplates.organicDiscovery')}
+              label={t('MediaKitInsights.headline.posts')}
+              value={hs.posts.display}
+              sub={t('MediaKitInsights.headline.postsSub')}
             />
             <ClassicStat
-              label={t('MediaKitTemplatesMediaKitTemplates.interactions')}
-              value={formatCount(p.avgLikes + p.avgComments)}
-              sub={t('MediaKitTemplatesMediaKitTemplates.avgPerPost')}
+              label={t('MediaKitInsights.headline.likes')}
+              value={hs.likes.display}
+              sub={last30}
             />
           </View>
           <ClassicInsights ins={ins} />
@@ -497,6 +499,8 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
 
   // RN has no backdrop-filter; we use semi-opaque white panels over a
   // gradient base to suggest the same frosted vibe.
@@ -598,13 +602,32 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
           />
           <GlassDivider />
           <GlassStat
-            n={`${p.engagementRate || 0}%`}
-            l={t('MediaKitTemplatesMediaKitTemplates.engagement')}
+            n={hs.reelViews.display}
+            l={t('MediaKitInsights.headline.reelViews')}
           />
           <GlassDivider />
           <GlassStat
-            n={formatCount(p.posts)}
-            l={t('MediaKitTemplatesMediaKitTemplates.posts')}
+            n={hs.posts.display}
+            l={t('MediaKitInsights.headline.posts')}
+          />
+        </View>
+        <View
+          style={{
+            backgroundColor: glassBg,
+            borderWidth: 1,
+            borderColor: glassBorder,
+            borderRadius: 22,
+            paddingVertical: 18,
+            flexDirection: 'row',
+          }}>
+          <GlassStat
+            n={hs.viewers.display}
+            l={t('MediaKitInsights.headline.viewers')}
+          />
+          <GlassDivider />
+          <GlassStat
+            n={hs.likes.display}
+            l={t('MediaKitInsights.headline.likes')}
           />
         </View>
 
@@ -813,6 +836,8 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
 
   const paper = '#f4efe6';
   const ink = '#16130f';
@@ -940,13 +965,27 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           line={line}
         />
         <NoirStat
-          n={`${p.engagementRate || 0}%`}
-          l={t('MediaKitTemplatesMediaKitTemplates.engagement')}
+          n={hs.reelViews.display}
+          l={t('MediaKitInsights.headline.reelViews')}
           line={line}
         />
         <NoirStat
-          n={formatCount(p.posts)}
-          l={t('MediaKitTemplatesMediaKitTemplates.posts')}
+          n={hs.posts.display}
+          l={t('MediaKitInsights.headline.posts')}
+          last
+          line={line}
+        />
+      </View>
+      <NoirRule line={line} />
+      <View className="flex-row" style={{paddingVertical: 8}}>
+        <NoirStat
+          n={hs.viewers.display}
+          l={t('MediaKitInsights.headline.viewers')}
+          line={line}
+        />
+        <NoirStat
+          n={hs.likes.display}
+          l={t('MediaKitInsights.headline.likes')}
           last
           line={line}
         />
@@ -1196,6 +1235,9 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = t('MediaKitInsights.headline.last30', {days: ins.days});
 
   const cream = '#fbf3ec';
   const ink = '#2b1d18';
@@ -1366,13 +1408,16 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
               fontWeight: '800',
               marginBottom: 6,
             }}>
-            {t('MediaKitTemplatesMediaKitTemplates.engagementRate')}
+            {t('MediaKitInsights.headline.reelViews')}
           </Text>
-          <Text style={{color: '#fff', fontSize: 42, fontWeight: '900', letterSpacing: -1}}>
-            {p.engagementRate || 0}%
+          <Text
+            style={{color: '#fff', fontSize: 42, fontWeight: '900', letterSpacing: -1}}
+            numberOfLines={1}
+            adjustsFontSizeToFit>
+            {hs.reelViews.display}
           </Text>
           <Text style={{color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2}}>
-            {t('MediaKitTemplatesMediaKitTemplates.categoryAvg')}
+            {last30}
           </Text>
         </View>
 
@@ -1385,9 +1430,29 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
             </Text>
           </Tile>
           <Tile style={{flex: 1}}>
-            {lbl(t('MediaKitTemplatesMediaKitTemplates.posts'))}
+            {lbl(t('MediaKitInsights.headline.posts'))}
             <Text style={{color: ink, fontSize: 32, fontWeight: '900', letterSpacing: -1}}>
-              {formatCount(p.posts)}
+              {hs.posts.display}
+            </Text>
+          </Tile>
+        </View>
+        <View className="flex-row" style={{gap: 12}}>
+          <Tile style={{flex: 1}}>
+            {lbl(t('MediaKitInsights.headline.viewers'))}
+            <Text
+              style={{color: ink, fontSize: 32, fontWeight: '900', letterSpacing: -1}}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
+              {hs.viewers.display}
+            </Text>
+          </Tile>
+          <Tile style={{flex: 1}}>
+            {lbl(t('MediaKitInsights.headline.likes'))}
+            <Text
+              style={{color: ink, fontSize: 32, fontWeight: '900', letterSpacing: -1}}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
+              {hs.likes.display}
             </Text>
           </Tile>
         </View>
@@ -1561,6 +1626,8 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
 
   const ink = '#0f0f0f';
   const pink = '#E94560';
@@ -1692,8 +1759,11 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
             </Text>
           </View>
           <View style={[hardCard(), {flex: 1, backgroundColor: cyan}]}>
-            <Text style={{color: ink, fontFamily: FONTS.BLOCK, fontSize: 28}}>
-              {p.engagementRate || 0}%
+            <Text
+              style={{color: ink, fontFamily: FONTS.BLOCK, fontSize: 28}}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
+              {hs.reelViews.display}
             </Text>
             <Text
               style={{
@@ -1702,13 +1772,14 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                 fontFamily: FONTS.MONO_BOLD,
                 letterSpacing: 1,
                 textTransform: 'uppercase',
-              }}>
-              {t('MediaKitTemplatesMediaKitTemplates.engagement')}
+              }}
+              numberOfLines={1}>
+              {t('MediaKitInsights.headline.reelViews')}
             </Text>
           </View>
           <View style={[hardCard(), {flex: 1, backgroundColor: purple}]}>
-            <Text style={{color: '#fff', fontFamily: FONTS.BLOCK, fontSize: 28}}>
-              {formatCount(p.posts)}
+            <Text style={{color: '#fff', fontFamily: FONTS.BLOCK, fontSize: 28}} numberOfLines={1} adjustsFontSizeToFit>
+              {hs.posts.display}
             </Text>
             <Text
               style={{
@@ -1718,7 +1789,39 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
                 letterSpacing: 1,
                 textTransform: 'uppercase',
               }}>
-              {t('MediaKitTemplatesMediaKitTemplates.posts')}
+              {t('MediaKitInsights.headline.posts')}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-row" style={{gap: 10}}>
+          <View style={[hardCard(), {flex: 1, backgroundColor: pink}]}>
+            <Text style={{color: '#fff', fontFamily: FONTS.BLOCK, fontSize: 28}} numberOfLines={1} adjustsFontSizeToFit>
+              {hs.viewers.display}
+            </Text>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 10.5,
+                fontFamily: FONTS.MONO_BOLD,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}>
+              {t('MediaKitInsights.headline.viewers')}
+            </Text>
+          </View>
+          <View style={[hardCard(), {flex: 1, backgroundColor: yellow}]}>
+            <Text style={{color: ink, fontFamily: FONTS.BLOCK, fontSize: 28}} numberOfLines={1} adjustsFontSizeToFit>
+              {hs.likes.display}
+            </Text>
+            <Text
+              style={{
+                color: ink,
+                fontSize: 10.5,
+                fontFamily: FONTS.MONO_BOLD,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}>
+              {t('MediaKitInsights.headline.likes')}
             </Text>
           </View>
         </View>
