@@ -6,6 +6,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './src/lib/navigation';
 import { registerForPush, initPushHandlers } from './src/lib/push';
 import OfflineGate from './src/components/OfflineGate';
+import InstagramReconnectModal from './src/components/InstagramReconnectModal';
+import EliteWelcomeModal from './src/components/EliteWelcomeModal';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { LinkingOptions } from '@react-navigation/native';
 import './global.css';
@@ -224,6 +226,10 @@ export default function App() {
             {/* Offline takeover — sits above the whole navigator; woken by
                 invokeFn on network-level fetch failures, dismisses itself
                 only when a connectivity probe succeeds. */}
+            {/* Dead Instagram token → reconnect popup for creators. Root-level so
+                stacked screens don't each mount a copy. */}
+            <InstagramReconnectModal />
+            <EliteWelcomeModal />
             <OfflineGate />
           </AuthProvider>
         </LoadingProvider>

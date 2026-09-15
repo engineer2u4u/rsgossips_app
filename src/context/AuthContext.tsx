@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import {AppState} from 'react-native';
 import {supabase, safeGetSession, isInvalidRefreshTokenError} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
 import {
@@ -307,6 +308,22 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     init();
 
+    // Coming back to the app counts as coming back to the platform: re-check
+    // the Instagram token so a dead one opens the reconnect popup. At most
+    // every 30 minutes; the server throttles healthy accounts to one refresh
+    // an hour anyway.
+    let lastIgCheck = Date.now();
+    const appStateSub = AppState.addEventListener('change', async state => {
+      if (state !== 'active' || !isMounted) return;
+      if (Date.now() - lastIgCheck < 30 * 60 * 1000) return;
+      lastIgCheck = Date.now();
+      const session = await safeGetSession();
+      const uid = session?.user?.id;
+      if (!uid || !isMounted) return;
+      await fetchProfile(uid);
+      refreshInstagram(uid);
+    });
+
     const {
       data: {subscription},
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -348,6 +365,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     return () => {
       isMounted = false;
+      appStateSub.remove();
       subscription.unsubscribe();
       clearTimeout(safety);
       clearInterval(revokePoll);

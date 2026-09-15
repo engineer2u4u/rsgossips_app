@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import {Check, X} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import {truncateText} from '../../lib/text';
 
 // ─────────── Generic primitives ───────────
 
@@ -252,7 +253,7 @@ export function BrandInfoEditModal({
       <Field
         label={t('BrandsBrandEditModals.brandInfo.aboutLabel')}
         value={about}
-        onChange={v => setAbout(v.slice(0, 1000))}
+        onChange={v => setAbout(truncateText(v, 1000))}
         placeholder={t('BrandsBrandEditModals.brandInfo.aboutPlaceholder')}
         hint={t('BrandsBrandEditModals.brandInfo.aboutHint')}
         multiline

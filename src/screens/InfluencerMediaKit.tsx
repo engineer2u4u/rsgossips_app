@@ -51,6 +51,9 @@ import {
 import MediaKitPreview from '../components/mediaKitTemplates/MediaKitTemplates';
 import {useAiTool} from '../hooks/useAiTool';
 import {AiMarkdown} from '../components/AiMarkdown';
+import {truncateText} from '../lib/text';
+import InstagramReconnectBanner from '../components/InstagramReconnectBanner';
+import {readInsights} from '../components/mediaKitTemplates/shared';
 
 // Public media-kit pages live on the web at `rgossips.com/kit/[id]`. Slug
 // resolution mirrors the web (`username → instagram_handle → user.id`) so
@@ -74,7 +77,28 @@ const SERVICE_LABELS: Record<string, string> = {
 
 export default function InfluencerMediaKit() {
   const {t} = useTranslation();
-  const {profile, user, refreshProfile} = useAuth();
+  const {
+    profile,
+    user,
+    refreshProfile,
+    refreshInstagram,
+    instagramTokenMissing,
+    setInstagramTokenMissing,
+  } = useAuth();
+
+  // Out-of-date analytics. If Instagram rejected the token, raise the
+  // reconnect banner (rendered above the preview) — no refresh can work until
+  // the creator reconnects. Otherwise the data is just old: kick a refresh so
+  // the kit they are about to share is current. refresh-instagram throttles
+  // to once an hour. Mirrors web /influencer/media-kit.
+  const insightsState = readInsights(profile);
+  const insightsStale = insightsState.stale;
+  const insightsTokenInvalid = insightsState.tokenInvalid;
+  useEffect(() => {
+    if (!user?.id || !insightsStale) return;
+    if (insightsTokenInvalid) setInstagramTokenMissing(true);
+    else refreshInstagram(user.id);
+  }, [user?.id, insightsStale, insightsTokenInvalid, refreshInstagram, setInstagramTokenMissing]);
 
   const [bio, setBio] = useState(profile?.bio || '');
   const [editingBio, setEditingBio] = useState(false);
@@ -264,6 +288,14 @@ export default function InfluencerMediaKit() {
           {/* Template selector — single card-shaped button that opens a
               modal. The modal hosts the full picker (preview tiles,
               plan locks, change-cap, save CTA). */}
+          <InstagramReconnectBanner
+            userId={user?.id}
+            instagramTokenMissing={instagramTokenMissing}
+            onReconnected={() => {
+              setInstagramTokenMissing(false);
+              if (user?.id) refreshInstagram(user.id);
+            }}
+          />
           <TemplateSelectorButton
             profile={profile}
             activeTemplate={activeTemplate}
@@ -522,7 +554,7 @@ function AiMediaKitCard({
     const plain = bioBlock
       .replace(/\*\*|__|^#+\s*/gm, '')
       .replace(/^[-*•]\s+/gm, '');
-    onUseBio(plain.slice(0, 500));
+    onUseBio(truncateText(plain, 500));
     setApplied(true);
     setTimeout(() => setApplied(false), 2000);
   };

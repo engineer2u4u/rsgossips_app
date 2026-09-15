@@ -162,9 +162,123 @@ export function readDemographics(
           {range: '35-44', pct: 0},
           {range: '45+', pct: 0},
         ];
-  const gender = d?.gender || {male: 0, female: 0, other: 0};
-  const topCountries = d?.topCountries || [];
+  const gender = normaliseGender(d?.gender);
+  const topCountries = (d?.topCountries || []).map((c: DemographicCity) => ({
+    ...c,
+    name: countryName(c.name),
+  }));
   return {topCities, ageRanges, gender, topCountries};
+}
+
+// Gender as Instagram reports it: split over KNOWN gender only. Rows saved
+// before 2026-09 carry Instagram's "unknown" bucket as `other` — often most
+// of the audience. Mirrors web shared.js.
+export function normaliseGender(g: any): DemographicGender {
+  const male = Number(g?.male) || 0;
+  const female = Number(g?.female) || 0;
+  const other = Number(g?.other) || 0;
+  if (other > 0 && g?.unknownPct === undefined && male + female > 0) {
+    const known = male + female;
+    return {
+      male: Math.round((male / known) * 1000) / 10,
+      female: Math.round((female / known) * 1000) / 10,
+      other: 0,
+    };
+  }
+  return {male, female, other};
+}
+
+// "IN" → "India". Hermes may lack Intl.DisplayNames, so a short table covers
+// the countries this audience actually has; anything else shows its code.
+const COUNTRY_NAMES: Record<string, string> = {
+  IN: 'India', US: 'United States', BR: 'Brazil', BD: 'Bangladesh', PK: 'Pakistan',
+  GB: 'United Kingdom', AE: 'United Arab Emirates', TR: 'Türkiye', ID: 'Indonesia',
+  NP: 'Nepal', CA: 'Canada', AU: 'Australia', SA: 'Saudi Arabia', DE: 'Germany',
+  UZ: 'Uzbekistan', LK: 'Sri Lanka', PH: 'Philippines', MY: 'Malaysia', SG: 'Singapore',
+  EG: 'Egypt', NG: 'Nigeria', MX: 'Mexico', FR: 'France', IT: 'Italy', RU: 'Russia',
+  IR: 'Iran', IQ: 'Iraq', QA: 'Qatar', KW: 'Kuwait', OM: 'Oman', ZA: 'South Africa',
+};
+export function countryName(value: unknown): string {
+  const v = String(value || '');
+  if (!/^[A-Z]{2}$/.test(v)) return v;
+  try {
+    const DN = (Intl as any).DisplayNames;
+    if (DN) return new DN(['en'], {type: 'region'}).of(v) || COUNTRY_NAMES[v] || v;
+  } catch {
+    // fall through
+  }
+  return COUNTRY_NAMES[v] || v;
+}
+
+// Instagram's 30-day account totals (refresh-instagram → instagram_insights)
+// plus how fresh they are. Every template renders the same set in its own
+// style from this reader; labels live under the "MediaKitInsights" i18n
+// namespace. Mirrors web shared.js readInsights.
+export const INSIGHT_KEYS = [
+  'reelViews', 'reach', 'likes', 'comments', 'shares', 'saves', 'reposts',
+] as const;
+export type InsightKey = (typeof INSIGHT_KEYS)[number];
+export const STALE_AFTER_DAYS = 30;
+
+export interface InsightItem {
+  key: InsightKey;
+  value: number;
+  display: string;
+}
+
+export interface NormalisedInsights {
+  hasData: boolean;
+  items: InsightItem[];
+  days: number;
+  rangeLabel: string | null;
+  updatedLabel: string | null;
+  ageDays: number | null;
+  stale: boolean;
+  tokenInvalid: boolean;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Manual format: toLocaleDateString options are unreliable on Hermes.
+const fmtDate = (d: Date, withYear: boolean) =>
+  `${d.getDate()} ${MONTHS[d.getMonth()]}${withYear ? ' ' + d.getFullYear() : ''}`;
+
+export function readInsights(profile: any): NormalisedInsights {
+  const raw = profile?.instagram_insights || profile?.instagramInsights || null;
+  const updatedRaw = profile?.instagram_refreshed_at || profile?.analyticsUpdatedAt || null;
+  const tokenInvalid = !!(profile?.instagram_token_invalid_at || profile?.instagramTokenInvalid);
+
+  const updatedAt = updatedRaw ? new Date(updatedRaw) : null;
+  const validUpdated = updatedAt && !Number.isNaN(updatedAt.getTime()) ? updatedAt : null;
+  const ageDays = validUpdated
+    ? Math.floor((Date.now() - validUpdated.getTime()) / 86_400_000)
+    : null;
+
+  const since = raw?.since ? new Date(raw.since) : null;
+  const until = raw?.until ? new Date(raw.until) : null;
+  const rangeLabel =
+    since && until && !Number.isNaN(since.getTime()) && !Number.isNaN(until.getTime())
+      ? `${fmtDate(since, false)} – ${fmtDate(until, true)}`
+      : null;
+
+  // A metric Instagram did not return is left out, never shown as 0.
+  const items: InsightItem[] = raw
+    ? INSIGHT_KEYS.filter(k => raw[k] !== null && raw[k] !== undefined).map(k => ({
+        key: k,
+        value: Number(raw[k]) || 0,
+        display: formatCount(Number(raw[k]) || 0),
+      }))
+    : [];
+
+  return {
+    hasData: items.length > 0,
+    items,
+    days: raw?.days || 30,
+    rangeLabel,
+    updatedLabel: validUpdated ? fmtDate(validUpdated, true) : null,
+    ageDays,
+    stale: tokenInvalid || (ageDays !== null && ageDays > STALE_AFTER_DAYS),
+    tokenInvalid,
+  };
 }
 
 export interface SocialRollup {

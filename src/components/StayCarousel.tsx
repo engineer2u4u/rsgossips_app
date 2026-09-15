@@ -15,6 +15,7 @@ import {Sparkles, MapPin} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {BRAND, BRAND_GRADIENT_WARM} from '../theme/brand';
 import {invokeFn} from '../lib/api';
+import {truncateText} from '../lib/text';
 
 interface Stay {
   id: string;
@@ -206,7 +207,7 @@ export default function StayCarousel() {
               // under the title without wrapping further. Falls back to
               // the campaign category, then a generic label.
               description:
-                (c.description || '').slice(0, 60) ||
+                truncateText(c.description, 60) ||
                 c.category ||
                 t('StayCarousel.brandCollab'),
               location: c.location || '',

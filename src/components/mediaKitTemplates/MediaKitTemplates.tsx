@@ -14,7 +14,19 @@
 
 import React from 'react';
 import {useTranslation} from 'react-i18next';
-import {View, Text, Image, Pressable, TextInput, Linking} from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  TextInput,
+  Linking,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   Instagram,
@@ -31,10 +43,14 @@ import {
   readProfile,
   readDemographics,
   readSocials,
+  readInsights,
   toServiceLabel,
   formatCount,
+  type InsightItem,
+  type NormalisedInsights,
   type TemplateProps,
 } from './shared';
+import {truncateText} from '../../lib/text';
 
 // Custom font families bundled via assets/fonts/ and registered through
 // react-native.config.js + react-native-asset. fontFamily on RN must match
@@ -66,6 +82,7 @@ export function TemplateClassic({
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ins = readInsights(profile);
 
   return (
     <View>
@@ -293,6 +310,7 @@ export function TemplateClassic({
               sub={t('MediaKitTemplatesMediaKitTemplates.avgPerPost')}
             />
           </View>
+          <ClassicInsights ins={ins} />
         </ClassicCard>
 
         {p.topReels.length > 0 && (
@@ -478,6 +496,7 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ins = readInsights(profile);
 
   // RN has no backdrop-filter; we use semi-opaque white panels over a
   // gradient base to suggest the same frosted vibe.
@@ -513,7 +532,7 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
           </Text>
           <Text style={{color: accent, fontWeight: '600', marginTop: 4}}>@{p.handle}</Text>
           <Text style={{color: ink, fontWeight: '500', marginTop: 10, lineHeight: 20}}>
-            "{p.bio.split('\n')[0].slice(0, 110)}"
+            "{truncateText(p.bio.split('\n')[0], 110)}"
           </Text>
           <Text style={{color: '#48657e', fontSize: 13, fontWeight: '500', marginTop: 4}}>
             {p.primaryCategory}
@@ -588,6 +607,9 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
             l={t('MediaKitTemplatesMediaKitTemplates.posts')}
           />
         </View>
+
+        {/* LAST 30 DAYS — Instagram account totals */}
+        <GlassInsights ins={ins} />
 
         {/* SERVICES */}
         {p.services.length > 0 && (
@@ -668,22 +690,6 @@ export function TemplateGlassBlue({profile}: TemplateProps) {
             </View>
           ))}
         </GlassPanel>
-
-        {/* CTA */}
-        <View
-          style={{
-            backgroundColor: accent,
-            borderRadius: 22,
-            padding: 22,
-            alignItems: 'center',
-          }}>
-          <Text style={{color: '#fff', fontSize: 18, fontWeight: '800'}}>
-            {t('MediaKitTemplatesMediaKitTemplates.letsCollaborate')}
-          </Text>
-          <Text style={{color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4}}>
-            {t('MediaKitTemplatesMediaKitTemplates.reachOut', {handle: p.handle})}
-          </Text>
-        </View>
 
         {p.topReels.length > 0 && (
           <GlassPanel title={t('MediaKitTemplatesMediaKitTemplates.topContent')}>
@@ -806,6 +812,7 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ins = readInsights(profile);
 
   const paper = '#f4efe6';
   const ink = '#16130f';
@@ -944,6 +951,9 @@ export function TemplateEditorialNoir({profile}: TemplateProps) {
           line={line}
         />
       </View>
+
+      {/* LAST 30 DAYS — Instagram account totals */}
+      <NoirInsights ins={ins} ink={ink} muted={muted} line={line} />
 
       {/* LANGUAGES */}
       {p.languages.length > 0 && (
@@ -1185,6 +1195,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ins = readInsights(profile);
 
   const cream = '#fbf3ec';
   const ink = '#2b1d18';
@@ -1334,7 +1345,7 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
               fontWeight: '800',
               lineHeight: 24,
             }}>
-            "{p.bio.split('\n')[0].slice(0, 90)}"
+            "{truncateText(p.bio.split('\n')[0], 90)}"
           </Text>
         </Tile>
 
@@ -1380,6 +1391,9 @@ export function TemplateBentoSunset({profile}: TemplateProps) {
             </Text>
           </Tile>
         </View>
+
+        {/* LAST 30 DAYS — Instagram account totals */}
+        <BentoInsights ins={ins} ink={ink} muted={muted} sunset={sunset} />
 
         {/* Expertise chips */}
         <Tile>
@@ -1546,6 +1560,7 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ins = readInsights(profile);
 
   const ink = '#0f0f0f';
   const pink = '#E94560';
@@ -1707,6 +1722,13 @@ export function TemplateNeoBrutalist({profile}: TemplateProps) {
             </Text>
           </View>
         </View>
+
+        {/* LAST 30 DAYS — Instagram account totals */}
+        <BrutalInsights
+          ins={ins}
+          ink={ink}
+          palette={[yellow, cyan, purple, pink]}
+        />
 
         {/* Expertise */}
         <View style={hardCard()}>
@@ -1964,6 +1986,618 @@ function BrutalBar({
           textAlign: 'right',
         }}>
         {pct}%
+      </Text>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// LAST 30 DAYS — Instagram account totals, one block per template.
+// Layout is shared (InsightGrid), styling is each template's own.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Below this grid width the cells go two-up; above it, three-up.
+const INSIGHT_TWO_COL_BELOW = 380;
+
+// Cell widths are computed in points rather than `width: '48%' + gap`,
+// which overflows the row once the gap is added. The grid's own measured
+// width wins once laid out; before that the window width minus the
+// template's horizontal inset is the estimate, so the first frame is close.
+// A short trailing row stretches to fill, so a lone last cell isn't orphaned.
+function useInsightGrid(inset: number, gap: number, count: number) {
+  const {width: windowW} = useWindowDimensions();
+  const [measured, setMeasured] = React.useState(0);
+  const contentW = Math.max(0, measured > 0 ? measured : windowW - inset);
+  const cols = contentW < INSIGHT_TWO_COL_BELOW ? 2 : 3;
+  const cellW = Math.floor((contentW - gap * (cols - 1)) / cols);
+  const trailing = count % cols;
+  const trailingW =
+    trailing > 0 ? Math.floor((contentW - gap * (trailing - 1)) / trailing) : cellW;
+  const widthAt = (i: number) =>
+    trailing > 0 && i >= count - trailing ? trailingW : cellW;
+  const onLayout = (e: LayoutChangeEvent) => {
+    // floor, never round: a width rounded up by half a point wraps the row.
+    const w = Math.floor(e.nativeEvent.layout.width);
+    setMeasured(prev => (prev === w ? prev : w));
+  };
+  return {widthAt, onLayout};
+}
+
+function InsightGrid({
+  ins,
+  inset,
+  gap,
+  renderCell,
+}: {
+  ins: NormalisedInsights;
+  inset: number;
+  gap: number;
+  renderCell: (item: InsightItem, index: number, width: number) => React.ReactNode;
+}) {
+  const {widthAt, onLayout} = useInsightGrid(inset, gap, ins.items.length);
+  return (
+    <View onLayout={onLayout} style={{flexDirection: 'row', flexWrap: 'wrap', gap}}>
+      {ins.items.map((item, i) => renderCell(item, i, widthAt(i)))}
+    </View>
+  );
+}
+
+function InsightStaleNote({
+  ins,
+  boxStyle,
+  textStyle,
+}: {
+  ins: NormalisedInsights;
+  boxStyle?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}) {
+  const {t} = useTranslation();
+  if (!ins.stale) return null;
+  return (
+    <View style={boxStyle}>
+      <Text style={textStyle}>
+        {ins.updatedLabel
+          ? t('MediaKitInsights.stale', {date: ins.updatedLabel})
+          : t('MediaKitInsights.staleNoDate')}
+      </Text>
+    </View>
+  );
+}
+
+const insightLabelKey = (item: InsightItem) => `MediaKitInsights.labels.${item.key}`;
+
+// CLASSIC — sits inside the Performance card under the existing stats,
+// cells are ClassicStat tiles with the lead cell in the pink gradient.
+function ClassicInsights({ins}: {ins: NormalisedInsights}) {
+  const {t} = useTranslation();
+  const note = (
+    <InsightStaleNote
+      ins={ins}
+      boxStyle={{
+        marginTop: 12,
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+      }}
+      textStyle={{color: '#B45309', fontSize: 11, fontWeight: '600'}}
+    />
+  );
+  if (!ins.hasData) return note;
+  return (
+    <View
+      style={{marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderColor: '#F1F5F9'}}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          columnGap: 8,
+          rowGap: 2,
+          marginBottom: 12,
+        }}>
+        <Text className="text-xs font-black text-slate-800 uppercase">
+          {t('MediaKitInsights.title', {days: ins.days})}
+        </Text>
+        {!!ins.rangeLabel && (
+          <Text className="text-[10px] font-bold text-slate-400">{ins.rangeLabel}</Text>
+        )}
+      </View>
+      <InsightGrid
+        ins={ins}
+        inset={74}
+        gap={8}
+        renderCell={(item, i, width) => {
+          const lead = i === 0;
+          return (
+            <View
+              key={item.key}
+              className={
+                lead
+                  ? 'rounded-2xl overflow-hidden'
+                  : 'bg-slate-50 border border-slate-200 rounded-2xl'
+              }
+              style={{width, padding: 14}}>
+              {lead && (
+                <LinearGradient
+                  colors={['#EC4899', '#A855F7']}
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+              )}
+              <Text
+                numberOfLines={1}
+                className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                  lead ? 'text-white/80' : 'text-slate-400'
+                }`}>
+                {t(insightLabelKey(item))}
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                className={`text-2xl font-black ${lead ? 'text-white' : 'text-slate-900'}`}>
+                {item.display}
+              </Text>
+            </View>
+          );
+        }}
+      />
+      {note}
+      <Text className="text-[10px] text-slate-400 mt-3">{t('MediaKitInsights.source')}</Text>
+    </View>
+  );
+}
+
+// GLASS BLUE — its own frosted panel under the headline stats; cells are
+// lighter glass chips with GlassStat typography.
+function GlassInsights({ins}: {ins: NormalisedInsights}) {
+  const {t} = useTranslation();
+  const note = (
+    <InsightStaleNote
+      ins={ins}
+      boxStyle={{
+        marginTop: ins.hasData ? 12 : 0,
+        backgroundColor: 'rgba(245,158,11,0.14)',
+        borderWidth: 1,
+        borderColor: 'rgba(245,158,11,0.35)',
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+      }}
+      textStyle={{color: '#92400e', fontSize: 11.5, fontWeight: '600'}}
+    />
+  );
+  if (!ins.hasData) return note;
+  return (
+    <View
+      style={{
+        backgroundColor: 'rgba(226,239,251,0.55)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.7)',
+        borderRadius: 22,
+        padding: 18,
+      }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          columnGap: 8,
+          rowGap: 2,
+          marginBottom: 10,
+        }}>
+        <Text
+          style={{
+            color: '#74909f',
+            fontSize: 10.5,
+            fontWeight: '700',
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+          }}>
+          {t('MediaKitInsights.title', {days: ins.days})}
+        </Text>
+        {!!ins.rangeLabel && (
+          <Text style={{color: '#48657e', fontSize: 11, fontWeight: '600'}}>
+            {ins.rangeLabel}
+          </Text>
+        )}
+      </View>
+      <InsightGrid
+        ins={ins}
+        inset={70}
+        gap={8}
+        renderCell={(item, _i, width) => (
+          <View
+            key={item.key}
+            style={{
+              width,
+              backgroundColor: 'rgba(255,255,255,0.5)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.75)',
+              borderRadius: 16,
+              paddingVertical: 12,
+              paddingHorizontal: 10,
+            }}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              style={{
+                color: '#0e2a44',
+                fontSize: 22,
+                fontWeight: '800',
+                letterSpacing: -0.5,
+                textAlign: 'center',
+              }}>
+              {item.display}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{
+                color: '#74909f',
+                fontSize: 11,
+                fontWeight: '600',
+                marginTop: 2,
+                textAlign: 'center',
+              }}>
+              {t(insightLabelKey(item))}
+            </Text>
+          </View>
+        )}
+      />
+      {note}
+      <Text style={{color: '#48657e', fontSize: 11, fontWeight: '500', marginTop: 10}}>
+        {t('MediaKitInsights.source')}
+      </Text>
+    </View>
+  );
+}
+
+// EDITORIAL NOIR — a ruled section under the stats row: serif subhead,
+// italic dateline, cells topped with an ink rule like newspaper columns.
+function NoirInsights({
+  ins,
+  ink,
+  muted,
+  line,
+}: {
+  ins: NormalisedInsights;
+  ink: string;
+  muted: string;
+  line: string;
+}) {
+  const {t} = useTranslation();
+  const note = (
+    <InsightStaleNote
+      ins={ins}
+      boxStyle={{
+        marginTop: ins.hasData ? 14 : 8,
+        borderLeftWidth: 3,
+        borderColor: '#d97706',
+        paddingLeft: 10,
+        paddingVertical: 2,
+      }}
+      textStyle={{color: '#9a5b13', fontFamily: FONTS.SERIF_ITALIC, fontSize: 13}}
+    />
+  );
+  if (!ins.hasData) return note;
+  return (
+    <View>
+      <NoirRule line={line} />
+      <NoirSubhead text={t('MediaKitInsights.title', {days: ins.days})} ink={ink} />
+      {!!ins.rangeLabel && (
+        <Text
+          style={{
+            color: muted,
+            fontFamily: FONTS.SERIF_ITALIC,
+            fontSize: 13,
+            marginTop: -4,
+            marginBottom: 12,
+          }}>
+          {ins.rangeLabel}
+        </Text>
+      )}
+      <InsightGrid
+        ins={ins}
+        inset={36}
+        gap={14}
+        renderCell={(item, _i, width) => (
+          <View
+            key={item.key}
+            style={{width, borderTopWidth: 2, borderColor: ink, paddingTop: 6}}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              style={{
+                color: ink,
+                fontFamily: FONTS.SERIF_BOLD,
+                fontSize: 26,
+                lineHeight: 34,
+                letterSpacing: -0.8,
+              }}>
+              {item.display}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{
+                color: muted,
+                fontFamily: FONTS.SERIF_ITALIC,
+                fontSize: 12,
+                letterSpacing: 1.5,
+                textTransform: 'uppercase',
+              }}>
+              {t(insightLabelKey(item))}
+            </Text>
+          </View>
+        )}
+      />
+      {note}
+      <Text
+        style={{
+          color: muted,
+          fontFamily: FONTS.SERIF_ITALIC,
+          fontSize: 12,
+          marginTop: 12,
+        }}>
+        {t('MediaKitInsights.source')}
+      </Text>
+    </View>
+  );
+}
+
+// BENTO SUNSET — a white tile of cream mini-tiles; the lead cell carries
+// the sunset gradient like the engagement tile above it.
+function BentoInsights({
+  ins,
+  ink,
+  muted,
+  sunset,
+}: {
+  ins: NormalisedInsights;
+  ink: string;
+  muted: string;
+  sunset: [string, string, string];
+}) {
+  const {t} = useTranslation();
+  const note = (
+    <InsightStaleNote
+      ins={ins}
+      boxStyle={{
+        marginTop: ins.hasData ? 12 : 0,
+        backgroundColor: '#fff1dc',
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+      }}
+      textStyle={{color: '#b45309', fontSize: 12, fontWeight: '700'}}
+    />
+  );
+  if (!ins.hasData) return note;
+  return (
+    <View
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: 26,
+        padding: 18,
+        shadowColor: '#c85078',
+        shadowOpacity: 0.18,
+        shadowRadius: 20,
+        shadowOffset: {width: 0, height: 10},
+        elevation: 3,
+      }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          columnGap: 8,
+          rowGap: 2,
+          marginBottom: 10,
+        }}>
+        <Text
+          style={{
+            color: muted,
+            fontSize: 11,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            fontWeight: '800',
+          }}>
+          {t('MediaKitInsights.title', {days: ins.days})}
+        </Text>
+        {!!ins.rangeLabel && (
+          <Text style={{color: '#ff5d73', fontSize: 11, fontWeight: '700'}}>
+            {ins.rangeLabel}
+          </Text>
+        )}
+      </View>
+      <InsightGrid
+        ins={ins}
+        inset={64}
+        gap={8}
+        renderCell={(item, i, width) => {
+          const lead = i === 0;
+          return (
+            <View
+              key={item.key}
+              style={{
+                width,
+                borderRadius: 18,
+                padding: 14,
+                overflow: 'hidden',
+                backgroundColor: lead ? undefined : '#faf4ef',
+              }}>
+              {lead && (
+                <LinearGradient
+                  colors={sunset}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                />
+              )}
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: lead ? 'rgba(255,255,255,0.85)' : muted,
+                  fontSize: 10.5,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  fontWeight: '800',
+                  marginBottom: 4,
+                }}>
+                {t(insightLabelKey(item))}
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                style={{
+                  color: lead ? '#fff' : ink,
+                  fontSize: 26,
+                  fontWeight: '900',
+                  letterSpacing: -0.8,
+                }}>
+                {item.display}
+              </Text>
+            </View>
+          );
+        }}
+      />
+      {note}
+      <Text style={{color: muted, fontSize: 11, fontWeight: '700', marginTop: 12}}>
+        {t('MediaKitInsights.source')}
+      </Text>
+    </View>
+  );
+}
+
+// NEO BRUTALIST — a hard card with an ink chip header; cells are bordered
+// blocks cycling the template's loud palette with small offset shadows.
+function BrutalInsights({
+  ins,
+  ink,
+  palette,
+}: {
+  ins: NormalisedInsights;
+  ink: string;
+  palette: string[];
+}) {
+  const {t} = useTranslation();
+  const note = (
+    <InsightStaleNote
+      ins={ins}
+      boxStyle={{
+        marginTop: ins.hasData ? 14 : 0,
+        backgroundColor: '#fff3c4',
+        borderWidth: 2,
+        borderColor: ink,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+      }}
+      textStyle={{color: ink, fontFamily: FONTS.MONO_BOLD, fontSize: 11}}
+    />
+  );
+  if (!ins.hasData) return note;
+  // Pink and purple are dark enough to need white type.
+  const darkBg = new Set([palette[2], palette[3]]);
+  return (
+    <View
+      style={{
+        backgroundColor: '#fff',
+        borderWidth: 3,
+        borderColor: ink,
+        shadowColor: ink,
+        shadowOpacity: 1,
+        shadowRadius: 0,
+        shadowOffset: {width: 6, height: 6},
+        elevation: 0,
+        padding: 18,
+      }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 14,
+        }}>
+        <Text
+          style={{
+            backgroundColor: ink,
+            color: '#fff',
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            fontSize: 11,
+            fontFamily: FONTS.MONO_BOLD,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+          }}>
+          {t('MediaKitInsights.title', {days: ins.days})}
+        </Text>
+        {!!ins.rangeLabel && (
+          <Text style={{color: ink, fontFamily: FONTS.MONO_BOLD, fontSize: 11}}>
+            {ins.rangeLabel}
+          </Text>
+        )}
+      </View>
+      <InsightGrid
+        ins={ins}
+        inset={70}
+        gap={10}
+        renderCell={(item, i, width) => {
+          const bg = palette[i % palette.length];
+          const fg = darkBg.has(bg) ? '#fff' : ink;
+          return (
+            <View
+              key={item.key}
+              style={{
+                width,
+                backgroundColor: bg,
+                borderWidth: 2,
+                borderColor: ink,
+                shadowColor: ink,
+                shadowOpacity: 1,
+                shadowRadius: 0,
+                shadowOffset: {width: 3, height: 3},
+                elevation: 0,
+                paddingHorizontal: 10,
+                paddingVertical: 10,
+              }}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                style={{color: fg, fontFamily: FONTS.BLOCK, fontSize: 22}}>
+                {item.display}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: fg,
+                  fontSize: 10,
+                  fontFamily: FONTS.MONO_BOLD,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                }}>
+                {t(insightLabelKey(item))}
+              </Text>
+            </View>
+          );
+        }}
+      />
+      {note}
+      <Text
+        style={{
+          color: ink,
+          fontFamily: FONTS.MONO,
+          fontSize: 10.5,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          marginTop: 14,
+        }}>
+        {t('MediaKitInsights.source')}
       </Text>
     </View>
   );

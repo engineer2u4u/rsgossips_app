@@ -19,6 +19,7 @@ import { invokeFn } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { scoreCampaignForUser, calculateCampaignMatchScore } from '../utils/matchScore';
 import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
+import { truncateText } from '../lib/text';
 
 const { width } = Dimensions.get('window');
 
@@ -120,7 +121,7 @@ export default function RecommendedCampaigns() {
       title: c.title,
       location: c.location || t('TopPicksCarousel.locationFallback'),
       desc:
-        c.description?.slice(0, 70) || t('TopPicksCarousel.descFallback'),
+        truncateText(c.description, 70) || t('TopPicksCarousel.descFallback'),
       pay: c.budget || t('TopPicksCarousel.payFallback'),
       req: c.deliverables || t('TopPicksCarousel.reqFallback'),
     }));

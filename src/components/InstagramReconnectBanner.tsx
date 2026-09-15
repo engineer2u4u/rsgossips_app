@@ -2,14 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Instagram, AlertTriangle, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../utils/supabase';
-import { invokeFn } from '../lib/api';
-import {
-  NEXT_PUBLIC_INSTAGRAM_APP_ID as INSTAGRAM_APP_ID,
-  INSTAGRAM_REDIRECT_URI,
-} from '@env';
+import { useAuth } from '../context/AuthContext';
+import { isInstagramTokenExpired } from '../lib/instagramToken';
+import { useInstagramReconnect } from '../hooks/useInstagramReconnect';
 
 interface Props {
   userId?: string;
@@ -23,70 +19,18 @@ export default function InstagramReconnectBanner({
   onReconnected,
 }: Props) {
   const { t } = useTranslation();
-  const [connecting, setConnecting] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [error, setError] = useState('');
+  const {profile} = useAuth();
+  // Same flow as the reconnect popup — see useInstagramReconnect.
+  const { connecting, error, reconnect: handleReconnect } = useInstagramReconnect({
+    userId,
+    errorReconnect: t('InstagramReconnectBanner.errorReconnect'),
+    errorOpen: t('InstagramReconnectBanner.errorOpen'),
+    onReconnected,
+  });
+  const expired = instagramTokenMissing || isInstagramTokenExpired(profile);
 
-  const exchangeCode = async (code: string) => {
-    setConnecting(true);
-    setError('');
-    try {
-      const redirectUri = INSTAGRAM_REDIRECT_URI;
-      const { data, error: funcError } = await supabase.functions.invoke(
-        'instagram-connect',
-        { body: { code, redirectUri } },
-      );
-
-      if (funcError) throw new Error(funcError.message);
-      if (data?.error) throw new Error(data.error);
-
-      // Save the token to the profile
-      await invokeFn('update-profile', {
-        userId,
-        table: 'influencer_profiles',
-        instagramAccessToken: data.accessToken,
-        instagramTokenExpiresAt: data.tokenExpiresAt,
-      });
-
-      onReconnected?.();
-    } catch (err: any) {
-      setError(err.message || t('InstagramReconnectBanner.errorReconnect'));
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  const handleReconnect = async () => {
-    setError('');
-    const appId = INSTAGRAM_APP_ID;
-    const redirectUri = INSTAGRAM_REDIRECT_URI;
-    const scope = 'instagram_business_basic,instagram_business_manage_insights';
-
-    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-
-    try {
-      if (await InAppBrowser.isAvailable()) {
-        const result = await InAppBrowser.openAuth(authUrl, redirectUri, {
-          ephemeralWebSession: true,
-          showTitle: false,
-          enableUrlBarHiding: true,
-          enableDefaultShare: false,
-        });
-
-        if (result.type === 'success' && result.url) {
-          const url = new URL(result.url);
-          const code = url.searchParams.get('code');
-          if (code) {
-            await exchangeCode(code.replace('#_', ''));
-          }
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || t('InstagramReconnectBanner.errorOpen'));
-    }
-  };
-
-  if (!instagramTokenMissing || dismissed) return null;
+  if (!expired || dismissed) return null;
 
   return (
     <View className="mx-5 mb-4">

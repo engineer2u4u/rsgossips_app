@@ -24,6 +24,7 @@ import {
 } from '../utils/matchScore';
 import {useAiTool} from '../hooks/useAiTool';
 import {AiMarkdown} from './AiMarkdown';
+import {truncateText} from '../lib/text';
 
 type Campaign = {
   id: string | number;
@@ -309,7 +310,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
     campaign.title?.[0]?.toUpperCase() ||
     'B';
   const description =
-    campaign.description?.slice(0, 80) ||
+    truncateText(campaign.description, 80) ||
     t('CampaignCard.defaultDescription', {brandName: campaign.brandName});
   const imageUrl = campaign.bannerImage || pickPlaceholder(campaign.id);
 
