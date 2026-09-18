@@ -33,6 +33,10 @@ import {isSubscribed} from '../lib/plans';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {useAiTool} from '../hooks/useAiTool';
 
+// Same allow-list update-profile accepts and the brand-side Gender filter reads.
+const GENDER_OPTIONS = ['female', 'male', 'non_binary', 'prefer_not_to_say'] as const;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -49,7 +53,17 @@ function formatCount(n: number | undefined) {
 
 export default function ApplyCampaignForm({visible, onClose, campaignData, onSubmitSuccess}: Props) {
   const {t} = useTranslation();
-  const {profile, user} = useAuth();
+  const {profile, user, refreshProfile} = useAuth();
+
+  // Required before applying: email + gender (apply-campaign refuses without
+  // them as "profile_incomplete"). Collected here and saved to the profile
+  // before submitting. Decided once on open so the section doesn't vanish
+  // mid-edit when the profile refreshes. Mirrors web ApplyCampaignForm.
+  const [needsDetails, setNeedsDetails] = useState(
+    () => !EMAIL_RE.test(String(profile?.email || '').trim()) || !profile?.gender,
+  );
+  const [detailsEmail, setDetailsEmail] = useState<string>(profile?.email || user?.email || '');
+  const [detailsGender, setDetailsGender] = useState<string>(profile?.gender || '');
   const navigation = useNavigation<any>();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -104,9 +118,35 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
       setError(t('ApplyCampaignForm.why.required'));
       return;
     }
+    if (needsDetails) {
+      if (!EMAIL_RE.test(detailsEmail.trim())) {
+        setError(t('ApplyCampaignForm.details.emailInvalid'));
+        return;
+      }
+      if (!detailsGender) {
+        setError(t('ApplyCampaignForm.details.genderRequired'));
+        return;
+      }
+    }
     setSubmitting(true);
     setError('');
     try {
+      // Save the missing details first, so the application goes in against a
+      // complete profile.
+      if (needsDetails) {
+        const saved = await invokeFn<{error?: string; message?: string}>('update-profile', {
+          userId: user?.id,
+          table: 'influencer_profiles',
+          email: detailsEmail.trim(),
+          gender: detailsGender,
+        });
+        if (saved?.error) {
+          setError(saved.message || t('ApplyCampaignForm.details.saveFailed'));
+          return;
+        }
+        refreshProfile().catch(() => {});
+      }
+
       const data = await invokeFn<{
         success?: boolean;
         error?: string;
@@ -123,6 +163,9 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
         setTimeout(() => {
           onSubmitSuccess();
         }, 2000);
+      } else if (data?.error === 'profile_incomplete') {
+        setNeedsDetails(true);
+        setError(data.message || t('ApplyCampaignForm.details.required'));
       } else if (data?.error) {
         // apply-campaign reports refusals with HTTP 200 and an `error`
         // key, so they land here rather than in the catch below. Its
@@ -210,6 +253,61 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
                   {error ? (
                     <View className="p-3 bg-red-50 border border-red-200 rounded-xl">
                       <Text className="text-sm text-red-600">{error}</Text>
+                    </View>
+                  ) : null}
+
+                  {needsDetails ? (
+                    <View
+                      className="p-4 rounded-xl border border-amber-200"
+                      style={{backgroundColor: '#FFFBEB', gap: 12}}>
+                      <View>
+                        <Text className="text-sm font-bold text-slate-900">
+                          {t('ApplyCampaignForm.details.heading')}
+                        </Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          {t('ApplyCampaignForm.details.subtitle')}
+                        </Text>
+                      </View>
+                      <View style={{gap: 4}}>
+                        <Text className="text-[10px] font-bold text-slate-500 uppercase">
+                          {t('ApplyCampaignForm.details.email')}
+                        </Text>
+                        <TextInput
+                          value={detailsEmail}
+                          onChangeText={setDetailsEmail}
+                          placeholder={t('ApplyCampaignForm.details.emailPlaceholder')}
+                          placeholderTextColor="#94A3B8"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="email"
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700"
+                        />
+                      </View>
+                      <View style={{gap: 6}}>
+                        <Text className="text-[10px] font-bold text-slate-500 uppercase">
+                          {t('ApplyCampaignForm.details.gender')}
+                        </Text>
+                        <View className="flex-row flex-wrap" style={{gap: 8}}>
+                          {GENDER_OPTIONS.map(g => {
+                            const on = detailsGender === g;
+                            return (
+                              <Pressable
+                                key={g}
+                                onPress={() => setDetailsGender(g)}
+                                accessibilityRole="radio"
+                                accessibilityState={{selected: on}}
+                                className={`px-3 py-2 rounded-full border ${
+                                  on ? 'bg-[#9810FA] border-[#9810FA]' : 'bg-white border-slate-200'
+                                }`}>
+                                <Text className={`text-xs font-bold ${on ? 'text-white' : 'text-slate-600'}`}>
+                                  {t(`ApplyCampaignForm.details.genders.${g}`)}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
                     </View>
                   ) : null}
 
