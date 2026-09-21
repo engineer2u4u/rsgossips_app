@@ -1203,7 +1203,9 @@
     "description": "Reconnect your Instagram to keep your analytics up to date.",
     "reconnect": "Reconnect",
     "errorReconnect": "Failed to reconnect Instagram",
-    "errorOpen": "Failed to open Instagram"
+    "errorOpen": "Failed to open Instagram",
+    "insightsTitle": "Reconnect Instagram to show your reach and views",
+    "insightsDescription": "Instagram isn't sharing your insights with us. Reconnect and keep \"insights\" switched on so brands can see your reach and views."
   },
   "InstagramRequiredGate": {
     "errorNoBrowser": "In-app browser not available on this device",

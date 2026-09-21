@@ -53,7 +53,9 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  refreshInstagram: (userId?: string) => Promise<void>;
+  /** `force` bypasses refresh-instagram's once-an-hour throttle — used right
+   *  after a reconnect, when the new token has to be exercised immediately. */
+  refreshInstagram: (userId?: string, opts?: {force?: boolean}) => Promise<void>;
   instagramTokenMissing: boolean;
   setInstagramTokenMissing: React.Dispatch<React.SetStateAction<boolean>>;
   /** Set when a role-scoped profile lookup found nothing — e.g. signing in as
@@ -195,7 +197,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   }, []);
 
   const refreshInstagram = useCallback(
-    async (userId?: string) => {
+    async (userId?: string, {force = false}: {force?: boolean} = {}) => {
       const uid = userId || user?.id;
       if (!uid) return;
       try {
@@ -203,7 +205,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
           success?: boolean;
           skipped?: boolean;
           error?: string;
-        }>('refresh-instagram', {userId: uid});
+        }>('refresh-instagram', force ? {userId: uid, force: true} : {userId: uid});
         if (data?.success) {
           // Either the server refreshed the token (skipped=false) or it
           // confirmed the existing token is still valid (skipped=true).

@@ -4,7 +4,7 @@ import { Instagram, AlertTriangle, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { isInstagramTokenExpired } from '../lib/instagramToken';
+import { isInstagramInsightsNotGranted, isInstagramTokenExpired } from '../lib/instagramToken';
 import { useInstagramReconnect } from '../hooks/useInstagramReconnect';
 
 interface Props {
@@ -29,8 +29,11 @@ export default function InstagramReconnectBanner({
     onReconnected,
   });
   const expired = instagramTokenMissing || isInstagramTokenExpired(profile);
+  // A working connection without the insights permission needs the same fix —
+  // reconnect — but a different explanation: leave "insights" switched on.
+  const insightsMissing = !expired && isInstagramInsightsNotGranted(profile);
 
-  if (!expired || dismissed) return null;
+  if ((!expired && !insightsMissing) || dismissed) return null;
 
   return (
     <View className="mx-5 mb-4">
@@ -59,11 +62,15 @@ export default function InstagramReconnectBanner({
           <View className="flex-row items-center mb-0.5" style={{ gap: 6 }}>
             {/* <AlertTriangle size={14} color="#F59E0B" /> */}
             <Text className="text-sm font-bold text-slate-900">
-              {t('InstagramReconnectBanner.title')}
+              {insightsMissing
+                ? t('InstagramReconnectBanner.insightsTitle')
+                : t('InstagramReconnectBanner.title')}
             </Text>
           </View>
           <Text className="text-xs text-slate-500">
-            {t('InstagramReconnectBanner.description')}
+            {insightsMissing
+              ? t('InstagramReconnectBanner.insightsDescription')
+              : t('InstagramReconnectBanner.description')}
           </Text>
           {error ? (
             <Text className="text-xs text-red-500 mt-1">{error}</Text>
