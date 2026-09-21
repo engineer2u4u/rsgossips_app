@@ -56,7 +56,7 @@ export default function UpgradeRequiredModal({
         style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
         <View
           className="w-full bg-white overflow-hidden"
-          style={{maxWidth: 380, borderRadius: 24}}>
+          style={{maxWidth: 380, maxHeight: '92%', borderRadius: 24}}>
           <View className="px-6 pt-8 pb-6 items-center">
             <LinearGradient
               colors={['#9810fa', '#e60076']}
@@ -104,7 +104,11 @@ export default function UpgradeRequiredModal({
             </Text>
           </View>
 
-          <ScrollView className="px-6 py-6" style={{maxHeight: 340}}>
+          {/* flexShrink lets this body shrink with the card on short screens
+              so the CTAs scroll into view instead of being clipped. */}
+          <ScrollView
+            style={{maxHeight: 340, flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 24, paddingVertical: 24}}>
             <View style={{gap: 10}}>
               {[
                 t('UpgradeRequired.perk1'),

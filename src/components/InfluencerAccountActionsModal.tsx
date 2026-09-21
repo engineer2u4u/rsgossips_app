@@ -26,7 +26,6 @@ import React, {useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -34,6 +33,7 @@ import {
   View,
 } from 'react-native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AlertTriangle, Check, Trash2, X} from 'lucide-react-native';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
@@ -62,6 +62,7 @@ export default function InfluencerAccountActionsModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user, signOut} = useAuth();
 
   const [reason, setReason] = useState('');
@@ -147,7 +148,7 @@ export default function InfluencerAccountActionsModal({
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             maxHeight: '90%',
-            paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+            paddingBottom: 16 + insets.bottom,
           }}>
           <View className="items-center pt-3 pb-1">
             <View className="w-10 h-1 rounded-full bg-slate-200" />
@@ -170,7 +171,9 @@ export default function InfluencerAccountActionsModal({
           </View>
 
           <ScrollView
-            className="px-5"
+            // flexShrink keeps the list inside the 90% cap so it scrolls.
+            style={{flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 20}}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             {/* What actually happens — same four points as the brand flow, so

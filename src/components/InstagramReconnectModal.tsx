@@ -10,6 +10,7 @@ import {
 import {Instagram, X} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuth} from '../context/AuthContext';
 import {isInstagramTokenExpired} from '../lib/instagramToken';
 import {useInstagramReconnect} from '../hooks/useInstagramReconnect';
@@ -26,6 +27,7 @@ const REASK_AFTER_MS = 30 * 60 * 1000;
 
 export default function InstagramReconnectModal() {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user, role, profile, instagramTokenMissing} = useAuth();
   const [dismissedAt, setDismissedAt] = useState(0);
   const backgroundedAt = useRef<number | null>(null);
@@ -70,6 +72,8 @@ export default function InstagramReconnectModal() {
           backgroundColor: 'rgba(0,0,0,0.5)',
           justifyContent: 'flex-end',
           padding: 16,
+          // statusBarTranslucent draws under the system nav bar too.
+          paddingBottom: 16 + insets.bottom,
         }}>
         <View
           style={{

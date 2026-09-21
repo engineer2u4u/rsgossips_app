@@ -33,6 +33,7 @@ import {invokeFn} from '../lib/api';
 import {openManagePlan} from '../lib/manage-plan';
 import {BRAND_GRADIENT_WARM} from '../theme/brand';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // ── Decision tree (identical to web) ──────────────────────────────────────
 
@@ -362,6 +363,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
   const navigation = useNavigation<any>();
   const {user, profile, role} = useAuth() as any;
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const nodeLabel = (n: TreeNode) => t(`SupportChatModal.tree.${n.id}.label`);
 
   const [path, setPath] = useState<string[]>([]);
@@ -649,6 +651,8 @@ export default function SupportChatModal({visible, onClose}: Props) {
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             height: '85%',
+            // Keep the composer/callback form clear of the system nav bar.
+            paddingBottom: insets.bottom,
             overflow: 'hidden',
           }}>
           {/* Header */}
@@ -750,7 +754,7 @@ export default function SupportChatModal({visible, onClose}: Props) {
             <View
               className="px-5 py-3 border-t border-slate-100"
               style={{
-                paddingBottom: Platform.OS === 'ios' ? 22 : 12,
+                paddingBottom: 12,
               }}>
               <Pressable
                 onPress={() => {

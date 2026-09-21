@@ -20,7 +20,6 @@ import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,6 +30,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AlertTriangle, Check, Trash2, UserMinus, X} from 'lucide-react-native';
 import {supabase} from '../../utils/supabase';
 import {invokeFn} from '../../lib/api';
@@ -67,6 +67,7 @@ export default function BrandAccountActionsModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const {user, signOut} = useAuth();
 
@@ -204,6 +205,7 @@ export default function BrandAccountActionsModal({
           </View>
 
           <ScrollView
+            style={{flexShrink: 1}}
             contentContainerStyle={{padding: 18, gap: 18}}
             keyboardShouldPersistTaps="handled">
             {/* Warning box */}
@@ -326,7 +328,7 @@ export default function BrandAccountActionsModal({
 
           {/* Footer — checkbox pinned here so it's always visible next to
               the action buttons */}
-          <View style={s.footer}>
+          <View style={[s.footer, {paddingBottom: 14 + insets.bottom}]}>
             <Pressable
               onPress={() => setConfirmed(v => !v)}
               style={s.checkboxRow}
@@ -488,7 +490,6 @@ const s = StyleSheet.create({
   footer: {
     paddingHorizontal: 14,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 14,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
     gap: 10,

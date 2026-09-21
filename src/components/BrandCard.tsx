@@ -22,6 +22,7 @@ import {
   Check,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BRAND_GRADIENT_WARM} from '../theme/brand';
 import {useAuth} from '../context/AuthContext';
 import {
@@ -81,6 +82,7 @@ function BrandMatchModal({
   const {generate, loading, result, error, remaining, limitReached, setResult} =
     useAiTool();
   const [copied, setCopied] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const scoreColor =
     score >= 80 ? '#059669' : score >= 60 ? '#D97706' : '#64748B';
@@ -122,7 +124,7 @@ function BrandMatchModal({
         <Pressable
           onPress={() => {}}
           className="bg-white rounded-t-[28px] overflow-hidden"
-          style={{maxHeight: '80%'}}>
+          style={{maxHeight: '80%', paddingBottom: insets.bottom}}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-50">
             <View className="flex-row items-center" style={{gap: 8}}>
@@ -138,7 +140,12 @@ function BrandMatchModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="px-5 py-5" showsVerticalScrollIndicator={false}>
+          {/* flexShrink lets the list shrink into the 80% cap and scroll —
+              without it the ScrollView overflows and the AI result is clipped. */}
+          <ScrollView
+            style={{flexShrink: 1}}
+            contentContainerStyle={{padding: 20}}
+            showsVerticalScrollIndicator={false}>
             {/* Score header */}
             <View className="flex-row items-center mb-4" style={{gap: 12}}>
               <Text className="text-3xl font-black" style={{color: scoreColor}}>

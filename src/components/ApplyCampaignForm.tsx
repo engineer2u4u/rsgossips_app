@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuth} from '../context/AuthContext';
 import {isSubscribed} from '../lib/plans';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
@@ -53,6 +54,7 @@ function formatCount(n: number | undefined) {
 
 export default function ApplyCampaignForm({visible, onClose, campaignData, onSubmitSuccess}: Props) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {profile, user, refreshProfile} = useAuth();
 
   // Required before applying: email + gender (apply-campaign refuses without
@@ -207,14 +209,13 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
 
   // A fullScreen <Modal> on iOS mounts in its own native window, OUTSIDE
   // the app's SafeAreaProvider tree — so SafeAreaView reads zero insets in
-  // there. Skipping the safe-area wrapper entirely and using a fixed
-  // paddingTop for iOS (status bar + notch ≈ 50pt on every iPhone since X)
-  // is the simplest reliable fix.
+  // there. The useSafeAreaInsets() hook reads the provider through React
+  // context instead, so it still reports the real notch / nav-bar insets.
   return (
     <Modal visible={visible} animationType="slide">
       <View
         className="flex-1 bg-white"
-        style={{paddingTop: Platform.OS === 'ios' ? 50 : 0}}>
+        style={{paddingTop: Platform.OS === 'ios' ? insets.top : 0}}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-white">
@@ -461,7 +462,9 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               </ScrollView>
 
               {/* Footer */}
-              <View className="flex-row px-6 py-4 border-t border-slate-100" style={{gap: 12}}>
+              <View
+                className="flex-row px-6 pt-4 border-t border-slate-100"
+                style={{gap: 12, paddingBottom: 16 + insets.bottom}}>
                 <TouchableOpacity
                   onPress={onClose}
                   className="flex-1 h-12 rounded-xl border border-slate-200 items-center justify-center">

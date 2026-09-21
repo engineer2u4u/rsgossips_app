@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   ChevronLeft,
   Search,
@@ -138,6 +138,7 @@ const SORT_OPTIONS = [
 export default function RecommendedCampaigns() {
   const navigation = useNavigation();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user, profile} = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('recommended');
@@ -546,7 +547,9 @@ export default function RecommendedCampaigns() {
             </View>
 
             {/* Footer */}
-            <View className="flex-row gap-3 px-5 py-4 border-t border-slate-100">
+            <View
+              className="flex-row gap-3 px-5 pt-4 border-t border-slate-100"
+              style={{ paddingBottom: 16 + insets.bottom }}>
               <TouchableOpacity
                 onPress={() => setShowSortModal(false)}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
@@ -592,7 +595,11 @@ export default function RecommendedCampaigns() {
               <View className="w-9" />
             </View>
 
-            <ScrollView className="px-5 pb-4">
+            {/* flexShrink keeps the list inside the 85% cap so it scrolls. */}
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}
+              keyboardShouldPersistTaps="handled">
               {/* Category */}
               <View className="mb-6">
                 <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
@@ -779,7 +786,9 @@ export default function RecommendedCampaigns() {
             </ScrollView>
 
             {/* Footer */}
-            <View className="flex-row gap-3 px-5 py-4 border-t border-slate-100">
+            <View
+              className="flex-row gap-3 px-5 pt-4 border-t border-slate-100"
+              style={{ paddingBottom: 16 + insets.bottom }}>
               <TouchableOpacity
                 onPress={resetFilters}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"
@@ -870,7 +879,9 @@ export default function RecommendedCampaigns() {
             </View>
 
             {/* Footer */}
-            <View className="flex-row gap-3 px-5 py-4 border-t border-slate-100">
+            <View
+              className="flex-row gap-3 px-5 pt-4 border-t border-slate-100"
+              style={{ paddingBottom: 16 + insets.bottom }}>
               <TouchableOpacity
                 onPress={() => {
                   setBudgetMin('');
@@ -950,7 +961,9 @@ export default function RecommendedCampaigns() {
             </View>
 
             {/* Footer */}
-            <View className="flex-row gap-3 px-5 py-4 border-t border-slate-100">
+            <View
+              className="flex-row gap-3 px-5 pt-4 border-t border-slate-100"
+              style={{ paddingBottom: 16 + insets.bottom }}>
               <TouchableOpacity
                 onPress={() => setSelectedPlatforms([])}
                 className="flex-1 py-3.5 rounded-2xl border border-slate-200 items-center"

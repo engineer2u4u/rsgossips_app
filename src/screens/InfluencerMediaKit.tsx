@@ -35,6 +35,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {openManagePlan} from '../lib/manage-plan';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
@@ -77,6 +78,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 export default function InfluencerMediaKit() {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {
     profile,
     user,
@@ -456,8 +458,8 @@ export default function InfluencerMediaKit() {
           {/* Stop taps inside the sheet from dismissing the modal */}
           <Pressable
             onPress={() => {}}
-            className="bg-white rounded-t-[28px] px-5 pt-3 pb-6"
-            style={{maxHeight: '85%'}}>
+            className="bg-white rounded-t-[28px] px-5 pt-3"
+            style={{maxHeight: '85%', paddingBottom: 24 + insets.bottom}}>
             {/* Drag handle */}
             <View className="items-center pb-2">
               <View className="w-10 h-1 rounded-full bg-slate-200" />
@@ -477,7 +479,8 @@ export default function InfluencerMediaKit() {
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            {/* flexShrink keeps the list inside the 85% cap so it scrolls. */}
+            <ScrollView style={{flexShrink: 1}} showsVerticalScrollIndicator={false}>
               <TemplatePicker
                 profile={profile}
                 previewTemplate={previewTemplate}

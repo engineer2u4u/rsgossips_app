@@ -34,6 +34,7 @@ import {useAuth} from '../context/AuthContext';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // Brand accent family (matches web brand surfaces).
 const ACCENT = '#5851DB';
@@ -268,6 +269,7 @@ export default function BrandSupportChatModal({visible, onClose}: Props) {
   const navigation = useNavigation<any>();
   const {user, profile} = useAuth() as any;
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const nodeLabel = (n: TreeNode) => t(`BrandSupportChatModal.labels.${n.id}`);
 
   const [path, setPath] = useState<string[]>([]);
@@ -515,6 +517,8 @@ export default function BrandSupportChatModal({visible, onClose}: Props) {
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             height: '85%',
+            // Keep the composer/callback form clear of the system nav bar.
+            paddingBottom: insets.bottom,
             overflow: 'hidden',
           }}>
           {/* Header */}
@@ -615,7 +619,7 @@ export default function BrandSupportChatModal({visible, onClose}: Props) {
             <View
               className="px-5 py-3 border-t border-slate-100"
               style={{
-                paddingBottom: Platform.OS === 'ios' ? 22 : 12,
+                paddingBottom: 12,
               }}>
               <Pressable
                 onPress={() => {

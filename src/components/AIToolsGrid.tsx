@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {openManagePlan} from '../lib/manage-plan';
 
 import {
@@ -276,6 +277,7 @@ function ToolModal({
   onUpgrade: () => void;
 }) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user, profile, refreshProfile} = useAuth();
   const {generate, loading, result, remaining, error, limitReached} =
     useAiTool();
@@ -340,6 +342,7 @@ function ToolModal({
         <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
           <Pressable
             className="bg-white rounded-t-[32px] max-h-[80%]"
+            style={{paddingBottom: insets.bottom}}
             onPress={e => e.stopPropagation()}>
             {/* Header */}
             <View className="flex-row items-center justify-between p-5 border-b border-slate-100">

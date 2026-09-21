@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   CheckCircle2,
   ChevronLeft,
@@ -298,6 +299,7 @@ function ReceiptModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   if (!tx) {
     return null;
   }
@@ -361,7 +363,9 @@ function ReceiptModal({
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={{padding: 22, gap: 18}}>
+          <ScrollView
+            style={{flexShrink: 1}}
+            contentContainerStyle={{padding: 22, gap: 18, paddingBottom: 22 + insets.bottom}}>
             {/* Issuer + receipt no */}
             <View className="flex-row justify-between items-start">
               <View>

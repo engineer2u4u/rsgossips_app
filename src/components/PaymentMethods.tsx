@@ -43,6 +43,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../utils/supabase';
 import { invokeFn } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -966,6 +967,7 @@ function AddPaymentModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [type, setType] = useState<'upi' | 'bank'>('upi');
   const [upiId, setUpiId] = useState('');
@@ -1264,8 +1266,8 @@ function AddPaymentModal({
           </ScrollView>
 
           <View
-            className="flex-row border-t border-gray-100 px-6 py-4 bg-white"
-            style={{ gap: 12 }}
+            className="flex-row border-t border-gray-100 px-6 pt-4 bg-white"
+            style={{ gap: 12, paddingBottom: 16 + insets.bottom }}
           >
             <TouchableOpacity
               onPress={() => {

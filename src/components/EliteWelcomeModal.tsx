@@ -13,6 +13,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuth} from '../context/AuthContext';
 import {getEffectivePlan, PLAN_IDS} from '../lib/plans';
 import {isInstagramTokenExpired} from '../lib/instagramToken';
@@ -38,6 +39,7 @@ const GRADIENT = ['#F59E0B', '#E1306C', '#833AB4'];
 
 export default function EliteWelcomeModal() {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user, role, profile, setProfile, instagramTokenMissing} = useAuth();
   const [closed, setClosed] = useState(false);
 
@@ -79,6 +81,10 @@ export default function EliteWelcomeModal() {
           backgroundColor: 'rgba(0,0,0,0.6)',
           justifyContent: 'flex-end',
           padding: 12,
+          // statusBarTranslucent draws under both system bars — keep the
+          // card clear of them.
+          paddingTop: 12 + insets.top,
+          paddingBottom: 12 + insets.bottom,
         }}>
         <View
           style={{
@@ -126,7 +132,7 @@ export default function EliteWelcomeModal() {
           </View>
 
           <ScrollView
-            style={{flexGrow: 0}}
+            style={{flexGrow: 0, flexShrink: 1}}
             contentContainerStyle={{paddingHorizontal: 20, paddingVertical: 16, gap: 12}}>
             {PERKS.map(({key, Icon}) => (
               <View key={key} style={{flexDirection: 'row', alignItems: 'flex-start', gap: 12}}>

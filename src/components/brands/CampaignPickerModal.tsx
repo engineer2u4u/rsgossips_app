@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import {Check, Megaphone, Send, X} from 'lucide-react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {invokeFn} from '../../lib/api';
 
 type Campaign = {
@@ -62,6 +63,7 @@ export default function CampaignPickerModal({
   campaignTitle = '',
   onDone,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [picked, setPicked] = useState<string | null>(campaignId);
@@ -150,7 +152,9 @@ export default function CampaignPickerModal({
           </View>
 
           {/* Body */}
-          <ScrollView className="px-4 py-3" style={{maxHeight: 380}}>
+          <ScrollView
+            style={{maxHeight: 380, flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 16, paddingVertical: 12}}>
             {skipPicker ? (
               <View className="flex-row items-center bg-indigo-50 rounded-2xl p-3" style={{gap: 12}}>
                 <View className="w-11 h-11 rounded-xl bg-purple-500 items-center justify-center overflow-hidden">
@@ -218,7 +222,9 @@ export default function CampaignPickerModal({
           </ScrollView>
 
           {/* Footer */}
-          <View className="px-5 py-4 border-t border-gray-100">
+          <View
+            className="px-5 pt-4 border-t border-gray-100"
+            style={{paddingBottom: 16 + insets.bottom}}>
             <Pressable
               onPress={send}
               disabled={sending || count === 0 || (!campaignId && !picked)}

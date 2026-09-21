@@ -15,7 +15,6 @@
 import React, {useEffect, useState} from 'react';
 import {
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +23,7 @@ import {
 } from 'react-native';
 import {Check, SlidersHorizontal, X} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {CONTENT_LANGUAGES} from '../../utils/contentLanguages';
 
 export type FilterValues = Record<string, string[]>;
@@ -86,6 +86,7 @@ interface Props {
 
 export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
   // Draft = working copy while drawer is open; only committed on Apply.
   const [draft, setDraft] = useState<FilterValues>(filters);
@@ -230,7 +231,7 @@ export function FilterDrawer({filters, onApply, onClear, countForDraft}: Props) 
             </View>
 
             {/* Footer */}
-            <View style={s.footer}>
+            <View style={[s.footer, {paddingBottom: 18 + insets.bottom}]}>
               <Pressable
                 onPress={() => {
                   clearAll();
@@ -354,7 +355,6 @@ const s = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },

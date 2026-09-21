@@ -12,12 +12,14 @@ import {
   Image,
   Linking,
   Modal,
+  Platform,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   Briefcase,
   Camera,
@@ -67,6 +69,7 @@ import {
 export default function BrandProfile() {
   const navigation = useNavigation();
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {profile, signOut, refreshProfile, user} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -545,7 +548,16 @@ export default function BrandProfile() {
         visible={helpOpen}
         animationType="slide"
         onRequestClose={() => setHelpOpen(false)}>
-        <HelpSupport onBack={() => setHelpOpen(false)} />
+        {/* Full-screen iOS modals draw under the notch; HelpSupport has no
+            top inset of its own (it's normally embedded in a screen). */}
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#F9FAFB',
+            paddingTop: Platform.OS === 'ios' ? insets.top : 0,
+          }}>
+          <HelpSupport onBack={() => setHelpOpen(false)} />
+        </View>
       </Modal>
 
       <LogoutConfirmDialog

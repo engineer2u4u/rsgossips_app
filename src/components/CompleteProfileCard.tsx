@@ -26,6 +26,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Svg, {Circle, Defs, LinearGradient as SvgLinearGradient, Stop} from 'react-native-svg';
 import {useAuth} from '../context/AuthContext';
 import {NavigationContext} from '@react-navigation/native';
@@ -366,6 +367,7 @@ function SetRatesModal({
   onClose: () => void;
 }) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const [localServices, setLocalServices] = useState<string[]>(services);
   const [localRates, setLocalRates] = useState<Record<string, string>>(() => {
     const r: Record<string, string> = {};
@@ -393,7 +395,7 @@ function SetRatesModal({
   };
 
   return (
-    <Modal visible animationType="slide" transparent>
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-black/40 justify-end">
@@ -408,7 +410,13 @@ function SetRatesModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="px-6 py-5" showsVerticalScrollIndicator={false}>
+          {/* flexShrink keeps the list inside the 85% cap so it scrolls once
+              rate inputs are added, and the Save footer stays on screen. */}
+          <ScrollView
+            style={{flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 24, paddingVertical: 20}}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             {/* Service Selection */}
             <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
               {t('CompleteProfileCard.selectServices')}
@@ -484,7 +492,9 @@ function SetRatesModal({
           </ScrollView>
 
           {/* Footer */}
-          <View className="px-6 py-4 border-t border-slate-100 flex-row" style={{gap: 12}}>
+          <View
+            className="px-6 pt-4 border-t border-slate-100 flex-row"
+            style={{gap: 12, paddingBottom: 16 + insets.bottom}}>
             <TouchableOpacity
               onPress={onClose}
               className="flex-1 h-12 rounded-2xl bg-slate-100 items-center justify-center">

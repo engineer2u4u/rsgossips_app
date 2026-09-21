@@ -7,11 +7,11 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {Flag, Ban, Check, X} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {invokeFn} from '../lib/api';
 import {BRAND, CARD_SHADOW} from '../theme/brand';
 
@@ -74,6 +74,7 @@ export default function ReportBlockSheet({
   onBlocked,
 }: Props) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const [stage, setStage] = useState<Stage>('menu');
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState('');
@@ -169,7 +170,7 @@ export default function ReportBlockSheet({
               backgroundColor: '#fff',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
-              paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+              paddingBottom: 16 + insets.bottom,
             },
           ]}>
           <View className="items-center pt-3 pb-1">

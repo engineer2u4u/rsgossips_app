@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {ChevronLeft} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 
 // Canonical category list — same 15 used on the web's FilterModal.jsx so
@@ -74,6 +75,7 @@ export default function FilterModal({
   setSelectedBrands,
 }: FilterModalProps) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat],
@@ -103,7 +105,11 @@ export default function FilterModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-black/40 justify-end">
@@ -126,7 +132,11 @@ export default function FilterModal({
           </View>
 
           <ScrollView
-            className="px-6 py-5"
+            // flexShrink keeps the list inside the 88% cap so it scrolls and
+            // the footer stays on screen.
+            style={{flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 24, paddingVertical: 20}}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             {/* Categories */}
             <View className="mb-6">
@@ -239,7 +249,9 @@ export default function FilterModal({
                 <View
                   style={{maxHeight: 200}}
                   className="border border-slate-100 rounded-2xl p-2">
-                  <ScrollView showsVerticalScrollIndicator={false}>
+                  {/* nestedScrollEnabled: Android won't scroll a ScrollView
+                      nested in another without it. */}
+                  <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
                     <View className="flex-row flex-wrap" style={{gap: 6}}>
                       {brands.map(name => {
                         const active = selectedBrands?.includes(name) || false;
@@ -323,7 +335,7 @@ export default function FilterModal({
           {/* Footer Buttons */}
           <View
             className="px-6 pt-4 border-t border-slate-100 flex-row"
-            style={{gap: 12, paddingBottom: Platform.OS === 'ios' ? 32 : 16}}>
+            style={{gap: 12, paddingBottom: 16 + insets.bottom}}>
             <TouchableOpacity
               onPress={handleReset}
               className="flex-1 h-14 rounded-2xl bg-slate-50 items-center justify-center">

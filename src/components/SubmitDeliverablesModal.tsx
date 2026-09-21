@@ -42,6 +42,7 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {openManagePlan} from '../lib/manage-plan';
 import {invokeFn, EdgeFunctionError} from '../lib/api';
 import {useAiTool} from '../hooks/useAiTool';
@@ -84,6 +85,7 @@ export default function SubmitDeliverablesModal({
   onSuccess,
 }: Props) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const isRevision = campaign?.applicationStatus === 'revision_needed';
 
   // Parse revision info — the brand can send a JSON blob with a note + the
@@ -279,7 +281,13 @@ export default function SubmitDeliverablesModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={{flex: 1, backgroundColor: 'white'}}
+        // Full-screen modal: on iOS it draws under the notch, and on
+        // Android 15+ (edge-to-edge) under the system nav bar.
+        style={{
+          flex: 1,
+          backgroundColor: 'white',
+          paddingTop: Platform.OS === 'ios' ? insets.top : 0,
+        }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header */}
         <View style={styles.header}>
@@ -519,7 +527,7 @@ export default function SubmitDeliverablesModal({
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, {paddingBottom: 16 + insets.bottom}]}>
           <TouchableOpacity onPress={onClose} style={[styles.btn, styles.btnGhost]}>
             <Text style={styles.btnGhostText}>{t('SubmitDeliverablesModal.cancel')}</Text>
           </TouchableOpacity>
@@ -636,7 +644,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },

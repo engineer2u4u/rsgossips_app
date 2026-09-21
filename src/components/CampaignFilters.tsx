@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {X} from 'lucide-react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 
@@ -24,6 +25,7 @@ type Props = {
 
 export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
@@ -41,7 +43,11 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}>
       <View className="flex-1 bg-black/40 justify-end">
         <View className="bg-white rounded-t-[40px] max-h-[85%]">
           {/* Header */}
@@ -64,7 +70,12 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="px-6 py-5" showsVerticalScrollIndicator={false}>
+          {/* flexShrink keeps the list inside the 85% cap so it scrolls and
+              the Apply footer stays on screen. */}
+          <ScrollView
+            style={{flexShrink: 1}}
+            contentContainerStyle={{paddingHorizontal: 24, paddingVertical: 20}}
+            showsVerticalScrollIndicator={false}>
             {/* Categories */}
             <View className="mb-6">
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
@@ -163,7 +174,9 @@ export const CampaignFilters = ({visible, onClose, filterData}: Props) => {
           </ScrollView>
 
           {/* Apply Button */}
-          <View className="px-6 py-4 border-t border-slate-100">
+          <View
+            className="px-6 pt-4 border-t border-slate-100"
+            style={{paddingBottom: 16 + insets.bottom}}>
             <TouchableOpacity
               onPress={onClose}
               className="py-4 items-center justify-center rounded-2xl overflow-hidden">

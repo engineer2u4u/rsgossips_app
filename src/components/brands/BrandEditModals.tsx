@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import {Check, X} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {truncateText} from '../../lib/text';
 
 // ─────────── Generic primitives ───────────
@@ -47,6 +48,7 @@ export function EditModal({
   canSave = true,
 }: EditModalProps) {
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState(false);
   const resolvedSaveLabel = saveLabel ?? t('BrandsBrandEditModals.save');
 
@@ -87,13 +89,16 @@ export function EditModal({
 
           {/* Body */}
           <ScrollView
+            // Grow to fill the sheet's min height, shrink under its max so
+            // long forms scroll instead of pushing the footer off-screen.
+            style={{flexGrow: 1, flexShrink: 1}}
             contentContainerStyle={{padding: 18, gap: 14}}
             keyboardShouldPersistTaps="handled">
             {children}
           </ScrollView>
 
           {/* Footer */}
-          <View style={s.footer}>
+          <View style={[s.footer, {paddingBottom: 14 + insets.bottom}]}>
             <TouchableOpacity
               onPress={onClose}
               disabled={saving}
@@ -568,7 +573,6 @@ const s = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 14,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },
