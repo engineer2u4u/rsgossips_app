@@ -363,6 +363,8 @@
     }
   },
   "BrandCard": {
+    "typeBrand": "Brand",
+    "typeAgency": "Agency",
     "trust": "Trust",
     "bands": {
       "excellent": "Excellent",
@@ -995,6 +997,9 @@
     "aiLimit": "You've used your AI generations this month. Upgrade for more."
   },
   "FilterModal": {
+    "brandType": "Brand type",
+    "brandTypeBrand": "Brands",
+    "brandTypeAgency": "Agencies",
     "filters": "Filters",
     "clearAll": "Clear All",
     "category": "Category",

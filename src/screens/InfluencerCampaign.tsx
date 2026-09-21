@@ -15,6 +15,7 @@ import {Search, SlidersHorizontal, Lock, Sparkles, Crown} from 'lucide-react-nat
 import LinearGradient from 'react-native-linear-gradient';
 import {CampaignCard} from '../components/CampaignCard';
 import FilterModal from '../components/FilterModal';
+import {matchesBrandType, toBrandAccountType, type BrandAccountType} from '../lib/brandType';
 import BottomNav from '../components/BottomNav';
 import {useAuth} from '../context/AuthContext';
 import {useFreeApplications} from '../hooks/useFreeApplications';
@@ -63,6 +64,8 @@ interface CampaignData {
   bannerImage?: string;
   /** Short description shown under the title on the card. */
   description?: string;
+  /** "brand" | "agency" — the owning brand's admin-set label (list-campaigns). */
+  brandType?: BrandAccountType;
 }
 
 const FALLBACK_CAMPAIGNS: CampaignData[] = [
@@ -140,6 +143,8 @@ export default function InfluencerCampaign() {
     incomingBrandFilter ? [incomingBrandFilter] : [],
   );
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
+  // Brand / agency checkboxes — [] or both ticked = everyone.
+  const [brandTypes, setBrandTypes] = useState<BrandAccountType[]>([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Pagination: render `visibleCount` cards; the "Load more" button under
@@ -201,6 +206,7 @@ export default function InfluencerCampaign() {
             platforms: c.platforms || ['instagram'],
             bannerImage: c.bannerImage || c.brandLogo || '',
             description: c.description || '',
+            brandType: toBrandAccountType(c.brandType),
           })),
         );
       } else {
@@ -275,7 +281,8 @@ export default function InfluencerCampaign() {
         matchesSearch &&
         matchesCategory &&
         matchesBrand &&
-        matchesBudget
+        matchesBudget &&
+        matchesBrandType(brandTypes, campaign.brandType)
       );
     });
     // Sort by match score descending — best-fit campaigns surface first.
@@ -293,6 +300,7 @@ export default function InfluencerCampaign() {
     selectedCategories,
     selectedBrands,
     budgetRange,
+    brandTypes,
     profile,
   ]);
 
@@ -321,7 +329,13 @@ export default function InfluencerCampaign() {
       const matchesBudget =
         budgetNum >= budgetRange.min &&
         (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-      return matchesSearch && matchesCategory && matchesBrand && matchesBudget;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesBudget &&
+        matchesBrandType(brandTypes, campaign.brandType)
+      );
     };
     const pool = campaigns.filter(matchesNonTabFilters);
     return {
@@ -336,6 +350,7 @@ export default function InfluencerCampaign() {
     selectedCategories,
     selectedBrands,
     budgetRange,
+    brandTypes,
   ]);
 
   // Reset visible window whenever the active tab or filter inputs change
@@ -349,6 +364,7 @@ export default function InfluencerCampaign() {
     selectedBrands,
     budgetRange,
     isVerifiedOnly,
+    brandTypes,
   ]);
 
   const visibleCampaigns = useMemo(
@@ -385,13 +401,15 @@ export default function InfluencerCampaign() {
     selectedCategories.length > 0 ||
     selectedBrands.length > 0 ||
     budgetRange.min > 0 ||
-    budgetRange.max < 200000;
+    budgetRange.max < 200000 ||
+    brandTypes.length === 1;
   const clearAllFilters = () => {
     setSearchQuery('');
     setSelectedCategories([]);
     setSelectedBrands([]);
     setBudgetRange({min: 0, max: 200000});
     setIsVerifiedOnly(false);
+    setBrandTypes([]);
   };
 
   return (
@@ -621,6 +639,8 @@ export default function InfluencerCampaign() {
         setSelectedBrands={setSelectedBrands}
         isVerifiedOnly={isVerifiedOnly}
         setIsVerifiedOnly={setIsVerifiedOnly}
+        brandTypes={brandTypes}
+        setBrandTypes={setBrandTypes}
       />
     </SafeAreaView>
   );

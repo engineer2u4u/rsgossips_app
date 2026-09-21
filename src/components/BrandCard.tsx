@@ -49,6 +49,8 @@ type Brand = {
   payout?: string;
   trustScore?: number;
   trustBand?: string;
+  /** "brand" | "agency" — admin-set label from list-brands. */
+  accountType?: 'brand' | 'agency';
 };
 
 // Mirrors the band thresholds in supabase/functions/list-brands/index.ts.
@@ -319,6 +321,21 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
         shadowRadius: 16,
         elevation: 6,
       }}>
+      {/* Brand / agency — admin-set label (list-brands accountType). */}
+      <View
+        className={`absolute top-3 left-3 z-10 px-2 py-0.5 rounded-lg ${
+          brand.accountType === 'agency' ? 'bg-violet-50' : 'bg-sky-50'
+        }`}>
+        <Text
+          className={`text-[9px] font-black uppercase ${
+            brand.accountType === 'agency' ? 'text-violet-600' : 'text-sky-600'
+          }`}>
+          {brand.accountType === 'agency'
+            ? t('BrandCard.typeAgency')
+            : t('BrandCard.typeBrand')}
+        </Text>
+      </View>
+
       {/* Match Score Badge — pressable, opens the "why this match?" sheet.
           A nested touchable claims the tap, so the card's own onPress
           doesn't fire (RN equivalent of the web stopPropagation). */}

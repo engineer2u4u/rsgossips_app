@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import {ChevronLeft} from 'lucide-react-native';
+import {Check, ChevronLeft} from 'lucide-react-native';
+import {BRAND_ACCOUNT_TYPES, type BrandAccountType} from '../lib/brandType';
 import LinearGradient from 'react-native-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
@@ -56,6 +57,9 @@ type FilterModalProps = {
   brands?: string[];
   selectedBrands?: string[];
   setSelectedBrands?: React.Dispatch<React.SetStateAction<string[]>>;
+  /** Brand / agency checkboxes — rendered only when both are passed. */
+  brandTypes?: BrandAccountType[];
+  setBrandTypes?: React.Dispatch<React.SetStateAction<BrandAccountType[]>>;
 };
 
 export default function FilterModal({
@@ -73,6 +77,8 @@ export default function FilterModal({
   brands,
   selectedBrands,
   setSelectedBrands,
+  brandTypes,
+  setBrandTypes,
 }: FilterModalProps) {
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
@@ -101,7 +107,15 @@ export default function FilterModal({
     setBudgetRange({min: 0, max: budgetMaxDefault});
     if (setSelectedPlatforms) setSelectedPlatforms([]);
     if (setSelectedBrands) setSelectedBrands([]);
+    if (setBrandTypes) setBrandTypes([]);
     setIsVerifiedOnly(false);
+  };
+
+  const toggleBrandType = (type: BrandAccountType) => {
+    if (!setBrandTypes) return;
+    setBrandTypes(prev =>
+      prev.includes(type) ? prev.filter(x => x !== type) : [...prev, type],
+    );
   };
 
   return (
@@ -307,6 +321,43 @@ export default function FilterModal({
                       </Text>
                     </TouchableOpacity>
                   ))}
+                </View>
+              </View>
+            )}
+
+            {/* Brand / agency — ticking both or neither shows everyone. */}
+            {brandTypes && setBrandTypes && (
+              <View className="mb-6">
+                <Text className="text-sm font-bold text-slate-800 mb-3">
+                  {t('FilterModal.brandType')}
+                </Text>
+                <View className="flex-row" style={{gap: 20}}>
+                  {BRAND_ACCOUNT_TYPES.map(type => {
+                    const checked = brandTypes.includes(type);
+                    return (
+                      <TouchableOpacity
+                        key={type}
+                        onPress={() => toggleBrandType(type)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{checked}}
+                        className="flex-row items-center"
+                        style={{gap: 8}}>
+                        <View
+                          className={`w-5 h-5 rounded-md border-2 items-center justify-center ${
+                            checked
+                              ? 'bg-[#E60076] border-[#E60076]'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                          {checked && <Check size={13} color="white" strokeWidth={3} />}
+                        </View>
+                        <Text className="text-sm font-bold text-slate-600">
+                          {type === 'agency'
+                            ? t('FilterModal.brandTypeAgency')
+                            : t('FilterModal.brandTypeBrand')}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             )}

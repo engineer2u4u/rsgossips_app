@@ -19,6 +19,7 @@ import {useAuth} from '../context/AuthContext';
 import {calculateBrandMatchScore} from '../utils/matchScore';
 import {invokeFn} from '../lib/api';
 import {useTranslation} from 'react-i18next';
+import {matchesBrandType, toBrandAccountType, type BrandAccountType} from '../lib/brandType';
 
 // Mirrors web's 30-per-page brand list — show 30 at a time, "Load more"
 // appends the next 30, and the count resets on any filter/sort change.
@@ -50,6 +51,8 @@ interface Brand {
   trustScore?: number;
   /** Label that maps to a trust band (Excellent / Very Good / Good / Fair / Poor). */
   trustBand?: string;
+  /** "brand" | "agency" — admin-set label from list-brands. */
+  accountType?: BrandAccountType;
 }
 
 const FALLBACK_BRANDS: Brand[] = [
@@ -136,6 +139,8 @@ export default function InfluencerDiscover() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [budgetRange, setBudgetRange] = useState({min: 0, max: 10000});
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
+  // Brand / agency checkboxes — [] or both ticked = everyone.
+  const [brandTypes, setBrandTypes] = useState<BrandAccountType[]>([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Sort order: match score (default) / A–Z / most active campaigns.
@@ -171,6 +176,7 @@ export default function InfluencerDiscover() {
             payout: b.payout || '—',
             trustScore: typeof b.trustScore === 'number' ? b.trustScore : undefined,
             trustBand: b.trustBand || undefined,
+            accountType: toBrandAccountType(b.accountType),
           })),
         );
       }
@@ -234,7 +240,11 @@ export default function InfluencerDiscover() {
       const matchesVerified = isVerifiedOnly ? brand.isVerified : true;
 
       return (
-        matchesSearch && matchesCategory && matchesBudget && matchesVerified
+        matchesSearch &&
+        matchesCategory &&
+        matchesBudget &&
+        matchesVerified &&
+        matchesBrandType(brandTypes, brand.accountType)
       );
     });
 
@@ -254,14 +264,14 @@ export default function InfluencerDiscover() {
       );
     }
     return scored.sort((a, b) => (b._matchScore || 0) - (a._matchScore || 0));
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile, sortBy]);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, brandTypes, profile, sortBy]);
 
   // Whenever the filtered list changes (filters/search/sort toggled), snap
   // visibleCount back to the first page so we never display an empty
   // tail of "phantom" loaded rows.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, sortBy]);
+  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, brandTypes, sortBy]);
 
   const visibleBrands = useMemo(
     () => filteredBrands.slice(0, visibleCount),
@@ -430,6 +440,8 @@ export default function InfluencerDiscover() {
         budgetMaxDefault={10000}
         isVerifiedOnly={isVerifiedOnly}
         setIsVerifiedOnly={setIsVerifiedOnly}
+        brandTypes={brandTypes}
+        setBrandTypes={setBrandTypes}
       />
     </SafeAreaView>
   );
