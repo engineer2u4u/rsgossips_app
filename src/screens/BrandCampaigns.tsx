@@ -215,7 +215,9 @@ export default function BrandCampaigns() {
         </View>
       </View>
 
-      <View className="px-6 mt-2 pb-24" style={{gap: 12}}>
+      {/* No pb-* for nav clearance here — BrandLayout's ScrollView reserves
+          it for every brand screen. */}
+      <View className="px-6 mt-2" style={{gap: 12}}>
         {loading ? (
           <View className="py-16 items-center">
             <ActivityIndicator color="#5851DB" />

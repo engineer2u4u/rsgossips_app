@@ -14,8 +14,16 @@ export default function BrandsLayout({ children }: any) {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Main Scrollable Content */}
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      {/* Main Scrollable Content.
+          BrandBottomNav is absolutely positioned over this, so the scroll
+          has to reserve its height (h-16 = 64) plus breathing room or the
+          last row sits under the nav and can't be reached — Delete Account
+          on the profile screen was unreachable. InfluencerLayout does the
+          same with 110 for its taller floating pill. */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{flexGrow: 1, paddingBottom: 88}}
+        showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>
 
