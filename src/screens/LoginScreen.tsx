@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Mail, X } from 'lucide-react-native';
+import { Mail, RefreshCw, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -42,9 +42,12 @@ function formatDisplayPhone(raw: string): string {
 // parsing message strings.
 class OtpError extends Error {
   code: string;
-  constructor(code: string, message?: string) {
+  /** Present on 'deactivated' — which account type is being brought back. */
+  role?: 'brand' | 'influencer';
+  constructor(code: string, message?: string, role?: 'brand' | 'influencer') {
     super(message || code);
     this.code = code;
+    this.role = role;
   }
 }
 
@@ -185,6 +188,12 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [pendingSession, setPendingSession] = useState<any>(null);
+  // Set when the verifier reports a deactivated account. Holds the OTP the
+  // user already typed so confirming costs one tap, not a fresh code.
+  const [reactivationPending, setReactivationPending] = useState<{
+    otpCode: string;
+    role: 'brand' | 'influencer';
+  } | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
 
   // --- INSTAGRAM STATE ---
@@ -284,6 +293,9 @@ export default function LoginScreen() {
     phoneNumber: string,
     otpCode: string,
     mode: 'signin' | 'signup' = 'signup',
+    // Second pass only: the user has confirmed they want a deactivated
+    // account brought back. The verifier refuses to do it silently.
+    reactivate = false,
   ) => {
     const rawDigits = phoneNumber.replace(/\D/g, '');
     // Same length-based rule as sendOtp (see comment there).
@@ -291,12 +303,12 @@ export default function LoginScreen() {
 
     const { data, error: authError } = await supabase.functions.invoke(
       'whatsapp-otp-verifier',
-      { body: { phone: fullPhone, otp: otpCode, mode } },
+      { body: { phone: fullPhone, otp: otpCode, mode, reactivate } },
     );
 
     if (authError) throw new Error(authError.message);
     if (data?.error) {
-      throw new OtpError(data.error, data.message || data.error);
+      throw new OtpError(data.error, data.message || data.error, data.role);
     }
 
     // Sign-up (Option A): the verifier only PROVES phone ownership now — no
@@ -382,12 +394,16 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSignInVerifyOtp = async (otpCode: string) => {
+  const handleSignInVerifyOtp = async (otpCode: string, reactivate = false) => {
     setLoading(true);
-    setLoadingMsg(t('ScreensLoginScreen.verifying'));
+    setLoadingMsg(
+      reactivate
+        ? t('ScreensLoginScreen.reactivating')
+        : t('ScreensLoginScreen.verifying'),
+    );
     setError('');
     try {
-      const data = await verifyOtp(phone, otpCode, 'signin');
+      const data = await verifyOtp(phone, otpCode, 'signin', reactivate);
 
       // Role-mismatch defence in depth. The pre-check above catches this in
       // the happy path, but a tampered or stale client could still get here
@@ -409,6 +425,7 @@ export default function LoginScreen() {
         return;
       }
 
+      setReactivationPending(null);
       setLoadingMsg(t('ScreensLoginScreen.settingUpSession'));
       // Remember the role BEFORE the session lands. setSession fires
       // onAuthStateChange, which calls fetchProfile — and that reads the
@@ -426,6 +443,16 @@ export default function LoginScreen() {
       // surface a stale BrandHome / InfluencerHome from a prior session.
       (navigation as any).reset({index: 0, routes: [{name: target}]});
     } catch (err: any) {
+      if (err instanceof OtpError && err.code === 'deactivated') {
+        // Deactivating from the app used to be a one-way door: the app had
+        // no reactivation path at all, so the only way back in was the
+        // website. Hold the code the user already typed and ask them to
+        // confirm — the verifier refuses to reactivate without it.
+        setReactivationPending({otpCode, role: err.role || signupData.role || 'influencer'});
+        setError('');
+        setLoading(false);
+        return;
+      }
       if (err instanceof OtpError && err.code === 'no_user') {
         // Backend says no account on this phone — bounce to sign-up.
         setError('');
@@ -789,7 +816,21 @@ export default function LoginScreen() {
                     role={signupData.role || 'influencer'}
                   />
                 )}
-                {step === 3 && (
+                {step === 3 && reactivationPending && (
+                  <ReactivatePrompt
+                    role={reactivationPending.role}
+                    phone={formatDisplayPhone(phone)}
+                    loading={loading}
+                    onConfirm={() =>
+                      handleSignInVerifyOtp(reactivationPending.otpCode, true)
+                    }
+                    onCancel={() => {
+                      setReactivationPending(null);
+                      setOtp('');
+                    }}
+                  />
+                )}
+                {step === 3 && !reactivationPending && (
                   <VerifyOTP
                     onNext={handleSignInVerifyOtp}
                     onResend={() => handleResendOtp(phone)}
@@ -881,6 +922,89 @@ export default function LoginScreen() {
 //   - "claimed"   → invitation already used; bounce to sign-in
 //   - "invalid"/"error" → link broken or service hiccup; let them sign
 //                         up normally
+// Shown when sign-in succeeds but the account is deactivated. Reactivation
+// is an explicit gesture — the verifier refuses to do it as a side effect of
+// signing in — so this asks, then replays the same OTP with reactivate:true.
+function ReactivatePrompt({
+  role,
+  phone,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  role: 'brand' | 'influencer';
+  phone: string;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const label =
+    role === 'brand'
+      ? t('ScreensLoginScreen.reactivate.labelBrand')
+      : t('ScreensLoginScreen.reactivate.label');
+
+  return (
+    <View style={{ paddingTop: 24 }}>
+      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: '#FDF2F8',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <RefreshCw size={26} color="#E60076" />
+        </View>
+      </View>
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <Text className="text-xl font-black text-slate-900 text-center">
+          {t('ScreensLoginScreen.reactivate.title', { label })}
+        </Text>
+        <Text className="text-sm text-slate-500 text-center leading-5 mt-2">
+          {t('ScreensLoginScreen.reactivate.body', { label, phone })}
+        </Text>
+      </View>
+
+      <View style={{ gap: 12 }}>
+        <Pressable
+          disabled={loading}
+          onPress={onConfirm}
+          style={{
+            borderRadius: 16,
+            overflow: 'hidden',
+            paddingVertical: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: loading ? 0.6 : 1,
+          }}>
+          <LinearGradient
+            colors={['#9810FA', '#E60076']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <Text className="text-white text-sm font-black">
+            {loading
+              ? t('ScreensLoginScreen.reactivate.reactivating')
+              : t('ScreensLoginScreen.reactivate.confirm')}
+          </Text>
+        </Pressable>
+        <Pressable
+          disabled={loading}
+          onPress={onCancel}
+          className="border border-slate-200 rounded-2xl py-3 items-center">
+          <Text className="text-sm font-bold text-slate-600">
+            {t('ScreensLoginScreen.reactivate.cancel')}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function InvitationInterrupt({
   block,
   onContinueSignUp,

@@ -1506,17 +1506,18 @@
   },
   "PocketFriendlyCreators": {
     "title": "Pocket friendly creators",
-    "subtitle": "₹1,000 – ₹5,000 per reel",
-    "viewProfile": "View Profile",
+    "subtitle": "High-engagement creators within your budget",
     "followers": "{{count}} followers",
-    "categories": {
-      "tech": "Tech & Gadgets",
-      "fashion": "Fashion & Style",
-      "fitness": "Fitness & Health",
-      "travel": "Travel & Lifestyle",
-      "food": "Food & Cafe"
+    "perReel": "{{rate}} / reel",
+    "ranges": {
+      "under_1k": "Under ₹1K",
+      "1k_5k": "₹1K – 5K",
+      "5k_10k": "₹5K – 10K",
+      "10k_25k": "₹10K – 25K",
+      "25k_plus": "₹25K+"
     },
-    "perReel": "{{rate}} / reel"
+    "emptyBucket": "No creators have published a reel rate in this range yet. Try another budget.",
+    "creatorFallback": "Creator"
   },
   "Preferences": {
     "title": "Collaboration Preferences",
@@ -2458,39 +2459,6 @@
       }
     }
   },
-  "ScreensInfluencerResume": {
-    "defaultName": "Creator",
-    "loading": "Loading resume...",
-    "downloadPdf": "Download PDF",
-    "title": "Media Kit / Resume",
-    "aiInsightsFor": "AI-Powered insights for {{name}}",
-    "followers": "Followers",
-    "engagement": "Engagement",
-    "posts": "Posts",
-    "about": "About",
-    "servicesAndRates": "Services & Rates",
-    "onRequest": "On request",
-    "serviceLabels": {
-      "reels": "Reels",
-      "stories": "Stories",
-      "shorts": "YouTube Shorts",
-      "posts": "Static Posts",
-      "ugc": "UGC Videos"
-    },
-    "topAudienceCities": "Top Audience Cities",
-    "expertise": "Expertise",
-    "creatorSnapshot": "Creator Snapshot",
-    "reach": "Reach",
-    "manageResume": "Manage Resume",
-    "editProfile": "Edit Profile",
-    "editProfileHint": "Update your info to refresh resume",
-    "regenerating": "Regenerating...",
-    "regenerateResume": "Regenerate Resume",
-    "regenerateHint": "1 generation per month",
-    "hireThisCreator": "Hire this Creator",
-    "contactCreator": "Contact {{name}} directly for your next campaign.",
-    "sendCollaborationInquiry": "Send Collaboration Inquiry"
-  },
   "ScreensInfluencerServiceDetail": {
     "serviceNotFound": "Service not found",
     "backToServices": "← Back to Services",
@@ -2788,7 +2756,17 @@
     "cantFindEmail": "Can't find the email? Check spam, or reach out to info@rgossips.com.",
     "signInInstead": "Sign in instead",
     "continueWithInvitation": "Continue with my invitation →",
-    "signUpDifferentInstagram": "Sign up with a different Instagram"
+    "signUpDifferentInstagram": "Sign up with a different Instagram",
+    "reactivating": "Reactivating your account…",
+    "reactivate": {
+      "label": "account",
+      "labelBrand": "brand account",
+      "title": "Welcome back — reactivate your {{label}}?",
+      "body": "Your {{label}} on {{phone}} is deactivated. Reactivating brings back your profile, campaigns and history exactly as you left them.",
+      "confirm": "Reactivate and sign in",
+      "reactivating": "Reactivating…",
+      "cancel": "Not now"
+    }
   },
   "ScreensRecommendedCampaigns": {
     "headerTitle": "Recommended",
