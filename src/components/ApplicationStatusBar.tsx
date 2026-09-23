@@ -7,7 +7,8 @@
 // gradient ring + an expanded copy card below it.
 //
 // Status enum is unchanged:
-//   pending → approved → submitted → accepted → live_submitted → payment → completed
+//   pending → offer_sent → offer_accepted → approved → submitted →
+//   accepted → live_submitted → payment → completed
 // Plus revision_needed and rejected, which both map to the "submitted" tier.
 
 import React, { useState } from 'react';
@@ -33,6 +34,12 @@ import SubmitDeliverablesModal from './SubmitDeliverablesModal';
 
 type Status =
   | 'pending'
+  // B15: the brand prices the application and the creator answers before
+  // any money moves. Both sit between 'pending' and 'approved' — escrow is
+  // funded at 'approved', not before.
+  | 'offer_sent'
+  | 'offer_accepted'
+  | 'withdrawn'
   | 'approved'
   | 'submitted'
   | 'accepted'
@@ -57,6 +64,8 @@ interface Step {
 
 const STATUS_STEPS: Step[] = [
   { key: 'pending' },
+  { key: 'offer_sent' },
+  { key: 'offer_accepted' },
   { key: 'approved' },
   { key: 'submitted' },
   { key: 'accepted' },
@@ -102,6 +111,9 @@ export default function ApplicationStatusBar({
   // we're back at pending.
   const effectiveStatus: string =
     isRevision || isRejected ? 'submitted' : status;
+  // A withdrawn application has no place on the ladder; the offer screen
+  // stops rendering the tracker for it, and this keeps the index sane if
+  // it ever slips through.
   const currentStepIndex = Math.max(
     STATUS_STEPS.findIndex(s => s.key === effectiveStatus),
     0,

@@ -60,6 +60,10 @@ const REQUIRES_SESSION = new Set([
   // verify_jwt: true — platform-gated
   'submit-deliverables',
   'update-application-status',
+  // Money movement. Both also re-check the caller inline with
+  // supabase.auth.getUser(), so an anon call is refused twice over.
+  'escrow-fund',
+  'escrow-release',
   'send-account-event-email',
   'verify-service-payment',
   // caller-JWT: the function derives the user from the token itself, so an anon

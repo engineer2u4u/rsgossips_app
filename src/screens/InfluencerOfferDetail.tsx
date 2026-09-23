@@ -44,6 +44,7 @@ import UpgradeRequiredModal, {
 import {useFreeApplications} from '../hooks/useFreeApplications';
 import RatingModal, {type RatingValues} from '../components/RatingModal';
 import ApplicationStatusBar from '../components/ApplicationStatusBar';
+import OfferResponseCard from '../components/OfferResponseCard';
 import BottomNav from '../components/BottomNav';
 import {invokeFn} from '../lib/api';
 import {supabase} from '../utils/supabase';
@@ -385,6 +386,31 @@ export default function InfluencerOfferDetail() {
               campaign={campaign}
               refetch={() => setRefetchFlag(f => f + 1)}
             />
+          ) : null}
+
+          {/* B15: a priced offer is waiting on the creator. Nothing moves
+              until they accept or withdraw, so this sits right under the
+              tracker rather than somewhere further down the page. */}
+          {campaign.applicationStatus === 'offer_sent' ? (
+            <OfferResponseCard
+              campaign={campaign}
+              refetch={() => setRefetchFlag(f => f + 1)}
+            />
+          ) : null}
+
+          {campaign.applicationStatus === 'offer_accepted' ? (
+            <View
+              style={{
+                padding: 14,
+                borderRadius: 16,
+                backgroundColor: '#f0fdf4',
+                borderWidth: 1,
+                borderColor: '#bbf7d0',
+              }}>
+              <Text style={{fontSize: 12, color: '#15803d', fontWeight: '700', lineHeight: 17}}>
+                {t('ScreensInfluencerOfferDetail.awaitingEscrow')}
+              </Text>
+            </View>
           ) : null}
 
           {/* Budget / Deadline / Slots pills */}

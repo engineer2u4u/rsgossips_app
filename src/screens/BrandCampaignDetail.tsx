@@ -9,6 +9,8 @@
 // Edge functions used:
 //   - brand-campaigns       — get, updateStatus
 //   - update-application-status — per-application status transitions
+//   - escrow-fund / escrow-release — the money legs of B15 (offer →
+//     creator accepts → brand funds escrow → work → release)
 //   - RatingModal upserts campaign_ratings (rater_role = "brand")
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
@@ -50,9 +52,18 @@ import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 import {useGlobalLoading} from '../context/LoadingContext';
 import RatingModal from '../components/RatingModal';
+import RazorpayCheckout from 'react-native-razorpay';
 
 type AppStatus =
   | 'pending'
+  // B15 negotiation: the brand prices the application, the creator accepts
+  // or walks away, and only then does money move. `approved` is not a
+  // status the brand can set directly — the server refuses it unless the
+  // previous status is offer_accepted AND a verified escrow payment comes
+  // with it (supabase/functions/update-application-status).
+  | 'offer_sent'
+  | 'offer_accepted'
+  | 'withdrawn'
   | 'approved'
   | 'submitted'
   | 'accepted'
@@ -90,6 +101,8 @@ type Application = {
   campaign_id: string;
   influencer_id: string;
   proposed_rate?: number | null;
+  /** What the brand offered in B15 step 1; the amount escrow must match. */
+  brand_offered_rate?: number | null;
   // The creator's "why choose you" note (AI-draftable; stored by apply-campaign)
   pitch?: string | null;
   final_agreed_rate?: number | null;
@@ -139,6 +152,9 @@ const STATUS_PILL: Record<
 
 const APP_STATUS_PILL: Record<AppStatus, {bg: string; text: string; label: string}> = {
   pending: {bg: 'bg-slate-100', text: 'text-slate-700', label: 'Pending'},
+  offer_sent: {bg: 'bg-purple-100', text: 'text-purple-700', label: 'Offer sent'},
+  offer_accepted: {bg: 'bg-amber-100', text: 'text-amber-700', label: 'Pay escrow'},
+  withdrawn: {bg: 'bg-slate-100', text: 'text-slate-500', label: 'Withdrawn'},
   approved: {bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Approved'},
   submitted: {bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Submitted'},
   accepted: {bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Accepted'},
@@ -733,6 +749,8 @@ function BrandApplicationRow({
 
   const hasActions = [
     'pending',
+    'offer_sent',
+    'offer_accepted',
     'approved',
     'submitted',
     'revision_needed',
@@ -766,7 +784,9 @@ function BrandApplicationRow({
     );
   };
 
-  const handleApprove = () => {
+  // B15 step 1: price the application and send it. No money moves here —
+  // the creator is notified and either accepts or withdraws.
+  const handleSendOffer = () => {
     const rate = parseInt(payAmount || '0', 10);
     if (!rate || rate <= 0) {
       Alert.alert(
@@ -775,7 +795,98 @@ function BrandApplicationRow({
       );
       return;
     }
-    updateStatus('approved', {agreedRate: rate});
+    updateStatus('offer_sent', {agreedRate: rate});
+  };
+
+  // B15 step 2: fund escrow, which is what actually approves the
+  // application. Mirrors the web handler in
+  // src/app/brands/campaign/[id]/page.js:
+  //   1. escrow-fund creates a Razorpay Order for the ACCEPTED amount
+  //      (the server re-reads brand_offered_rate and rejects a mismatch),
+  //   2. Razorpay Checkout collects the payment,
+  //   3. update-application-status verifies the signature server-side and
+  //      flips escrow_status='held' atomically with status='approved'.
+  // Dismissing Checkout leaves the application on offer_accepted, so the
+  // brand can retry; escrow-fund reuses the open order rather than
+  // creating a second one.
+  const handleFundEscrow = async () => {
+    const rate = Number(app.brand_offered_rate || 0);
+    if (!rate || rate <= 0) {
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertFailedTitle'),
+        t('ScreensBrandCampaignDetail.errorNoAcceptedOffer'),
+      );
+      return;
+    }
+    let fund: any;
+    try {
+      fund = await withLoading(
+        invokeFn<any>('escrow-fund', {applicationId: app.id, agreedRate: rate}),
+        t('ScreensBrandCampaignDetail.preparingEscrow'),
+      );
+    } catch (err: any) {
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertFailedTitle'),
+        err?.message || t('ScreensBrandCampaignDetail.errorEscrowCreateFailed'),
+      );
+      return;
+    }
+    if (!fund?.order_id || !fund?.key_id) {
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertFailedTitle'),
+        t('ScreensBrandCampaignDetail.errorEscrowCreateFailed'),
+      );
+      return;
+    }
+    try {
+      const paid: any = await RazorpayCheckout.open({
+        key: fund.key_id,
+        order_id: fund.order_id,
+        amount: fund.amount_paise,
+        currency: fund.currency || 'INR',
+        name: 'RGossips',
+        description: t('ScreensBrandCampaignDetail.escrowDescription', {
+          name: displayName,
+        }),
+        theme: {color: '#5851DB'},
+      });
+      await updateStatus('approved', {
+        agreedRate: rate,
+        escrowPaymentId: paid?.razorpay_payment_id,
+        escrowOrderId: paid?.razorpay_order_id,
+        escrowSignature: paid?.razorpay_signature,
+      });
+    } catch (err: any) {
+      // Razorpay rejects with {code, description} on failure and on a
+      // user-cancelled sheet. A cancel is not an error worth shouting
+      // about — the application simply stays on offer_accepted.
+      const desc = err?.description || err?.message || '';
+      if (/cancel/i.test(String(desc)) || err?.code === 0) return;
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertFailedTitle'),
+        desc || t('ScreensBrandCampaignDetail.errorPaymentFailed'),
+      );
+    }
+  };
+
+  // Final leg: release the held escrow to the creator. This has to go
+  // through escrow-release, not a plain status flip — the function owns
+  // the plan-tier payout delay, the pending_creator_info routing and the
+  // escrow_status transition. Flipping straight to 'payment' (what this
+  // screen used to do) marked the job paid without moving any money.
+  const releaseEscrow = async () => {
+    try {
+      await withLoading(
+        invokeFn('escrow-release', {applicationId: app.id}),
+        t('ScreensBrandCampaignDetail.releasingPayment'),
+      );
+      onRefresh();
+    } catch (err: any) {
+      Alert.alert(
+        t('ScreensBrandCampaignDetail.alertFailedTitle'),
+        err?.message || t('ScreensBrandCampaignDetail.errorReleaseFailed'),
+      );
+    }
   };
 
   const handleReject = () => {
@@ -985,7 +1096,7 @@ function BrandApplicationRow({
               {app.status === 'pending' ? (
                 <>
                   <SmallBtn
-                    label={t('ScreensBrandCampaignDetail.btnApprove')}
+                    label={t('ScreensBrandCampaignDetail.btnSendOffer')}
                     Icon={Check}
                     color="#15803d"
                     bg="#dcfce7"
@@ -997,6 +1108,38 @@ function BrandApplicationRow({
                     color="#b91c1c"
                     bg="#fee2e2"
                     onPress={() => setMode('reject')}
+                  />
+                </>
+              ) : null}
+              {app.status === 'offer_sent' ? (
+                <>
+                  <Text style={s.waitingNote}>
+                    {t('ScreensBrandCampaignDetail.waitingOfferResponse', {
+                      amount: Number(app.brand_offered_rate || 0).toLocaleString('en-IN'),
+                    })}
+                  </Text>
+                  <SmallBtn
+                    label={t('ScreensBrandCampaignDetail.btnReject')}
+                    Icon={X}
+                    color="#b91c1c"
+                    bg="#fee2e2"
+                    onPress={() => setMode('reject')}
+                  />
+                </>
+              ) : null}
+              {app.status === 'offer_accepted' ? (
+                <>
+                  <Text style={s.waitingNote}>
+                    {t('ScreensBrandCampaignDetail.offerAcceptedNote')}
+                  </Text>
+                  <SmallBtn
+                    label={t('ScreensBrandCampaignDetail.btnPayEscrow', {
+                      amount: Number(app.brand_offered_rate || 0).toLocaleString('en-IN'),
+                    })}
+                    Icon={Check}
+                    color="white"
+                    bg="#16a34a"
+                    onPress={handleFundEscrow}
                   />
                 </>
               ) : null}
@@ -1074,7 +1217,7 @@ function BrandApplicationRow({
           {mode === 'approve' ? (
             <View style={[s.formBox, {borderColor: '#bbf7d0', backgroundColor: '#f0fdf4'}]}>
               <Text style={{fontSize: 10, fontWeight: '700', color: '#15803d', textTransform: 'uppercase'}}>
-                {t('ScreensBrandCampaignDetail.agreedRateLabel')}
+                {t('ScreensBrandCampaignDetail.offerRateLabel')}
               </Text>
               <TextInput
                 keyboardType="number-pad"
@@ -1082,8 +1225,11 @@ function BrandApplicationRow({
                 onChangeText={setPayAmount}
                 style={s.formInput}
               />
+              <Text style={{fontSize: 10, color: '#15803d', lineHeight: 14}}>
+                {t('ScreensBrandCampaignDetail.offerRateHint')}
+              </Text>
               <View style={{flexDirection: 'row', gap: 8}}>
-                <SmallBtn label={t('ScreensBrandCampaignDetail.btnApprove')} Icon={Check} color="white" bg="#16a34a" onPress={handleApprove} />
+                <SmallBtn label={t('ScreensBrandCampaignDetail.btnSendOffer')} Icon={Check} color="white" bg="#16a34a" onPress={handleSendOffer} />
                 <SmallBtn label={t('ScreensBrandCampaignDetail.btnCancel')} Icon={X} color="#475569" bg="#f1f5f9" onPress={() => setMode(null)} />
               </View>
             </View>
@@ -1187,8 +1333,8 @@ function BrandApplicationRow({
         onSaved={saved =>
           onRated?.({target_rating: saved.target_rating || 0})
         }
-        onPrimary={() => updateStatus('payment')}
-        onSkip={() => updateStatus('payment')}
+        onPrimary={releaseEscrow}
+        onSkip={releaseEscrow}
       />
     </View>
   );
