@@ -3647,5 +3647,9 @@
     },
     "cta": "Explore campaigns",
     "close": "Got it"
+  },
+  "ProBadge": {
+    "label": "Pro",
+    "title": "Verified Pro creator"
   }
 }

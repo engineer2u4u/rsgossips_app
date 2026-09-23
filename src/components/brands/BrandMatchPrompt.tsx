@@ -23,6 +23,7 @@ import {invokeFn} from '../../lib/api';
 import {useAuth} from '../../context/AuthContext';
 import CampaignPickerModal from './CampaignPickerModal';
 import EliteBadge from '../EliteBadge';
+import ProBadge from '../ProBadge';
 import {
   ANGLE_96,
   ANGLE_120,
@@ -43,6 +44,7 @@ type MatchRow = {
   followers?: number;
   fit?: number;
   isElite?: boolean;
+  isPro?: boolean;
 };
 
 function fmt(n?: number) {
@@ -290,7 +292,7 @@ export default function BrandMatchPrompt() {
                       numberOfLines={1}>
                       {r.name}
                     </Text>
-                    {r.isElite ? <EliteBadge /> : null}
+                    {r.isElite ? <EliteBadge /> : r.isPro ? <ProBadge /> : null}
                   </View>
                   <Text style={{fontSize: 11, color: HOME_COLORS.muted}} numberOfLines={1}>
                     {[r.category, `${fmt(r.followers)} followers`].filter(Boolean).join(' · ')}
