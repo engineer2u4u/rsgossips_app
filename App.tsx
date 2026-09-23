@@ -38,7 +38,6 @@ import InfluencerProfile from './src/screens/InfluencerProfile';
 import InfluencerMediaKit from './src/screens/InfluencerMediaKit';
 import InfluencerNotifications from './src/screens/InfluencerNotifications';
 import InfluencerOfferDetail from './src/screens/InfluencerOfferDetail';
-import InfluencerResume from './src/screens/InfluencerResume';
 import RecommendedCampaigns from './src/screens/RecommendedCampaigns';
 import ReferScreen from './src/screens/ReferScreen';
 import InfluencerPricing from './src/screens/InfluencerPricing';
@@ -178,7 +177,6 @@ function RootStack() {
         name="InfluencerOfferDetail"
         component={InfluencerOfferDetail}
       />
-      <Stack.Screen name="InfluencerResume" component={InfluencerResume} />
       <Stack.Screen
         name="RecommendedCampaigns"
         component={RecommendedCampaigns}
