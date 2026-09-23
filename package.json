@@ -6,6 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "check:ios": "node scripts/check-ios-layout.js",
     "start": "react-native start",
     "test": "jest",
     "postinstall": "patch-package",

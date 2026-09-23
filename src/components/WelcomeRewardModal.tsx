@@ -255,18 +255,25 @@ export default function WelcomeRewardModal() {
               elevation: 16,
             }}
           >
-            {/* Gradient header with the gift */}
-            <LinearGradient
-              colors={['#9810FA', '#E60076']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            {/* Gradient header with the gift. The View owns the padding and
+                the gradient is an absolute-fill background: BVLinearGradient
+                has no Fabric support on RN 0.84, so a gradient that sizes
+                itself from its own padding collapses on iOS. */}
+            <View
               style={{
                 paddingTop: 28,
                 paddingBottom: 22,
                 paddingHorizontal: 24,
                 alignItems: 'center',
+                overflow: 'hidden',
               }}
             >
+              <LinearGradient
+                colors={['#9810FA', '#E60076']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              />
               <View
                 style={{
                   paddingHorizontal: 12,
@@ -292,7 +299,7 @@ export default function WelcomeRewardModal() {
               <View style={{ position: 'absolute', left: 54, bottom: 26 }}>
                 <Heart size={16} color="#F9A8D4" fill="#F9A8D4" />
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Body */}
             <View

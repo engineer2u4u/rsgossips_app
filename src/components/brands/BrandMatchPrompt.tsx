@@ -316,12 +316,28 @@ export default function BrandMatchPrompt() {
           })}
 
           {shortlistCount > 0 ? (
-            <LinearGradient
-              colors={VIOLET_BLUE}
-              locations={VIOLET_BLUE_LOCATIONS}
-              start={ANGLE_96.start}
-              end={ANGLE_96.end}
-              style={{marginTop: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12}}>
+            // The View owns the padding and the gradient is an absolute-fill
+            // background: BVLinearGradient has no Fabric support on RN 0.84,
+            // so a gradient that sizes itself from its own padding collapses
+            // on iOS and clips this row's label.
+            <View
+              style={{
+                marginTop: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                overflow: 'hidden',
+              }}>
+              <LinearGradient
+                colors={VIOLET_BLUE}
+                locations={VIOLET_BLUE_LOCATIONS}
+                start={ANGLE_96.start}
+                end={ANGLE_96.end}
+                style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+              />
               <Users size={15} color="white" />
               <Text style={{color: 'white', fontSize: 13, fontWeight: '700', flex: 1}}>
                 {shortlistCount} shortlisted
@@ -343,7 +359,7 @@ export default function BrandMatchPrompt() {
                 <Send size={13} color="#6A66C9" />
                 <Text style={{color: '#6A66C9', fontSize: 12, fontWeight: '800'}}>Invite to campaign</Text>
               </Pressable>
-            </LinearGradient>
+            </View>
           ) : null}
         </View>
       ) : null}
