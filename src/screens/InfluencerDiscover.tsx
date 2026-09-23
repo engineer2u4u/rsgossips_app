@@ -47,9 +47,9 @@ interface Brand {
   followers: string;
   logo: string;
   payout: string;
-  /** 0-1000 composite trust score from list-brands. */
+  /** 300–900 composite trust score from list-brands. */
   trustScore?: number;
-  /** Label that maps to a trust band (Excellent / Very Good / Good / Fair / Poor). */
+  /** Server-computed band: Elite / Trusted / Established / Emerging / Building Trust. */
   trustBand?: string;
   /** "brand" | "agency" — admin-set label from list-brands. */
   accountType?: BrandAccountType;

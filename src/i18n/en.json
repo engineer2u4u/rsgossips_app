@@ -250,6 +250,18 @@
         "activeTitle": "All done 🎉",
         "activeBody": "Campaign wrapped. Your earnings are released and a rating prompt is waiting for you.",
         "headerStatus": "Campaign completed"
+      },
+      "offer_sent": {
+        "label": "Offer received",
+        "activeTitle": "You have an offer",
+        "activeBody": "The brand has priced your application. Accept it to lock the rate in, or withdraw if it does not work for you.",
+        "headerStatus": "Offer waiting on you"
+      },
+      "offer_accepted": {
+        "label": "Offer accepted",
+        "activeTitle": "Waiting on escrow",
+        "activeBody": "You accepted the rate. The brand now pays into escrow — once the money is held you can start creating.",
+        "headerStatus": "Awaiting escrow funding"
       }
     }
   },
@@ -366,13 +378,6 @@
     "typeBrand": "Brand",
     "typeAgency": "Agency",
     "trust": "Trust",
-    "bands": {
-      "excellent": "Excellent",
-      "veryGood": "Very Good",
-      "good": "Good",
-      "fair": "Fair",
-      "poor": "Poor"
-    },
     "match": {
       "title": "Why this match?",
       "matchWith": "match with {{name}}",
@@ -494,20 +499,23 @@
   },
   "BrandsBrandTrustWidget": {
     "trustScore": "Trust Score",
-    "scoreMax": "/ 1000",
-    "band": {
-      "high": "HIGH TRUST",
-      "good": "GOOD",
-      "low": "BUILDING"
-    },
+    "scoreMax": "/ {{max}}",
     "percentHint": "{{percent}}% of the way to a perfect score",
-    "influencerRatings": "Influencer ratings",
-    "ratingsCount_one": "{{count}} rating so far",
-    "ratingsCount_other": "{{count}} ratings so far",
-    "noRatings": "No ratings yet — complete a campaign",
-    "campaignDelivery": "Campaign delivery",
-    "deliverySubtitle": "{{completed}} completed · {{stale}} stale",
-    "noCampaigns": "No closed campaigns yet",
+    "coldStart": "Capped at {{cap}} until {{campaigns}} completed campaigns",
+    "influencerReviews": "Influencer reviews",
+    "reviewsCount_one": "{{count}} review so far",
+    "reviewsCount_other": "{{count}} reviews so far",
+    "noReviews": "No reviews yet — complete a campaign",
+    "campaignExecution": "Campaign execution",
+    "executionSubtitle": "{{completed}} completed of {{started}} started",
+    "noExecution": "No approved applications yet",
+    "verification": "Verification & identity",
+    "verificationSubtitle": "{{done}} of {{total}} checks verified",
+    "communication": "Communication",
+    "communicationSubtitle": "Response {{response}}% · feedback {{richness}}%",
+    "noCommunication": "Not enough activity to measure yet",
+    "engagement": "Platform engagement",
+    "engagementSubtitle": "{{n}} campaigns in 90 days · profile {{profile}}%",
     "profileCompleteness": "Profile completeness",
     "allSet": "All set",
     "missing": "Missing: {{fields}}",
@@ -1711,7 +1719,20 @@
     "rejectedTitle": "This campaign was not approved",
     "rejectedNoReason": "Our team sent it back without a note. Check the brief against our campaign guidelines and resubmit.",
     "rejectedNext": "Edit the campaign to address this, then resubmit it for review.",
-    "resubmit": "Resubmit for review"
+    "resubmit": "Resubmit for review",
+    "btnSendOffer": "Send offer",
+    "offerRateLabel": "Offer amount (₹)",
+    "offerRateHint": "The creator gets this offer and can accept or pass. You pay into escrow only after they accept.",
+    "waitingOfferResponse": "Offered ₹{{amount}} — waiting for the creator to accept",
+    "offerAcceptedNote": "Offer accepted. Fund escrow to start the collaboration.",
+    "btnPayEscrow": "Pay ₹{{amount}} to escrow",
+    "preparingEscrow": "Preparing escrow…",
+    "releasingPayment": "Releasing payment…",
+    "escrowDescription": "Escrow for {{name}}",
+    "errorNoAcceptedOffer": "No accepted offer on this application yet.",
+    "errorEscrowCreateFailed": "Could not start the escrow payment. Please try again.",
+    "errorPaymentFailed": "The payment did not go through.",
+    "errorReleaseFailed": "Could not release the payment. Please try again."
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -2228,7 +2249,8 @@
     "freeNotePaid": "This is a {{kind}} campaign — subscribers only. Your free applications cover barter campaigns.",
     "freeNoteRemaining_one": "{{count}} free barter application left",
     "freeNoteRemaining_other": "{{count}} free barter applications left",
-    "freeNoteExhausted": "You have used all your free applications. Subscribe to keep applying."
+    "freeNoteExhausted": "You have used all your free applications. Subscribe to keep applying.",
+    "awaitingEscrow": "Offer accepted. Waiting for the brand to fund escrow — you will be notified the moment the money is held."
   },
   "ScreensInfluencerPricing": {
     "header": {
@@ -3257,7 +3279,8 @@
   "TrustSection": {
     "searchPlaceholder": "Looking for 10 nano creators, 15L...",
     "yourTrustScore": "Your Trust Score",
-    "high": "HIGH"
+    "scoreOutOf": "/{{max}}",
+    "coldStartCap": "Capped at {{cap}} · {{campaigns}} campaigns to lift"
   },
   "TrustedDevices": {
     "title": "Trusted Devices",
@@ -3651,5 +3674,27 @@
   "ProBadge": {
     "label": "Pro",
     "title": "Verified Pro creator"
+  },
+  "OfferResponseCard": {
+    "offerAmount": "The brand offered ₹{{amount}}",
+    "approvedNote": "They approved your application at this rate.",
+    "counteredNote": "You asked for ₹{{amount}}.",
+    "lockItInNote": "Accept to lock it in — the brand then funds escrow and you can start work. There is no counter-offer, so withdraw if the rate does not work for you.",
+    "acceptAmount": "Accept ₹{{amount}}",
+    "accepting": "Accepting…",
+    "withdraw": "Withdraw",
+    "withdrawConfirm": "Withdrawing removes your application. The campaign reopens for you, but the brand is not notified twice — you would have to apply again.",
+    "withdrawConfirmCta": "Yes, withdraw",
+    "withdrawing": "Withdrawing…",
+    "keepOffer": "Keep offer",
+    "failedTitle": "Could not update",
+    "updateError": "Could not update the offer. Please try again."
+  },
+  "TrustBands": {
+    "elite": "Elite",
+    "trusted": "Trusted",
+    "established": "Established",
+    "emerging": "Emerging",
+    "buildingTrust": "Building Trust"
   }
 }

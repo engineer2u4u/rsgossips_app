@@ -1,24 +1,28 @@
 // Brand trust score + completion widget for the brand profile screen.
 //
-// Pulls real data via useBrandTrustScore (campaign_ratings + campaigns +
-// campaign_applications). Shows:
-//   1. The 0–1000 score with a band pill (LOW / GOOD / HIGH)
-//   2. A breakdown of the three pillars and their weighted contribution
-//   3. The profile completion sub-bar with a list of missing fields
+// Reads the server-computed score via useBrandTrustScore
+// (brand-campaigns { action: "trustScore" }). Shows:
+//   1. The 300–900 score with a band pill
+//      (Elite / Trusted / Established / Emerging / Building Trust)
+//   2. The five weighted pillars and where each one stands
+//   3. The profile completion sub-line with a list of missing fields
 //
 // Mirrors the layout the web brand profile page uses, condensed for mobile.
 
 import React from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
-import {Award, CheckCircle2, ShieldCheck, Star, Truck} from 'lucide-react-native';
+import {
+  Activity,
+  Award,
+  CheckCircle2,
+  MessageSquare,
+  ShieldCheck,
+  Star,
+  Truck,
+} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
 import {useBrandTrustScore} from '../../hooks/useBrandTrustScore';
-
-const BAND_STYLES = {
-  HIGH: {bg: '#D1FAE5', text: '#065F46', labelKey: 'high'},
-  GOOD: {bg: '#DBEAFE', text: '#1E40AF', labelKey: 'good'},
-  LOW: {bg: '#FEE2E2', text: '#991B1B', labelKey: 'low'},
-};
+import {trustBandColors, trustBandKey} from '../../lib/brandProfile';
 
 export function BrandTrustWidget() {
   const {t} = useTranslation();
@@ -32,9 +36,17 @@ export function BrandTrustWidget() {
     );
   }
 
-  const band = BAND_STYLES[trust.band];
-  const {influencerRating, campaignDelivery, profileCompleteness} =
-    trust.breakdown;
+  const bandColors = trustBandColors(trust.band);
+  const bandLabel = t(`TrustBands.${trustBandKey(trust.band)}`);
+  const {
+    influencerReviews,
+    campaignExecution,
+    verification,
+    communication,
+    engagement,
+  } = trust.breakdown;
+
+  const verifiedCount = Object.values(verification.items).filter(Boolean).length;
 
   return (
     <View style={s.card}>
@@ -44,83 +56,145 @@ export function BrandTrustWidget() {
           <Text style={s.label}>{t('BrandsBrandTrustWidget.trustScore')}</Text>
           <View style={s.scoreRow}>
             <Text style={s.score}>{trust.score}</Text>
-            <Text style={s.scoreMax}>{t('BrandsBrandTrustWidget.scoreMax')}</Text>
+            <Text style={s.scoreMax}>
+              {t('BrandsBrandTrustWidget.scoreMax', {max: trust.scaleMax})}
+            </Text>
           </View>
         </View>
-        <View style={[s.bandPill, {backgroundColor: band.bg}]}>
-          <Award size={11} color={band.text} />
-          <Text style={[s.bandText, {color: band.text}]}>
-            {t(`BrandsBrandTrustWidget.band.${band.labelKey}`)}
-          </Text>
+        <View style={[s.bandPill, {backgroundColor: bandColors.bg}]}>
+          <Award size={11} color={bandColors.on} />
+          <Text style={[s.bandText, {color: bandColors.on}]}>{bandLabel}</Text>
         </View>
       </View>
 
-      {/* Overall bar */}
+      {/* Overall bar — the weighted pillar average, i.e. where the score sits
+          between 300 and 900. */}
       <View style={s.overallBar}>
         <View
           style={[
             s.overallFill,
             {
-              width: `${Math.min(100, trust.percent)}%`,
-              backgroundColor:
-                trust.band === 'HIGH'
-                  ? '#10b981'
-                  : trust.band === 'GOOD'
-                    ? '#3b82f6'
-                    : '#ef4444',
+              width: `${Math.max(2, Math.min(100, trust.overallPercent))}%`,
+              backgroundColor: bandColors.accent,
             },
           ]}
         />
       </View>
       <Text style={s.percentHint}>
-        {t('BrandsBrandTrustWidget.percentHint', {percent: trust.percent})}
+        {t('BrandsBrandTrustWidget.percentHint', {
+          percent: trust.overallPercent,
+        })}
       </Text>
 
-      {/* Breakdown */}
+      {/* Cold start — a new brand is capped until it has delivered. */}
+      {trust.coldStart && (
+        <View style={s.coldStart}>
+          <Text style={s.coldStartText}>
+            {t('BrandsBrandTrustWidget.coldStart', {
+              cap: trust.coldStartCap,
+              campaigns: trust.coldStartThreshold,
+            })}
+          </Text>
+        </View>
+      )}
+
+      {/* Breakdown — the five weighted pillars */}
       <View style={s.breakdownList}>
         <BreakdownRow
           Icon={Star}
           color="#f59e0b"
-          title={t('BrandsBrandTrustWidget.influencerRatings')}
-          weight={influencerRating.weight}
-          percent={influencerRating.percent}
+          title={t('BrandsBrandTrustWidget.influencerReviews')}
+          weight={influencerReviews.weight}
+          percent={influencerReviews.percent}
           subtitle={
-            influencerRating.count
-              ? t('BrandsBrandTrustWidget.ratingsCount', {
-                  count: influencerRating.count,
+            influencerReviews.count
+              ? t('BrandsBrandTrustWidget.reviewsCount', {
+                  count: influencerReviews.count,
                 })
-              : t('BrandsBrandTrustWidget.noRatings')
+              : t('BrandsBrandTrustWidget.noReviews')
           }
         />
         <BreakdownRow
           Icon={Truck}
           color="#6366f1"
-          title={t('BrandsBrandTrustWidget.campaignDelivery')}
-          weight={campaignDelivery.weight}
-          percent={campaignDelivery.percent}
+          title={t('BrandsBrandTrustWidget.campaignExecution')}
+          weight={campaignExecution.weight}
+          percent={campaignExecution.percent}
           subtitle={
-            campaignDelivery.total > 0
-              ? t('BrandsBrandTrustWidget.deliverySubtitle', {
-                  completed: campaignDelivery.completedCount,
-                  stale: campaignDelivery.staleCount,
+            campaignExecution.hasData
+              ? t('BrandsBrandTrustWidget.executionSubtitle', {
+                  completed: campaignExecution.finalAcceptedCount,
+                  started: campaignExecution.approvedCount,
                 })
-              : t('BrandsBrandTrustWidget.noCampaigns')
+              : t('BrandsBrandTrustWidget.noExecution')
           }
         />
         <BreakdownRow
           Icon={ShieldCheck}
           color="#10b981"
-          title={t('BrandsBrandTrustWidget.profileCompleteness')}
-          weight={profileCompleteness.weight}
-          percent={profileCompleteness.percent}
+          title={t('BrandsBrandTrustWidget.verification')}
+          weight={verification.weight}
+          percent={verification.percent}
+          subtitle={t('BrandsBrandTrustWidget.verificationSubtitle', {
+            done: verifiedCount,
+            total: 4,
+          })}
+        />
+        <BreakdownRow
+          Icon={MessageSquare}
+          color="#0ea5e9"
+          title={t('BrandsBrandTrustWidget.communication')}
+          weight={communication.weight}
+          percent={communication.percent}
           subtitle={
-            completion.missing.length === 0
-              ? t('BrandsBrandTrustWidget.allSet')
-              : t('BrandsBrandTrustWidget.missing', {
-                  fields: completion.missing.join(', '),
+            communication.hasData
+              ? t('BrandsBrandTrustWidget.communicationSubtitle', {
+                  response: communication.responseAvg,
+                  richness: communication.richnessPct,
                 })
+              : t('BrandsBrandTrustWidget.noCommunication')
           }
         />
+        <BreakdownRow
+          Icon={Activity}
+          color="#a855f7"
+          title={t('BrandsBrandTrustWidget.engagement')}
+          weight={engagement.weight}
+          percent={engagement.percent}
+          subtitle={t('BrandsBrandTrustWidget.engagementSubtitle', {
+            n: engagement.campaignsLast90d,
+            profile: engagement.profileCompletionPct,
+          })}
+        />
+      </View>
+
+      {/* Profile completion — feeds the engagement pillar, but the brand can
+          act on it directly, so it gets its own line with the field names. */}
+      <View style={s.completion}>
+        <View style={s.completionHead}>
+          <Text style={s.completionTitle}>
+            {t('BrandsBrandTrustWidget.profileCompleteness')}
+          </Text>
+          <Text style={s.completionPct}>{completion.percent}%</Text>
+        </View>
+        <View style={s.rowBar}>
+          <View
+            style={[
+              s.rowBarFill,
+              {
+                width: `${Math.min(100, completion.percent)}%`,
+                backgroundColor: '#10b981',
+              },
+            ]}
+          />
+        </View>
+        <Text style={s.rowSubtitle} numberOfLines={2}>
+          {completion.missing.length === 0
+            ? t('BrandsBrandTrustWidget.allSet')
+            : t('BrandsBrandTrustWidget.missing', {
+                fields: completion.missing.join(', '),
+              })}
+        </Text>
       </View>
     </View>
   );
@@ -222,6 +296,16 @@ const s = StyleSheet.create({
   },
   overallFill: {height: '100%'},
   percentHint: {fontSize: 10, color: '#94a3b8', marginTop: -8},
+  coldStart: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: -4,
+  },
+  coldStartText: {fontSize: 10, fontWeight: '700', color: '#92400E'},
   breakdownList: {gap: 12, marginTop: 4},
   row: {flexDirection: 'row', alignItems: 'center', gap: 12},
   rowIcon: {
@@ -254,4 +338,17 @@ const s = StyleSheet.create({
   },
   rowBarFill: {height: '100%'},
   rowPercent: {fontSize: 11, fontWeight: '800', color: '#64748b', width: 36, textAlign: 'right'},
+  completion: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+    gap: 2,
+  },
+  completionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  completionTitle: {fontSize: 12, fontWeight: '800', color: '#0f172a'},
+  completionPct: {fontSize: 11, fontWeight: '800', color: '#64748b'},
 });

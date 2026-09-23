@@ -5,20 +5,15 @@
 import React from 'react';
 import {Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 import {useBrandTrustScore} from '../../hooks/useBrandTrustScore';
-import type {TrustBand} from '../../lib/brandProfile';
+import {trustBandKey} from '../../lib/brandProfile';
 import {
   ANGLE_96,
   HOME_COLORS,
   VIOLET_BLUE,
   VIOLET_BLUE_LOCATIONS,
 } from '../../theme/brandHome';
-
-const BAND_LABEL: Record<TrustBand, string> = {
-  LOW: 'Emerging',
-  GOOD: 'Established',
-  HIGH: 'Trusted',
-};
 
 const card = {
   padding: 14,
@@ -36,10 +31,13 @@ const label = {
 };
 
 export default function BrandStatRow() {
+  const {t} = useTranslation();
   const {trust, loading} = useBrandTrustScore();
-  const score = loading ? 0 : trust.score;
-  const pct = loading ? 0 : Math.max(4, Math.min(100, trust.percent));
-  const band = BAND_LABEL[trust.band] || 'Emerging';
+  // 300–900 scale: the floor is 300, not 0, so a loading/empty state shows
+  // the scale minimum rather than an impossible number.
+  const score = loading ? trust.scaleMin : trust.score;
+  const pct = loading ? 0 : Math.max(4, Math.min(100, trust.overallPercent));
+  const band = t(`TrustBands.${trustBandKey(trust.band)}`);
 
   return (
     <View style={{flexDirection: 'row', gap: 10, paddingHorizontal: 14}}>
@@ -53,7 +51,7 @@ export default function BrandStatRow() {
           <Text style={{fontSize: 24, fontWeight: '700', letterSpacing: -0.8, color: HOME_COLORS.ink}}>
             {score}
           </Text>
-          <Text style={{fontSize: 11, color: '#8B93AC'}}>/1000</Text>
+          <Text style={{fontSize: 11, color: '#8B93AC'}}>/{trust.scaleMax}</Text>
         </View>
         <View style={{marginTop: 9, height: 5, borderRadius: 99, backgroundColor: '#EDEFF8', overflow: 'hidden'}}>
           <LinearGradient

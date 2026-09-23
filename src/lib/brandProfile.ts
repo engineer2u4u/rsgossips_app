@@ -1,15 +1,16 @@
-// Validation + trust-score helpers for brand profiles.
-// Ported from the web app (`src/lib/brandProfile.js`) — keep in sync.
+// Brand profile helpers — validation + trust-band PRESENTATION only.
 //
-// Trust score (out of 1000) blends three pillars:
-//   50% — influencer ratings of this brand (target / brief clarity / fairness)
-//   25% — completed-vs-stale ratio of the brand's campaigns
-//   25% — profile completeness (GST/PAN, contact email, categories)
+// The trust score itself is NOT computed here any more. There used to be four
+// implementations of it (web dashboard, this app, list-brands, and a stray
+// band ladder in BrandCard) and a brand could see three different numbers for
+// itself while creators saw a fourth. The one implementation now lives in
+// supabase/functions/_shared/brand-trust.ts; this app reads it through
+// `brand-campaigns { action: "trustScore" }` (own dashboard) and the
+// `trustScore` / `trustBand` fields list-brands puts on a brand row
+// (creator-facing cards).
 //
-// Profile completion (and the trust score below) intentionally treat the
-// same three fields as "what makes a brand legit enough to surface to
-// creators". Don't add fluff fields here without raising the bar elsewhere
-// — the rating-side weighting compounds on top of completion already.
+// What stays here: GST/PAN validation, and the band → colour/label mapping
+// every trust surface needs to render what the server sent.
 
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
@@ -35,196 +36,82 @@ export function classifyGstPan(value: string | null | undefined): {
   return {kind: 'unknown', valid: false};
 }
 
-/* ─────────── Profile completion ─────────── */
+/* ─────────── Trust band presentation ─────────── */
 
-type BrandProfileLike = {
-  gstin?: string | null;
-  contact_email?: string | null;
-  categories?: string[] | null;
-} | null | undefined;
+// Mirrors _shared/brand-trust.ts. The scale is 300–900 (CIBIL-style), NOT
+// 0–1000, and the bands are deliberately non-punitive — the old
+// Excellent/Very Good/Good/Fair/Poor ladder was retired in 2026-07.
+export const TRUST_SCALE_MIN = 300;
+export const TRUST_SCALE_MAX = 900;
 
-const PROFILE_FIELDS: {
-  key: string;
-  label: string;
-  test: (p: BrandProfileLike) => boolean;
-}[] = [
-  {key: 'gstPan', label: 'GST / PAN', test: p => !!p?.gstin},
-  {key: 'email', label: 'Contact email', test: p => !!p?.contact_email},
-  {
-    key: 'categories',
-    label: 'Categories',
-    test: p => Array.isArray(p?.categories) && (p?.categories?.length || 0) > 0,
-  },
+export type TrustBandLabel =
+  | 'Elite'
+  | 'Trusted'
+  | 'Established'
+  | 'Emerging'
+  | 'Building Trust';
+
+const BAND_THRESHOLDS: Array<{min: number; label: TrustBandLabel}> = [
+  {min: 800, label: 'Elite'},
+  {min: 740, label: 'Trusted'},
+  {min: 670, label: 'Established'},
+  {min: 580, label: 'Emerging'},
+  {min: 0, label: 'Building Trust'},
 ];
 
-export interface ProfileCompletion {
-  percent: number;
-  missing: string[];
-  filled: string[];
+/**
+ * Fallback ONLY. Every server surface (list-brands rows, the trustScore
+ * action) already carries the band it computed — render that. This exists
+ * because a brand row can arrive from an older cache or a stub path without
+ * one, and a missing band should not blank the card.
+ */
+export function bandForScore(score: number): TrustBandLabel {
+  for (const b of BAND_THRESHOLDS) if (score >= b.min) return b.label;
+  return 'Building Trust';
 }
 
-export function getProfileCompletion(profile: BrandProfileLike): ProfileCompletion {
-  if (!profile) {
-    return {percent: 0, missing: PROFILE_FIELDS.map(f => f.label), filled: []};
-  }
-  const filled: string[] = [];
-  const missing: string[] = [];
-  for (const f of PROFILE_FIELDS) {
-    if (f.test(profile)) filled.push(f.label);
-    else missing.push(f.label);
-  }
-  const percent = Math.round((filled.length / PROFILE_FIELDS.length) * 100);
-  return {percent, missing, filled};
+export type TrustBandKey =
+  | 'elite'
+  | 'trusted'
+  | 'established'
+  | 'emerging'
+  | 'buildingTrust';
+
+const BAND_KEYS: Record<TrustBandLabel, TrustBandKey> = {
+  Elite: 'elite',
+  Trusted: 'trusted',
+  Established: 'established',
+  Emerging: 'emerging',
+  'Building Trust': 'buildingTrust',
+};
+
+/**
+ * Server band string → i18n key under the `TrustBands` namespace. Unknown
+ * input (an older server, a hand-written row) falls back to buildingTrust
+ * rather than rendering a raw English string.
+ */
+export function trustBandKey(band: string | null | undefined): TrustBandKey {
+  return BAND_KEYS[(band || '') as TrustBandLabel] || 'buildingTrust';
 }
 
-/* ─────────── Campaign delivery ratio ─────────── */
-
-export interface DeliveryStats {
-  completedCount?: number;
-  staleCount?: number;
+export interface TrustBandColors {
+  /** Solid accent — text, chip border, progress fill. */
+  accent: string;
+  /** Tinted background for a filled pill. */
+  bg: string;
+  /** Readable text colour on top of `bg`. */
+  on: string;
 }
 
-export interface DeliveryRatio {
-  percent: number;
-  completedCount: number;
-  staleCount: number;
-  total: number;
-}
+// Same accents as the web BAND_RING map so the two apps agree visually.
+export const TRUST_BAND_COLORS: Record<TrustBandKey, TrustBandColors> = {
+  elite: {accent: '#10b981', bg: '#D1FAE5', on: '#065F46'},
+  trusted: {accent: '#3b82f6', bg: '#DBEAFE', on: '#1E40AF'},
+  established: {accent: '#6A66C9', bg: '#E8E7F8', on: '#3F3B96'},
+  emerging: {accent: '#f59e0b', bg: '#FEF3C7', on: '#92400E'},
+  buildingTrust: {accent: '#64748b', bg: '#E2E8F0', on: '#334155'},
+};
 
-// Stale = campaign that ended (closed / expired by end_date) without any
-// completed application. Campaigns with at least one completed application
-// count as "completed", everything else no-longer-running counts as stale.
-export function getCampaignDeliveryRatio({
-  completedCount = 0,
-  staleCount = 0,
-}: DeliveryStats = {}): DeliveryRatio {
-  const total = completedCount + staleCount;
-  if (total === 0) return {percent: 0, completedCount, staleCount, total};
-  return {
-    percent: Math.round((completedCount / total) * 100),
-    completedCount,
-    staleCount,
-    total,
-  };
-}
-
-/* ─────────── Influencer rating score ─────────── */
-
-export interface RatingStats {
-  avgRating?: number;
-  avgBriefClarity?: number;
-  avgFairness?: number;
-  count?: number;
-  briefCount?: number;
-  fairnessCount?: number;
-}
-
-export interface RatingScore extends RatingStats {
-  percent: number;
-  shareTarget: number;
-  shareBrief: number;
-  shareFair: number;
-}
-
-const ratingToPct = (avg: number) =>
-  avg > 0 ? Math.round((Math.min(5, avg) / 5) * 100) : 0;
-
-// Blends overall + brief_clarity + fairness into one 0-100 number used for
-// the 50% slice. Each sub-axis contributes a fixed share; if brief/fair have
-// no samples we reuse the overall average so a brand isn't penalised for
-// missing data the influencer chose not to provide.
-export function getInfluencerRatingScore({
-  avgRating = 0,
-  avgBriefClarity = 0,
-  avgFairness = 0,
-  count = 0,
-  briefCount = 0,
-  fairnessCount = 0,
-}: RatingStats = {}): RatingScore {
-  if (!count || avgRating <= 0) {
-    return {
-      percent: 0,
-      avgRating: 0,
-      avgBriefClarity: 0,
-      avgFairness: 0,
-      count,
-      briefCount,
-      fairnessCount,
-      // Sub-shares within the slice — kept here so the UI can render a
-      // breakdown tooltip even when count is 0.
-      shareTarget: 0.6,
-      shareBrief: 0.2,
-      shareFair: 0.2,
-    };
-  }
-
-  const targetPct = ratingToPct(avgRating);
-  const briefPct = briefCount > 0 ? ratingToPct(avgBriefClarity) : targetPct;
-  const fairPct = fairnessCount > 0 ? ratingToPct(avgFairness) : targetPct;
-
-  // 30/10/10 of the parent 50% slice → 0.6 / 0.2 / 0.2 within the slice.
-  const blendedPercent = Math.round(
-    targetPct * 0.6 + briefPct * 0.2 + fairPct * 0.2,
-  );
-
-  return {
-    percent: blendedPercent,
-    avgRating,
-    avgBriefClarity,
-    avgFairness,
-    count,
-    briefCount,
-    fairnessCount,
-    shareTarget: 0.6,
-    shareBrief: 0.2,
-    shareFair: 0.2,
-  };
-}
-
-/* ─────────── Composite trust score ─────────── */
-
-export type TrustBand = 'LOW' | 'GOOD' | 'HIGH';
-
-export interface TrustScore {
-  score: number; // 0-1000
-  percent: number; // 0-100
-  band: TrustBand;
-  breakdown: {
-    influencerRating: RatingScore & {weight: number};
-    campaignDelivery: DeliveryRatio & {weight: number};
-    profileCompleteness: ProfileCompletion & {weight: number};
-  };
-}
-
-export function computeBrandTrustScore({
-  profile,
-  ratings,
-  campaignDelivery,
-}: {
-  profile: BrandProfileLike;
-  ratings?: RatingStats;
-  campaignDelivery?: DeliveryStats;
-}): TrustScore {
-  const completion = getProfileCompletion(profile);
-  const rating = getInfluencerRatingScore(ratings || {});
-  const delivery = getCampaignDeliveryRatio(campaignDelivery || {});
-
-  const weighted100 =
-    rating.percent * 0.5 + delivery.percent * 0.25 + completion.percent * 0.25;
-  const score1000 = Math.round(weighted100 * 10);
-
-  let band: TrustBand = 'LOW';
-  if (weighted100 >= 75) band = 'HIGH';
-  else if (weighted100 >= 45) band = 'GOOD';
-
-  return {
-    score: score1000,
-    percent: Math.round(weighted100),
-    band,
-    breakdown: {
-      influencerRating: {...rating, weight: 0.5},
-      campaignDelivery: {...delivery, weight: 0.25},
-      profileCompleteness: {...completion, weight: 0.25},
-    },
-  };
+export function trustBandColors(band: string | null | undefined): TrustBandColors {
+  return TRUST_BAND_COLORS[trustBandKey(band)];
 }

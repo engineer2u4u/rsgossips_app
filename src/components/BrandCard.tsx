@@ -32,6 +32,7 @@ import {
 } from '../utils/matchScore';
 import {useAiTool} from '../hooks/useAiTool';
 import {AiMarkdown} from './AiMarkdown';
+import {bandForScore, trustBandKey} from '../lib/brandProfile';
 
 type Brand = {
   id: string | number;
@@ -47,21 +48,14 @@ type Brand = {
   followers?: string;
   logo?: string;
   payout?: string;
+  /** 300–900 composite trust score from list-brands. */
   trustScore?: number;
+  /** Server-computed band: Elite / Trusted / Established / Emerging / Building Trust. */
   trustBand?: string;
   /** "brand" | "agency" — admin-set label from list-brands. */
   accountType?: 'brand' | 'agency';
 };
 
-// Mirrors the band thresholds in supabase/functions/list-brands/index.ts.
-// Used as a fallback when the edge function didn't include a band string.
-function bandForScore(score: number): string {
-  if (score >= 800) return 'Excellent';
-  if (score >= 740) return 'Very Good';
-  if (score >= 670) return 'Good';
-  if (score >= 580) return 'Fair';
-  return 'Poor';
-}
 
 // "Why this match?" — same pattern as the CampaignCard coach modal:
 // transparent breakdown bars + an optional AI-narrated to-do list
@@ -395,18 +389,14 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
 
       {/* Footer — composite trust score (uses app warm gradient) */}
       {(() => {
+        // list-brands computes the band server-side (one implementation,
+        // _shared/brand-trust.ts) and puts it on the row — render that.
+        // bandForScore is only for a row that arrives without one.
         const score =
           typeof brand.trustScore === 'number' ? brand.trustScore : null;
         const bandRaw =
-          brand.trustBand || (score !== null ? bandForScore(score) : '—');
-        const bandLabels: Record<string, string> = {
-          Excellent: t('BrandCard.bands.excellent'),
-          'Very Good': t('BrandCard.bands.veryGood'),
-          Good: t('BrandCard.bands.good'),
-          Fair: t('BrandCard.bands.fair'),
-          Poor: t('BrandCard.bands.poor'),
-        };
-        const band = bandLabels[bandRaw] || bandRaw;
+          brand.trustBand || (score !== null ? bandForScore(score) : null);
+        const band = bandRaw ? t(`TrustBands.${trustBandKey(bandRaw)}`) : '—';
         return (
           <View className="mt-3">
             <View
