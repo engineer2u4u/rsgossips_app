@@ -584,6 +584,7 @@ export default function BrandCampaignDetail() {
                 app={app}
                 brandId={user!.id}
                 defaultRate={campaign.budgetPerInfluencer}
+                campaignType={campaign.campaignType}
                 rating={ratingsByApp[app.id]}
                 onRefresh={load}
                 onRated={r => setRatingsByApp(prev => ({...prev, [app.id]: r}))}
@@ -715,6 +716,7 @@ function BrandApplicationRow({
   app,
   brandId,
   defaultRate,
+  campaignType,
   rating,
   onRefresh,
   onRated,
@@ -722,6 +724,8 @@ function BrandApplicationRow({
   app: Application;
   brandId: string;
   defaultRate?: number;
+  /** "barter" | "paid" | "hybrid" — barter approves with no price or escrow. */
+  campaignType?: string;
   rating?: {target_rating: number};
   onRefresh: () => void;
   onRated?: (r: {target_rating: number}) => void;
@@ -738,6 +742,9 @@ function BrandApplicationRow({
   const [revisionIndexes, setRevisionIndexes] = useState<number[]>([]);
   const [showRating, setShowRating] = useState(false);
 
+  // Barter pays nothing: no priced offer, no escrow. update-application-status
+  // allows approved straight from pending for these.
+  const isBarter = String(campaignType || '').toLowerCase() === 'barter';
   const inf = app.influencer_profiles || {};
   const displayName =
     inf.full_name ||
@@ -1096,11 +1103,15 @@ function BrandApplicationRow({
               {app.status === 'pending' ? (
                 <>
                   <SmallBtn
-                    label={t('ScreensBrandCampaignDetail.btnSendOffer')}
+                    label={
+                      isBarter
+                        ? t('ScreensBrandCampaignDetail.btnApproveBarter')
+                        : t('ScreensBrandCampaignDetail.btnSendOffer')
+                    }
                     Icon={Check}
-                    color="#15803d"
-                    bg="#dcfce7"
-                    onPress={() => setMode('approve')}
+                    color={isBarter ? 'white' : '#15803d'}
+                    bg={isBarter ? '#16a34a' : '#dcfce7'}
+                    onPress={() => (isBarter ? updateStatus('approved') : setMode('approve'))}
                   />
                   <SmallBtn
                     label={t('ScreensBrandCampaignDetail.btnReject')}
@@ -1213,8 +1224,8 @@ function BrandApplicationRow({
             </View>
           ) : null}
 
-          {/* Approve form */}
-          {mode === 'approve' ? (
+          {/* Approve form — priced offer; barter never opens it. */}
+          {mode === 'approve' && !isBarter ? (
             <View style={[s.formBox, {borderColor: '#bbf7d0', backgroundColor: '#f0fdf4'}]}>
               <Text style={{fontSize: 10, fontWeight: '700', color: '#15803d', textTransform: 'uppercase'}}>
                 {t('ScreensBrandCampaignDetail.offerRateLabel')}

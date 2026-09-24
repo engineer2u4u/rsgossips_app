@@ -1722,6 +1722,7 @@
     "rejectedNext": "Edit the campaign to address this, then resubmit it for review.",
     "resubmit": "Resubmit for review",
     "btnSendOffer": "Send offer",
+    "btnApproveBarter": "Approve",
     "offerRateLabel": "Offer amount (₹)",
     "offerRateHint": "The creator gets this offer and can accept or pass. You pay into escrow only after they accept.",
     "waitingOfferResponse": "Offered ₹{{amount}} — waiting for the creator to accept",

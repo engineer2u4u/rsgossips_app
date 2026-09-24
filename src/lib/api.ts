@@ -86,11 +86,39 @@ const REQUIRES_SESSION = new Set([
 //
 // Fire-and-forget, never throws, and never reports itself — a failure to log
 // that produced a log entry would be an infinite loop.
+// Who is signed in, for the rows below. The reporter can't await a session
+// read (fire-and-forget, and a slow AsyncStorage read is exactly when things
+// fail), so AuthContext pushes it here. Without it every mobile edge_call row
+// landed with user_id null — which is what made rows like
+// "refresh-instagram.http_200 Profile not found" impossible to trace.
+let logIdentity: {userId?: string | null; role?: string | null} = {};
+export function setEdgeLogIdentity(
+  next: {userId?: string | null; role?: string | null} | null,
+): void {
+  logIdentity = next || {};
+}
+
+// Identifying fields worth keeping from the request body. Ids only — never
+// tokens, phone numbers or free text, which would put PII in error_logs.
+const LOGGABLE_ARGS = [
+  'userId',
+  'influencerId',
+  'brandId',
+  'applicationId',
+  'campaignId',
+  'username',
+  'table',
+  'status',
+  'action',
+];
+
 function reportEdgeError(
   fn: string,
   message: string,
   status: number,
   parsed: any,
+  args?: Record<string, any>,
+  method?: string,
 ): void {
   if (fn === 'log-client-error') return;
   try {
@@ -110,7 +138,23 @@ function reportEdgeError(
         message,
         statusCode: status,
         path: fn,
-        context: {code: parsed?.error ?? null},
+        userId: logIdentity.userId ?? null,
+        userRole: logIdentity.role ?? null,
+        context: {
+          code: parsed?.error ?? null,
+          method: method || 'POST',
+          // The ids the call carried — e.g. whose profile was missing.
+          args: args
+            ? Object.fromEntries(
+                LOGGABLE_ARGS.filter(
+                  k => args[k] !== undefined && args[k] !== null,
+                ).map(k => [k, String(args[k]).slice(0, 80)]),
+              )
+            : undefined,
+          signedInAs: logIdentity.userId
+            ? logIdentity.role || 'unknown-role'
+            : 'signed-out',
+        },
       }),
     }).catch(() => {});
   } catch {
@@ -282,7 +326,7 @@ export async function invokeFn<T = any>(
       parsed?.message ||
       parsed?.error ||
       `Edge function "${name}" failed (${res.status})`;
-    reportEdgeError(name, msg, res.status, parsed);
+    reportEdgeError(name, msg, res.status, parsed, body, method);
     throw new EdgeFunctionError(msg, res.status, parsed);
   }
 

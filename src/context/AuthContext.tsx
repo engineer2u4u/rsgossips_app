@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import {AppState} from 'react-native';
 import {supabase, safeGetSession, isInvalidRefreshTokenError} from '../utils/supabase';
-import {invokeFn} from '../lib/api';
+import {invokeFn, setEdgeLogIdentity} from '../lib/api';
 import {
   registerDeviceSession,
   isCurrentDeviceActive,
@@ -99,7 +99,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [instagramTokenMissing, setInstagramTokenMissing] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string, roleHint?: AppRole) => {
+  // Returns the resolved role (or null) so callers can decide what to do next
+  // — e.g. only creators get a refresh-instagram call.
+  const fetchProfile = useCallback(async (userId: string, roleHint?: AppRole): Promise<string | null> => {
     try {
       // Scope the lookup to ONE profile table whenever we know the role —
       // passed in at sign-in, or remembered from the last one on restore.
@@ -129,7 +131,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       // signOut below would kick a paying user out on a blip.
       if (data?.error) {
         console.warn('check-profile transient error, keeping session:', data.error);
-        return;
+        return null;
       }
 
       if (data?.exists && data.profile) {
@@ -139,6 +141,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         // Remember it so the next restore can scope its lookup the same way.
         rememberRole(resolved);
         setRoleError(null);
+        // Stamp edge-call error rows with who was signed in.
+        setEdgeLogIdentity({userId, role: resolved});
 
         // check-profile now returns a derived `instagram_connected` boolean
         // (raw token stripped server-side). Only flag missing when the
@@ -153,6 +157,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         } else {
           setInstagramTokenMissing(false);
         }
+        return resolved;
       } else {
         setProfile(null);
         setRole(null);
@@ -194,6 +199,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       // the next successful refresh corrects it.
       console.error('Failed to fetch profile (keeping session):', err);
     }
+    return null;
   }, []);
 
   const refreshInstagram = useCallback(
@@ -272,6 +278,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     setUser(null);
     setProfile(null);
     setRole(null);
+    setEdgeLogIdentity(null);
     // Drop the remembered role, or the next account signed in on this device
     // would have its profile looked up under the previous user's role.
     await forgetRole();
@@ -286,9 +293,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         if (!isMounted) return;
         if (session?.user) {
           setUser(session.user);
-          await fetchProfile(session.user.id);
-          // Background, non-blocking
-          refreshInstagram(session.user.id);
+          const resolvedRole = await fetchProfile(session.user.id);
+          // Creators only: refresh-instagram reads influencer_profiles, so a
+          // brand account got "Profile not found" on every app open — noise in
+          // error_logs and a pointless round-trip.
+          if (resolvedRole === 'influencer') refreshInstagram(session.user.id);
           checkProfileNotification(session.user.id);
           registerDeviceSession(supabase, session.user.id);
         }
@@ -322,8 +331,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       const session = await safeGetSession();
       const uid = session?.user?.id;
       if (!uid || !isMounted) return;
-      await fetchProfile(uid);
-      refreshInstagram(uid);
+      const resolvedRole = await fetchProfile(uid);
+      if (resolvedRole === 'influencer') refreshInstagram(uid);
     });
 
     const {
