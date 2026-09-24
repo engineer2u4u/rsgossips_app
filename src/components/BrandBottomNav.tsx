@@ -2,12 +2,14 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Home, Search, Briefcase, User } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 const BottomNav = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const navItems = [
     { key: 'home', icon: Home, screen: 'BrandHome' },
@@ -21,7 +23,10 @@ const BottomNav = () => {
   ];
 
   return (
-    <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-md">
+    <View
+      className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-md"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <View className="flex-row justify-around items-center h-16">
         {navItems.map(item => {
           const isActive = route.name === item.screen;
@@ -31,18 +36,25 @@ const BottomNav = () => {
             <Pressable
               key={item.key}
               onPress={() => navigation.navigate(item.screen as never)}
-              className="flex-1 items-center justify-center relative"
+              className="flex-1 items-center justify-center"
             >
-              {/* Active indicator */}
-              {isActive && (
-                <View className="absolute top-0 w-12 h-[3px] rounded-b-full bg-[#4C75BE]" />
-              )}
-
-              <Icon
-                size={22}
-                strokeWidth={isActive ? 2.5 : 2}
-                color={isActive ? '#4C75BE' : '#64748B'}
-              />
+              {/* Active state: soft rounded highlight behind the icon rather
+                  than a thin bar at the top edge (which collided with the
+                  icon and read as a stray line across it). */}
+              <View
+                className="items-center justify-center rounded-2xl"
+                style={{
+                  width: 52,
+                  height: 32,
+                  backgroundColor: isActive ? 'rgba(76,117,190,0.12)' : 'transparent',
+                }}
+              >
+                <Icon
+                  size={22}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  color={isActive ? '#4C75BE' : '#64748B'}
+                />
+              </View>
 
               <Text
                 className={`text-[10px] mt-1 font-semibold ${

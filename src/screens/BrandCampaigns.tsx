@@ -15,9 +15,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {ArrowRight, ArrowUpRight, Plus, Search, SlidersHorizontal} from 'lucide-react-native';
+import {ArrowUpRight, Plus, Search} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import BrandsLayout from '../layouts/BrandLayout';
 import {useAuth} from '../context/AuthContext';
@@ -72,6 +73,10 @@ export default function BrandCampaigns() {
   // the same rule; this keeps the UI honest).
   const brandVerified = (profile as any)?.verification_status === 'verified';
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  // Clear the floating bottom nav (h-16 = 64 + its safe-area bottom padding)
+  // so the FAB / verify-gate never sit on top of it.
+  const aboveNav = insets.bottom + 80;
   const [campaigns, setCampaigns] = useState<BrandCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,89 +140,74 @@ export default function BrandCampaigns() {
   return (
     <View className="flex-1">
       <BrandsLayout>
-      {/* Header */}
-      <View className="relative mb-16">
-        <View className="px-6 pt-12 pb-16 rounded-b-[40px] overflow-hidden">
-          <LinearGradient
-            colors={['#4C75BE', '#4A3996']}
-            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
-          />
-          <View className="flex-row justify-between items-start mb-6">
-            <View>
-              <Text className="text-2xl font-bold text-white">
-                {t('ScreensBrandCampaigns.headerTitle')}
-              </Text>
-              <Text className="text-purple-100 text-xs">
-                {t('ScreensBrandCampaigns.headerSubtitle')}
-              </Text>
-            </View>
-            <View className="flex-row gap-2">
-              <TouchableOpacity className="p-2 bg-white/10 rounded-full" onPress={load}>
-                <Search size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity className="p-2 bg-white/10 rounded-full">
-                <SlidersHorizontal size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Header — mirrors BrandSearch: title + inline search bar with a
+          leading magnifier icon (no trailing button, no floating overlap). */}
+      <View className="w-full px-6 pt-12 pb-8 rounded-b-[40px] overflow-hidden">
+        <LinearGradient
+          colors={['#4C75BE', '#4A3996']}
+          style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+        />
+        <View className="mb-6">
+          <Text className="text-2xl font-bold text-white">
+            {t('ScreensBrandCampaigns.headerTitle')}
+          </Text>
+          <Text className="text-purple-100 text-xs">
+            {t('ScreensBrandCampaigns.headerSubtitle')}
+          </Text>
         </View>
 
-        <View className="absolute left-6 right-6 -bottom-12">
-          <View className="flex-row items-center bg-white rounded-3xl p-2 shadow-md shadow-gray-200 mb-4">
-            <TextInput
-              placeholder={t('ScreensBrandCampaigns.searchPlaceholder')}
-              placeholderTextColor="#D1D5DB"
-              value={query}
-              onChangeText={setQuery}
-              className="flex-1 pl-4 text-sm text-gray-800"
-            />
-            <TouchableOpacity className="p-2.5 rounded-full overflow-hidden items-center justify-center">
+        <View className="flex-row items-center bg-white rounded-2xl px-4 py-3.5 shadow-xl">
+          <Search size={20} color="#d1d5db" />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('ScreensBrandCampaigns.searchPlaceholder')}
+            placeholderTextColor="#d1d5db"
+            autoCapitalize="none"
+            className="flex-1 ml-2 text-sm text-gray-800"
+          />
+        </View>
+      </View>
+
+      {/* Status tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{paddingHorizontal: 24, gap: 8}}
+        className="pt-4 pb-1">
+        {TABS.map(tab =>
+          activeTab === tab ? (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              className="px-5 py-2 flex-row items-center gap-2 rounded-full overflow-hidden shadow-lg shadow-purple-100">
               <LinearGradient
                 colors={['#5851DB', '#4338CA']}
                 style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
               />
-              <ArrowRight size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row" style={{gap: 8}}>
-              {TABS.map(tab =>
-                activeTab === tab ? (
-                  <TouchableOpacity
-                    key={tab}
-                    onPress={() => setActiveTab(tab)}
-                    className="px-5 py-2 flex-row items-center gap-2 rounded-full overflow-hidden shadow-lg shadow-purple-100">
-                    <LinearGradient
-                      colors={['#5851DB', '#4338CA']}
-                      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
-                    />
-                    {tab === 'Active' && (
-                      <View className="w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                    <Text className="text-xs font-semibold text-white">
-                      {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    key={tab}
-                    onPress={() => setActiveTab(tab)}
-                    className="px-5 py-2 rounded-full bg-white flex-row items-center gap-2">
-                    <Text className="text-xs font-semibold text-gray-400">
-                      {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
-                    </Text>
-                  </TouchableOpacity>
-                ),
+              {tab === 'Active' && (
+                <View className="w-2 h-2 bg-red-500 rounded-full" />
               )}
-            </View>
-          </ScrollView>
-        </View>
-      </View>
+              <Text className="text-xs font-semibold text-white">
+                {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              className="px-5 py-2 rounded-full bg-white border border-gray-100 flex-row items-center gap-2">
+              <Text className="text-xs font-semibold text-gray-400">
+                {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
+              </Text>
+            </TouchableOpacity>
+          ),
+        )}
+      </ScrollView>
 
       {/* No pb-* for nav clearance here — BrandLayout's ScrollView reserves
           it for every brand screen. */}
-      <View className="px-6 mt-2" style={{gap: 12}}>
+      <View className="px-6 pt-3" style={{gap: 12}}>
         {loading ? (
           <View className="py-16 items-center">
             <ActivityIndicator color="#5851DB" />
@@ -263,7 +253,9 @@ export default function BrandCampaigns() {
           These sit OUTSIDE BrandsLayout's ScrollView so `absolute` anchors to
           the screen, not the (short, in the empty state) scroll content. */}
       {profile && !brandVerified ? (
-        <View className="absolute bottom-24 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+        <View
+          className="absolute left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3"
+          style={{bottom: aboveNav}}>
           <Text className="text-[13px] font-bold text-amber-900">
             {t('ScreensBrandCampaigns.verifyGateTitle')}
           </Text>
@@ -274,7 +266,7 @@ export default function BrandCampaigns() {
       ) : null}
 
       {/* Floating FAB — full create flow is its own batch */}
-      <View className="absolute bottom-24 right-6 z-50" style={!brandVerified ? {display: 'none'} : undefined}>
+      <View className="absolute right-6 z-50" style={!brandVerified ? {display: 'none'} : {bottom: aboveNav}}>
         <TouchableOpacity
           onPress={() => navigation.navigate('CreateCampaign')}
           className="px-6 py-3 flex-row items-center gap-2 rounded-2xl overflow-hidden shadow-lg shadow-purple-200"
