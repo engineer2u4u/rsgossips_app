@@ -27,6 +27,12 @@ export const TopCreatorsCarousel = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const goSearch = () => navigation.navigate('BrandSearch' as never);
+  // Invite used to drop the brand on an unfiltered directory, which read as
+  // "nothing happened". These cards carry a handle but not an influencer id,
+  // so hand the handle to the directory as a search term — that lands on the
+  // creator, where Invite actually sends an invitation.
+  const goInvite = (handle: string) =>
+    (navigation.navigate as any)('BrandSearch', { q: handle });
   // Elite spotlight leads the curated picks.
   const [topCreators, setTopCreators] = useState<TopCreator[]>(curatedCreators);
 
@@ -121,7 +127,7 @@ export const TopCreatorsCarousel = () => {
                   collapses on iOS new-arch when it sizes from padding +
                   children, which clipped "Invite" to "Inv". */}
               <Pressable
-                onPress={goSearch}
+                onPress={() => goInvite(creator.name)}
                 style={{
                   height: 34,
                   paddingHorizontal: 14,

@@ -59,7 +59,11 @@ export default function BrandStatRow() {
             locations={VIOLET_BLUE_LOCATIONS}
             start={ANGLE_96.start}
             end={ANGLE_96.end}
-            style={{height: '100%', width: `${pct}%`}}
+            // Explicit height, not '100%': BVLinearGradient has no Fabric
+            // support on RN 0.84 and a percentage height resolves to nothing
+            // on iOS, so the fill was invisible and the bar looked empty
+            // however good the score was.
+            style={{height: 5, width: `${pct}%`}}
           />
         </View>
       </View>
@@ -70,19 +74,35 @@ export default function BrandStatRow() {
         <Text style={{fontSize: 24, fontWeight: '700', letterSpacing: -0.8, color: HOME_COLORS.ink, marginTop: 5}}>
           250K+
         </Text>
+        {/* The View owns the circle and clips; the gradient is an absolute
+            fill inside it. BVLinearGradient does not apply its own
+            borderRadius on iOS (no Fabric support on RN 0.84), so these
+            chips rendered as broken, half-clipped shapes. */}
         <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 8}}>
-          <LinearGradient colors={['#9B5FC4', '#6A66C9']} style={avatar(0)} />
-          <LinearGradient colors={['#8460CB', '#4F79C6']} style={avatar(-8)} />
-          <LinearGradient
-            colors={['#6A66C9', '#31508F']}
+          <View style={avatar(0)}>
+            <LinearGradient colors={['#9B5FC4', '#6A66C9']} style={FILL} />
+          </View>
+          <View style={avatar(-8)}>
+            <LinearGradient colors={['#8460CB', '#4F79C6']} style={FILL} />
+          </View>
+          <View
             style={[avatar(-8), {alignItems: 'center', justifyContent: 'center'}]}>
+            <LinearGradient colors={['#6A66C9', '#31508F']} style={FILL} />
             <Text style={{color: '#fff', fontSize: 8, fontWeight: '700'}}>+</Text>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     </View>
   );
 }
+
+const FILL = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+} as const;
 
 function avatar(marginLeft: number) {
   return {
@@ -91,6 +111,7 @@ function avatar(marginLeft: number) {
     borderRadius: 99,
     borderWidth: 2,
     borderColor: '#fff',
+    overflow: 'hidden',
     marginLeft,
   } as const;
 }

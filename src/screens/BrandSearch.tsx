@@ -106,8 +106,16 @@ export default function BrandSearch({route}: any) {
   const [influencers, setInfluencers] = useState<SearchInfluencer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [filters, setFilters] = useState<FilterValues>(EMPTY_FILTERS);
+  // ?q / ?category — the home feed's "Browse by category" tiles and the Top
+  // Creators "Invite" button land here. They used to navigate with no
+  // parameters at all, so the screen opened unfiltered and the tap looked
+  // like it had done nothing.
+  const [searchText, setSearchText] = useState<string>(route?.params?.q || '');
+  const [filters, setFilters] = useState<FilterValues>(() =>
+    route?.params?.category
+      ? {...EMPTY_FILTERS, Categories: [route.params.category]}
+      : EMPTY_FILTERS,
+  );
   const [sort, setSort] = useState<SortMode>(null);
   const [sortOpen, setSortOpen] = useState(false);
 

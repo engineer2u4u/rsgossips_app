@@ -302,15 +302,22 @@ export default function InfluencerPricing() {
         <View
           className="flex-row items-center justify-center mt-1"
           style={{gap: 6}}>
+          {/* Bordered pill, not bare text — both of these read as captions
+              and nobody could tell they were tappable. */}
           <Pressable
             onPress={restore}
             disabled={busy}
-            className="h-12 items-center justify-center"
+            className="h-12 px-5 rounded-2xl border items-center justify-center"
+            style={{
+              borderColor: '#cbd5e1',
+              backgroundColor: '#ffffff',
+              opacity: busy ? 0.5 : 1,
+            }}
             accessibilityRole="button">
             {status === 'restoring' ? (
               <ActivityIndicator />
             ) : (
-              <Text className="text-[14px] font-bold text-slate-600">
+              <Text className="text-[14px] font-bold text-slate-700">
                 {t('Pricing.restore')}
               </Text>
             )}
@@ -340,9 +347,10 @@ export default function InfluencerPricing() {
               onPress={() =>
                 Linking.openURL(MANAGE_SUBSCRIPTION_URL).catch(() => {})
               }
-              className="h-11 items-center justify-center"
+              className="h-11 px-5 rounded-2xl border items-center justify-center"
+              style={{borderColor: '#e2e8f0', backgroundColor: '#ffffff'}}
               accessibilityRole="button">
-              <Text className="text-[13px] font-bold text-slate-400">
+              <Text className="text-[13px] font-bold text-slate-600">
                 {t('Pricing.manage')}
               </Text>
             </Pressable>

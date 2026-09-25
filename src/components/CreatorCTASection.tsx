@@ -12,7 +12,6 @@ import {
   VIOLET_BLUE_LOCATIONS,
 } from '../theme/brandHome';
 
-const FOOTER_LINKS = ['For Brands', 'For Influencers', 'Pricing', 'Support', 'Privacy Policy'];
 
 export function CreatorCTASection() {
   const { t } = useTranslation();
@@ -70,25 +69,6 @@ export function CreatorCTASection() {
         </View>
       </View>
 
-      {/* Dark footer */}
-      <View style={{ marginTop: 12, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 24, backgroundColor: '#0B1129' }}>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 }}>RGossips</Text>
-        <Text style={{ marginTop: 11, fontSize: 11, lineHeight: 18, color: 'rgba(255,255,255,0.6)' }}>
-          {t('CreatorCTASection.footerBlurb')}
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-          {FOOTER_LINKS.map(l => (
-            <View key={l} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.09)' }}>
-              <Text style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.78)' }}>{l}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={{ marginTop: 16, paddingTop: 13, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
-          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 16 }}>
-            {t('CreatorCTASection.copyright')}
-          </Text>
-        </View>
-      </View>
     </View>
   );
 }
