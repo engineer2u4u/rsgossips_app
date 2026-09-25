@@ -31,6 +31,7 @@ import {
   Lock,
   LayoutTemplate,
   ChevronRight,
+  Film,
   Sparkles,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -39,6 +40,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {openManagePlan} from '../lib/manage-plan';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
+import TopReelsEditorModal, {type TopReelsSaveResult} from '../components/TopReelsEditorModal';
 import {useProfilePhoto} from '../utils/photoUrl';
 import InfluencerLayout from '../layouts/InfluencerLayout';
 import {
@@ -121,6 +123,7 @@ export default function InfluencerMediaKit() {
   const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
   const [templateError, setTemplateError] = useState<string>('');
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [reelsModalOpen, setReelsModalOpen] = useState(false);
 
   useEffect(() => {
     // Re-sync local preview when the profile refreshes (e.g. after save).
@@ -187,6 +190,70 @@ export default function InfluencerMediaKit() {
     setEditingBio(false);
     updateProfile({bio: bioDraft.trim()});
   };
+
+  // Top reels. Mirrors web's handleTopReelsSave: resolve the pasted links
+  // against the creator's own latest posts first, then write the resolved
+  // objects (which carry curated:true, so an auto-refresh never overwrites a
+  // hand-picked list), then refresh so the preview updates immediately.
+  const handleTopReelsSave = useCallback(
+    async (newReels: {permalink: string}[]): Promise<TopReelsSaveResult> => {
+      try {
+        const links = newReels.map(r => r.permalink).filter(Boolean);
+        let resolved: any[] = newReels;
+
+        if (links.length > 0) {
+          const data = await invokeFn<any>('resolve-reel-thumbnails', {
+            userId: user?.id,
+            reelLinks: links,
+          });
+          // Instagram disconnected: nothing can be matched until they
+          // reconnect, so say that — and raise the reconnect banner — rather
+          // than blaming each link.
+          if (data?.reason === 'no_token' || data?.reason === 'token_invalid') {
+            setInstagramTokenMissing(true);
+            return {error: {kind: 'reconnect'}};
+          }
+          if (data?.error || data?.reason === 'lookup_failed') {
+            return {error: {kind: 'failed'}};
+          }
+          if (Array.isArray(data?.unresolved) && data.unresolved.length > 0) {
+            return {
+              error: {
+                kind: 'unresolved',
+                details:
+                  data.details ||
+                  data.unresolved.map((url: string) => ({
+                    url,
+                    reason: 'not_found',
+                  })),
+                account:
+                  data.account ||
+                  profile?.instagram_handle ||
+                  profile?.username ||
+                  '',
+                scanned: data.scanned || 0,
+                limit: data.limit || 50,
+              },
+            };
+          }
+          if (data?.reels) resolved = data.reels;
+        }
+
+        // updateProfile swallows its errors by design (it backs autosave), so
+        // call the function directly here — a failed save must be reported.
+        await invokeFn('update-profile', {
+          userId: user?.id,
+          table: 'influencer_profiles',
+          topReels: resolved,
+        });
+        await refreshProfile();
+        return {ok: true};
+      } catch {
+        return {error: {kind: 'failed'}};
+      }
+    },
+    [user, profile, refreshProfile, setInstagramTokenMissing],
+  );
 
   // "Use as my bio" from the AI Media Kit Writer — applies the extracted Bio
   // section to local state + the profile, then refreshes the AuthContext
@@ -309,6 +376,25 @@ export default function InfluencerMediaKit() {
             onUpgrade={openManagePlan}
           />
 
+          {/* Top reels — the other thing on this page a creator curates. */}
+          <Pressable
+            onPress={() => setReelsModalOpen(true)}
+            accessibilityRole="button"
+            className="flex-row items-center bg-white rounded-2xl border border-slate-100 px-4"
+            style={{height: 52, gap: 10}}>
+            <View className="w-8 h-8 rounded-xl bg-purple-50 items-center justify-center">
+              <Film size={16} color="#9333EA" />
+            </View>
+            <View style={{flex: 1}}>
+              <Text className="text-sm font-bold text-slate-900">
+                {t('MediaKitReels.title')}
+              </Text>
+              <Text className="text-[11px] text-slate-400">
+                {t('MediaKitReels.subtitle')}
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </Pressable>
         </View>
 
         {/* Templated preview - picks one of 5 layouts based on previewTemplate. */}
@@ -500,6 +586,14 @@ export default function InfluencerMediaKit() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <TopReelsEditorModal
+        visible={reelsModalOpen}
+        onClose={() => setReelsModalOpen(false)}
+        reels={profile?.top_reels || profile?.topReels || []}
+        account={profile?.instagram_handle || profile?.username || ''}
+        onSave={handleTopReelsSave}
+      />
     </InfluencerLayout>
   );
 }
