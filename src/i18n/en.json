@@ -127,6 +127,7 @@
     "leftThisMonth_one": "{{count}} left this month",
     "leftThisMonth_other": "{{count}} left this month",
     "unlimited": "Unlimited",
+    "notInPlan": "AI tools are not part of the free plan",
     "usageLabel": "AI usage this month",
     "usedOfLimit": "{{used}} / {{limit}} used",
     "limitTitle": "You've used your AI generations for this month",

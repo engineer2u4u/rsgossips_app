@@ -1104,8 +1104,13 @@ function MediaKitLocked() {
   ];
 
   return (
+    // No ScrollView here. InfluencerLayout already owns the page's scroll and
+    // hands children to an auto-height wrapper, so a nested `flex-1`
+    // ScrollView has nothing to resolve its height against, measures 0 and
+    // paints nothing — a free creator tapping "View media kit" got a blank
+    // page with only the top bar and the nav, never this upsell.
     <InfluencerLayout>
-      <ScrollView className="flex-1" style={{backgroundColor: '#F5F4F8'}}>
+      <View style={{backgroundColor: '#F5F4F8'}}>
         <View className="px-4 py-8">
           <View className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
             <View className="w-14 h-14 rounded-2xl bg-purple-100 items-center justify-center self-center">
@@ -1139,7 +1144,7 @@ function MediaKitLocked() {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </InfluencerLayout>
   );
 }

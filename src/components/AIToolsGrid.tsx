@@ -172,6 +172,23 @@ export default function AiToolsGrid() {
                 {t('AIToolsGrid.unlimited')}
               </Text>
             </View>
+          ) : usage.limit === 0 ? (
+            // A zero allowance is not a spent quota. The meter read
+            // "3 / 0 used" with an exhausted rose bar and "you've used your
+            // AI generations", which is wrong for a free creator — the tools
+            // are not part of the tier, so they never had any.
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[11px] font-semibold text-slate-500 flex-1 mr-2">
+                {t('AIToolsGrid.notInPlan')}
+              </Text>
+              <TouchableOpacity onPress={goToPricing}>
+                <Text
+                  className="text-[11px] font-black"
+                  style={{color: BRAND_PURPLE}}>
+                  {t('common.managePlan')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <>
               <View className="flex-row justify-between items-center mb-1.5">
