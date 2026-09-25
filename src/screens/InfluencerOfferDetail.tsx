@@ -12,10 +12,7 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  Instagram,
   Sparkles,
-  Youtube,
-  Smartphone,
   CheckCircle,
   CheckCircle2,
   Clock,
@@ -31,6 +28,7 @@ import {
   Eye,
   BarChart3,
   Bookmark,
+  Film,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
@@ -47,6 +45,7 @@ import ApplicationStatusBar from '../components/ApplicationStatusBar';
 import OfferResponseCard from '../components/OfferResponseCard';
 import BottomNav from '../components/BottomNav';
 import {invokeFn} from '../lib/api';
+import {budgetLabelKey, campaignBudgetDisplay} from '../lib/campaignBudget';
 import {supabase} from '../utils/supabase';
 
 // Web audit-field enums → human-label translation-key suffixes. Mirrors the
@@ -75,20 +74,17 @@ const SHIPPING_KEYS: Record<string, string> = {
   pickup: 'pickup',
 };
 
-function PlatformIcon({platform, size = 20}: {platform: string; size?: number}) {
-  switch (platform) {
-    case 'instagram': return <Instagram size={size} color="#EC4899" />;
-    case 'youtube': return <Youtube size={size} color="#EF4444" />;
-    case 'tiktok': return <Smartphone size={size} color="#1E293B" />;
-    default: return null;
-  }
-}
 
 function ReqIcon({type}: {type: string}) {
   switch (type) {
     case 'users': return <Users size={16} color="#10B981" />;
     case 'trending': return <TrendingUp size={16} color="#10B981" />;
     case 'star': return <Star size={16} color="#10B981" />;
+    // Logistics rows, which share this checklist with the audience rows.
+    case 'calendar': return <Calendar size={16} color="#10B981" />;
+    case 'clock': return <Clock size={16} color="#10B981" />;
+    case 'slots': return <Users size={16} color="#10B981" />;
+    case 'content': return <Film size={16} color="#10B981" />;
     default: return <CheckCircle size={16} color="#10B981" />;
   }
 }
@@ -155,6 +151,64 @@ export default function InfluencerOfferDetail() {
           // Re-derive requirements from the real audit fields the web's
           // list-campaigns now returns (commit c6ef50e).
           const requirements: {icon: string; label: string; sub: string}[] = [];
+
+          // The campaign's logistics, shaped like the audience requirements so
+          // the two render as one checklist (web 78d4b09). Apply-by and
+          // deliver-by are TWO different dates: this screen used to show the
+          // apply date against the delivery countdown ("30 Sept 2026 / 32d
+          // left"), which is simply the wrong number.
+          // "Expired"/"Today" are status words, so they never get " left".
+          const countdown = (v: any) =>
+            !v
+              ? ''
+              : v === 'Expired' || v === 'Today'
+                ? v
+                : t('ScreensInfluencerOfferDetail.daysLeft', {value: v});
+          const withCountdown = (sub: string, v: any) =>
+            countdown(v) ? `${sub} · ${countdown(v)}` : sub;
+
+          if (found.deadline) {
+            requirements.push({
+              icon: 'calendar',
+              label: t('ScreensInfluencerOfferDetail.req.applyBy', {
+                value: found.deadline,
+              }),
+              sub: withCountdown(
+                t('ScreensInfluencerOfferDetail.req.applicationDeadline'),
+                found.applyDaysLeft,
+              ),
+            });
+          }
+          if (found.deliveryDeadline) {
+            requirements.push({
+              icon: 'clock',
+              label: t('ScreensInfluencerOfferDetail.req.deliverBy', {
+                value: found.deliveryDeadline,
+              }),
+              sub: withCountdown(
+                t('ScreensInfluencerOfferDetail.req.deliveryDeadline'),
+                found.deliveryDaysLeft,
+              ),
+            });
+          }
+          if (found.slots > 0) {
+            requirements.push({
+              icon: 'slots',
+              label: t('ScreensInfluencerOfferDetail.slots', {
+                count: found.slots,
+              }),
+              sub: t('ScreensInfluencerOfferDetail.req.openSpots'),
+            });
+          }
+          if (found.deliverables) {
+            requirements.push({
+              icon: 'content',
+              label: t('ScreensInfluencerOfferDetail.req.content', {
+                value: found.deliverables,
+              }),
+              sub: t('ScreensInfluencerOfferDetail.req.contentToPost'),
+            });
+          }
           if (found.targetFollowerMin > 0 || found.targetFollowerMax > 0) {
             const lo = found.targetFollowerMin
               ? Number(found.targetFollowerMin).toLocaleString('en-IN')
@@ -233,13 +287,27 @@ export default function InfluencerOfferDetail() {
               t('ScreensInfluencerOfferDetail.noDescription'),
             slots: found.maxInfluencers || 0,
             requirements,
+            // A barter campaign has no cash payment, so labelling its budget
+            // "Base Payment: On request" was the exact string web set out to
+            // kill. Use the shared helper: barter reports the product's
+            // worth, cash reports the ceiling.
             payments: [
-              {
-                type: 'base',
-                label: t('ScreensInfluencerOfferDetail.basePayment'),
-                val: found.budget,
-                sub: 'Per influencer',
-              },
+              (() => {
+                const b = campaignBudgetDisplay(found);
+                return b.kind === 'product'
+                  ? {
+                      type: 'product',
+                      label: t(
+                        'ScreensInfluencerOfferDetail.productValueLabel',
+                      ),
+                      val: b.text,
+                    }
+                  : {
+                      type: 'base',
+                      label: t('ScreensInfluencerOfferDetail.basePayment'),
+                      val: b.text,
+                    };
+              })(),
             ],
             brandStats: {
               campaigns: brandCampaigns.length,
@@ -248,18 +316,6 @@ export default function InfluencerOfferDetail() {
               }),
               response: t('ScreensInfluencerOfferDetail.responseTime'),
             },
-            deliverableIcons: found.deliverables
-              ? String(found.deliverables)
-                  .split(' + ')
-                  .map((d: string) => {
-                    const parts = d.split(':');
-                    return {
-                      platform: 'instagram',
-                      count: parts[1] || '1',
-                      label: parts[0] || d,
-                    };
-                  })
-              : [],
           });
 
           // Fetch this user's previously-submitted rating, if any. Only meaningful
@@ -321,6 +377,8 @@ export default function InfluencerOfferDetail() {
     !!campaign.applicationStatus &&
     campaign.applicationStatus !== 'withdrawn' &&
     campaign.applicationStatus !== 'rejected';
+  // Shared with the list card, so the two can never disagree about the money.
+  const budgetDisplay = campaignBudgetDisplay(campaign);
 
   return (
     <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
@@ -413,59 +471,90 @@ export default function InfluencerOfferDetail() {
             </View>
           ) : null}
 
-          {/* Budget / Deadline / Slots pills */}
-          <View className="flex-row flex-wrap" style={{gap: 8}}>
-            <View className="flex-row items-center bg-emerald-50 px-4 py-2.5 rounded-2xl" style={{gap: 8}}>
-              <View className="w-8 h-8 bg-emerald-500 rounded-xl items-center justify-center">
-                <Text className="text-white text-xs font-bold">₹</Text>
+          {/* Budget, alone at the top — it is the figure a creator decides on.
+              The apply/deliver dates, slots and deliverables that used to
+              crowd this row now sit under Requirements, where they read as
+              what they are: conditions of the campaign, not headline numbers.
+              (Web 78d4b09.) The old "Content Deliverables" platform-icon card
+              went with them: list-campaigns already humanises deliverables to
+              "3 Reels", so that card rendered "1" above "3 Reels". */}
+          <View className="flex-row">
+            <View
+              className="flex-row items-center bg-emerald-50 px-4 py-2.5 rounded-2xl border border-emerald-200"
+              style={{gap: 10}}>
+              <View className="w-9 h-9 bg-emerald-500 rounded-xl items-center justify-center">
+                <Text className="text-white text-sm font-bold">₹</Text>
               </View>
               <View>
-                <Text className="text-xs font-black text-slate-800">{campaign.budget}</Text>
-                <Text className="text-[9px] text-slate-400">{t('ScreensInfluencerOfferDetail.budget')}</Text>
+                <Text className="text-lg font-black" style={{color: '#00A67A'}}>
+                  {budgetDisplay.text}
+                </Text>
+                <Text className="text-[9px] font-bold text-emerald-700">
+                  {t(budgetLabelKey(budgetDisplay.kind))}
+                </Text>
               </View>
             </View>
-            {campaign.deadline && (
-              <View className="flex-row items-center bg-red-50 px-4 py-2.5 rounded-2xl" style={{gap: 8}}>
-                <View className="w-8 h-8 bg-red-100 rounded-xl items-center justify-center">
-                  <Calendar size={14} color="#EF4444" />
-                </View>
-                <View>
-                  <Text className="text-xs font-black text-slate-800">{campaign.deadline}</Text>
-                  <Text className="text-[9px] text-red-400">{t('ScreensInfluencerOfferDetail.daysLeft', {value: campaign.daysLeft})}</Text>
-                </View>
-              </View>
-            )}
-            {campaign.slots > 0 && (
-              <View className="flex-row items-center bg-purple-50 px-4 py-2.5 rounded-2xl" style={{gap: 8}}>
-                <View className="w-8 h-8 bg-purple-100 rounded-xl items-center justify-center">
-                  <Users size={14} color="#9810FA" />
-                </View>
-                <View>
-                  <Text className="text-xs font-black text-slate-800">{t('ScreensInfluencerOfferDetail.slots', {count: campaign.slots})}</Text>
-                  <Text className="text-[9px] text-slate-400">{t('ScreensInfluencerOfferDetail.available')}</Text>
-                </View>
-              </View>
-            )}
           </View>
 
-          {/* Content Deliverables */}
-          {campaign.deliverableIcons?.length > 0 && (
-            <View className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-              <Text className="text-base font-bold text-slate-800 mb-4">{t('ScreensInfluencerOfferDetail.contentDeliverables')}</Text>
-              <View className="flex-row" style={{gap: 10}}>
-                {campaign.deliverableIcons.map((d: any, i: number) => (
-                  <View key={i} className="flex-1 items-center bg-slate-50 rounded-2xl p-4" style={{gap: 6}}>
-                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm">
-                      <PlatformIcon platform={d.platform} />
+          {/* Requirements */}
+          {campaign.requirements && (
+            <View style={{gap: 8}}>
+              <Text className="text-base font-bold text-slate-800">{t('ScreensInfluencerOfferDetail.requirements')}</Text>
+              <View style={{gap: 8}}>
+                {campaign.requirements.map((req: any, i: number) => (
+                  <View key={i} className="flex-row items-center bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm" style={{gap: 12}}>
+                    <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center shrink-0">
+                      <ReqIcon type={req.icon} />
                     </View>
-                    <Text className="text-2xl font-black text-slate-800">{d.count}</Text>
-                    <Text className="text-[10px] font-bold text-slate-400">{d.label}</Text>
+                    <View className="flex-1 min-w-0">
+                      <Text className="text-sm font-bold text-slate-800" numberOfLines={2}>{req.label}</Text>
+                      <Text className="text-[11px] text-slate-400" numberOfLines={1}>{req.sub}</Text>
+                    </View>
                   </View>
                 ))}
               </View>
             </View>
           )}
 
+          {/* Payment & Benefits */}
+          {campaign.payments && (
+            <View style={{gap: 8}}>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-bold text-slate-800">{t('ScreensInfluencerOfferDetail.paymentBenefits')}</Text>
+                <View className="flex-row items-center bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100" style={{gap: 4}}>
+                  <ShieldCheck size={12} color="#10B981" />
+                  <Text className="text-[10px] font-bold text-emerald-500 uppercase">{t('ScreensInfluencerOfferDetail.verified')}</Text>
+                </View>
+              </View>
+              <View style={{gap: 8}}>
+                {campaign.payments.map((p: any, i: number) => (
+                  <View key={i} className={`flex-row items-center p-4 rounded-2xl border shadow-sm ${p.type === 'product' ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-50'}`} style={{gap: 12}}>
+                    <View className={`w-10 h-10 rounded-xl items-center justify-center ${p.type === 'base' ? 'bg-emerald-50' : p.type === 'bonus' ? 'bg-pink-50' : 'bg-purple-50'}`}>
+                      {p.type === 'base' ? <Wallet size={18} color="#10B981" /> : p.type === 'bonus' ? <TrendingUp size={18} color="#EC4899" /> : <Gift size={18} color="#9810FA" />}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[10px] font-bold text-slate-400 uppercase">{p.label}</Text>
+                      <Text className="text-sm font-black text-slate-800">{p.val}</Text>
+                    </View>
+                  </View>
+                ))}
+                {/* Exclusive banner */}
+                <View
+                  className="flex-row items-center"
+                  style={{gap: 12, borderRadius: 16, padding: 16, overflow: 'hidden'}}>
+                  <LinearGradient
+                    colors={['#34D399', '#10B981']}
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  />
+                  <Gift size={20} color="white" />
+                  <View>
+                    <Text className="text-sm font-bold text-white">{t('ScreensInfluencerOfferDetail.exclusiveEventRights')}</Text>
+                    <Text className="text-[10px] text-emerald-100">{t('ScreensInfluencerOfferDetail.exclusiveEventRightsSub')}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
           {/* About Campaign */}
           <View style={{gap: 8}}>
             <Text className="text-base font-bold text-slate-800">{t('ScreensInfluencerOfferDetail.aboutCampaign')}</Text>
@@ -665,65 +754,6 @@ export default function InfluencerOfferDetail() {
             )
           ) : null}
 
-          {/* Requirements */}
-          {campaign.requirements && (
-            <View style={{gap: 8}}>
-              <Text className="text-base font-bold text-slate-800">{t('ScreensInfluencerOfferDetail.requirements')}</Text>
-              <View style={{gap: 8}}>
-                {campaign.requirements.map((req: any, i: number) => (
-                  <View key={i} className="flex-row items-center bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm" style={{gap: 12}}>
-                    <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center shrink-0">
-                      <ReqIcon type={req.icon} />
-                    </View>
-                    <View className="flex-1 min-w-0">
-                      <Text className="text-sm font-bold text-slate-800" numberOfLines={2}>{req.label}</Text>
-                      <Text className="text-[11px] text-slate-400" numberOfLines={1}>{req.sub}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Payment & Benefits */}
-          {campaign.payments && (
-            <View style={{gap: 8}}>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-base font-bold text-slate-800">{t('ScreensInfluencerOfferDetail.paymentBenefits')}</Text>
-                <View className="flex-row items-center bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100" style={{gap: 4}}>
-                  <ShieldCheck size={12} color="#10B981" />
-                  <Text className="text-[10px] font-bold text-emerald-500 uppercase">{t('ScreensInfluencerOfferDetail.verified')}</Text>
-                </View>
-              </View>
-              <View style={{gap: 8}}>
-                {campaign.payments.map((p: any, i: number) => (
-                  <View key={i} className={`flex-row items-center p-4 rounded-2xl border shadow-sm ${p.type === 'product' ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-50'}`} style={{gap: 12}}>
-                    <View className={`w-10 h-10 rounded-xl items-center justify-center ${p.type === 'base' ? 'bg-emerald-50' : p.type === 'bonus' ? 'bg-pink-50' : 'bg-purple-50'}`}>
-                      {p.type === 'base' ? <Wallet size={18} color="#10B981" /> : p.type === 'bonus' ? <TrendingUp size={18} color="#EC4899" /> : <Gift size={18} color="#9810FA" />}
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-[10px] font-bold text-slate-400 uppercase">{p.label}</Text>
-                      <Text className="text-sm font-black text-slate-800">{p.val}</Text>
-                    </View>
-                  </View>
-                ))}
-                {/* Exclusive banner */}
-                <View
-                  className="flex-row items-center"
-                  style={{gap: 12, borderRadius: 16, padding: 16, overflow: 'hidden'}}>
-                  <LinearGradient
-                    colors={['#34D399', '#10B981']}
-                    style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
-                  />
-                  <Gift size={20} color="white" />
-                  <View>
-                    <Text className="text-sm font-bold text-white">{t('ScreensInfluencerOfferDetail.exclusiveEventRights')}</Text>
-                    <Text className="text-[10px] text-emerald-100">{t('ScreensInfluencerOfferDetail.exclusiveEventRightsSub')}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
 
           {/* About Brand */}
           <View className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm" style={{gap: 12}}>

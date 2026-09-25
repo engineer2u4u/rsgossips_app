@@ -2195,6 +2195,8 @@
     "shippingDays": " · {{days}}d",
     "noDescription": "No description available for this campaign.",
     "basePayment": "Base Payment",
+    "asPerProfile": "As per profile",
+    "productValueLabel": "Product value",
     "activeCount": "{{count}} active",
     "responseTime": "24h",
     "req": {
@@ -2211,7 +2213,14 @@
       "language": "Language: {{language}}",
       "contentLanguage": "Content language",
       "category": "Category: {{category}}",
-      "targetNiche": "Target niche"
+      "targetNiche": "Target niche",
+      "applyBy": "Apply by: {{value}}",
+      "applicationDeadline": "Application deadline",
+      "deliverBy": "Deliver by: {{value}}",
+      "deliveryDeadline": "Delivery deadline",
+      "openSpots": "Open spots",
+      "content": "Content: {{value}}",
+      "contentToPost": "Content to post"
     },
     "shipping": {
       "yes": "Product will be shipped",
