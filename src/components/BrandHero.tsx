@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
-import { Bell, MessageCircle, Search } from 'lucide-react-native';
+import { Bell, MessageCircle } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 
@@ -86,26 +86,9 @@ const BrandHero: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
         </View>
       </View>
 
-      {/* Search pill → creator directory */}
-      <Pressable
-        onPress={() => navigation.navigate('BrandSearch' as never)}
-        style={{
-          height: 40,
-          marginTop: 11,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 9,
-          paddingHorizontal: 13,
-          borderRadius: 99,
-          backgroundColor: '#EEF1F8',
-          borderWidth: 1,
-          borderColor: '#E4E9F4',
-        }}>
-        <Search size={15} color={HOME_COLORS.faint} />
-        <Text style={{ flex: 1, fontSize: 12.5, color: HOME_COLORS.faint }} numberOfLines={1}>
-          {t('BrandHero.searchPlaceholder')}
-        </Text>
-      </Pressable>
+      {/* The search pill was removed from the home feed: the AI matching
+          prompt directly below it does the same job better, and Search has
+          its own tab in the bottom nav. */}
     </View>
   );
 };

@@ -284,7 +284,11 @@ const EditProfilePage: React.FC<Props> = ({onBack}) => {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{paddingBottom: 110}}>
+        // No nav clearance here. This page renders INSIDE InfluencerProfile's
+        // own ScrollView, which already ends with an h-20 spacer for the
+        // floating nav — so 110 on top of that (plus the Save button's own
+        // mb-8) left a screen's worth of dead space under Save on iOS.
+        contentContainerStyle={{paddingBottom: 0}}>
         {/* Avatar (tappable for upload) */}
         <View className="items-center py-6">
           <TouchableOpacity onPress={handlePickPhoto} activeOpacity={0.85}>
