@@ -177,8 +177,8 @@ export default function BrandProfile() {
   };
 
   if (!profile) {
+    // The header is the blue gradient — match the status bar to its top stop.
     return (
-      {/* The header is the blue gradient — match the status bar to its top stop. */}
       <BrandsLayout topColor={BG.brandHeader}>
         <View style={{padding: 40, alignItems: 'center'}}>
           <Text className="text-gray-400 text-sm">
@@ -189,8 +189,8 @@ export default function BrandProfile() {
     );
   }
 
+  // The header is the blue gradient — match the status bar to its top stop.
   return (
-    {/* The header is the blue gradient — match the status bar to its top stop. */}
     <BrandsLayout topColor={BG.brandHeader}>
       {/* Header */}
       <View className="pt-12 pb-8 px-6 rounded-b-[40px] mb-20 overflow-hidden">

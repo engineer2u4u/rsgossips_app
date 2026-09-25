@@ -224,8 +224,8 @@ export default function BrandSearch({route}: any) {
     [influencers, searchText],
   );
 
+  // The header is the blue gradient — match the status bar to its top stop.
   return (
-    {/* The header is the blue gradient — match the status bar to its top stop. */}
     <BrandsLayout topColor={BG.brandHeader}>
       {/* Header */}
       <View className="w-full px-6 pt-12 pb-10 rounded-b-[40px] overflow-hidden">
