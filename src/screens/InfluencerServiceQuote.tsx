@@ -348,11 +348,20 @@ export default function InfluencerServiceQuote() {
         </Text>
       </View>
 
+      {/* behavior="padding" around a ScrollView is the combination that fails
+          on iOS: the container shrinks but nothing scrolls the focused field
+          up, so the Notes box at the bottom of this form stayed under the
+          keyboard and you could not see what you were typing.
+          automaticallyAdjustKeyboardInsets (iOS 14+, no-op on Android) insets
+          the scroll by the keyboard and keeps the focused input visible, so
+          iOS needs no KAV behavior at all. */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? undefined : 'height'}
         style={{flex: 1}}>
       <ScrollView
         contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled">
         {/* Header card — padding on outer View, gradient is an absolute background fill */}
         <View
