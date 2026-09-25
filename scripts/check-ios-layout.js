@@ -68,11 +68,13 @@ for (const file of files) {
     const hasWidthAndHeight =
       (/width:/.test(tag) && /height:/.test(tag)) ||
       (/w-\[?\d/.test(tag) && /h-\[?\d/.test(tag));
-    // A full-bleed card given an explicit width is the documented exception.
-    const hasExplicitWidth = /width:/.test(tag);
+    // NOTE: an explicit width alone is NOT safe and is not excused here.
+    // The CTA card on the brand home had `width: winW - 28` and still
+    // collapsed on iOS, clipping its buttons, because its HEIGHT came from
+    // padding + children. Only width AND height together are safe.
     const sizesFromPadding = /padding/.test(tag) || /["\s]p[xy]?-\d/.test(tag);
 
-    if (sizesFromPadding && !hasWidthAndHeight && !hasExplicitWidth) {
+    if (sizesFromPadding && !hasWidthAndHeight) {
       problems.push(
         `${file}:${at}: self-sizing <LinearGradient> with children — move the ` +
           'sizing to a wrapper View/Pressable and make the gradient an ' +

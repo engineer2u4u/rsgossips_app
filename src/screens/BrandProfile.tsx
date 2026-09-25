@@ -45,6 +45,7 @@ import {
   UserMinus,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {BG} from '../theme/brand';
 import BrandsLayout from '../layouts/BrandLayout';
 import {useAuth} from '../context/AuthContext';
 import {useGlobalLoading} from '../context/LoadingContext';
@@ -177,7 +178,8 @@ export default function BrandProfile() {
 
   if (!profile) {
     return (
-      <BrandsLayout>
+      {/* The header is the blue gradient — match the status bar to its top stop. */}
+      <BrandsLayout topColor={BG.brandHeader}>
         <View style={{padding: 40, alignItems: 'center'}}>
           <Text className="text-gray-400 text-sm">
             {t('ScreensBrandProfile.loadingProfile')}
@@ -188,7 +190,8 @@ export default function BrandProfile() {
   }
 
   return (
-    <BrandsLayout>
+    {/* The header is the blue gradient — match the status bar to its top stop. */}
+    <BrandsLayout topColor={BG.brandHeader}>
       {/* Header */}
       <View className="pt-12 pb-8 px-6 rounded-b-[40px] mb-20 overflow-hidden">
         <LinearGradient

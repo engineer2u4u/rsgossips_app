@@ -23,13 +23,19 @@ export function CreatorCTASection() {
 
   return (
     <View style={{ width: '100%' }}>
-      {/* Navy CTA card */}
-      <LinearGradient
-        colors={NAVY_GRADIENT}
-        locations={NAVY_LOCATIONS}
-        start={ANGLE_120.start}
-        end={ANGLE_120.end}
+      {/* Navy CTA card. The View owns the size and the gradient is an
+          absolute-fill background. An explicit width alone was not enough:
+          BVLinearGradient still derived its HEIGHT from padding + children,
+          so on iOS the card collapsed and clipped the two buttons. */}
+      <View
         style={{ width: winW - 28, marginHorizontal: 14, padding: 20, borderRadius: 20, overflow: 'hidden' }}>
+        <LinearGradient
+          colors={NAVY_GRADIENT}
+          locations={NAVY_LOCATIONS}
+          start={ANGLE_120.start}
+          end={ANGLE_120.end}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
         <LinearGradient
           colors={VIOLET_BLUE}
           locations={VIOLET_BLUE_LOCATIONS}
@@ -62,7 +68,7 @@ export function CreatorCTASection() {
             <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{t('CreatorCTASection.followUs')}</Text>
           </Pressable>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Dark footer */}
       <View style={{ marginTop: 12, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 24, backgroundColor: '#0B1129' }}>

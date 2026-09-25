@@ -45,6 +45,13 @@ export const BRAND_GRADIENT_SOFT: readonly [string, string, string] = [
 export const BG = {
   page: '#f5f4f8',
   pageGrad: '#efedf5',
+  // The creator top bar. The status-bar strip above it is painted the same
+  // colour so the two read as one surface — on Android 15+ (edge-to-edge)
+  // and iOS the strip shows whatever view sits behind it, and it used to be
+  // the lavender page, which visibly mismatched the white header.
+  header: '#ffffff',
+  // The brand screens' gradient header starts on this blue.
+  brandHeader: '#4C75BE',
 } as const;
 
 // Reusable soft card shadow — neutral black drop so home / campaign /

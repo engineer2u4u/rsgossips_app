@@ -19,6 +19,7 @@ import {ArrowRight, ArrowUpRight, Plus, Search, SlidersHorizontal} from 'lucide-
 import LinearGradient from 'react-native-linear-gradient';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {BG} from '../theme/brand';
 import BrandsLayout from '../layouts/BrandLayout';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
@@ -134,7 +135,8 @@ export default function BrandCampaigns() {
 
   return (
     <View className="flex-1">
-      <BrandsLayout>
+      {/* The header is the blue gradient — match the status bar to its top stop. */}
+      <BrandsLayout topColor={BG.brandHeader}>
       {/* Header */}
       <View className="relative mb-16">
         <View className="px-6 pt-12 pb-16 rounded-b-[40px] overflow-hidden">
@@ -180,14 +182,22 @@ export default function BrandCampaigns() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row" style={{gap: 8}}>
+          {/* alignItems:'center' stops the pills stretching to the scroll
+              view's full height on iOS — they were rendering as tall ovals.
+              The explicit height keeps both variants the same size, since
+              padding-only buttons come out shorter on iOS than on Android. */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{alignItems: 'center'}}>
+            <View className="flex-row items-center" style={{gap: 8}}>
               {TABS.map(tab =>
                 activeTab === tab ? (
                   <TouchableOpacity
                     key={tab}
                     onPress={() => setActiveTab(tab)}
-                    className="px-5 py-2 flex-row items-center gap-2 rounded-full overflow-hidden shadow-lg shadow-purple-100">
+                    style={{height: 36}}
+                    className="px-5 flex-row items-center gap-2 rounded-full overflow-hidden shadow-lg shadow-purple-100">
                     <LinearGradient
                       colors={['#5851DB', '#4338CA']}
                       style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
@@ -203,7 +213,8 @@ export default function BrandCampaigns() {
                   <TouchableOpacity
                     key={tab}
                     onPress={() => setActiveTab(tab)}
-                    className="px-5 py-2 rounded-full bg-white flex-row items-center gap-2">
+                    style={{height: 36}}
+                    className="px-5 rounded-full bg-white flex-row items-center gap-2">
                     <Text className="text-xs font-semibold text-gray-400">
                       {t(`ScreensBrandCampaigns.tabs.${tab}`)} ({counts[tab]})
                     </Text>

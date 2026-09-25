@@ -21,6 +21,7 @@ import {ChevronDown, Search, Send, UserPlus, X} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
 
+import {BG} from '../theme/brand';
 import BrandsLayout from '../layouts/BrandLayout';
 import {TrustSection} from '../components/TrustSection';
 import {CategoryFilters} from '../components/brands/CategoryFilters';
@@ -51,9 +52,12 @@ const SORT_OPTIONS: Exclude<SortMode, null>[] = [
 // Pure predicate. Mirrors src/app/brands/search/page.js `matchesFilters`.
 function matchesFilters(inf: SearchInfluencer, f: FilterValues, q: string) {
   if (q) {
+    // Same fields the server matches in list-influencers: name, username,
+    // handle, categories and city. Categories and city were missing here,
+    // so "beauty" or "Mumbai" found fewer creators than on web.
     const haystack = `${inf.full_name || ''} ${inf.username || ''} ${
       inf.instagram_handle || ''
-    }`.toLowerCase();
+    } ${(inf.categories || []).join(' ')} ${inf.city || ''}`.toLowerCase();
     if (!haystack.includes(q)) return false;
   }
   const cats = f.Categories || [];
@@ -142,9 +146,16 @@ export default function BrandSearch({route}: any) {
     let cancelled = false;
     (async () => {
       try {
+        // Searching and filtering happen locally, so ask for the whole
+        // directory. list-influencers defaults to limit 50 and sorts by
+        // followers (Elite first), so an empty body handed us only the 50
+        // biggest accounts: searching "deep" matched @sandeep__maheshwari
+        // and nothing else, because every smaller creator whose handle
+        // contains "deep" had never been downloaded. MAX_LIMIT is 2000.
+        // (Same fix already applied in PocketFriendlyCreators.)
         const data = await invokeFn<{influencers?: SearchInfluencer[]}>(
           'list-influencers',
-          {},
+          {limit: 2000},
         );
         if (cancelled) return;
         setInfluencers(data?.influencers || []);
@@ -206,7 +217,8 @@ export default function BrandSearch({route}: any) {
   );
 
   return (
-    <BrandsLayout>
+    {/* The header is the blue gradient — match the status bar to its top stop. */}
+    <BrandsLayout topColor={BG.brandHeader}>
       {/* Header */}
       <View className="w-full px-6 pt-12 pb-10 rounded-b-[40px] overflow-hidden">
         <LinearGradient

@@ -30,6 +30,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Check,
@@ -193,6 +194,7 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export default function CreateCampaignScreen() {
   const navigation = useNavigation();
   const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
   const {user} = useAuth();
   const {withLoading} = useGlobalLoading();
 
@@ -415,7 +417,9 @@ export default function CreateCampaignScreen() {
       style={{flex: 1, backgroundColor: '#F8F9FE'}}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Top bar */}
-      <View style={s.topbar}>
+      {/* No SafeAreaView on this screen — pad the bar itself or the title
+          sits under the status bar on iOS. */}
+      <View style={[s.topbar, {paddingTop: 12 + insets.top}]}>
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={8}
@@ -981,7 +985,7 @@ export default function CreateCampaignScreen() {
       </ScrollView>
 
       {/* Footer */}
-      <View style={s.footer}>
+      <View style={[s.footer, {paddingBottom: 12 + insets.bottom}]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           disabled={submitting}

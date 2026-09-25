@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -339,11 +340,19 @@ function ToolModal({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
-        <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
+        <View className="flex-1 justify-end">
+          {/* Backdrop is a SIBLING of the sheet, not its parent. As a parent
+              it owns the touch responder, and on iOS a press that lands on
+              the ScrollView's content goes to it instead of the scroll — the
+              generated text could only be scrolled by grabbing a gap between
+              children. A sibling backdrop still closes on an outside tap. */}
           <Pressable
+            style={[StyleSheet.absoluteFill, {backgroundColor: 'rgba(0,0,0,0.5)'}]}
+            onPress={onClose}
+          />
+          <View
             className="bg-white rounded-t-[32px] max-h-[80%]"
-            style={{paddingBottom: insets.bottom}}
-            onPress={e => e.stopPropagation()}>
+            style={{paddingBottom: insets.bottom}}>
             {/* Header */}
             <View className="flex-row items-center justify-between p-5 border-b border-slate-100">
               <View className="flex-row items-center">
@@ -492,8 +501,8 @@ function ToolModal({
                 )}
               </View>
             )}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -1,6 +1,6 @@
 import React, {useRef, createContext, useContext, useState, useEffect, useCallback} from 'react';
 import {View, ScrollView, Image, Pressable, Text, RefreshControl} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Bell, Headphones} from 'lucide-react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
@@ -73,7 +73,7 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
       className="flex-row items-center px-4 py-3 border-b border-slate-100"
       style={{
         gap: 10,
-        backgroundColor: 'rgba(255,255,255,0.88)',
+        backgroundColor: BG.header,
       }}>
       <Image
         source={require('../assets/rgossipsLogo.png')}
@@ -127,6 +127,7 @@ export default function InfluencerLayout({
   onRefresh?: () => void | Promise<void>;
 }) {
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
   const [supportOpen, setSupportOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const {profile, instagramTokenMissing} = useAuth();
@@ -150,7 +151,13 @@ export default function InfluencerLayout({
   }, [onRefresh]);
 
   return (
-    <SafeAreaView className="flex-1" style={{backgroundColor: BG.page}}>
+    // edges omits 'top': the strip below paints it the header colour instead,
+    // so the status bar matches the bar under it on both platforms.
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      className="flex-1"
+      style={{backgroundColor: BG.page}}>
+      <View style={{height: insets.top, backgroundColor: BG.header}} />
       <TopBar onOpenSupport={() => setSupportOpen(true)} />
 
       <LayoutScrollContext.Provider value={scrollRef}>
