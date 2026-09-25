@@ -23,20 +23,20 @@ export default function BrandsLayout({
   return (
     // edges omits 'top' so the strip below can paint it the header's colour —
     // otherwise the status bar shows white over a blue gradient header.
-    <SafeAreaView
-      edges={['left', 'right', 'bottom']}
-      className="flex-1 bg-white">
+    // 'bottom' is omitted as well as 'top': BrandBottomNav pads itself by
+    // insets.bottom, so leaving it here would apply that spacing twice.
+    <SafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <View style={{ height: insets.top, backgroundColor: topColor }} />
 
       {/* Main Scrollable Content.
           BrandBottomNav is absolutely positioned over this, so the scroll
-          has to reserve its height (h-16 = 64) plus breathing room or the
+          has to reserve its height (h-16 = 64, plus the inset it pads itself by) and breathing room or the
           last row sits under the nav and can't be reached — Delete Account
           on the profile screen was unreachable. InfluencerLayout does the
           same with 110 for its taller floating pill. */}
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 88 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 88 + insets.bottom }}
         showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>

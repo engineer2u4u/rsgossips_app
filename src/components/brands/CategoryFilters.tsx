@@ -3,28 +3,48 @@
 // Controlled by the parent — pressing a chip toggles that category in the
 // Categories array of the parent's filter state. "All" clears the array.
 // The 15 categories match the web's CATEGORIES list (also used in the
-// create-campaign form). Emojis are eye candy, no semantic meaning.
+// create-campaign form). Icons are eye candy, no semantic meaning.
 
 import React from 'react';
 import {useTranslation} from 'react-i18next';
 import {Pressable, ScrollView, Text, View} from 'react-native';
+import {
+  Briefcase,
+  Car,
+  Dumbbell,
+  Flame,
+  Gamepad2,
+  GraduationCap,
+  House,
+  Laptop,
+  PawPrint,
+  Pizza,
+  Plane,
+  Shirt,
+  Sparkles,
+  Sprout,
+  TrendingUp,
+  Users,
+} from 'lucide-react-native';
 
+// Vector icons, not emoji — emoji render as a "?" tofu box on the device font
+// stack (same fix as the brand-home category tiles).
 const CATEGORIES = [
-  {label: 'Beauty & Skincare', short: 'Beauty', emoji: '💄', key: 'beauty'},
-  {label: 'Fashion & Lifestyle', short: 'Fashion', emoji: '👗', key: 'fashion'},
-  {label: 'Food & Beverage', short: 'Food', emoji: '🍕', key: 'food'},
-  {label: 'Health, Fitness & Wellness', short: 'Fitness', emoji: '🏋️', key: 'fitness'},
-  {label: 'Travel & Hospitality', short: 'Travel', emoji: '✈️', key: 'travel'},
-  {label: 'Technology & Gadgets', short: 'Tech', emoji: '💻', key: 'tech'},
-  {label: 'Parenting & Family', short: 'Family', emoji: '👨‍👩‍👧', key: 'family'},
-  {label: 'Home & Decor', short: 'Home', emoji: '🏠', key: 'home'},
-  {label: 'Finance & Personal Finance', short: 'Finance', emoji: '📈', key: 'finance'},
-  {label: 'Education & Career', short: 'Education', emoji: '🎓', key: 'education'},
-  {label: 'Gaming & Entertainment', short: 'Gaming', emoji: '🎮', key: 'gaming'},
-  {label: 'Automobile & Mobility', short: 'Auto', emoji: '🚗', key: 'auto'},
-  {label: 'Entrepreneurship & Business', short: 'Business', emoji: '💼', key: 'business'},
-  {label: 'Sustainable & Eco-conscious Living', short: 'Eco', emoji: '🌱', key: 'eco'},
-  {label: 'Pet Care & Animals', short: 'Pets', emoji: '🐾', key: 'pets'},
+  {label: 'Beauty & Skincare', short: 'Beauty', Icon: Sparkles, key: 'beauty'},
+  {label: 'Fashion & Lifestyle', short: 'Fashion', Icon: Shirt, key: 'fashion'},
+  {label: 'Food & Beverage', short: 'Food', Icon: Pizza, key: 'food'},
+  {label: 'Health, Fitness & Wellness', short: 'Fitness', Icon: Dumbbell, key: 'fitness'},
+  {label: 'Travel & Hospitality', short: 'Travel', Icon: Plane, key: 'travel'},
+  {label: 'Technology & Gadgets', short: 'Tech', Icon: Laptop, key: 'tech'},
+  {label: 'Parenting & Family', short: 'Family', Icon: Users, key: 'family'},
+  {label: 'Home & Decor', short: 'Home', Icon: House, key: 'home'},
+  {label: 'Finance & Personal Finance', short: 'Finance', Icon: TrendingUp, key: 'finance'},
+  {label: 'Education & Career', short: 'Education', Icon: GraduationCap, key: 'education'},
+  {label: 'Gaming & Entertainment', short: 'Gaming', Icon: Gamepad2, key: 'gaming'},
+  {label: 'Automobile & Mobility', short: 'Auto', Icon: Car, key: 'auto'},
+  {label: 'Entrepreneurship & Business', short: 'Business', Icon: Briefcase, key: 'business'},
+  {label: 'Sustainable & Eco-conscious Living', short: 'Eco', Icon: Sprout, key: 'eco'},
+  {label: 'Pet Care & Animals', short: 'Pets', Icon: PawPrint, key: 'pets'},
 ] as const;
 
 interface Props {
@@ -56,7 +76,7 @@ export function CategoryFilters({value, onChange}: Props) {
             allActive ? 'bg-[#4C75BE] border-[#4C75BE]' : 'bg-white border-gray-200'
           }`}
           style={{gap: 6}}>
-          <Text className="text-sm">🔥</Text>
+          <Flame size={14} color={allActive ? '#fff' : '#4b5563'} />
           <Text
             className={`text-xs font-semibold ${
               allActive ? 'text-white' : 'text-gray-600'
@@ -75,7 +95,7 @@ export function CategoryFilters({value, onChange}: Props) {
                 active ? 'bg-[#4C75BE] border-[#4C75BE]' : 'bg-white border-gray-200'
               }`}
               style={{gap: 6}}>
-              <Text className="text-sm">{cat.emoji}</Text>
+              <cat.Icon size={14} color={active ? '#fff' : '#4b5563'} />
               <Text
                 className={`text-xs font-semibold ${
                   active ? 'text-white' : 'text-gray-600'
