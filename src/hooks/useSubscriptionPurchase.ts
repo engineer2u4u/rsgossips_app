@@ -25,6 +25,9 @@ import {useAuth} from '../context/AuthContext';
 
 type Status = 'idle' | 'purchasing' | 'verifying' | 'restoring';
 
+/** How long Restore may block the screen before it gives up. */
+const RESTORE_TIMEOUT_MS = 20000;
+
 export function useSubscriptionPurchase() {
   const {refreshProfile, user} = useAuth();
   const [status, setStatus] = useState<Status>('idle');
@@ -151,11 +154,28 @@ export function useSubscriptionPurchase() {
   const restore = useCallback(async () => {
     setError('');
     setStatus('restoring');
+    // The Plans screen puts a full-screen blocking overlay up for the whole
+    // time status !== 'idle'. getAvailablePurchases() can sit there without
+    // ever settling (a store account that never finishes signing in, a
+    // sandbox hiccup), and the screen was then frozen with no way out —
+    // reported from TestFlight as "unresponsive after tapping Restore".
+    // Nothing here can cancel StoreKit, so bound the WAIT instead: give the
+    // control back and let them tap again.
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      setError('Restore took too long. Please try again.');
+      setStatus('idle');
+    }, RESTORE_TIMEOUT_MS);
     try {
       await getAvailablePurchases();
     } catch (e: any) {
-      setError(e?.message || 'Could not restore purchases.');
-      setStatus('idle');
+      if (!timedOut) {
+        setError(e?.message || 'Could not restore purchases.');
+        setStatus('idle');
+      }
+    } finally {
+      clearTimeout(timer);
     }
   }, [getAvailablePurchases]);
 
