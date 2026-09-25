@@ -17,7 +17,11 @@ import {Crown, Lock, X, Sparkles} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
 import {FREE_BARTER_APPLICATIONS, PLAN_PRICING} from '../lib/plans';
 
-export type UpgradeReason = 'paid_campaign' | 'quota' | null;
+// continue_paid — a free creator who already APPLIED to a paid campaign and is
+// now taking it forward (accepting an offer). Telling them their free
+// applications cover barter is wrong: they applied already, and the barter
+// escape hatch is not an escape for them, so it is suppressed.
+export type UpgradeReason = 'paid_campaign' | 'continue_paid' | 'quota' | null;
 
 export default function UpgradeRequiredModal({
   reason,
@@ -37,7 +41,8 @@ export default function UpgradeRequiredModal({
   const {t} = useTranslation();
   if (!reason) return null;
 
-  const isPaidCampaign = reason === 'paid_campaign';
+  const isContinue = reason === 'continue_paid';
+  const isPaidCampaign = reason === 'paid_campaign' || isContinue;
   const from = PLAN_PRICING?.starter?.monthly;
   const kind =
     String(campaignType || '').toLowerCase() === 'hybrid'
@@ -88,19 +93,23 @@ export default function UpgradeRequiredModal({
               )}
             </View>
             <Text className="mt-4 text-lg font-black text-white text-center">
-              {isPaidCampaign
-                ? t('UpgradeRequired.paidTitle')
-                : t('UpgradeRequired.quotaTitle', {limit: FREE_BARTER_APPLICATIONS})}
+              {isContinue
+                ? t('UpgradeRequired.continueTitle')
+                : isPaidCampaign
+                  ? t('UpgradeRequired.paidTitle')
+                  : t('UpgradeRequired.quotaTitle', {limit: FREE_BARTER_APPLICATIONS})}
             </Text>
             <Text
               className="mt-2 text-sm text-center"
               style={{color: 'rgba(255,255,255,0.9)'}}>
-              {isPaidCampaign
-                ? t('UpgradeRequired.paidBody', {
-                    limit: FREE_BARTER_APPLICATIONS,
-                    kind,
-                  })
-                : t('UpgradeRequired.quotaBody', {limit: FREE_BARTER_APPLICATIONS})}
+              {isContinue
+                ? t('UpgradeRequired.continueBody')
+                : isPaidCampaign
+                  ? t('UpgradeRequired.paidBody', {
+                      limit: FREE_BARTER_APPLICATIONS,
+                      kind,
+                    })
+                  : t('UpgradeRequired.quotaBody', {limit: FREE_BARTER_APPLICATIONS})}
             </Text>
           </View>
 
@@ -144,7 +153,9 @@ export default function UpgradeRequiredModal({
             {/* Blocked by campaign TYPE but still holding free applications —
                 point them at the ones they can actually spend. Out of quota,
                 there is nowhere useful to go but the plans screen. */}
-            {isPaidCampaign && remaining > 0 && onBrowseBarter ? (
+            {/* Not for continue_paid: a creator mid-application is not
+                choosing what to apply to, so "browse barter" is no escape. */}
+            {isPaidCampaign && !isContinue && remaining > 0 && onBrowseBarter ? (
               <Pressable
                 onPress={onBrowseBarter}
                 accessibilityRole="button"

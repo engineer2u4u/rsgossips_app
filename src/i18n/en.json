@@ -2174,6 +2174,21 @@
     "overall": "Overall",
     "briefClarity": "Brief clarity",
     "fairness": "Fairness",
+    "feedbackQuality": "Feedback quality",
+    "share": "Share",
+    "refresh": "Refresh",
+    "shareText": "Check out this campaign on RGossips: {{title}}",
+    "copyable": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAria": "Copy {{label}}"
+    },
+    "gallery": {
+      "title": "Campaign gallery"
+    },
+    "similar": {
+      "title": "Similar campaigns"
+    },
     "rateThisCampaign": "Rate this campaign",
     "shareHowItWent": "Share how it went with {{brand}}",
     "requirements": "Requirements",
@@ -2192,6 +2207,7 @@
     "howWouldYouRate": "How would you rate {{brand}}?",
     "briefClarityHelper": "Was the brief clear and detailed?",
     "fairnessHelper": "Were revisions and rejections reasonable?",
+    "feedbackQualityHelper": "Was their feedback specific and useful?",
     "shippingDays": " · {{days}}d",
     "noDescription": "No description available for this campaign.",
     "basePayment": "Base Payment",
@@ -3575,6 +3591,8 @@
     "kindHybrid": "paid + product",
     "paidTitle": "This one is for subscribers",
     "paidBody": "Your {{limit}} free applications cover barter campaigns, where brands pay in product. This is a {{kind}} campaign, so it needs a plan.",
+    "continueTitle": "Subscribe to continue",
+    "continueBody": "As this is a paid campaign, you will have to subscribe to a plan to continue.",
     "quotaTitle": "You have used all {{limit}} free applications",
     "quotaBody": "Free accounts get {{limit}} barter campaign applications. Subscribe to keep applying.",
     "perk1": "Apply to paid campaigns, not just barter",

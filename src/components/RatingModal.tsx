@@ -27,6 +27,7 @@ export type RatingValues = {
   target_rating?: number;
   brief_clarity?: number;
   fairness?: number;
+  feedback_quality?: number;
   product_quality?: number;
   value_for_effort?: number;
   [k: string]: number | undefined;

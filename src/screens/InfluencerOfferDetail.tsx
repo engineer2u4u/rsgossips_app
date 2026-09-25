@@ -8,9 +8,17 @@ import {
   Pressable,
   ActivityIndicator,
   Platform,
+  Share,
+  Clipboard,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import {
   ChevronLeft,
+  Copy,
+  Share2,
+  RefreshCw,
+  X as XIcon,
   ChevronRight,
   Sparkles,
   CheckCircle,
@@ -68,12 +76,249 @@ const PAYMENT_KEYS: Record<string, string> = {
   '7_days': '7_days',
   '30_days': '30_days',
 };
+const CAMPAIGN_SHARE_ORIGIN = 'https://rgossips.com';
+
 const SHIPPING_KEYS: Record<string, string> = {
   yes: 'yes',
   no: 'no',
   pickup: 'pickup',
 };
 
+
+// Other live campaigns sharing a tag with this one. Mirrors web's
+// SimilarCampaigns: one list-campaigns call with no influencerId, the
+// current campaign dropped, Active only, tag overlap, at most 4.
+function SimilarCampaigns({campaign}: {campaign: any}) {
+  const {t} = useTranslation();
+  const navigation = useNavigation<any>();
+  const [similar, setSimilar] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {});
+        if (cancelled || !data?.campaigns) return;
+        const tags: string[] = campaign?.tags || [];
+        setSimilar(
+          data.campaigns
+            .filter(c => c.id !== campaign?.id && c.status === 'Active')
+            .filter(
+              c =>
+                tags.length === 0 ||
+                c.tags?.some((tag: string) =>
+                  tags.some(ct => tag.toLowerCase().includes(ct.toLowerCase())),
+                ),
+            )
+            .slice(0, 4),
+        );
+      } catch {
+        // A missing "you might also like" is not worth surfacing.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign?.id, campaign?.tags]);
+
+  if (similar.length === 0) return null;
+
+  return (
+    <View
+      className="bg-white rounded-2xl p-5 border border-slate-100"
+      style={{gap: 12}}>
+      <Text className="text-sm font-bold text-slate-800">
+        {t('ScreensInfluencerOfferDetail.similar.title')}
+      </Text>
+      <View style={{gap: 10}}>
+        {similar.map(c => (
+          <Pressable
+            key={c.id}
+            onPress={() =>
+              navigation.push('InfluencerOfferDetail', {id: c.id})
+            }
+            accessibilityRole="button"
+            className="flex-row items-center"
+            style={{gap: 12}}>
+            {/* The initials tile stays under the logo on purpose: a dead
+                logo URL hides its Image and the letter shows through, so a
+                row is never an empty box. */}
+            <View
+              className="w-11 h-11 rounded-xl items-center justify-center overflow-hidden"
+              style={{backgroundColor: '#4F46E5'}}>
+              <Text className="text-white text-xs font-bold">
+                {String(c.brandName || '?').charAt(0).toUpperCase()}
+              </Text>
+              {c.brandLogo ? (
+                <Image
+                  source={{uri: c.brandLogo}}
+                  style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+                  resizeMode="cover"
+                />
+              ) : null}
+            </View>
+            <View style={{flex: 1}}>
+              <Text
+                className="text-[13px] font-bold text-slate-800"
+                numberOfLines={1}>
+                {c.title}
+              </Text>
+              <Text className="text-[11px] text-slate-400" numberOfLines={1}>
+                {c.brandName}
+              </Text>
+            </View>
+            <Text className="text-[12px] font-black" style={{color: '#00A67A'}}>
+              {campaignBudgetDisplay(c).text}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// The brand's reference images, with a fullscreen pager. Mirrors web's
+// Gallery: a grid that opens at the tapped image, with prev/next and a
+// "n / total" counter.
+function Gallery({images}: {images: string[]}) {
+  const {t} = useTranslation();
+  const [index, setIndex] = useState(-1);
+  const close = () => setIndex(-1);
+  const prev = () => setIndex(i => (i - 1 + images.length) % images.length);
+  const next = () => setIndex(i => (i + 1) % images.length);
+  // Three across, matching the grid's 8px gaps inside the 16px page padding.
+  const tile = (Dimensions.get('window').width - 32 - 16) / 3;
+
+  return (
+    <View style={{gap: 8}}>
+      <Text className="text-base font-bold text-slate-800">
+        {t('ScreensInfluencerOfferDetail.gallery.title')}
+      </Text>
+      <View className="flex-row flex-wrap" style={{gap: 8}}>
+        {images.map((src, i) => (
+          <Pressable
+            key={i}
+            onPress={() => setIndex(i)}
+            accessibilityRole="imagebutton"
+            style={{
+              width: tile,
+              height: tile,
+              borderRadius: 16,
+              overflow: 'hidden',
+              backgroundColor: '#f1f5f9',
+            }}>
+            <Image
+              source={{uri: src}}
+              style={{width: '100%', height: '100%'}}
+              resizeMode="cover"
+            />
+          </Pressable>
+        ))}
+      </View>
+
+      <Modal
+        visible={index >= 0}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={close}>
+        <View className="flex-1" style={{backgroundColor: 'rgba(0,0,0,0.94)'}}>
+          <Pressable
+            onPress={close}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            className="absolute right-5 z-10 w-10 h-10 rounded-full items-center justify-center"
+            style={{top: 48, backgroundColor: 'rgba(255,255,255,0.15)'}}>
+            <XIcon size={20} color="#fff" />
+          </Pressable>
+
+          <View className="flex-1 items-center justify-center px-4">
+            {index >= 0 ? (
+              <Image
+                source={{uri: images[index]}}
+                style={{width: '100%', height: '70%'}}
+                resizeMode="contain"
+              />
+            ) : null}
+          </View>
+
+          <View
+            className="flex-row items-center justify-between px-6"
+            style={{paddingBottom: 48}}>
+            <Pressable
+              onPress={prev}
+              disabled={images.length < 2}
+              accessibilityRole="button"
+              className="w-11 h-11 rounded-full items-center justify-center"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                opacity: images.length < 2 ? 0.3 : 1,
+              }}>
+              <ChevronLeft size={22} color="#fff" />
+            </Pressable>
+            <Text className="text-white text-[12px] font-bold">
+              {index + 1} / {images.length}
+            </Text>
+            <Pressable
+              onPress={next}
+              disabled={images.length < 2}
+              accessibilityRole="button"
+              className="w-11 h-11 rounded-full items-center justify-center"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                opacity: images.length < 2 ? 0.3 : 1,
+              }}>
+              <ChevronRight size={22} color="#fff" />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// A value the creator has to paste into a caption — hashtags, brand handles.
+// Mirrors web's CopyableField, including the 1.5s "Copied" swap.
+function CopyableField({label, value}: {label: string; value: string}) {
+  const {t} = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    Clipboard.setString(String(value));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+      <View className="flex-row items-center justify-between mb-1.5" style={{gap: 8}}>
+        <Text className="text-[10px] font-bold text-slate-400 uppercase flex-1">
+          {label}
+        </Text>
+        <Pressable
+          onPress={copy}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('ScreensInfluencerOfferDetail.copyable.copyAria', {label})}
+          className="flex-row items-center rounded-md px-2 py-1"
+          style={{gap: 4, backgroundColor: copied ? '#ecfdf5' : '#fdf2f8'}}>
+          {copied ? (
+            <CheckCircle2 size={11} color="#047857" />
+          ) : (
+            <Copy size={11} color="#E60076" />
+          )}
+          <Text
+            className="text-[10px] font-bold"
+            style={{color: copied ? '#047857' : '#E60076'}}>
+            {copied
+              ? t('ScreensInfluencerOfferDetail.copyable.copied')
+              : t('ScreensInfluencerOfferDetail.copyable.copy')}
+          </Text>
+        </Pressable>
+      </View>
+      <Text className="text-sm text-slate-800">{value}</Text>
+    </View>
+  );
+}
 
 function ReqIcon({type}: {type: string}) {
   switch (type) {
@@ -324,7 +569,7 @@ export default function InfluencerOfferDetail() {
           if (found.applicationId && found.brandId) {
             const {data: ratingRow} = await supabase
               .from('campaign_ratings')
-              .select('target_rating, brief_clarity, fairness')
+              .select('target_rating, brief_clarity, fairness, feedback_quality')
               .eq('application_id', found.applicationId)
               .eq('rater_role', 'influencer')
               .maybeSingle();
@@ -380,6 +625,23 @@ export default function InfluencerOfferDetail() {
   // Shared with the list card, so the two can never disagree about the money.
   const budgetDisplay = campaignBudgetDisplay(campaign);
 
+  // Share.share on iOS treats message and url as separate components and
+  // concatenates them, so they go as separate keys there; Android keeps the
+  // URL inline in the message.
+  const shareCampaign = () => {
+    const url = `${CAMPAIGN_SHARE_ORIGIN}/influencer/offers/${campaign.id}`;
+    const text = t('ScreensInfluencerOfferDetail.shareText', {
+      title: campaign.title,
+    });
+    Share.share(
+      Platform.OS === 'ios'
+        ? {message: text, url}
+        : {message: `${text}\n${url}`},
+    ).catch(() => {
+      // Dismissing the sheet rejects on some platforms; not an error.
+    });
+  };
+
   return (
     <SafeAreaView className="flex-1" edges={['top']} style={{backgroundColor: '#F5F4F8'}}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -393,7 +655,26 @@ export default function InfluencerOfferDetail() {
             <Pressable onPress={() => navigation.goBack()} className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
               <ChevronLeft size={20} color="white" />
             </Pressable>
-            <View className="flex-row" style={{gap: 8}}>
+            <View className="flex-row items-center" style={{gap: 8}}>
+              {/* Share, and a manual refresh so a creator can pull a fresh
+                  application status without leaving the screen (web has
+                  both; refresh only makes sense when signed in). */}
+              <Pressable
+                onPress={shareCampaign}
+                accessibilityRole="button"
+                accessibilityLabel={t('ScreensInfluencerOfferDetail.share')}
+                className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
+                <Share2 size={17} color="white" />
+              </Pressable>
+              {user?.id ? (
+                <Pressable
+                  onPress={() => setRefetchFlag(f => f + 1)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('ScreensInfluencerOfferDetail.refresh')}
+                  className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
+                  <RefreshCw size={16} color="white" />
+                </Pressable>
+              ) : null}
               {isCompleted && (
                 <View className="bg-emerald-500 px-3 py-1.5 rounded-full">
                   <Text className="text-white text-[10px] font-bold">{t('ScreensInfluencerOfferDetail.completed')}</Text>
@@ -650,25 +931,20 @@ export default function InfluencerOfferDetail() {
                   </Text>
                 </View>
               ) : null}
+              {/* Hashtags and handles are the two fields a creator actually
+                  has to paste into a caption, so they get a copy button
+                  (web CopyableField). */}
               {campaign.requiredHashtags ? (
-                <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {t('ScreensInfluencerOfferDetail.requiredHashtags')}
-                  </Text>
-                  <Text className="text-sm font-mono text-slate-800">
-                    {campaign.requiredHashtags}
-                  </Text>
-                </View>
+                <CopyableField
+                  label={t('ScreensInfluencerOfferDetail.requiredHashtags')}
+                  value={campaign.requiredHashtags}
+                />
               ) : null}
               {campaign.brandHandlesToTag ? (
-                <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {t('ScreensInfluencerOfferDetail.tagTheseHandles')}
-                  </Text>
-                  <Text className="text-sm font-mono text-slate-800">
-                    {campaign.brandHandlesToTag}
-                  </Text>
-                </View>
+                <CopyableField
+                  label={t('ScreensInfluencerOfferDetail.tagTheseHandles')}
+                  value={campaign.brandHandlesToTag}
+                />
               ) : null}
             </View>
           )}
@@ -719,6 +995,11 @@ export default function InfluencerOfferDetail() {
             </View>
           )}
 
+          {/* Gallery — the brand's reference shots for the campaign. */}
+          {campaign.galleryImages?.length > 0 ? (
+            <Gallery images={campaign.galleryImages} />
+          ) : null}
+
           {/* Rating CTA / submitted rating display (web 12ad173) */}
           {isCompleted && campaign.brandId ? (
             myRating ? (
@@ -730,6 +1011,12 @@ export default function InfluencerOfferDetail() {
                   <RatingRow label={t('ScreensInfluencerOfferDetail.overall')} stars={myRating.target_rating || 0} />
                   <RatingRow label={t('ScreensInfluencerOfferDetail.briefClarity')} stars={myRating.brief_clarity || 0} />
                   <RatingRow label={t('ScreensInfluencerOfferDetail.fairness')} stars={myRating.fairness || 0} />
+                  {myRating.feedback_quality ? (
+                    <RatingRow
+                      label={t('ScreensInfluencerOfferDetail.feedbackQuality')}
+                      stars={myRating.feedback_quality}
+                    />
+                  ) : null}
                 </View>
               </View>
             ) : (
@@ -754,6 +1041,10 @@ export default function InfluencerOfferDetail() {
             )
           ) : null}
 
+
+          {/* Other campaigns in the same niche, so a creator who isn't a fit
+              for this one has somewhere to go. */}
+          <SimilarCampaigns campaign={campaign} />
 
           {/* About Brand */}
           <View className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm" style={{gap: 12}}>
@@ -959,6 +1250,11 @@ export default function InfluencerOfferDetail() {
               key: 'fairness',
               label: t('ScreensInfluencerOfferDetail.fairness'),
               helper: t('ScreensInfluencerOfferDetail.fairnessHelper'),
+            },
+            {
+              key: 'feedback_quality',
+              label: t('ScreensInfluencerOfferDetail.feedbackQuality'),
+              helper: t('ScreensInfluencerOfferDetail.feedbackQualityHelper'),
             },
           ]}
           onSaved={values => {

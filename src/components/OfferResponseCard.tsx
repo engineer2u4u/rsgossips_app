@@ -47,7 +47,7 @@ export default function OfferResponseCard({
     // never blocked. update-application-status enforces the same rule; this
     // just says so without the round trip.
     if (nextStatus === 'offer_accepted' && !isSubscribed(profile) && !isBarter) {
-      setNeedsPlan('paid_campaign');
+      setNeedsPlan('continue_paid');
       return;
     }
     setBusy(nextStatus === 'offer_accepted' ? 'accept' : 'withdraw');
@@ -62,7 +62,7 @@ export default function OfferResponseCard({
       // The server refuses the same case; show the upgrade prompt rather
       // than a raw error if the client check was stale.
       if (err?.data?.error === 'subscription_required') {
-        setNeedsPlan('paid_campaign');
+        setNeedsPlan('continue_paid');
         return;
       }
       Alert.alert(
