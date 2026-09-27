@@ -305,18 +305,27 @@ export default function InfluencerPricing() {
           style={{gap: 6}}>
           {/* Bordered pill, not bare text — both of these read as captions
               and nobody could tell they were tappable. */}
+          {/* While restoring, the same button cancels: StoreKit cannot be
+              called off, but the app can stop waiting on it, and a spinner
+              with no way out is what made this feel broken. */}
           <Pressable
-            onPress={restore}
-            disabled={busy}
-            className="h-12 px-5 rounded-2xl border items-center justify-center"
+            onPress={status === 'restoring' ? cancelRestore : restore}
+            disabled={busy && status !== 'restoring'}
+            className="h-12 px-5 rounded-2xl border flex-row items-center justify-center"
             style={{
               borderColor: '#cbd5e1',
               backgroundColor: '#ffffff',
-              opacity: busy ? 0.5 : 1,
+              gap: 8,
+              opacity: busy && status !== 'restoring' ? 0.5 : 1,
             }}
             accessibilityRole="button">
             {status === 'restoring' ? (
-              <ActivityIndicator />
+              <>
+                <ActivityIndicator />
+                <Text className="text-[14px] font-bold text-slate-700">
+                  {t('common.cancel')}
+                </Text>
+              </>
             ) : (
               <Text className="text-[14px] font-bold text-slate-700">
                 {t('Pricing.restore')}
@@ -407,13 +416,19 @@ export default function InfluencerPricing() {
           is in flight — the store sheet dismisses first, and verification can
           take a beat, so the whole screen shows progress rather than three
           separate button spinners. */}
+      {/* NOT shown while restoring. getAvailablePurchases() can make StoreKit
+          present its own sheet (an Apple ID sign-in, for instance), and on
+          iOS a system sheet over an RN Modal may never appear — StoreKit then
+          waits for input the user cannot give while this overlay swallows
+          every touch, which is the "unresponsive after tapping Restore"
+          report. Restore shows its progress on the button instead, leaving
+          the screen usable. Purchase keeps the overlay: its sheet is already
+          dismissed by the time we get here, and money is moving. */}
       <Modal
-        visible={busy}
+        visible={busy && status !== 'restoring'}
         transparent
         animationType="fade"
-        // Android back cancels a restore. A purchase in flight stays modal:
-        // money is moving and the receipt still has to be verified.
-        onRequestClose={status === 'restoring' ? cancelRestore : () => {}}>
+        onRequestClose={() => {}}>
         <View
           style={{
             flex: 1,
@@ -440,23 +455,6 @@ export default function InfluencerPricing() {
                   ? t('Pricing.overlayRestoring')
                   : t('Pricing.overlayPurchasing')}
             </Text>
-            {/* A restore that hangs must never trap the user. StoreKit can
-                sit on getAvailablePurchases indefinitely — an Apple ID that
-                never finishes signing in, a sandbox hiccup — and this
-                overlay swallows every touch while it does. Restore grants
-                nothing on its own and costs nothing to repeat, so it is
-                always abandonable. */}
-            {status === 'restoring' ? (
-              <Pressable
-                onPress={cancelRestore}
-                accessibilityRole="button"
-                className="px-5 rounded-2xl border items-center justify-center"
-                style={{height: 40, borderColor: '#cbd5e1'}}>
-                <Text className="text-[13px] font-bold text-slate-600">
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-            ) : null}
           </View>
         </View>
       </Modal>
