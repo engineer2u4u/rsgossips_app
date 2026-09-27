@@ -141,17 +141,21 @@ campaigns.
 ## 6. Regional differences
 
 ```
-The app functions identically in every region where it is available. There are
-no region-gated features and no region-specific content.
+The app is available in India only, and functions identically for every user
+there. There are no region-gated features, no region-specific content, and no
+behaviour that varies by location within India.
 
-The marketplace itself is India-focused: campaigns are published by Indian
-brands and creator payouts are made in Indian rupees. Subscription prices are
-shown in the local currency of the user's App Store account, per Apple's
-pricing tiers.
+Availability is limited to India because the marketplace itself is: campaigns
+are published by Indian brands, creators are Indian, and payouts are made in
+Indian rupees to Indian bank accounts and UPI IDs. Subscription prices are set
+through Apple's Indian pricing tier and display in rupees on the Indian
+storefront.
 ```
 
-Confirm this matches the availability you actually set in App Store Connect. If you restricted the
-app to India, say so here instead.
+Note for the reviewer, worth adding if they raise it: a reviewer using a
+non-Indian sandbox Apple ID will see the subscription prices converted to their own storefront's
+currency (for example US dollars). That is Apple's tier conversion, not a second price list — real
+users on the Indian storefront see rupees.
 
 ## 7. Regulated industry / third-party material
 
