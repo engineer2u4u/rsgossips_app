@@ -2,7 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import {fetchServices, formatINR, iconForName, type ServiceRow} from '../lib/services';
 import {BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW} from '../theme/brand';
+import LoadingImage from './LoadingImage';
 
 // Paints any Lucide icon with the brand warm gradient via MaskedView. The
 // mask uses the icon's stroke as the alpha channel and overlays the
@@ -149,8 +149,8 @@ function FeaturedCard({service, onPress}: {service: ServiceRow; onPress: () => v
         className="w-full items-center justify-center relative"
         style={{aspectRatio: 4 / 3, backgroundColor: '#F1F5F9'}}>
         {hasImage ? (
-          <Image
-            source={{uri: service.featured_image_url}}
+          <LoadingImage
+            uri={service.featured_image_url}
             style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
             resizeMode="cover"
           />

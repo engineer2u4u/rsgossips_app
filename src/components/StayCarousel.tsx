@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   View,
   Text,
-  Image,
   Pressable,
   Dimensions,
   TouchableOpacity,
@@ -16,6 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {BRAND, BRAND_GRADIENT_WARM} from '../theme/brand';
 import {invokeFn} from '../lib/api';
 import {truncateText} from '../lib/text';
+import LoadingImage from './LoadingImage';
 
 interface Stay {
   id: string;
@@ -103,8 +103,8 @@ function StayCard({stay}: {stay: Stay}) {
         shadowOffset: {width: 0, height: 10},
         elevation: 6,
       }}>
-      <Image
-        source={{uri: stay.imageUrl}}
+      <LoadingImage
+        uri={stay.imageUrl}
         style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
       />
 

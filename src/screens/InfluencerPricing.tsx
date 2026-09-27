@@ -75,6 +75,7 @@ export default function InfluencerPricing() {
     clearSubscribed,
     buy,
     restore,
+    cancelRestore,
   } = useSubscriptionPurchase();
 
   // Store-specific wording for the info tooltips — the flow is identical, only
@@ -342,7 +343,9 @@ export default function InfluencerPricing() {
         {isSubscribed && (
           <View
             className="flex-row items-center justify-center"
-            style={{gap: 6}}>
+            // marginTop: the two rows were touching once both became bordered
+            // pills, and read as one control split in half.
+            style={{gap: 6, marginTop: 10}}>
             <Pressable
               onPress={() =>
                 Linking.openURL(MANAGE_SUBSCRIPTION_URL).catch(() => {})
@@ -404,7 +407,13 @@ export default function InfluencerPricing() {
           is in flight — the store sheet dismisses first, and verification can
           take a beat, so the whole screen shows progress rather than three
           separate button spinners. */}
-      <Modal visible={busy} transparent animationType="fade" onRequestClose={() => {}}>
+      <Modal
+        visible={busy}
+        transparent
+        animationType="fade"
+        // Android back cancels a restore. A purchase in flight stays modal:
+        // money is moving and the receipt still has to be verified.
+        onRequestClose={status === 'restoring' ? cancelRestore : () => {}}>
         <View
           style={{
             flex: 1,
@@ -431,6 +440,23 @@ export default function InfluencerPricing() {
                   ? t('Pricing.overlayRestoring')
                   : t('Pricing.overlayPurchasing')}
             </Text>
+            {/* A restore that hangs must never trap the user. StoreKit can
+                sit on getAvailablePurchases indefinitely — an Apple ID that
+                never finishes signing in, a sandbox hiccup — and this
+                overlay swallows every touch while it does. Restore grants
+                nothing on its own and costs nothing to repeat, so it is
+                always abandonable. */}
+            {status === 'restoring' ? (
+              <Pressable
+                onPress={cancelRestore}
+                accessibilityRole="button"
+                className="px-5 rounded-2xl border items-center justify-center"
+                style={{height: 40, borderColor: '#cbd5e1'}}>
+                <Text className="text-[13px] font-bold text-slate-600">
+                  {t('common.cancel')}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </Modal>

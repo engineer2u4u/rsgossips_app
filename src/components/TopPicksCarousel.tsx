@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
   Pressable,
@@ -20,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { scoreCampaignForUser, calculateCampaignMatchScore } from '../utils/matchScore';
 import { BRAND, BRAND_GRADIENT_WARM, CARD_SHADOW } from '../theme/brand';
 import { truncateText } from '../lib/text';
+import LoadingImage from './LoadingImage';
 
 const { width } = Dimensions.get('window');
 
@@ -256,8 +256,8 @@ function CampaignCardSlide({
       {/* Image */}
       <View className="h-56 p-3">
         <View className="flex-1 rounded-3xl overflow-hidden relative">
-          <Image
-            source={{ uri: item.imageUrl }}
+          <LoadingImage
+            uri={item.imageUrl}
             className="w-full h-full"
             resizeMode="cover"
           />

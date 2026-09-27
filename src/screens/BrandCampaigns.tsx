@@ -175,10 +175,14 @@ export default function BrandCampaigns() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        // alignItems stops the pills stretching to the scroll view's full
-        // height on iOS, where they rendered as tall ovals.
+        // A horizontal ScrollView takes whatever height its parent offers,
+        // which here was most of the screen: the pills first stretched into
+        // tall ovals, then — once centred — sat in a band of empty space.
+        // Pinning the height to the pills fixes both; the spacing around them
+        // is margin, not the scroll view's own bulk.
+        style={{height: 36, flexGrow: 0}}
         contentContainerStyle={{paddingHorizontal: 24, gap: 8, alignItems: 'center'}}
-        className="pt-4 pb-1">
+        className="mt-4 mb-2">
         {TABS.map(tab =>
           activeTab === tab ? (
             <TouchableOpacity

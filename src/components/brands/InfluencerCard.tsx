@@ -150,9 +150,18 @@ export function InfluencerCard({
             </Text>
           </View>
           {influencer.city ? (
-            <View className="flex-row items-center" style={{gap: 4}}>
+            // flexShrink + minWidth:0 — a creator whose city is a list
+            // ("Agra, Kanpur, New Delhi, …") overflowed the card and ran
+            // underneath the Invite button, which does not clip it. Now it
+            // truncates at the button's edge instead.
+            <View
+              className="flex-row items-center"
+              style={{gap: 4, flexShrink: 1, minWidth: 0}}>
               <MapPin size={11} color="#94a3b8" />
-              <Text className="text-[11px] text-gray-500" numberOfLines={1}>
+              <Text
+                className="text-[11px] text-gray-500"
+                numberOfLines={1}
+                style={{flexShrink: 1}}>
                 {influencer.city}
               </Text>
             </View>

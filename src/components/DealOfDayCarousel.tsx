@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, Image, TouchableOpacity, Dimensions, Pressable, ActivityIndicator} from 'react-native';
+import {View, Text, TouchableOpacity, Dimensions, Pressable, ActivityIndicator} from 'react-native';
 import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel';
 import {Flame, Clock, MapPin} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -7,6 +7,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {BRAND, BRAND_GRADIENT_WARM} from '../theme/brand';
 import {invokeFn} from '../lib/api';
+import LoadingImage from './LoadingImage';
 
 interface Deal {
   id: string | number;
@@ -125,8 +126,8 @@ function DealCard({deal}: {deal: Deal}) {
         elevation: 6,
       }}>
       {deal.img ? (
-        <Image
-          source={{uri: deal.img}}
+        <LoadingImage
+          uri={deal.img}
           style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
         />
       ) : (

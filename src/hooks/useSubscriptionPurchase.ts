@@ -26,7 +26,7 @@ import {useAuth} from '../context/AuthContext';
 type Status = 'idle' | 'purchasing' | 'verifying' | 'restoring';
 
 /** How long Restore may block the screen before it gives up. */
-const RESTORE_TIMEOUT_MS = 20000;
+const RESTORE_TIMEOUT_MS = 12000;
 
 export function useSubscriptionPurchase() {
   const {refreshProfile, user} = useAuth();
@@ -227,5 +227,16 @@ export function useSubscriptionPurchase() {
     clearSubscribed: () => setSubscribedPlan(null),
     buy,
     restore,
+    /**
+     * Give the screen back while a restore is still in flight. Nothing here
+     * can cancel a StoreKit request, so this only stops the UI waiting on it:
+     * a late result is ignored because the verify effect runs on
+     * status === 'restoring'. Restore is safe to abandon — it grants nothing
+     * by itself, and running it again is free. Deliberately NOT offered for
+     * 'purchasing' or 'verifying': money is moving there, and a receipt that
+     * arrives after the user walks away still has to be verified and
+     * finished, or the store replays it forever.
+     */
+    cancelRestore: () => setStatus(s => (s === 'restoring' ? 'idle' : s)),
   };
 }

@@ -1849,6 +1849,7 @@
     },
     "resultCount_one": "{{count}} result",
     "resultCount_other": "{{count}} results",
+    "showMore": "Show {{count}} more",
     "loadError": "Failed to load influencers",
     "errorHint": "Try again later or check your network.",
     "noMatchTitle": "No influencers match these filters",

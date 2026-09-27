@@ -90,7 +90,11 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
 
   const fullName = profile?.full_name || '';
   const email = profile?.email || '';
-  const phone = profile?.phone || '';
+  // Sign-in is by phone OTP, so the number lives on the AUTH user; the
+  // profile row only has one if something wrote it there. Reading the profile
+  // alone showed "Not set" to creators who had just signed in with that very
+  // number. Same order as web's ApplyCampaignForm.
+  const phone = user?.phone || profile?.phone || '';
   const instagramHandle = profile?.instagram_handle || profile?.username || '';
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;

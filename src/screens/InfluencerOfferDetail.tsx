@@ -49,6 +49,7 @@ import UpgradeRequiredModal, {
 } from '../components/UpgradeRequiredModal';
 import {useFreeApplications} from '../hooks/useFreeApplications';
 import RatingModal, {type RatingValues} from '../components/RatingModal';
+import LoadingImage from '../components/LoadingImage';
 import ApplicationStatusBar from '../components/ApplicationStatusBar';
 import OfferResponseCard from '../components/OfferResponseCard';
 import BottomNav from '../components/BottomNav';
@@ -207,8 +208,8 @@ function Gallery({images}: {images: string[]}) {
               overflow: 'hidden',
               backgroundColor: '#f1f5f9',
             }}>
-            <Image
-              source={{uri: src}}
+            <LoadingImage
+              uri={src}
               style={{width: '100%', height: '100%'}}
               resizeMode="cover"
             />

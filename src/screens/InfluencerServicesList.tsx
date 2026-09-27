@@ -6,7 +6,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   RefreshControl,
@@ -28,6 +27,7 @@ import {
   iconForName,
   type ServiceRow,
 } from '../lib/services';
+import LoadingImage from '../components/LoadingImage';
 
 type PriceBandId = 'any' | 'under-3k' | '3k-7k' | '7k-15k' | '15k-plus';
 
@@ -364,13 +364,14 @@ function ServiceCard({
           corners independently. */}
       <View style={{ padding: 12, backgroundColor: '#ffffff' }}>
         {service.featured_image_url ? (
-          <Image
-            source={{ uri: service.featured_image_url }}
+          <LoadingImage
+            uri={service.featured_image_url}
             className="w-full"
             style={{
               aspectRatio: 2.4 / 1,
               backgroundColor: '#f1f5f9',
               borderRadius: 12,
+              overflow: 'hidden',
             }}
             resizeMode="cover"
           />

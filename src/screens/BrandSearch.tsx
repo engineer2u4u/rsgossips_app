@@ -42,6 +42,12 @@ type SortMode =
   | 'Followers (High to Low)'
   | 'Followers (Low to High)'
   | 'Alphabetical';
+// The directory is fetched whole (limit 2000) so search can see every
+// creator, so the LIST must be windowed — mapping 2000 cards into the
+// layout's ScrollView froze the screen and made Sort look like it did nothing.
+const PAGE_SIZE = 20;
+const LOAD_MORE_STEP = 20;
+
 
 const SORT_OPTIONS: Exclude<SortMode, null>[] = [
   'Followers (High to Low)',
@@ -118,6 +124,7 @@ export default function BrandSearch({route}: any) {
   );
   const [sort, setSort] = useState<SortMode>(null);
   const [sortOpen, setSortOpen] = useState(false);
+  const [shown, setShown] = useState(PAGE_SIZE);
 
   // ── Selection / invite ──
   const [selectMode, setSelectMode] = useState<boolean>(!!inviteCampaignId);
@@ -212,6 +219,13 @@ export default function BrandSearch({route}: any) {
       (a, b) => (b.is_elite ? 1 : 0) - (a.is_elite ? 1 : 0),
     );
   }, [influencers, filters, searchText, sort]);
+
+  // A new filter, query or sort makes the old window meaningless — and if
+  // `shown` stayed where it was, the first page of a new result set could be
+  // 200 rows deep.
+  useEffect(() => {
+    setShown(PAGE_SIZE);
+  }, [filters, searchText, sort]);
 
   const countForDraft = useCallback(
     (draft: FilterValues) => {
@@ -414,16 +428,31 @@ export default function BrandSearch({route}: any) {
             </Text>
           </View>
         ) : (
-          filtered.map(inf => (
-            <InfluencerCard
-              key={inf.influencer_id}
-              influencer={inf}
-              selectable={selectMode}
-              selected={selected.has(inf.influencer_id)}
-              onToggleSelect={() => toggleSelect(inf.influencer_id)}
-              onQuickInvite={() => quickInvite(inf.influencer_id)}
-            />
-          ))
+          <>
+            {filtered.slice(0, shown).map(inf => (
+              <InfluencerCard
+                key={inf.influencer_id}
+                influencer={inf}
+                selectable={selectMode}
+                selected={selected.has(inf.influencer_id)}
+                onToggleSelect={() => toggleSelect(inf.influencer_id)}
+                onQuickInvite={() => quickInvite(inf.influencer_id)}
+              />
+            ))}
+            {filtered.length > shown ? (
+              <Pressable
+                onPress={() => setShown(n => n + LOAD_MORE_STEP)}
+                accessibilityRole="button"
+                className="mx-6 my-4 rounded-2xl border items-center justify-center"
+                style={{height: 46, borderColor: '#cbd5e1'}}>
+                <Text className="text-[13px] font-bold text-slate-600">
+                  {t('ScreensBrandSearch.showMore', {
+                    count: filtered.length - shown,
+                  })}
+                </Text>
+              </Pressable>
+            ) : null}
+          </>
         )}
       </View>
 

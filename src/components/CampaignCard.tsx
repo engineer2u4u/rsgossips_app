@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -26,6 +25,7 @@ import {
 import {useAiTool} from '../hooks/useAiTool';
 import {AiMarkdown} from './AiMarkdown';
 import {truncateText} from '../lib/text';
+import LoadingImage from './LoadingImage';
 
 type Campaign = {
   id: string | number;
@@ -329,8 +329,8 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
       {/* Image */}
       <View className="h-56 p-3">
         <View className="flex-1 rounded-3xl overflow-hidden relative">
-          <Image
-            source={{uri: imageUrl}}
+          <LoadingImage
+            uri={imageUrl}
             className="w-full h-full"
             resizeMode="cover"
           />
