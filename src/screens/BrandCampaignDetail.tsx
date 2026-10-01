@@ -110,6 +110,15 @@ type Application = {
   rejection_reason?: string | null;
   submission_links?: {type: string; label: string; url: string}[];
   created_at?: string;
+  // Barter fulfilment (migration 076). brand-campaigns withholds
+  // shipping_address until the brand has approved this creator and sends
+  // has_shipping_address instead, so the UI can tell "given but not yet
+  // visible" apart from "never given".
+  shipping_address?: string | null;
+  has_shipping_address?: boolean;
+  shipping_tracking_url?: string | null;
+  product_received?: boolean | null;
+  product_feedback?: string | null;
   influencer_profiles?: InfluencerProfile;
 };
 
@@ -1047,6 +1056,50 @@ function BrandApplicationRow({
                 <Text style={{fontSize: 11, color: '#1e293b', marginTop: 3, lineHeight: 16}}>
                   {app.pitch}
                 </Text>
+              </View>
+            ) : null}
+            {app.shipping_address || app.has_shipping_address || app.shipping_tracking_url ? (
+              <View
+                style={{
+                  marginTop: 8,
+                  padding: 8,
+                  borderRadius: 10,
+                  backgroundColor: app.shipping_address ? "#ECFDF5" : "#F8FAFC",
+                }}>
+                <Text style={{fontSize: 10, fontWeight: "800", color: "#047857", textTransform: "uppercase", letterSpacing: 0.5}}>
+                  {t('ScreensBrandCampaignDetail.deliveryLabel')}
+                </Text>
+                {app.shipping_address ? (
+                  <Text selectable style={{fontSize: 11, color: "#1e293b", marginTop: 3, lineHeight: 16}}>
+                    {app.shipping_address}
+                  </Text>
+                ) : (
+                  <Text style={{fontSize: 11, color: "#64748B", marginTop: 3, lineHeight: 16, fontStyle: "italic"}}>
+                    {t('ScreensBrandCampaignDetail.addressHiddenUntilApproved')}
+                  </Text>
+                )}
+                {app.shipping_tracking_url ? (
+                  <Pressable onPress={() => Linking.openURL(app.shipping_tracking_url as string).catch(() => {})}>
+                    <Text style={{fontSize: 10, fontWeight: "700", color: "#5851DB", marginTop: 5}}>
+                      {t('ScreensBrandCampaignDetail.trackShipment')}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {app.product_received === true ? (
+                  <Text style={{fontSize: 10, color: "#047857", marginTop: 3}}>
+                    {t('ScreensBrandCampaignDetail.creatorConfirmed')}
+                  </Text>
+                ) : null}
+                {app.product_received === false ? (
+                  <Text style={{fontSize: 10, color: "#BE123C", marginTop: 3}}>
+                    {t('ScreensBrandCampaignDetail.creatorNotReceived')}
+                  </Text>
+                ) : null}
+                {app.product_feedback ? (
+                  <Text style={{fontSize: 11, color: "#64748B", marginTop: 5, fontStyle: "italic", lineHeight: 16}}>
+                    {app.product_feedback}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
             {inf.bio ? (

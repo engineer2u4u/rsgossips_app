@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,31 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  // The error banner is the first thing inside the ScrollView while Submit
+  // sits below it, so on a filled-in form a refusal could render off-screen
+  // and the tap read as "nothing happened". Every failure scrolls back to it.
+  //
+  // The nonce matters: submitting twice with the same mistake sets the same
+  // string, which would not re-run an effect keyed on the message alone.
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [errorNonce, setErrorNonce] = useState(0);
+  const fail = (value: string) => {
+    setError(value);
+    setErrorNonce(n => n + 1);
+  };
+
+  useEffect(() => {
+    if (!errorNonce) return;
+    scrollRef.current?.scrollTo({y: 0, animated: true});
+  }, [errorNonce]);
   const [proposedRate, setProposedRate] = useState('');
+
+  // A campaign that posts the product needs somewhere to send it, so the
+  // address is collected as part of applying instead of chased afterwards.
+  // apply-campaign refuses without it, so this is UX rather than the
+  // boundary. Prefilled from the profile — most creators have given it before.
+  const shipsToCreator = campaignData?.shippingRequired === 'yes';
+  const [shippingAddress, setShippingAddress] = useState(profile?.address || '');
   const [whyChooseYou, setWhyChooseYou] = useState('');
   const {generate: draftPitch, loading: drafting, error: draftError, limitReached: draftLimit} = useAiTool();
 
@@ -121,16 +145,21 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
     // Guardrail: a personalised pitch is mandatory — keeps brands from drowning
     // in one-click AI-spam applications, so they see better applications.
     if (!whyChooseYou.trim()) {
-      setError(t('ApplyCampaignForm.why.required'));
+      fail(t('ApplyCampaignForm.why.required'));
+      return;
+    }
+    if (shipsToCreator && shippingAddress.trim().length < 15) {
+      // Length, not presence: "home" is not something a courier can deliver to.
+      fail(t('ApplyCampaignForm.address.required'));
       return;
     }
     if (needsDetails) {
       if (!EMAIL_RE.test(detailsEmail.trim())) {
-        setError(t('ApplyCampaignForm.details.emailInvalid'));
+        fail(t('ApplyCampaignForm.details.emailInvalid'));
         return;
       }
       if (!detailsGender) {
-        setError(t('ApplyCampaignForm.details.genderRequired'));
+        fail(t('ApplyCampaignForm.details.genderRequired'));
         return;
       }
     }
@@ -147,7 +176,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
           gender: detailsGender,
         });
         if (saved?.error) {
-          setError(saved.message || t('ApplyCampaignForm.details.saveFailed'));
+          fail(saved.message || t('ApplyCampaignForm.details.saveFailed'));
           return;
         }
         refreshProfile().catch(() => {});
@@ -162,6 +191,7 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
         influencerId: user?.id,
         proposedRate: proposedRate ? Number(proposedRate) : null,
         pitch: whyChooseYou.trim(),
+        shippingAddress: shipsToCreator ? shippingAddress.trim() : undefined,
       });
 
       if (data?.success) {
@@ -171,20 +201,20 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
         }, 2000);
       } else if (data?.error === 'profile_incomplete') {
         setNeedsDetails(true);
-        setError(data.message || t('ApplyCampaignForm.details.required'));
+        fail(data.message || t('ApplyCampaignForm.details.required'));
       } else if (data?.error) {
         // apply-campaign reports refusals with HTTP 200 and an `error`
         // key, so they land here rather than in the catch below. Its
         // `message` is already written for the creator; the generic
         // fallbacks only cover a code we have no copy for.
-        setError(
+        fail(
           data.message ||
             (data.error === 'already_applied'
               ? t('ApplyCampaignForm.errors.alreadyApplied')
               : t('ApplyCampaignForm.errors.submitFailed')),
         );
       } else {
-        setError(t('ApplyCampaignForm.errors.unexpectedResponse'));
+        fail(t('ApplyCampaignForm.errors.unexpectedResponse'));
       }
     } catch (err) {
       // The edge function returns structured errors (already_applied,
@@ -192,19 +222,19 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
       if (err instanceof EdgeFunctionError) {
         const code = err.data?.error;
         if (code === 'already_applied') {
-          setError(t('ApplyCampaignForm.errors.alreadyApplied'));
+          fail(t('ApplyCampaignForm.errors.alreadyApplied'));
         } else if (code === 'plan_limit_reached') {
           const used = err.data?.used ?? '?';
           const limit = err.data?.limit ?? '?';
           const plan = (err.data?.plan || 'starter') as string;
-          setError(
+          fail(
             t('ApplyCampaignForm.errors.planLimitReached', {used, limit, plan}),
           );
         } else {
-          setError(err.message);
+          fail(err.message);
         }
       } else {
-        setError((err as Error)?.message || t('ApplyCampaignForm.errors.submitFailed'));
+        fail((err as Error)?.message || t('ApplyCampaignForm.errors.submitFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -253,11 +283,53 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               </View>
 
               {/* Scrollable Form */}
-              <ScrollView className="flex-1 px-6 py-5" showsVerticalScrollIndicator={false}>
+              <ScrollView
+                ref={scrollRef}
+                className="flex-1 px-6 py-5"
+                showsVerticalScrollIndicator={false}>
                 <View style={{gap: 20}}>
                   {error ? (
                     <View className="p-3 bg-red-50 border border-red-200 rounded-xl">
                       <Text className="text-sm text-red-600">{error}</Text>
+                    </View>
+                  ) : null}
+
+                  {shipsToCreator ? (
+                    <View
+                      className="p-4 rounded-xl border border-purple-200"
+                      style={{backgroundColor: '#FAF5FF', gap: 12}}>
+                      <View>
+                        <Text className="text-sm font-bold text-slate-900">
+                          {t('ApplyCampaignForm.address.heading')}
+                        </Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          {campaignData?.shippingTimelineDays
+                            ? t('ApplyCampaignForm.address.subtitleDays', {
+                                days: campaignData.shippingTimelineDays,
+                              })
+                            : t('ApplyCampaignForm.address.subtitle')}
+                        </Text>
+                      </View>
+                      <View style={{gap: 4}}>
+                        <Text className="text-[10px] font-bold text-slate-500 uppercase">
+                          {t('ApplyCampaignForm.address.label')}
+                        </Text>
+                        <TextInput
+                          value={shippingAddress}
+                          onChangeText={setShippingAddress}
+                          placeholder={t('ApplyCampaignForm.address.placeholder')}
+                          placeholderTextColor="#94A3B8"
+                          multiline
+                          numberOfLines={5}
+                          maxLength={600}
+                          textAlignVertical="top"
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700"
+                          style={{minHeight: 110}}
+                        />
+                      </View>
+                      <Text className="text-[10px] text-slate-400">
+                        {t('ApplyCampaignForm.address.privacy')}
+                      </Text>
                     </View>
                   ) : null}
 

@@ -56,6 +56,7 @@ import BottomNav from '../components/BottomNav';
 import {invokeFn} from '../lib/api';
 import {budgetLabelKey, campaignBudgetDisplay} from '../lib/campaignBudget';
 import {supabase} from '../utils/supabase';
+import {DeliveryCard} from '../components/DeliveryCard';
 
 // Web audit-field enums → human-label translation-key suffixes. Mirrors the
 // maps in the web detail page; resolved via t() at render (see resolveLabel).
@@ -725,6 +726,17 @@ export default function InfluencerOfferDetail() {
               status={campaign.applicationStatus}
               campaign={campaign}
               refetch={() => setRefetchFlag(f => f + 1)}
+            />
+          ) : null}
+
+          {/* Barter delivery. Renders itself away unless this campaign moves
+              a product and there is a live application on it. */}
+          {campaign.fulfilment && campaign.applicationId ? (
+            <DeliveryCard
+              applicationId={campaign.applicationId}
+              fulfilment={campaign.fulfilment}
+              shippingMode={campaign.shippingRequired || 'no'}
+              onChanged={() => setRefetchFlag(f => f + 1)}
             />
           ) : null}
 
