@@ -64,19 +64,18 @@ export function expectedLinkType(
   if (t === 'igtv' || t === 'tv') return 'igtv';
   return null;
 }
-
-// Strip trailing slashes, query params, and the leading protocol so two links
-// pointing at the same media compare equal regardless of small formatting
-// differences (mobile share URLs often differ from desktop ones).
-export function normaliseInstagramUrl(raw: string | null | undefined): string {
-  if (!raw) return '';
-  let url: URL;
-  try {
-    url = new URL(raw.trim());
-  } catch {
-    return raw.trim().toLowerCase();
-  }
-  const host = url.hostname.toLowerCase().replace(/^www\./, '');
-  const path = url.pathname.replace(/\/+$/, '').toLowerCase();
-  return `${host}${path}`;
-}
+// URL identity lives in ONE module, mirrored from the web repo's
+// supabase/functions/_shared/submission-url.js and pinned by the shared
+// vectors both repos test against. It used to be written out separately here,
+// in the web form and in submit-deliverables, and all three drifted into the
+// same bug: dropping the query, which made every Google Drive link in a
+// submission look like the same file.
+//
+// `normaliseInstagramUrl` keeps its old name because that is what the
+// deliverables modal imports; it normalises ANY submission link, which is why
+// `isInstagramUrl` is separate.
+export {
+  isInstagramUrl,
+  normaliseSubmissionUrl,
+  normaliseSubmissionUrl as normaliseInstagramUrl,
+} from './submission-url';
