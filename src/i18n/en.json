@@ -263,6 +263,30 @@
         "activeTitle": "Waiting on escrow",
         "activeBody": "You accepted the rate. The brand now pays into escrow — once the money is held you can start creating.",
         "headerStatus": "Awaiting escrow funding"
+      },
+      "deliveryAwaiting": {
+        "label": "Delivery",
+        "activeTitle": "Waiting for delivery details",
+        "activeBody": "Your work is approved. The brand is arranging your product — we will share tracking here as soon as it ships.",
+        "headerStatus": "Waiting for delivery details"
+      },
+      "deliveryShipped": {
+        "label": "Delivery",
+        "activeTitle": "Your product is on its way",
+        "activeBody": "Track it below, and tell us once it arrives so we know it got to you.",
+        "headerStatus": "Product on its way"
+      },
+      "deliveryDelivered": {
+        "label": "Delivery",
+        "activeTitle": "Product delivered 🎉",
+        "activeBody": "You confirmed your product arrived. That is everything — thanks for the collab.",
+        "headerStatus": "Product delivered"
+      },
+      "deliveryMissing": {
+        "label": "Delivery",
+        "activeTitle": "Product not received",
+        "activeBody": "You told us it never arrived. We are chasing the brand — we will come back to you.",
+        "headerStatus": "Product not received"
       }
     }
   },
@@ -3253,6 +3277,34 @@
       },
       "issue_callback": {
         "label": "Talk to a human about this"
+      },
+      "deliveries": {
+        "label": "Product delivery"
+      },
+      "delivery_not_arrived": {
+        "label": "My product hasn’t arrived",
+        "response": "Sorry about that. Tell us a bit about it and we’ll chase the brand for you — it helps if you mention the campaign and when it was dispatched."
+      },
+      "delivery_when": {
+        "label": "When will my product be sent?",
+        "response": "Brands dispatch after they approve your application — the campaign brief says how many days they aim for. Once it is sent, a tracking link appears on the campaign page under “Your product delivery”.",
+        "linkLabel": "Open Campaigns"
+      },
+      "delivery_tracking": {
+        "label": "My tracking link doesn’t work",
+        "response": "Tracking numbers can take a day to show up on the carrier’s site after dispatch. If it still fails tomorrow, request a callback and we’ll get the brand to confirm the details."
+      },
+      "delivery_wrong_address": {
+        "label": "My delivery address is wrong",
+        "response": "You can edit the address on the campaign page until the brand marks it dispatched. After that it is locked — request a callback and we’ll try to catch it with the brand.",
+        "linkLabel": "Open Campaigns"
+      },
+      "delivery_damaged": {
+        "label": "It arrived damaged or it’s the wrong item",
+        "response": "Confirm it arrived on the campaign page so the record is straight, then tell us what is wrong in the note — we’ll raise it with the brand."
+      },
+      "delivery_other": {
+        "label": "Something else about my delivery"
       }
     }
   },

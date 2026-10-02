@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {View, Text, TextInput, Pressable, Linking, ActivityIndicator} from 'react-native';
 import {supabase} from '../utils/supabase';
+import SupportChatModal from './SupportChatModal';
 import {
   fulfilmentState,
   CREATOR_STAGE_LABEL,
@@ -48,6 +49,7 @@ export function DeliveryCard({
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [error, setError] = useState('');
 
   if (!fulfilment || shippingMode === 'no') return null;
@@ -281,19 +283,23 @@ export function DeliveryCard({
                 }}>
                 <Text style={{color: '#fff', fontSize: 12, fontWeight: '700'}}>Yes, it arrived</Text>
               </Pressable>
+              {/* "No, it hasn't" only set a flag and left the creator waiting
+                  with nothing to do. A missing parcel needs a person: this
+                  opens support on the delivery branch, where each answer can
+                  raise a callback. */}
               <Pressable
-                onPress={() => answerReceipt(false)}
+                onPress={() => setSupportOpen(true)}
                 disabled={busy}
                 style={{
-                  backgroundColor: '#FFF1F2',
+                  backgroundColor: '#fff',
                   borderWidth: 1,
-                  borderColor: '#FECDD3',
+                  borderColor: '#E2E8F0',
                   paddingHorizontal: 14,
                   paddingVertical: 10,
                   borderRadius: 12,
                   opacity: busy ? 0.6 : 1,
                 }}>
-                <Text style={{color: '#BE123C', fontSize: 12, fontWeight: '700'}}>No, it hasn't</Text>
+                <Text style={{color: '#334155', fontSize: 12, fontWeight: '700'}}>Get help</Text>
               </Pressable>
             </View>
             <Text style={{fontSize: 10, color: '#94A3B8'}}>
@@ -327,6 +333,12 @@ export function DeliveryCard({
 
         {error ? <Text style={{fontSize: 12, color: '#E11D48'}}>{error}</Text> : null}
       </View>
+
+      <SupportChatModal
+        visible={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        startTopic="deliveries"
+      />
     </View>
   );
 }

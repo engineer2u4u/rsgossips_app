@@ -4,7 +4,7 @@
 // public.support_callbacks), and the same campaign listing flows. Triggered
 // from the headphones icon in InfluencerLayout's top bar.
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,52 @@ const TREE: TreeNode = {
           response:
             "Open the campaign detail page; once your application is Approved you'll see a Submit Deliverables button. After the live post goes up, paste the Instagram link there.",
           link: {href: 'InfluencerCampaigns', label: 'Go to Campaigns'},
+        },
+      ],
+    },
+    {
+      id: 'deliveries',
+      label: 'Product delivery',
+      children: [
+        {
+          id: 'delivery_not_arrived',
+          label: "My product hasn't arrived",
+          response:
+            "Sorry about that. Tell us a bit about it and we'll chase the brand for you — it helps if you mention the campaign and when it was dispatched.",
+          action: 'callback',
+        },
+        {
+          id: 'delivery_when',
+          label: 'When will my product be sent?',
+          response:
+            'Brands dispatch after they approve your application — the campaign brief says how many days they aim for. Once it is sent, a tracking link appears on the campaign page under "Your product delivery".',
+          link: {href: 'InfluencerCampaigns', label: 'Open Campaigns'},
+        },
+        {
+          id: 'delivery_tracking',
+          label: "My tracking link doesn't work",
+          response:
+            "Tracking numbers can take a day to show up on the carrier's site after dispatch. If it still fails tomorrow, request a callback and we'll get the brand to confirm the details.",
+          action: 'callback',
+        },
+        {
+          id: 'delivery_wrong_address',
+          label: 'My delivery address is wrong',
+          response:
+            'You can edit the address on the campaign page until the brand marks it dispatched. After that it is locked — request a callback and we will try to catch it with the brand.',
+          link: {href: 'InfluencerCampaigns', label: 'Open Campaigns'},
+        },
+        {
+          id: 'delivery_damaged',
+          label: "It arrived damaged or it's the wrong item",
+          response:
+            'Confirm it arrived on the campaign page so the record is straight, then tell us what is wrong in the note — we will raise it with the brand.',
+          action: 'callback',
+        },
+        {
+          id: 'delivery_other',
+          label: 'Something else about my delivery',
+          action: 'callback',
         },
       ],
     },
@@ -355,16 +401,23 @@ type Message = {
 interface Props {
   visible: boolean;
   onClose: () => void;
+  /** Open straight inside a top-level branch, e.g. "deliveries". */
+  startTopic?: string;
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────
 
-export default function SupportChatModal({visible, onClose}: Props) {
+// `startTopic` opens the chat already inside a branch — the delivery card
+// uses it so "Get help" lands on delivery questions, not the root menu.
+export default function SupportChatModal({visible, onClose, startTopic}: Props) {
   const navigation = useNavigation<any>();
   const {user, profile, role} = useAuth() as any;
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
-  const nodeLabel = (n: TreeNode) => t(`SupportChatModal.tree.${n.id}.label`);
+  const nodeLabel = useCallback(
+    (n: TreeNode) => t(`SupportChatModal.tree.${n.id}.label`),
+    [t],
+  );
 
   const [path, setPath] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -386,13 +439,26 @@ export default function SupportChatModal({visible, onClose}: Props) {
   // Reset on open
   useEffect(() => {
     if (visible) {
-      setPath([]);
       setCallbackOpen(false);
       setCallbackContext('');
       setCampaigns(null);
-      setMessages([{role: 'bot', text: greeting, options: TREE.children}]);
+      const branch = startTopic
+        ? (TREE.children || []).find(c => c.id === startTopic)
+        : null;
+      setPath(branch ? [branch.id] : []);
+      setMessages(
+        branch
+          ? [
+              {role: 'bot', text: greeting, options: TREE.children},
+              // Show what was picked for them, so Back and the breadcrumb
+              // still make sense.
+              {role: 'user', text: nodeLabel(branch)},
+              {role: 'bot', text: nodeLabel(branch), options: branch.children},
+            ]
+          : [{role: 'bot', text: greeting, options: TREE.children}],
+      );
     }
-  }, [visible, greeting]);
+  }, [visible, greeting, startTopic, nodeLabel]);
 
   // Auto-scroll on new messages
   useEffect(() => {

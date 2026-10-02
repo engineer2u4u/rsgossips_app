@@ -74,6 +74,32 @@ const STATUS_STEPS: Step[] = [
   { key: 'completed' },
 ];
 
+// Barter pays in product: no priced offer, no escrow, no payout. Showing
+// those steps ticked green told the creator about an offer that never
+// existed — the web app fixed this; this screen had not. A step is still
+// kept when the row is actually sitting on it, so an older row that took
+// the paid path can never land on a status missing from the list.
+const BARTER_SKIPPED = new Set(['offer_sent', 'offer_accepted', 'payment']);
+
+function stepsFor(isBarter: boolean, status: string, shipsProduct: boolean, deliveryKey: string): Step[] {
+  if (!isBarter) return STATUS_STEPS;
+  const steps = STATUS_STEPS.filter(
+    s => !BARTER_SKIPPED.has(s.key) || s.key === status,
+  );
+  // "Completed" is not the end of a barter creator's story when something
+  // still has to arrive. Derived from the fulfilment columns, never written
+  // as a status.
+  return shipsProduct ? [...steps, { key: deliveryKey }] : steps;
+}
+
+function deliveryLabelKey(fulfilment: any): string {
+  if (!fulfilment) return 'deliveryAwaiting';
+  if (fulfilment.product_received === true) return 'deliveryDelivered';
+  if (fulfilment.product_received === false) return 'deliveryMissing';
+  if (fulfilment.shipping_tracking_url) return 'deliveryShipped';
+  return 'deliveryAwaiting';
+}
+
 function parseRevisionPayload(raw: any): { note: string; links: string[] } {
   if (!raw) return { note: '', links: [] };
   try {
@@ -111,19 +137,27 @@ export default function ApplicationStatusBar({
   // we're back at pending.
   const effectiveStatus: string =
     isRevision || isRejected ? 'submitted' : status;
+  const isBarter =
+    String(campaign?.campaignType || '').toLowerCase() === 'barter';
+  const shipsProduct =
+    campaign?.shippingRequired === 'yes' || campaign?.shippingRequired === 'pickup';
+  const deliveryKey = deliveryLabelKey(campaign?.fulfilment);
+  const steps = stepsFor(isBarter, effectiveStatus, shipsProduct, deliveryKey);
   // A withdrawn application has no place on the ladder; the offer screen
   // stops rendering the tracker for it, and this keeps the index sane if
   // it ever slips through.
   const currentStepIndex = Math.max(
-    STATUS_STEPS.findIndex(s => s.key === effectiveStatus),
+    effectiveStatus === 'completed' && isBarter && shipsProduct
+      ? steps.findIndex(s => s.key === deliveryKey)
+      : steps.findIndex(s => s.key === effectiveStatus),
     0,
   );
-  const currentStep = STATUS_STEPS[currentStepIndex];
+  const currentStep = steps[currentStepIndex];
 
   // Percent complete: each step is worth 1/7 of the bar. We round to the
   // nearest integer for display so the bar and the number stay aligned.
   const percent = Math.round(
-    ((currentStepIndex + 1) / STATUS_STEPS.length) * 100,
+    ((currentStepIndex + 1) / steps.length) * 100,
   );
 
   const canUpload =
@@ -159,7 +193,7 @@ export default function ApplicationStatusBar({
           <Crown size={12} color="#fff" />
           <Text style={styles.stepPillText}>
             Step <Text style={styles.stepPillNumber}>{currentStepIndex + 1}</Text>{' '}
-            of {STATUS_STEPS.length}
+            of {steps.length}
           </Text>
         </LinearGradient> */}
       </View>
@@ -193,10 +227,10 @@ export default function ApplicationStatusBar({
 
       {/* Vertical step timeline */}
       <View style={styles.timeline}>
-        {STATUS_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const isDone = i < currentStepIndex;
           const isCurrent = i === currentStepIndex;
-          const isLast = i === STATUS_STEPS.length - 1;
+          const isLast = i === steps.length - 1;
           return (
             <View key={step.key} style={styles.stepRow}>
               {/* Left rail: numbered circle + connector */}
