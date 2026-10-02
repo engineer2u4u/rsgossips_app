@@ -730,8 +730,11 @@ export default function InfluencerOfferDetail() {
           ) : null}
 
           {/* Barter delivery. Renders itself away unless this campaign moves
-              a product and there is a live application on it. */}
-          {campaign.fulfilment && campaign.applicationId ? (
+              a product and there is a LIVE application on it — the row and its
+              fulfilment survive a withdrawal, so without hasApplied a creator
+              looking at a campaign they can re-apply to was asked for a
+              delivery address for a parcel nobody is sending. */}
+          {hasApplied && campaign.fulfilment && campaign.applicationId ? (
             <DeliveryCard
               applicationId={campaign.applicationId}
               fulfilment={campaign.fulfilment}
