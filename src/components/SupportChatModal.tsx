@@ -453,12 +453,16 @@ export default function SupportChatModal({visible, onClose, startTopic}: Props) 
               // Show what was picked for them, so Back and the breadcrumb
               // still make sense.
               {role: 'user', text: nodeLabel(branch)},
-              {role: 'bot', text: nodeLabel(branch), options: branch.children},
+              {
+                role: 'bot',
+                text: t('SupportChatModal.pickClosest'),
+                options: branch.children,
+              },
             ]
           : [{role: 'bot', text: greeting, options: TREE.children}],
       );
     }
-  }, [visible, greeting, startTopic, nodeLabel]);
+  }, [visible, greeting, startTopic, nodeLabel, t]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -605,6 +609,14 @@ export default function SupportChatModal({visible, onClose, startTopic}: Props) 
   const handlePick = (node: TreeNode) => {
     if (node.action === 'callback') {
       setMessages(prev => [...prev, {role: 'user', text: nodeLabel(node)}]);
+      // A callback node can still have something useful to say first — the
+      // delivery answers explain what we will do before asking for a number.
+      if (node.response) {
+        setMessages(prev => [
+          ...prev,
+          {role: 'bot', text: t(`SupportChatModal.tree.${node.id}.response`)},
+        ]);
+      }
       openCallback();
       return;
     }
