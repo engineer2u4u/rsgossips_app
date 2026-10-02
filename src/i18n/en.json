@@ -3106,7 +3106,7 @@
       "phone": "Phone",
       "countryCodeHint": "Include country code (e.g. +91 for India)",
       "bestTime": "Best time to call",
-      "notesLabel": "Anything we should know? (optional)",
+      "notesLabel": "Anything we should know?",
       "notesPlaceholder": "What's the issue?",
       "cancel": "Cancel",
       "sending": "Sending…",
@@ -3115,7 +3115,8 @@
       "doneMessage": "We'll call {{phone}} {{time}}.",
       "errSignIn": "Please sign in first.",
       "errPhone": "Enter a valid phone number with country code.",
-      "errSubmit": "Failed to submit"
+      "errSubmit": "Failed to submit",
+      "errNotes": "Please tell us what the issue is."
     },
     "tree": {
       "campaigns": {
@@ -3489,7 +3490,7 @@
       "phone": "Phone",
       "countryCodeHint": "Include country code (e.g. +91 for India)",
       "bestTime": "Best time to call",
-      "notesLabel": "Anything we should know? (optional)",
+      "notesLabel": "Anything we should know?",
       "notesPlaceholder": "What's the issue?",
       "cancel": "Cancel",
       "sending": "Sending…",
@@ -3498,7 +3499,8 @@
       "doneMessage": "We'll call {{phone}} {{time}}.",
       "errSignIn": "Please sign in first.",
       "errPhone": "Enter a valid phone number with country code.",
-      "errSubmit": "Failed to submit"
+      "errSubmit": "Failed to submit",
+      "errNotes": "Please tell us what the issue is."
     }
   },
   "BrandsBrandAccountActionsModal": {

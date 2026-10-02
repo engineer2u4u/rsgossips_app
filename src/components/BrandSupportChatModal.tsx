@@ -927,6 +927,7 @@ function CallbackForm({
   const [phone, setPhone] = useState(defaultPhone);
   const [time, setTime] = useState('Today afternoon');
   const [notes, setNotes] = useState('');
+  const notesRef = useRef<TextInput>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -958,6 +959,14 @@ function CallbackForm({
     // E.164 numbers are 8–15 digits including country code.
     if (digitsOnly.length < 8 || digitsOnly.length > 15) {
       setError(t('BrandSupportChatModal.callback.errPhone'));
+      return;
+    }
+    // The note is what makes a callback actionable — without it support
+    // rings someone back with nothing but a topic breadcrumb and has to
+    // start the conversation from scratch.
+    if (!notes.trim()) {
+      setError(t('BrandSupportChatModal.callback.errNotes'));
+      notesRef.current?.focus();
       return;
     }
     setSubmitting(true);
@@ -1101,6 +1110,7 @@ function CallbackForm({
           {t('BrandSupportChatModal.callback.notesLabel')}
         </Text>
         <TextInput
+          ref={notesRef}
           value={notes}
           onChangeText={setNotes}
           placeholder={t('BrandSupportChatModal.callback.notesPlaceholder')}

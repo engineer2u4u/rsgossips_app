@@ -1134,6 +1134,7 @@ function CallbackForm({
   const [phone, setPhone] = useState(defaultPhone);
   const [time, setTime] = useState('Today afternoon');
   const [notes, setNotes] = useState('');
+  const notesRef = useRef<TextInput>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -1162,6 +1163,14 @@ function CallbackForm({
     const digitsOnly = normalized.replace(/\D/g, '');
     if (digitsOnly.length < 8 || digitsOnly.length > 15) {
       setError(t('SupportChatModal.callback.errPhone'));
+      return;
+    }
+    // The note is what makes a callback actionable — without it support
+    // rings someone back with nothing but a topic breadcrumb and has to
+    // start the conversation from scratch.
+    if (!notes.trim()) {
+      setError(t('SupportChatModal.callback.errNotes'));
+      notesRef.current?.focus();
       return;
     }
     setSubmitting(true);
@@ -1303,6 +1312,7 @@ function CallbackForm({
           {t('SupportChatModal.callback.notesLabel')}
         </Text>
         <TextInput
+          ref={notesRef}
           value={notes}
           onChangeText={setNotes}
           placeholder={t('SupportChatModal.callback.notesPlaceholder')}
