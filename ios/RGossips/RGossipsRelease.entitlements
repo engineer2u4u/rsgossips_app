@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Release entitlements — used by Archive, TestFlight and the App Store.
+
+  The only difference from RGossips.entitlements is aps-environment. A build
+  signed `development` gets a SANDBOX APNs token; a TestFlight build runs
+  against PRODUCTION APNs. Shipping one entitlements file with `development`
+  for both configurations means every TestFlight tester registers a sandbox
+  token for a production build, and deliveries to them are a coin toss
+  depending on which environment the sender picks.
+
+  Debug builds keep using RGossips.entitlements (development), which is what
+  you want when running from Xcode against a sandbox token.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

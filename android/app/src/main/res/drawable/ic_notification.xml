@@ -1,0 +1,23 @@
+<!--
+  The status-bar icon for push notifications.
+
+  Android 5+ renders a notification's small icon as a SILHOUETTE: every
+  non-transparent pixel is painted a flat colour and the alpha channel is the
+  only thing that survives. Hand it a full-colour launcher icon — which is
+  what FCM falls back to when no default is declared, and what was happening
+  here — and the system draws a grey square.
+
+  So this is deliberately one solid shape on transparency, with no gradient,
+  no colour and no fine detail: a speech bubble, which reads at 24dp and
+  suits an app about people talking. The tint comes from
+  default_notification_color in the manifest.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3C7.03,3 3,6.58 3,11c0,2.35 1.14,4.46 2.95,5.9 -0.1,1.2 -0.52,2.4 -1.34,3.44 -0.2,0.26 -0.03,0.64 0.3,0.65 1.86,0.06 3.63,-0.6 5.02,-1.63 0.67,0.12 1.36,0.19 2.07,0.19 4.97,0 9,-3.58 9,-8S16.97,3 12,3z" />
+</vector>

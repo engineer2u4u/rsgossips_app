@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The tint Android applies to the notification silhouette and to the app
+      name in the notification header. Taken from BRAND_GRADIENT_2's pink end
+      (src/theme/brand.ts) — a single flat colour, because the system cannot
+      render the gradient the rest of the app uses.
+    -->
+    <color name="notification_color">#C95FA2</color>
+</resources>

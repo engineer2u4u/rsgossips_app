@@ -53,5 +53,25 @@
             <data android:scheme="rgossips" />
         </intent-filter>
       </activity>
+
+      <!--
+        Push notification appearance.
+
+        Without these, FCM falls back to the launcher icon. Android 5+ draws a
+        notification's small icon as a silhouette — alpha only — so a
+        full-colour launcher icon arrives as a featureless grey square, which
+        is exactly what was showing.
+
+        No default_notification_channel_id on purpose: declaring one whose
+        channel the app never creates stops notifications appearing at all.
+        FCM's own fallback channel is working today, so leave it be until the
+        app creates a channel of its own.
+      -->
+      <meta-data
+          android:name="com.google.firebase.messaging.default_notification_icon"
+          android:resource="@drawable/ic_notification" />
+      <meta-data
+          android:name="com.google.firebase.messaging.default_notification_color"
+          android:resource="@color/notification_color" />
     </application>
 </manifest>
