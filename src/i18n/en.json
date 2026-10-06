@@ -290,7 +290,9 @@
       }
     },
     "shortlistedTitle": "You have been shortlisted",
-    "shortlistedNote": "The final selection has not been made yet. There is nothing to do right now — we will let you know either way, and you do not need to apply again."
+    "shortlistedNote": "The final selection has not been made yet. There is nothing to do right now — we will let you know either way, and you do not need to apply again.",
+    "closedTitle": "This campaign has closed",
+    "closedNote": "It finished before a decision was made on every application. That's on us, not on your work — have a look at what's open now."
   },
   "ApplyCampaignForm": {
     "errors": {
@@ -1928,7 +1930,7 @@
       "slotsHint": "Number of creators",
       "budgetTotal": "Budget (Total)",
       "budgetPerInfluencer": "Budget / Influencer",
-      "budgetPerInfluencerHint": "Auto-calculated",
+      "budgetPerInfluencerHint": "Or set this and the total fills in",
       "productValue": "Product value (approx.)",
       "productValueHint": "Helps creators evaluate the offer",
       "whatPromoting": "What are you promoting?",

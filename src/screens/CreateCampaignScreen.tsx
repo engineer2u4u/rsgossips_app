@@ -240,6 +240,8 @@ export default function CreateCampaignScreen() {
   );
 
   const [form, setForm] = useState<FormState>(initialForm);
+  // 'total' | 'per' — which budget box the brand typed in last.
+  const [budgetSource, setBudgetSource] = useState<'total' | 'per'>('total');
   const [categories, setCategories] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [allIndia, setAllIndia] = useState(false);
@@ -291,18 +293,57 @@ export default function CreateCampaignScreen() {
     }
   }, [form.target_influencer_tier]);
 
-  // Auto-calc budget per influencer.
-  useEffect(() => {
-    if (!showBudget) return;
-    const total = Number(form.budget_total);
-    const slots = Number(form.max_influencers);
-    if (total > 0 && slots > 0) {
-      const per = Math.round(total / slots);
-      setForm(prev => ({...prev, budget_per_influencer: String(per)}));
-    } else {
-      setForm(prev => ({...prev, budget_per_influencer: ''}));
-    }
-  }, [form.budget_total, form.max_influencers, showBudget]);
+  // Budget total and budget per influencer derive from each other, in BOTH
+  // directions: a brand who knows their total divides it by the slots, and a
+  // brand who knows the rate they want to pay multiplies it up. Whichever box
+  // they typed in last is the authority, so changing the slot count after that
+  // keeps their number and recomputes the other one.
+  //
+  // In the change handlers rather than an effect: deriving one piece of state
+  // from another inside useEffect cascades renders, and the one-way version
+  // also blanked the field whenever either input was momentarily empty.
+  const applyBudget = useCallback(
+    (next: FormState, source: 'total' | 'per'): FormState => {
+      const slots = Number(next.max_influencers) || 0;
+      const total = Number(next.budget_total) || 0;
+      const per = Number(next.budget_per_influencer) || 0;
+      if (slots <= 0) return next;
+      if (source === 'per') {
+        return per > 0 ? {...next, budget_total: String(per * slots)} : next;
+      }
+      return total > 0
+        ? {...next, budget_per_influencer: String(Math.round(total / slots))}
+        : next;
+    },
+    [],
+  );
+
+  const updateBudgetTotal = useCallback(
+    (v: string) => {
+      setBudgetSource('total');
+      setForm(prev => applyBudget({...prev, budget_total: v}, 'total'));
+    },
+    [applyBudget],
+  );
+
+  const updateBudgetPerInfluencer = useCallback(
+    (raw: string) => {
+      // Digits only, same as the other two money fields — this one takes the
+      // keystrokes directly rather than through update(), which is where they
+      // strip theirs.
+      const v = raw.replace(/[^0-9]/g, '');
+      setBudgetSource('per');
+      setForm(prev => applyBudget({...prev, budget_per_influencer: v}, 'per'));
+    },
+    [applyBudget],
+  );
+
+  // Changing the slots recomputes whichever figure the brand did NOT type.
+  const updateSlots = useCallback(
+    (v: string) =>
+      setForm(prev => applyBudget({...prev, max_influencers: v}, budgetSource)),
+    [applyBudget, budgetSource],
+  );
 
   const validate = (): string | null => {
     if (!user?.id) return t('ScreensCreateCampaignScreen.errors.signedIn');
@@ -486,7 +527,7 @@ export default function CreateCampaignScreen() {
               <TextInput
                 value={form.max_influencers}
                 onChangeText={v =>
-                  update('max_influencers', v.replace(/\D/g, ''))
+                  updateSlots(v.replace(/\D/g, ''))
                 }
                 placeholder="10"
                 placeholderTextColor="#cbd5e1"
@@ -501,7 +542,7 @@ export default function CreateCampaignScreen() {
               <Field label={t('ScreensCreateCampaignScreen.fields.budgetTotal')}>
                 <TextInput
                   value={form.budget_total}
-                  onChangeText={v => update('budget_total', v.replace(/\D/g, ''))}
+                  onChangeText={v => updateBudgetTotal(v.replace(/\D/g, ''))}
                   placeholder="50000"
                   placeholderTextColor="#cbd5e1"
                   keyboardType="number-pad"
@@ -513,10 +554,11 @@ export default function CreateCampaignScreen() {
                 hint={t('ScreensCreateCampaignScreen.fields.budgetPerInfluencerHint')}>
                 <TextInput
                   value={form.budget_per_influencer}
-                  editable={false}
+                  onChangeText={updateBudgetPerInfluencer}
                   placeholder="—"
                   placeholderTextColor="#cbd5e1"
-                  style={[s.input, s.inputReadonly]}
+                  keyboardType="number-pad"
+                  style={s.input}
                 />
               </Field>
             </View>

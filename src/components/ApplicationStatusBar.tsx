@@ -48,6 +48,7 @@ type Status =
   | 'completed'
   | 'revision_needed'
   | 'on_hold'
+  | 'closed'
   | 'rejected';
 
 interface Props {
@@ -139,11 +140,15 @@ export default function ApplicationStatusBar({
   // in currentStepIndex would show a shortlisted creator a plain 'Applied'
   // and they would never learn anything had happened.
   const isOnHold = status === 'on_hold';
+  // Campaign ended before anyone decided. Like on_hold it is not a rung —
+  // the application never moved past applying — so the ladder holds there
+  // and the banner carries the news.
+  const isClosed = status === 'closed';
   // For both revision/rejected, show progress at the "submitted" tier — the
   // brand looked at what we sent and bounced it, so we shouldn't pretend
   // we're back at pending.
   const effectiveStatus: string =
-    isRevision || isRejected ? 'submitted' : isOnHold ? 'pending' : status;
+    isRevision || isRejected ? 'submitted' : isOnHold || isClosed ? 'pending' : status;
   const isBarter =
     String(campaign?.campaignType || '').toLowerCase() === 'barter';
   const shipsProduct =
@@ -210,6 +215,7 @@ export default function ApplicationStatusBar({
           NEWS is that they made the cut, so it goes first and in solid
           colour rather than trailing the whole timeline in a pale tint. */}
       {isOnHold ? <ShortlistedBanner /> : null}
+      {isClosed ? <ClosedBanner /> : null}
 
       {/* Progress headline — drop the wasted LinearGradient background
           (it sat behind pink text so was never visible) and let the
@@ -444,6 +450,28 @@ function ShortlistedBanner() {
         {t('ApplicationStatusBar.shortlistedNote')}
       </Text>
     </LinearGradient>
+  );
+}
+
+// Slate, not red. This creator was never assessed — the campaign ended
+// first — and showing it in the rejection palette would tell them
+// something untrue about their own work.
+function ClosedBanner() {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.closedBox}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={styles.closedIcon}>
+          <Text style={{ color: '#475569', fontWeight: '700' }}>—</Text>
+        </View>
+        <Text style={styles.closedTitle}>
+          {t('ApplicationStatusBar.closedTitle')}
+        </Text>
+      </View>
+      <Text style={styles.closedNote}>
+        {t('ApplicationStatusBar.closedNote')}
+      </Text>
+    </View>
   );
 }
 
@@ -712,6 +740,30 @@ const styles = StyleSheet.create({
   holdNote: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.92)',
+    lineHeight: 18,
+  },
+
+  closedBox: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
+  },
+  closedIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closedTitle: { fontSize: 13, fontWeight: '700', color: '#334155', flex: 1 },
+  closedNote: {
+    fontSize: 12,
+    color: '#475569',
+    paddingLeft: 36,
     lineHeight: 18,
   },
 
