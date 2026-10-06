@@ -205,6 +205,12 @@ export default function ApplicationStatusBar({
         </LinearGradient> */}
       </View>
 
+      {/* Shortlisted leads the card. The ladder below says "Applied",
+          which is where this application has sat since they applied — the
+          NEWS is that they made the cut, so it goes first and in solid
+          colour rather than trailing the whole timeline in a pale tint. */}
+      {isOnHold ? <ShortlistedBanner /> : null}
+
       {/* Progress headline — drop the wasted LinearGradient background
           (it sat behind pink text so was never visible) and let the
           progressHeader flow as a plain row. */}
@@ -316,7 +322,6 @@ export default function ApplicationStatusBar({
       {isRejected ? (
         <RejectedBanner reason={campaign?.rejectionReason} />
       ) : null}
-      {isOnHold ? <ShortlistedBanner /> : null}
 
       {/* Upload / Resubmit / Live links button */}
       {canUpload ? (
@@ -422,10 +427,14 @@ function RevisionBanner({ reason }: { reason: any }) {
 function ShortlistedBanner() {
   const { t } = useTranslation();
   return (
-    <View style={styles.holdBox}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <LinearGradient
+      colors={['#7C3AED', '#9810FA']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.holdBox}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={styles.holdIcon}>
-          <Text style={{ color: '#7c3aed', fontWeight: '700' }}>★</Text>
+          <Text style={{ color: '#fff', fontWeight: '700' }}>★</Text>
         </View>
         <Text style={styles.holdTitle}>
           {t('ApplicationStatusBar.shortlistedTitle')}
@@ -434,7 +443,7 @@ function ShortlistedBanner() {
       <Text style={styles.holdNote}>
         {t('ApplicationStatusBar.shortlistedNote')}
       </Text>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -682,26 +691,27 @@ const styles = StyleSheet.create({
   },
   revisionChipText: { fontSize: 10, fontWeight: '700', color: '#92400e' },
   holdBox: {
-    backgroundColor: '#f5f3ff',
-    borderColor: '#ddd6fe',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    gap: 6,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   holdIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#ddd6fe',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  holdTitle: { fontSize: 13, fontWeight: '700', color: '#6d28d9' },
+  holdTitle: { fontSize: 15, fontWeight: '800', color: '#fff', flex: 1 },
   holdNote: {
     fontSize: 12,
-    color: '#6d28d9',
-    paddingLeft: 36,
+    color: 'rgba(255,255,255,0.92)',
     lineHeight: 18,
   },
 
