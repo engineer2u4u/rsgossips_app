@@ -47,6 +47,7 @@ type Status =
   | 'payment'
   | 'completed'
   | 'revision_needed'
+  | 'on_hold'
   | 'rejected';
 
 interface Props {
@@ -132,11 +133,17 @@ export default function ApplicationStatusBar({
 
   const isRevision = status === 'revision_needed';
   const isRejected = status === 'rejected';
+  // Parked by an admin for a decision later. NOT a rung on the ladder — the
+  // application has not moved past applying — so the ladder stays at
+  // 'pending' and the banner below carries the news. Without this, the clamp
+  // in currentStepIndex would show a shortlisted creator a plain 'Applied'
+  // and they would never learn anything had happened.
+  const isOnHold = status === 'on_hold';
   // For both revision/rejected, show progress at the "submitted" tier — the
   // brand looked at what we sent and bounced it, so we shouldn't pretend
   // we're back at pending.
   const effectiveStatus: string =
-    isRevision || isRejected ? 'submitted' : status;
+    isRevision || isRejected ? 'submitted' : isOnHold ? 'pending' : status;
   const isBarter =
     String(campaign?.campaignType || '').toLowerCase() === 'barter';
   const shipsProduct =
@@ -309,6 +316,7 @@ export default function ApplicationStatusBar({
       {isRejected ? (
         <RejectedBanner reason={campaign?.rejectionReason} />
       ) : null}
+      {isOnHold ? <ShortlistedBanner /> : null}
 
       {/* Upload / Resubmit / Live links button */}
       {canUpload ? (
@@ -403,6 +411,29 @@ function RevisionBanner({ reason }: { reason: any }) {
           </View>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+// Shortlisted: the creator-facing face of the admin's "on hold". Violet
+// rather than the red/amber used for rejected and revision, because this is
+// good news so far — and deliberately says there is nothing to do, so
+// nobody re-applies or chases it.
+function ShortlistedBanner() {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.holdBox}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={styles.holdIcon}>
+          <Text style={{ color: '#7c3aed', fontWeight: '700' }}>★</Text>
+        </View>
+        <Text style={styles.holdTitle}>
+          {t('ApplicationStatusBar.shortlistedTitle')}
+        </Text>
+      </View>
+      <Text style={styles.holdNote}>
+        {t('ApplicationStatusBar.shortlistedNote')}
+      </Text>
     </View>
   );
 }
@@ -650,6 +681,30 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   revisionChipText: { fontSize: 10, fontWeight: '700', color: '#92400e' },
+  holdBox: {
+    backgroundColor: '#f5f3ff',
+    borderColor: '#ddd6fe',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
+  },
+  holdIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ddd6fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  holdTitle: { fontSize: 13, fontWeight: '700', color: '#6d28d9' },
+  holdNote: {
+    fontSize: 12,
+    color: '#6d28d9',
+    paddingLeft: 36,
+    lineHeight: 18,
+  },
+
   rejectedBox: {
     backgroundColor: '#fef2f2',
     borderColor: '#fecaca',

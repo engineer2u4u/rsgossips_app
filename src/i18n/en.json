@@ -288,7 +288,9 @@
         "activeBody": "You told us it never arrived. We are chasing the brand — we will come back to you.",
         "headerStatus": "Product not received"
       }
-    }
+    },
+    "shortlistedTitle": "You have been shortlisted",
+    "shortlistedNote": "The final selection has not been made yet. There is nothing to do right now — we will let you know either way, and you do not need to apply again."
   },
   "ApplyCampaignForm": {
     "errors": {
