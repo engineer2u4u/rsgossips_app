@@ -25,6 +25,7 @@ import {
   Activity,
   Sparkles,
   Crown,
+  AlertCircle,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
@@ -122,6 +123,22 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
   const instagramHandle = profile?.instagram_handle || profile?.username || '';
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
+  // The brand's follower floor. A warning, never a block: brands weigh far
+  // more than reach, and apply-campaign does not refuse on this either, so
+  // blocking here would invent a rule the server does not have.
+  //
+  // Both numbers must be KNOWN. followers_count is 0 for a creator who has
+  // not connected Instagram or whose sync has not landed, and telling
+  // someone their unknown number is too small is just noise.
+  const minFollowers = Number(campaignData?.targetFollowerMin) || 0;
+  const belowFollowerMin =
+    minFollowers > 0 && followersCount > 0 && followersCount < minFollowers;
+  const [followerWarningAck, setFollowerWarningAck] = useState(false);
+  // Reset with the modal, or a creator who acknowledged once would never be
+  // warned again for any other campaign in the same session.
+  useEffect(() => {
+    if (!visible) setFollowerWarningAck(false);
+  }, [visible]);
   // The media kit is a subscriber feature, so a free creator has nothing
   // to link to. They can still submit — the kit raises their odds, it is
   // not a requirement — so this section becomes a nudge, never a block.
@@ -266,6 +283,42 @@ export default function ApplyCampaignForm({visible, onClose, campaignData, onSub
               <Text className="text-sm text-slate-500 text-center">
                 {t('ApplyCampaignForm.success.message')}
               </Text>
+            </View>
+          ) : belowFollowerMin && !followerWarningAck ? (
+            // Under the brand's follower brief — said BEFORE the form, since
+            // learning it after writing a pitch is the worst moment. Asks
+            // rather than refuses: a creator who knows the odds may still
+            // want to make their case.
+            <View className="flex-1 items-center justify-center px-8" style={{gap: 16}}>
+              <View className="w-14 h-14 bg-amber-50 rounded-full items-center justify-center">
+                <AlertCircle size={26} color="#F59E0B" />
+              </View>
+              <Text className="text-lg font-bold text-slate-900 text-center">
+                {t('ApplyCampaignForm.followerWarning.title')}
+              </Text>
+              <Text className="text-[13px] text-slate-500 text-center leading-5">
+                {t('ApplyCampaignForm.followerWarning.body', {
+                  required: minFollowers.toLocaleString('en-IN'),
+                  yours: followersCount.toLocaleString('en-IN'),
+                })}
+              </Text>
+              <View className="flex-row w-full" style={{gap: 10, marginTop: 8}}>
+                <Pressable
+                  onPress={onClose}
+                  className="flex-1 h-12 rounded-xl border border-slate-200 items-center justify-center">
+                  <Text className="text-sm font-bold text-slate-600">
+                    {t('ApplyCampaignForm.followerWarning.cancel')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setFollowerWarningAck(true)}
+                  className="flex-1 h-12 rounded-xl items-center justify-center"
+                  style={{backgroundColor: '#9810fa'}}>
+                  <Text className="text-sm font-bold text-white">
+                    {t('ApplyCampaignForm.followerWarning.continue')}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           ) : (
             <>
