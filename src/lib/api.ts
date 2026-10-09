@@ -13,7 +13,7 @@
 // the Authorization header; otherwise we fall back to the anon key. This
 // matches what the web app does and lets edge functions read auth.uid().
 
-import {DeviceEventEmitter} from 'react-native';
+import {DeviceEventEmitter, Platform} from 'react-native';
 import {safeGetSession} from '../utils/supabase';
 import {NETWORK_ERROR_EVENT} from '../components/OfflineGate';
 import {
@@ -151,6 +151,55 @@ function reportEdgeError(
                 ).map(k => [k, String(args[k]).slice(0, 80)]),
               )
             : undefined,
+          signedInAs: logIdentity.userId
+            ? logIdentity.role || 'unknown-role'
+            : 'signed-out',
+        },
+      }),
+    }).catch(() => {});
+  } catch {
+    /* logging must never break the caller */
+  }
+}
+
+/**
+ * Record something that went wrong on the DEVICE, not in an edge call.
+ *
+ * Store billing is the case this exists for: StoreKit and Play fail inside
+ * the native layer, so no edge function is involved and nothing reached
+ * error_logs. A reviewer hit "Unable to Complete Request" on 2026-10-08 and
+ * the only record of it was their screenshot — the app knew the error code
+ * and the SKU at the time and threw both away.
+ *
+ * `context` must carry ids and store codes only: no tokens, no receipts, no
+ * phone numbers. Store error messages are Apple's or Google's own strings and
+ * are safe; anything the user typed is not.
+ */
+export function reportClientError(
+  event: string,
+  message: string,
+  context?: Record<string, any>,
+  severity: 'warn' | 'error' = 'error',
+): void {
+  try {
+    fetch(`${SUPABASE_URL}/functions/v1/log-client-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        source: 'mobile',
+        area: 'client',
+        event,
+        severity,
+        message: String(message ?? '').slice(0, 500),
+        userId: logIdentity.userId ?? null,
+        userRole: logIdentity.role ?? null,
+        context: {
+          ...(context || {}),
+          platform: Platform.OS,
           signedInAs: logIdentity.userId
             ? logIdentity.role || 'unknown-role'
             : 'signed-out',

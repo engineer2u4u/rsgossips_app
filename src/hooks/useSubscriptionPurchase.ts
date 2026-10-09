@@ -20,6 +20,7 @@ import {Platform} from 'react-native';
 import {useIAP} from 'react-native-iap';
 import type {Purchase, PurchaseError} from 'react-native-iap';
 import {ALL_IAP_SKUS, IAP_SKUS, verifyPurchase} from '../lib/iap';
+import {reportClientError} from '../lib/api';
 import type {PaidPlanId, BillingCycle} from '../lib/plans';
 import {useAuth} from '../context/AuthContext';
 
@@ -40,6 +41,9 @@ export function useSubscriptionPurchase() {
   // at launch. Without this the screen would show "purchase complete" for
   // something the user did days ago on another device.
   const expectingPurchase = useRef(false);
+  // The SKU of the purchase in flight, so a store failure can name what was
+  // being bought — onPurchaseError does not carry it.
+  const attemptedSku = useRef<string | null>(null);
 
   const {
     connected,
@@ -68,6 +72,14 @@ export function useSubscriptionPurchase() {
           // dead-end error into something diagnosable without a server log.
           const base = res?.error || 'We could not verify that purchase.';
           setError(res?.detail ? `${base}\n\n(${res.detail})` : base);
+          // The server answers a refusal with HTTP 200, so neither its own
+          // logger (400+ only) nor the edge-call reporter records it. A
+          // purchase that completed at the store but granted nothing is the
+          // single worst state to be blind to.
+          reportClientError('iap.verification_refused', base, {
+            detail: res?.detail ?? null,
+            productId: (purchase as any)?.productId ?? attemptedSku.current,
+          });
           return;
         }
         await finishTransaction({purchase, isConsumable: false});
@@ -88,6 +100,17 @@ export function useSubscriptionPurchase() {
       // A cancelled sheet is not an error worth showing.
       const cancelled = /cancel/i.test(e?.code || '') || /cancel/i.test(e?.message || '');
       setError(cancelled ? '' : e?.message || 'Purchase failed.');
+      // Record it. The store fails inside the native layer, so no edge call
+      // is made and nothing would otherwise reach error_logs — which is why
+      // a reviewer's "Unable to Complete Request" on 2026-10-08 left no
+      // trace but their screenshot. A cancel is logged at warn, since it is
+      // normal but still useful when reading a funnel.
+      reportClientError(
+        'iap.purchase_failed',
+        e?.message || 'Purchase failed.',
+        {code: e?.code ?? null, sku: attemptedSku.current, cancelled},
+        cancelled ? 'warn' : 'error',
+      );
     },
   });
 
@@ -97,8 +120,15 @@ export function useSubscriptionPurchase() {
   // both wrong and a review risk.
   useEffect(() => {
     if (!connected) return;
-    fetchProducts({skus: ALL_IAP_SKUS, type: 'subs'}).catch(() => {
+    fetchProducts({skus: ALL_IAP_SKUS, type: 'subs'}).catch((e: any) => {
       setError('Could not load plans from the store.');
+      // No products means no paywall at all — worth knowing about before a
+      // reviewer or a user reports it.
+      reportClientError(
+        'iap.fetch_products_failed',
+        e?.message || 'Could not load plans from the store.',
+        {code: e?.code ?? null, skuCount: ALL_IAP_SKUS.length},
+      );
     });
   }, [connected, fetchProducts]);
 
@@ -116,6 +146,7 @@ export function useSubscriptionPurchase() {
       setError('');
       setStatus('purchasing');
       expectingPurchase.current = true;
+      attemptedSku.current = sku;
       try {
         // Attach our user id to the purchase so the STORE can tell the server
         // who bought it, independently of this app ever calling back.
@@ -141,6 +172,14 @@ export function useSubscriptionPurchase() {
         expectingPurchase.current = false;
         setStatus('idle');
         setError(e?.message || 'Could not open the store.');
+        // requestPurchase rejected before the sheet — a different failure
+        // from onPurchaseError, and the one that fires if the store is not
+        // ready (E_NOT_PREPARED) or the request shape is refused.
+        reportClientError(
+          'iap.request_purchase_threw',
+          e?.message || 'Could not open the store.',
+          {code: e?.code ?? null, sku},
+        );
       }
     },
     [requestPurchase, user?.id],
