@@ -416,16 +416,17 @@ export default function InfluencerPricing() {
           is in flight — the store sheet dismisses first, and verification can
           take a beat, so the whole screen shows progress rather than three
           separate button spinners. */}
-      {/* NOT shown while restoring. getAvailablePurchases() can make StoreKit
-          present its own sheet (an Apple ID sign-in, for instance), and on
-          iOS a system sheet over an RN Modal may never appear — StoreKit then
-          waits for input the user cannot give while this overlay swallows
-          every touch, which is the "unresponsive after tapping Restore"
-          report. Restore shows its progress on the button instead, leaving
-          the screen usable. Purchase keeps the overlay: its sheet is already
-          dismissed by the time we get here, and money is moving. */}
+      {/* Only while VERIFYING — never while StoreKit may be presenting its own
+          UI. 'purchasing' covers the window in which the payment sheet is put
+          up, and a system sheet over an RN Modal can fail to appear (it was
+          reviewed on an iPad, where sheet presentation differs again); the
+          purchase then errors, which is Apple's 2.1(b) report. 'restoring' is
+          excluded for the same reason — getAvailablePurchases can trigger an
+          Apple ID sign-in sheet. By the time status is 'verifying' the sheet
+          is gone, our server is being called, and blocking is right: money
+          has moved and the receipt must be finished. */}
       <Modal
-        visible={busy && status !== 'restoring'}
+        visible={status === 'verifying'}
         transparent
         animationType="fade"
         onRequestClose={() => {}}>
