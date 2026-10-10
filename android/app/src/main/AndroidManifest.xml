@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+ runtime notification permission (requested by src/lib/push.ts). -->
@@ -70,8 +71,15 @@
       <meta-data
           android:name="com.google.firebase.messaging.default_notification_icon"
           android:resource="@drawable/ic_notification" />
+      <!--
+        tools:replace — react-native-firebase_messaging ships this same
+        meta-data pointing at @color/white, and the merger refuses to pick
+        between two values. Ours wins: a white tint on a white status-bar
+        icon is invisible.
+      -->
       <meta-data
           android:name="com.google.firebase.messaging.default_notification_color"
-          android:resource="@color/notification_color" />
+          android:resource="@color/notification_color"
+          tools:replace="android:resource" />
     </application>
 </manifest>
