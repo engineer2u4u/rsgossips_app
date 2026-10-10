@@ -16,6 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {Check, ChevronLeft, Crown, Info} from 'lucide-react-native';
 import {useAuth} from '../context/AuthContext';
 import {useSubscriptionPurchase} from '../hooks/useSubscriptionPurchase';
+import {canSellInThisApp} from '../lib/subscriptionRail';
 import {IAP_SKUS, MANAGE_SUBSCRIPTION_URL} from '../lib/iap';
 import {
   FEATURE_GROUPS,
@@ -82,6 +83,17 @@ export default function InfluencerPricing() {
   // the store name differs between platforms.
   const storeName = Platform.OS === 'ios' ? 'the App Store' : 'Google Play';
   const storeAccount = Platform.OS === 'ios' ? 'Apple ID' : 'Google account';
+
+  // Is another rail already billing this creator? A store purchase cannot be
+  // refused after the fact — Apple and Google only tell us when we verify
+  // the receipt, and by then the charge has happened — so the block has to
+  // be here, before the sheet opens.
+  //
+  // The copy is deliberately store-safe: on iOS we may state that a
+  // subscription was bought elsewhere, but naming the website or linking to
+  // it is directing the user to another purchase mechanism (guideline
+  // 3.1.1). The web and Android surfaces say it plainly instead.
+  const {allowed: canBuyHere, blockedBy} = canSellInThisApp(profile);
 
   // Confirm a completed subscription. subscribedPlan is set by the hook only
   // after the server verified the receipt and granted the tier.
@@ -216,6 +228,25 @@ export default function InfluencerPricing() {
           </View>
         )}
 
+        {/* Billed by another rail. Says what is true and what to do, without
+            naming the other service or linking to it — inside the iOS app
+            that would be directing the user to a different purchase
+            mechanism (3.1.1). Web and Android can and do spell it out. */}
+        {!canBuyHere && (
+          <View className="rounded-xl bg-slate-100 border border-slate-200 px-4 py-3 mb-4">
+            <Text className="text-[13px] font-bold text-slate-800">
+              {t('Pricing.otherRailTitle')}
+            </Text>
+            <Text className="text-[12px] text-slate-600 mt-1">
+              {blockedBy === 'apple_iap'
+                ? t('Pricing.otherRailApple')
+                : blockedBy === 'google_play'
+                  ? t('Pricing.otherRailGoogle')
+                  : t('Pricing.otherRailExternal')}
+            </Text>
+          </View>
+        )}
+
         {PLAN_ORDER.map(plan => {
           const price = priceFor(plan);
           const isCurrent =
@@ -268,7 +299,7 @@ export default function InfluencerPricing() {
 
               <Pressable
                 onPress={() => buy(plan, cycle)}
-                disabled={busy || !connected || isCurrent || !price}
+                disabled={busy || !connected || isCurrent || !price || !canBuyHere}
                 className="mt-4"
                 accessibilityRole="button"
                 style={{
@@ -277,7 +308,10 @@ export default function InfluencerPricing() {
                   overflow: 'hidden',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: busy || !connected || isCurrent || !price ? 0.45 : 1,
+                  opacity:
+                    busy || !connected || isCurrent || !price || !canBuyHere
+                      ? 0.45
+                      : 1,
                 }}>
                 <LinearGradient
                   colors={['#9810FA', '#E60076']}
