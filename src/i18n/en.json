@@ -2046,7 +2046,8 @@
     },
     "locations": {
       "allIndia": "All India",
-      "openToAll": "Open to all creators across India"
+      "openToAll": "Open to all creators across India",
+      "browseAll": "All cities"
     },
     "schedule": {
       "helper": "Application deadline is the last day to apply. Campaign end date is when all content must be delivered."
@@ -2083,6 +2084,15 @@
       "minCategory": "Select at least 1 category",
       "minPlatform": "Select at least 1 platform",
       "createFailed": "Failed to create campaign"
+    },
+    "cityPicker": {
+      "title": "Choose locations",
+      "searchPlaceholder": "Search cities…",
+      "noMatch": "No city matches that search.",
+      "selectedCount_one": "{{count}} city selected",
+      "selectedCount_other": "{{count}} cities selected",
+      "cancel": "Cancel",
+      "save": "Done"
     }
   },
   "ScreensInfluencerCampaign": {

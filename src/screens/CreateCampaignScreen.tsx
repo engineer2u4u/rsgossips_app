@@ -19,6 +19,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -40,6 +41,7 @@ import {
   X,
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {CITY_OPTIONS} from '../utils/indianCities';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 import {useGlobalLoading} from '../context/LoadingContext';
@@ -66,7 +68,15 @@ const CATEGORIES = [
 
 const PLATFORMS = ['Instagram'];
 
-const CITIES = [
+// Pure, so it lives at module scope rather than inside the screen: the city
+// picker below is a separate component and needs the same toggle.
+const toggleIn = (arr: string[], v: string) =>
+  arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+
+// A shortcut row, not the list. Targeting used to be limited to these 15
+// names, so a campaign for any other city could not be created from the app
+// at all. The full canonical list sits behind the "All cities" button.
+const QUICK_CITIES = [
   'Mumbai',
   'Delhi',
   'Bangalore',
@@ -242,6 +252,7 @@ export default function CreateCampaignScreen() {
   const [form, setForm] = useState<FormState>(initialForm);
   // 'total' | 'per' — which budget box the brand typed in last.
   const [budgetSource, setBudgetSource] = useState<'total' | 'per'>('total');
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [allIndia, setAllIndia] = useState(false);
@@ -258,10 +269,6 @@ export default function CreateCampaignScreen() {
       setForm(prev => ({...prev, [k]: v})),
     [],
   );
-
-  // Toggle helpers
-  const toggleIn = (arr: string[], v: string) =>
-    arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
 
   const totalDeliverables = useMemo(
     () =>
@@ -868,11 +875,35 @@ export default function CreateCampaignScreen() {
             </Text>
           </Pressable>
           {!allIndia ? (
-            <ChipGroup
-              options={CITIES}
-              selected={cities}
-              onToggle={v => setCities(c => toggleIn(c, v))}
-            />
+            <>
+              <ChipGroup
+                options={QUICK_CITIES}
+                selected={cities}
+                onToggle={v => setCities(c => toggleIn(c, v))}
+              />
+              {/* Anything chosen in the picker that is not a quick-pick, so a
+                  selection never disappears from view. */}
+              {cities.filter(c => !QUICK_CITIES.includes(c)).length > 0 ? (
+                <ChipGroup
+                  options={cities.filter(c => !QUICK_CITIES.includes(c))}
+                  selected={cities}
+                  onToggle={v => setCities(c => toggleIn(c, v))}
+                />
+              ) : null}
+              <Pressable
+                onPress={() => setCityPickerOpen(true)}
+                style={s.browseAllBtn}>
+                <Text style={s.browseAllText}>
+                  {t('ScreensCreateCampaignScreen.locations.browseAll')}
+                </Text>
+              </Pressable>
+              <CityPickerModal
+                visible={cityPickerOpen}
+                selected={cities}
+                onSave={setCities}
+                onClose={() => setCityPickerOpen(false)}
+              />
+            </>
           ) : null}
         </Section>
 
@@ -1154,6 +1185,112 @@ function Dropdown({
   );
 }
 
+// Full-list city picker. A native Modal rather than an inline panel so the
+// 600-odd chips get their own scroll container instead of fighting the one
+// the form already has.
+function CityPickerModal({
+  visible,
+  selected,
+  onSave,
+  onClose,
+}: {
+  visible: boolean;
+  selected: string[];
+  onSave: (v: string[]) => void;
+  onClose: () => void;
+}) {
+  const {t} = useTranslation();
+  const insets = useSafeAreaInsets();
+  const [local, setLocal] = useState<string[]>(selected);
+  const [search, setSearch] = useState('');
+
+  // Re-seed each time it opens, so cancelling really discards.
+  useEffect(() => {
+    if (visible) {
+      setLocal(selected);
+      setSearch('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? CITY_OPTIONS.filter(c => c.toLowerCase().includes(q)) : CITY_OPTIONS;
+  }, [search]);
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View
+        style={[
+          s.pickerRoot,
+          {paddingTop: Platform.OS === 'ios' ? insets.top : 0},
+        ]}>
+        <View style={s.pickerHeader}>
+          <Text style={s.pickerTitle}>
+            {t('ScreensCreateCampaignScreen.cityPicker.title')}
+          </Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <X size={20} color="#94A3B8" />
+          </Pressable>
+        </View>
+
+        <View style={s.pickerSearch}>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder={t('ScreensCreateCampaignScreen.cityPicker.searchPlaceholder')}
+            placeholderTextColor="#cbd5e1"
+            style={s.input}
+          />
+        </View>
+
+        <ScrollView
+          style={{flex: 1}}
+          contentContainerStyle={{padding: 20}}
+          keyboardShouldPersistTaps="handled">
+          <ChipGroup
+            options={filtered}
+            selected={local}
+            onToggle={v => setLocal(c => toggleIn(c, v))}
+          />
+          {filtered.length === 0 ? (
+            <Text style={s.pickerNoMatch}>
+              {t('ScreensCreateCampaignScreen.cityPicker.noMatch')}
+            </Text>
+          ) : null}
+        </ScrollView>
+
+        <View
+          style={[
+            s.pickerFooter,
+            {paddingBottom: Math.max(insets.bottom, 12)},
+          ]}>
+          <Text style={s.pickerCount}>
+            {t('ScreensCreateCampaignScreen.cityPicker.selectedCount', {
+              count: local.length,
+            })}
+          </Text>
+          <Pressable onPress={onClose} style={s.pickerCancel}>
+            <Text style={s.pickerCancelText}>
+              {t('ScreensCreateCampaignScreen.cityPicker.cancel')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              onSave(local);
+              onClose();
+            }}
+            style={s.pickerSave}>
+            <Text style={s.pickerSaveText}>
+              {t('ScreensCreateCampaignScreen.cityPicker.save')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function ChipGroup({
   options,
   selected,
@@ -1214,6 +1351,55 @@ function TogglePill({
 }
 
 const s = StyleSheet.create({
+  browseAllBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+  },
+  browseAllText: {fontSize: 12, fontWeight: '700', color: '#5851DB'},
+  pickerRoot: {flex: 1, backgroundColor: '#fff'},
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  pickerTitle: {fontSize: 16, fontWeight: '800', color: '#16224E'},
+  pickerSearch: {paddingHorizontal: 20, paddingTop: 14},
+  pickerNoMatch: {fontSize: 12, color: '#94A3B8', fontStyle: 'italic'},
+  pickerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  pickerCount: {flex: 1, fontSize: 12, fontWeight: '600', color: '#64748B'},
+  pickerCancel: {
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pickerCancelText: {fontSize: 12, fontWeight: '700', color: '#64748B'},
+  pickerSave: {
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: '#5851DB',
+  },
+  pickerSaveText: {fontSize: 12, fontWeight: '700', color: '#fff'},
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
