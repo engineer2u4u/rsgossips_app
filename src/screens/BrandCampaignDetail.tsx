@@ -14,6 +14,7 @@
 //   - RatingModal upserts campaign_ratings (rater_role = "brand")
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {applicationDeadlinePassed, campaignEnded} from '../lib/campaignDates';
 import {
   ActivityIndicator,
   Alert,
@@ -135,6 +136,10 @@ type Campaign = {
   maxInfluencers?: number;
   contentTypesRequired?: string[];
   applicationDeadline?: string;
+  // Delivery end date. brand-campaigns list/get both return it; it was
+  // simply missing from this type, so a finished campaign could not be
+  // told apart from one whose applications had merely shut.
+  endDate?: string;
   campaignEndDate?: string;
   startDate?: string;
   location?: string;
@@ -330,17 +335,32 @@ export default function BrandCampaignDetail() {
   // Derived display status: DB-status "active" with a lapsed application
   // deadline reads as "Applications Closed", not a misleading ACTIVE
   // (mirrors web /brands/campaign/[id]).
-  const appsClosed =
+  // End-of-day via lib/campaignDates. The raw compare this replaces read a
+  // stored midnight, so a campaign closed on the MORNING of its own
+  // deadline — a brand saw "Applications Closed" on one created that day.
+  //
+  // Two states: a finished campaign says Closed, one still delivering says
+  // Applications Closed. See the note in web's CampaignCard.jsx.
+  const isOver =
     status === 'active' &&
-    !!campaign.applicationDeadline &&
-    new Date(campaign.applicationDeadline).getTime() < Date.now();
-  const pill = appsClosed
+    campaignEnded(campaign.endDate, campaign.applicationDeadline);
+  const appsClosed =
+    !isOver &&
+    status === 'active' &&
+    applicationDeadlinePassed(campaign.applicationDeadline);
+  const pill = isOver
     ? {
-        bg: 'bg-amber-100',
-        text: 'text-amber-700',
-        label: t('ScreensBrandCampaignDetail.statusApplicationsClosed'),
+        bg: 'bg-slate-100',
+        text: 'text-slate-600',
+        label: t('ScreensBrandCampaignDetail.statusClosed'),
       }
-    : STATUS_PILL[status];
+    : appsClosed
+      ? {
+          bg: 'bg-amber-100',
+          text: 'text-amber-700',
+          label: t('ScreensBrandCampaignDetail.statusApplicationsClosed'),
+        }
+      : STATUS_PILL[status];
 
   return (
     <View style={{flex: 1, backgroundColor: '#F8F9FE'}}>

@@ -68,6 +68,26 @@ const CATEGORIES = [
 
 const PLATFORMS = ['Instagram'];
 
+// True when a yyyy-mm-dd date is before today. End-of-day semantics — today
+// is NOT past — matching the web pickers and
+// supabase/functions/_shared/campaign-dates.ts on the server.
+//
+// The calendar parts are read out of the string rather than via new Date(),
+// which has no timezone on these values and would resolve differently
+// depending on the device's zone. Getting that wrong is what made a
+// same-day deadline read as already closed.
+const isPastDay = (value: string): boolean => {
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+  if (!ymd) return false;
+  const endOfDay = new Date(
+    Number(ymd[1]),
+    Number(ymd[2]) - 1,
+    Number(ymd[3]),
+    23, 59, 59, 999,
+  ).getTime();
+  return endOfDay < Date.now();
+};
+
 // Pure, so it lives at module scope rather than inside the screen: the city
 // picker below is a separate component and needs the same toggle.
 const toggleIn = (arr: string[], v: string) =>
@@ -366,6 +386,25 @@ export default function CreateCampaignScreen() {
       if (!ISO_DATE_RE.test(d)) {
         return t('ScreensCreateCampaignScreen.errors.dateFormat', {value: d});
       }
+    }
+    // There is no native date picker on this screen (plain yyyy-mm-dd text
+    // inputs), so there is nothing to grey out — the check is the only
+    // guard. A campaign with a past deadline publishes, gets approved and
+    // reaches nobody; the server refuses it too.
+    //
+    if (isPastDay(form.campaign_start_date)) {
+      return t('ScreensCreateCampaignScreen.errors.startInPast');
+    }
+    if (isPastDay(form.application_deadline)) {
+      return t('ScreensCreateCampaignScreen.errors.deadlineInPast');
+    }
+    if (isPastDay(form.campaign_end_date)) {
+      return t('ScreensCreateCampaignScreen.errors.endInPast');
+    }
+    // Applications must not close before the campaign has begun.
+    // yyyy-mm-dd sorts chronologically, so a string compare is enough.
+    if (form.application_deadline < form.campaign_start_date) {
+      return t('ScreensCreateCampaignScreen.errors.deadlineBeforeStart');
     }
     if (
       new Date(form.application_deadline).getTime() >

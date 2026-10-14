@@ -6,6 +6,7 @@
 // its own batch.
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {applicationDeadlinePassed, campaignEnded} from '../lib/campaignDates';
 import {
   ActivityIndicator,
   Image,
@@ -53,6 +54,10 @@ type BrandCampaign = {
   budgetPerInfluencer?: number;
   categories?: string[];
   applicationDeadline?: string;
+  // Delivery end date. brand-campaigns list/get both return it; it was
+  // simply missing from this type, so a finished campaign could not be
+  // told apart from one whose applications had merely shut.
+  endDate?: string;
   applicationsTotal?: number;
   applicationsPending?: number;
   createdAt?: string;
@@ -337,10 +342,15 @@ function RealCampaignCard({
   // A campaign can be DB-status "active" with its application deadline
   // already past — creators can't apply anymore, so it gets its own amber
   // display chip instead of a misleading Active (mirrors web CampaignCard).
-  const appsClosed =
+  // Two states — see the note in CampaignCard.jsx on web. A finished
+  // campaign says Closed; one still delivering says Applications Closed.
+  const isOver =
     campaign.status === 'active' &&
-    !!campaign.applicationDeadline &&
-    new Date(campaign.applicationDeadline).getTime() < Date.now();
+    campaignEnded(campaign.endDate, campaign.applicationDeadline);
+  const appsClosed =
+    !isOver &&
+    campaign.status === 'active' &&
+    applicationDeadlinePassed(campaign.applicationDeadline);
 
   return (
     <TouchableOpacity
@@ -363,7 +373,13 @@ function RealCampaignCard({
               </Text>
             </View>
           ) : null}
-          {appsClosed ? (
+          {isOver ? (
+            <View className="bg-slate-100 px-2 py-0.5 rounded-full">
+              <Text className="text-[10px] font-bold uppercase text-slate-600">
+                {t('ScreensBrandCampaigns.closed')}
+              </Text>
+            </View>
+          ) : appsClosed ? (
             <View className="bg-amber-100 px-2 py-0.5 rounded-full">
               <Text className="text-[10px] font-bold uppercase text-amber-700">
                 {t('ScreensBrandCampaigns.applicationsClosed')}

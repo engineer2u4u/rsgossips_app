@@ -1783,7 +1783,8 @@
     "addressHiddenUntilApproved": "Given — visible once you approve this creator.",
     "trackShipment": "Track shipment",
     "creatorConfirmed": "Creator confirmed delivery",
-    "creatorNotReceived": "Creator says it never arrived"
+    "creatorNotReceived": "Creator says it never arrived",
+    "statusClosed": "Closed"
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -1810,7 +1811,8 @@
     "underReview": "under review",
     "verifyGateTitle": "Your brand is under review",
     "verifyGateBody": "You can create campaigns as soon as our team verifies your account (usually 1-2 business days).",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "closed": "Closed"
   },
   "ScreensBrandChats": {
     "messages": "Messages",
@@ -2083,7 +2085,11 @@
       "minDeliverable": "Add at least 1 deliverable (reels, posts, stories, videos or blogs)",
       "minCategory": "Select at least 1 category",
       "minPlatform": "Select at least 1 platform",
-      "createFailed": "Failed to create campaign"
+      "createFailed": "Failed to create campaign",
+      "startInPast": "Pick a start date from today onwards.",
+      "deadlineInPast": "The application deadline must be today or later, or creators will never be able to apply.",
+      "endInPast": "The delivery end date must be today or later.",
+      "deadlineBeforeStart": "The application deadline cannot be before the campaign start date."
     },
     "cityPicker": {
       "title": "Choose locations",

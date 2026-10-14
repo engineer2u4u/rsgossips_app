@@ -4,6 +4,7 @@
 // `inviteInfluencers` and reports back via onDone(result).
 
 import React, {useEffect, useState} from 'react';
+import {campaignEnded} from '../../lib/campaignDates';
 import {
   ActivityIndicator,
   Alert,
@@ -33,7 +34,8 @@ type Campaign = {
 // invited creator can still apply). Ended/completed/paused/draft are excluded.
 function isInvitable(c: Campaign) {
   if (c?.status !== 'active') return false;
-  if (c.endDate && new Date(c.endDate).getTime() < Date.now()) return false;
+  // End-of-day: a raw compare excluded a campaign on its own final day.
+  if (campaignEnded(c.endDate, null)) return false;
   return true;
 }
 
