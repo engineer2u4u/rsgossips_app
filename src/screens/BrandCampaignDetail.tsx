@@ -120,6 +120,14 @@ type Application = {
   shipping_tracking_url?: string | null;
   product_received?: boolean | null;
   product_feedback?: string | null;
+  // Product reimbursement (migration 087) — the inverse of the shipping
+  // block above: the creator buys the product and the brand pays them back
+  // before deliverables unlock.
+  reimbursement_status?: string | null;
+  reimbursement_order_id?: string | null;
+  reimbursement_amount_paise?: number | null;
+  reimbursement_reject_reason?: string | null;
+  reimbursement_reference?: string | null;
   influencer_profiles?: InfluencerProfile;
 };
 
@@ -203,6 +211,9 @@ export default function BrandCampaignDetail() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  // Which application is mid-call, so only that panel disables rather than
+  // the whole list.
+  const [reimbursingId, setReimbursingId] = useState<string | null>(null);
   const [ratingsByApp, setRatingsByApp] = useState<Record<string, {target_rating: number}>>(
     {},
   );
@@ -215,6 +226,54 @@ export default function BrandCampaignDetail() {
     total: 0,
   });
   const [invitees, setInvitees] = useState<any[]>([]);
+
+  // Verify or reject a creator's reimbursement claim. The server owns the
+  // state machine and re-checks ownership and stage; this only collects the
+  // reference or the reason and reloads.
+  const runReimbursement = useCallback(
+    async (
+      app: Application,
+      action: 'verify' | 'reject',
+      extra: {reference?: string; reason?: string},
+    ) => {
+      if (!user?.id) return;
+      setReimbursingId(app.id);
+      try {
+        const data = await invokeFn<{success?: boolean; error?: string; message?: string}>(
+          'application-reimbursement',
+          {
+            action,
+            applicationId: app.id,
+            brandId: user.id,
+            reference: extra.reference,
+            reason: extra.reason,
+          },
+        );
+        // This function answers 200 with { error } on a refusal, like the
+        // rest of the edge layer — so a failure lands here, not in catch.
+        if (data?.error) {
+          Alert.alert(
+            t('ScreensBrandCampaignDetail.reimbursement.failedTitle'),
+            data.message || data.error,
+          );
+          return;
+        }
+        await load();
+      } catch (e) {
+        Alert.alert(
+          t('ScreensBrandCampaignDetail.reimbursement.failedTitle'),
+          (e as Error)?.message ||
+            t('ScreensBrandCampaignDetail.reimbursement.failedBody'),
+        );
+      } finally {
+        setReimbursingId(null);
+      }
+    },
+    // load is defined below and is a useCallback; referencing it here is
+    // safe because this only runs from a press handler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.id, t],
+  );
 
   const load = useCallback(async () => {
     if (!user?.id || !id) return;
@@ -612,6 +671,8 @@ export default function BrandCampaignDetail() {
                 key={app.id}
                 app={app}
                 brandId={user!.id}
+                reimbursing={reimbursingId === app.id}
+                onReimburse={(action, extra) => runReimbursement(app, action, extra)}
                 defaultRate={campaign.budgetPerInfluencer}
                 campaignType={campaign.campaignType}
                 rating={ratingsByApp[app.id]}
@@ -749,6 +810,8 @@ function BrandApplicationRow({
   rating,
   onRefresh,
   onRated,
+  reimbursing,
+  onReimburse,
 }: {
   app: Application;
   brandId: string;
@@ -758,6 +821,12 @@ function BrandApplicationRow({
   rating?: {target_rating: number};
   onRefresh: () => void;
   onRated?: (r: {target_rating: number}) => void;
+  /** This application has a reimbursement call in flight. */
+  reimbursing?: boolean;
+  onReimburse?: (
+    action: 'verify' | 'reject',
+    extra: {reference?: string; reason?: string},
+  ) => void;
 }) {
   const {t} = useTranslation();
   const {withLoading} = useGlobalLoading();
@@ -1122,6 +1191,22 @@ function BrandApplicationRow({
                 ) : null}
               </View>
             ) : null}
+
+            {/* Product reimbursement. Rendered only once the creator has
+                actually submitted something — before that there is nothing
+                for the brand to do and an empty panel on every application
+                is noise. Deliverables stay locked until this is settled, so
+                this is the brand's blocking action. */}
+            {app.reimbursement_status &&
+            !['not_required', 'awaiting_purchase'].includes(
+              app.reimbursement_status,
+            ) ? (
+              <ReimbursementPanel
+                app={app}
+                busy={!!reimbursing}
+                onAction={onReimburse}
+              />
+            ) : null}
             {inf.bio ? (
               <Text style={{fontSize: 11, color: '#475569', marginTop: 8, lineHeight: 16}}>
                 {inf.bio}
@@ -1420,6 +1505,195 @@ function BrandApplicationRow({
         onPrimary={releaseEscrow}
         onSkip={releaseEscrow}
       />
+    </View>
+  );
+}
+
+// The brand's side of the product-reimbursement step: what the creator
+// says they bought and paid, and the two decisions that unblock or bounce
+// it. The server owns the state machine and re-checks stage and ownership,
+// so this is presentation plus the two inputs it needs.
+function ReimbursementPanel({
+  app,
+  busy,
+  onAction,
+}: {
+  app: Application;
+  busy: boolean;
+  onAction?: (
+    action: 'verify' | 'reject',
+    extra: {reference?: string; reason?: string},
+  ) => void;
+}) {
+  const {t} = useTranslation();
+  const [reference, setReference] = useState('');
+  const [reason, setReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
+  const status = String(app.reimbursement_status || '');
+  const settled = status === 'reimbursed';
+  const bounced = status === 'rejected';
+  // Only these two stages are actionable; 'delivered' means the creator has
+  // confirmed it arrived, 'submitted' means they have not yet.
+  const canAct = status === 'submitted' || status === 'delivered';
+
+  const amount =
+    typeof app.reimbursement_amount_paise === 'number'
+      ? '₹' + Math.round(app.reimbursement_amount_paise / 100).toLocaleString('en-IN')
+      : '—';
+
+  return (
+    <View
+      style={{
+        marginTop: 8,
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: settled ? '#ECFDF5' : bounced ? '#FFF1F2' : '#F8FAFC',
+        borderWidth: 1,
+        borderColor: settled ? '#A7F3D0' : bounced ? '#FECDD3' : '#E2E8F0',
+      }}>
+      <Text
+        style={{
+          fontSize: 10,
+          fontWeight: '800',
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+          color: settled ? '#047857' : bounced ? '#BE123C' : '#475569',
+        }}>
+        {t('ScreensBrandCampaignDetail.reimbursement.title')}
+      </Text>
+
+      <Text style={{fontSize: 11, color: '#1e293b', marginTop: 4}}>
+        {t('ScreensBrandCampaignDetail.reimbursement.orderLine', {
+          orderId: app.reimbursement_order_id || '—',
+          amount,
+        })}
+      </Text>
+
+      <Text style={{fontSize: 10, color: '#64748B', marginTop: 3}}>
+        {status === 'submitted'
+          ? t('ScreensBrandCampaignDetail.reimbursement.awaitingDelivery')
+          : status === 'delivered'
+            ? t('ScreensBrandCampaignDetail.reimbursement.delivered')
+            : settled
+              ? t('ScreensBrandCampaignDetail.reimbursement.paid')
+              : t('ScreensBrandCampaignDetail.reimbursement.bounced')}
+      </Text>
+
+      {bounced && app.reimbursement_reject_reason ? (
+        <Text style={{fontSize: 11, color: '#BE123C', marginTop: 4, fontStyle: 'italic'}}>
+          {app.reimbursement_reject_reason}
+        </Text>
+      ) : null}
+
+      {settled && app.reimbursement_reference ? (
+        <Text style={{fontSize: 10, color: '#047857', marginTop: 4}}>
+          {t('ScreensBrandCampaignDetail.reimbursement.reference', {
+            reference: app.reimbursement_reference,
+          })}
+        </Text>
+      ) : null}
+
+      {canAct && onAction ? (
+        rejecting ? (
+          <View style={{marginTop: 8}}>
+            <TextInput
+              value={reason}
+              onChangeText={setReason}
+              placeholder={t('ScreensBrandCampaignDetail.reimbursement.reasonPlaceholder')}
+              placeholderTextColor="#cbd5e1"
+              multiline
+              style={{
+                minHeight: 54,
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                borderRadius: 8,
+                padding: 8,
+                fontSize: 12,
+                color: '#0f172a',
+                backgroundColor: '#fff',
+                textAlignVertical: 'top',
+              }}
+            />
+            <View style={{flexDirection: 'row', gap: 8, marginTop: 8}}>
+              <Pressable
+                onPress={() => {
+                  setRejecting(false);
+                  setReason('');
+                }}
+                style={{flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center'}}>
+                <Text style={{fontSize: 11, fontWeight: '700', color: '#64748B'}}>
+                  {t('ScreensBrandCampaignDetail.reimbursement.cancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={busy || !reason.trim()}
+                onPress={() => onAction('reject', {reason: reason.trim()})}
+                style={{
+                  flex: 1,
+                  paddingVertical: 9,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  backgroundColor: '#E11D48',
+                  opacity: busy || !reason.trim() ? 0.5 : 1,
+                }}>
+                <Text style={{fontSize: 11, fontWeight: '700', color: '#fff'}}>
+                  {t('ScreensBrandCampaignDetail.reimbursement.sendBack')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={{marginTop: 8}}>
+            <TextInput
+              value={reference}
+              onChangeText={setReference}
+              placeholder={t('ScreensBrandCampaignDetail.reimbursement.referencePlaceholder')}
+              placeholderTextColor="#cbd5e1"
+              style={{
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                borderRadius: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 7,
+                fontSize: 12,
+                color: '#0f172a',
+                backgroundColor: '#fff',
+              }}
+            />
+            <View style={{flexDirection: 'row', gap: 8, marginTop: 8}}>
+              <Pressable
+                disabled={busy}
+                onPress={() => setRejecting(true)}
+                style={{flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: '#FECDD3', alignItems: 'center', opacity: busy ? 0.5 : 1}}>
+                <Text style={{fontSize: 11, fontWeight: '700', color: '#BE123C'}}>
+                  {t('ScreensBrandCampaignDetail.reimbursement.reject')}
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={busy}
+                onPress={() => onAction('verify', {reference: reference.trim()})}
+                style={{
+                  flex: 1,
+                  paddingVertical: 9,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  backgroundColor: '#059669',
+                  opacity: busy ? 0.5 : 1,
+                }}>
+                <Text style={{fontSize: 11, fontWeight: '700', color: '#fff'}}>
+                  {t('ScreensBrandCampaignDetail.reimbursement.verify')}
+                </Text>
+              </Pressable>
+            </View>
+            {/* Said plainly: ticking this records that the brand paid. The
+                platform does not move the money. */}
+            <Text style={{fontSize: 9, color: '#94A3B8', marginTop: 6, lineHeight: 13}}>
+              {t('ScreensBrandCampaignDetail.reimbursement.offPlatformNote')}
+            </Text>
+          </View>
+        )
+      ) : null}
     </View>
   );
 }

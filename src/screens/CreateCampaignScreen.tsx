@@ -157,6 +157,7 @@ type FormState = {
   budget_per_influencer: string;
   product_name: string;
   product_value: string;
+  include_product_reimbursement: boolean;
   shipping_required: 'no' | 'yes' | 'pickup';
   shipping_timeline_days: string;
   service_location: string;
@@ -193,6 +194,7 @@ const initialForm: FormState = {
   budget_per_influencer: '',
   product_name: '',
   product_value: '',
+  include_product_reimbursement: false,
   shipping_required: 'no',
   shipping_timeline_days: '',
   service_location: '',
@@ -624,6 +626,44 @@ export default function CreateCampaignScreen() {
               />
             </Field>
           ) : null}
+
+          {/* The creator buys the product themselves and the brand pays them
+              back before deliverables start. Opens an extra step on every
+              application to this campaign (order id -> delivered -> brand
+              verifies -> reimbursed), and deliverables stay locked until it
+              completes. */}
+          <Pressable
+            onPress={() =>
+              update(
+                'include_product_reimbursement',
+                !form.include_product_reimbursement,
+              )
+            }
+            style={s.checkboxRow}>
+            <View
+              style={[
+                s.checkbox,
+                form.include_product_reimbursement && s.checkboxOn,
+              ]}>
+              {form.include_product_reimbursement ? (
+                <Check size={12} color="white" />
+              ) : null}
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={{fontSize: 13, fontWeight: '600', color: '#16224E'}}>
+                {t('ScreensCreateCampaignScreen.fields.includeReimbursement')}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: '#94A3B8',
+                  marginTop: 2,
+                  lineHeight: 15,
+                }}>
+                {t('ScreensCreateCampaignScreen.fields.includeReimbursementHint')}
+              </Text>
+            </View>
+          </Pressable>
         </Section>
 
         {/* Product / Service */}
