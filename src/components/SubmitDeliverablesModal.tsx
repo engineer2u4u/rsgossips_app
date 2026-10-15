@@ -202,8 +202,21 @@ export default function SubmitDeliverablesModal({
     setTimeout(() => setComplianceCopied(false), 1500);
   };
 
-  const allFilled =
-    deliverables.length > 0 && deliverables.every(d => links[d.key]?.trim());
+  // An Instagram story is gone in 24 hours and its link dies with it, so on
+  // the LIVE LINKS stage a story may be left blank — a creator who posted it
+  // on time should not be blocked from submitting their reels because the
+  // story URL no longer resolves. Drafts still require it: a draft story is
+  // a file the brand has to review. Mirrors the web offers page.
+  const isOptionalLink = (d: {type?: string}) =>
+    isLiveLinksFlow && String(d.type || '').toLowerCase().startsWith('stor');
+
+  const requiredFilled =
+    deliverables.length > 0 &&
+    deliverables.every(d => isOptionalLink(d) || links[d.key]?.trim());
+  // At least one link overall, so submit can never mean "submit nothing" on
+  // a campaign whose deliverables are all stories.
+  const anyFilled = deliverables.some(d => links[d.key]?.trim());
+  const allFilled = requiredFilled && anyFilled;
 
   const linkAnalysis = useMemo(() => {
     const counts = new Map<string, number>();
@@ -249,11 +262,15 @@ export default function SubmitDeliverablesModal({
     setSubmitting(true);
     setError('');
     try {
-      const submissionLinks = deliverables.map(d => ({
-        type: d.type,
-        label: d.label,
-        url: links[d.key].trim(),
-      }));
+      // Blank optional stories are omitted rather than sent as empty
+      // strings — the server stores what it is given.
+      const submissionLinks = deliverables
+        .filter(d => links[d.key]?.trim())
+        .map(d => ({
+          type: d.type,
+          label: d.label,
+          url: links[d.key].trim(),
+        }));
       const data = await invokeFn<{success?: boolean}>('submit-deliverables', {
         applicationId: campaign?.applicationId,
         submissionLinks,
@@ -350,6 +367,11 @@ export default function SubmitDeliverablesModal({
                 style={[styles.row, dimmed && {opacity: 0.5}]}>
                 <View style={styles.rowHeader}>
                   <Text style={styles.rowLabel}>{d.label}</Text>
+                  {isOptionalLink(d) ? (
+                    <Text style={styles.optionalBadge}>
+                      {t('SubmitDeliverablesModal.optional')}
+                    </Text>
+                  ) : null}
                   {isRevision && d.needsRevision ? (
                     <Text style={styles.revisionBadge}>{t('SubmitDeliverablesModal.needsRevisionBadge')}</Text>
                   ) : null}
@@ -607,6 +629,16 @@ const styles = StyleSheet.create({
   row: {gap: 8},
   rowHeader: {flexDirection: 'row', alignItems: 'center', gap: 8},
   rowLabel: {fontSize: 13, fontWeight: '700', color: '#0f172a'},
+  optionalBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    textTransform: 'uppercase',
+  },
   revisionBadge: {
     fontSize: 9,
     fontWeight: '700',

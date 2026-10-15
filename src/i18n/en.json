@@ -1784,7 +1784,25 @@
     "trackShipment": "Track shipment",
     "creatorConfirmed": "Creator confirmed delivery",
     "creatorNotReceived": "Creator says it never arrived",
-    "statusClosed": "Closed"
+    "statusClosed": "Closed",
+    "reimbursement": {
+      "title": "Product reimbursement",
+      "orderLine": "Order {{orderId}} · {{amount}} claimed",
+      "awaitingDelivery": "Creator has not confirmed delivery yet.",
+      "delivered": "Creator confirmed the product arrived.",
+      "paid": "Verified and reimbursed.",
+      "bounced": "Sent back to the creator.",
+      "reference": "Reference: {{reference}}",
+      "referencePlaceholder": "Payment reference (optional)",
+      "reasonPlaceholder": "What does the creator need to fix?",
+      "verify": "Verify & reimburse",
+      "reject": "Send back",
+      "sendBack": "Send back",
+      "cancel": "Cancel",
+      "offPlatformNote": "This records that you have reimbursed the creator. RGossips does not transfer the money.",
+      "failedTitle": "Could not update",
+      "failedBody": "Please try again."
+    }
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -1974,7 +1992,9 @@
       "startDate": "Start Date",
       "applicationDeadline": "Application Deadline",
       "campaignEndDate": "Campaign End Date",
-      "dateHint": "YYYY-MM-DD"
+      "dateHint": "YYYY-MM-DD",
+      "includeReimbursement": "Include product reimbursement",
+      "includeReimbursementHint": "The creator buys the product, submits the order ID and confirms delivery. You verify and reimburse them before they start on deliverables."
     },
     "toggle": {
       "product": "📦 Product",
@@ -3088,7 +3108,8 @@
       "copied": "Copied",
       "limit": "You’ve used your AI generations this month.",
       "upgrade": "Upgrade"
-    }
+    },
+    "optional": "Optional"
   },
   "SuccessScreen": {
     "title": "You're All Set!",
