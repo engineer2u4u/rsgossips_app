@@ -342,7 +342,12 @@ export default function InfluencerDiscover() {
             </View>
           ) : (
             <>
-              <View className="flex-row flex-wrap" style={{gap: 12}}>
+              {/* alignItems stretch: every cell in a wrapped row takes the
+                  height of the tallest card in that row, and BrandCard's
+                  flexGrow fills the cell. */}
+              <View
+                className="flex-row flex-wrap"
+                style={{gap: 12, alignItems: 'stretch'}}>
                 {visibleBrands.map(brand => (
                   <View key={brand.id} style={{width: '48%'}}>
                     <BrandCard

@@ -309,6 +309,11 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
       activeOpacity={0.7}
       onPress={onPress}
       style={{
+        // flexGrow, not flex:1 — flex:1 sets flexBasis 0, which collapses the
+        // card wherever its parent has no definite height. flexGrow keeps the
+        // content height as the floor and only expands into a grid row that a
+        // taller sibling stretched.
+        flexGrow: 1,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 8},
         shadowOpacity: 0.18,
@@ -356,8 +361,9 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
         </TouchableOpacity>
       )}
 
-      {/* Logo + Name */}
-      <View className="items-center mb-4">
+      {/* Logo + Name — grows so the trust footer pins to the card's bottom
+          edge, keeping two side-by-side cards' footers on one line. */}
+      <View className="items-center mb-4" style={{flexGrow: 1}}>
         <View className="w-20 h-20 rounded-2xl bg-[#F8F9FD] items-center justify-center mb-4 overflow-hidden">
           {brand.logo ? (
             <Image
@@ -382,7 +388,9 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
             <CheckCircle size={16} color="#1DA1F2" />
           )}
         </View>
-        <Text className="text-xs text-slate-400 font-medium mt-1">
+        <Text
+          className="text-xs text-slate-400 font-medium mt-1 text-center"
+          numberOfLines={2}>
           {brand.category}
         </Text>
       </View>
@@ -399,8 +407,12 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
         const band = bandRaw ? t(`TrustBands.${trustBandKey(bandRaw)}`) : '—';
         return (
           <View className="mt-3">
+            {/* Label above band, not beside it: on a half-width card the
+                longest band ("Building Trust") is wider than the space a
+                side-by-side label leaves, so the two ran together with no
+                gap. Stacking also drops the read-it-twice "TRUST … Trust". */}
             <View
-              className="flex-row items-center justify-between"
+              accessibilityLabel={`${t('BrandCard.trust')}: ${band}`}
               style={{
                 borderRadius: 12,
                 paddingHorizontal: 10,
@@ -414,12 +426,17 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
                 style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
               />
               <View className="flex-row items-center" style={{gap: 6}}>
-                <ShieldCheck size={14} color="#fff" />
-                <Text className="text-[10px] font-black uppercase tracking-wider text-white">
+                <ShieldCheck size={13} color="#fff" />
+                <Text
+                  className="text-[9px] font-black uppercase tracking-wider text-white"
+                  style={{opacity: 0.9}}>
                   {t('BrandCard.trust')}
                 </Text>
               </View>
-              <Text className="text-[11px] font-black text-white tracking-wide">
+              <Text
+                className="text-[12px] font-black text-white"
+                style={{marginTop: 2}}
+                numberOfLines={1}>
                 {band}
               </Text>
             </View>
