@@ -14,8 +14,8 @@ import './global.css';
 import './src/i18n'; // initialise i18next (side effect) before any screen renders
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LoadingProvider } from './src/context/LoadingContext';
-import LoginScreen from './src/screens/LoginScreen';
-import ConsentPolicyScreen from './src/screens/ConsentPolicyScreen';
+import GuestStack from './src/navigation/GuestStack';
+import {useAuthResume} from './src/hooks/useAuthResume';
 import BrandHome from './src/screens/BrandHome';
 import BrandCampaignDetail from './src/screens/BrandCampaignDetail';
 import CreateCampaignScreen from './src/screens/CreateCampaignScreen';
@@ -49,24 +49,37 @@ const Stack = createNativeStackNavigator();
 // or the universal-link equivalent https://rgossips.com/?invited=...
 // (once App Links are verified). LoginScreen reads `route.params.invited`
 // on mount and runs the invitation flow.
+// A shared campaign link opens the campaign, signed in or not. The route name
+// is the same in both stacks, so this one entry serves guests and members —
+// and it is the whole point of guest browsing: a link someone forwards lands
+// on the content, not on a sign-in form.
 const linking: LinkingOptions<any> = {
   prefixes: ['rgossips://', 'https://rgossips.com', 'https://www.rgossips.com'],
   config: {
     screens: {
+      InfluencerOfferDetail: 'influencer/offers/:id',
       Login: '',
     },
   },
 };
 
-// Splits the navigator into "unauthed" (Login + ConsentPolicy modal) and
-// "authed" (every dashboard screen) stacks. When the user is not signed in,
-// the authed screens aren't mounted AT ALL — so a stray navigate() call,
-// an unfortunate swipe-back inside a sub-pager, or any other client-side
-// flow CANNOT reveal them. Stack swaps happen automatically when
-// AuthContext flips `user` between null and a real value.
+// Three branches: splash while auth resolves, the GUEST stack (the creator
+// marketplace plus Login — see src/navigation/GuestStack.tsx), and the authed
+// stack with every dashboard screen.
+//
+// The guarantee has not changed, only widened: screens outside the current
+// branch aren't mounted AT ALL, so a stray navigate(), an unfortunate
+// swipe-back inside a sub-pager, or any other client-side flow CANNOT reveal
+// them. A guest cannot reach a Brand screen or another creator's account
+// screens for the same reason a signed-out user could never reach a dashboard.
+// Stack swaps happen automatically when AuthContext flips `user`/`role`.
 
 function RootStack() {
   const {user, loading, role, refreshProfile} = useAuth();
+
+  // Replays whatever a guest was doing when we asked them to sign in, once
+  // the authed stack is up. No-op when nothing is pending.
+  useAuthResume(user, role);
 
   // Register this device for FCM push once signed in, and wire tap-to-open
   // deep-linking. No-ops until Firebase native config is present (PUSH_SETUP.md).
@@ -123,16 +136,7 @@ function RootStack() {
   }
 
   if (!user) {
-    return (
-      <Stack.Navigator screenOptions={{headerShown: false}}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen
-          name="ConsentPolicy"
-          component={ConsentPolicyScreen}
-          options={{presentation: 'modal'}}
-        />
-      </Stack.Navigator>
-    );
+    return <GuestStack />;
   }
 
   // Authed: pick the right home based on the CONFIRMED role. We keep the

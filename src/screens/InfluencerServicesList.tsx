@@ -28,6 +28,8 @@ import {
   type ServiceRow,
 } from '../lib/services';
 import LoadingImage from '../components/LoadingImage';
+import SignInRequiredModal from '../components/SignInRequiredModal';
+import {useSignInGate} from '../hooks/useSignInGate';
 
 type PriceBandId = 'any' | 'under-3k' | '3k-7k' | '7k-15k' | '15k-plus';
 
@@ -49,6 +51,7 @@ const LOAD_MORE_STEP = 6;
 
 export default function InfluencerServicesList() {
   const navigation = useNavigation<any>();
+  const gate = useSignInGate();
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -164,8 +167,21 @@ export default function InfluencerServicesList() {
                 {t('ScreensInfluencerServicesList.subtitle')}
               </Text>
             </View>
+            {/* Your orders are yours — this one needs an account. The intent's
+                screen IS the destination, so signing in lands them there with
+                no in-screen resume handler needed. */}
             <TouchableOpacity
-              onPress={() => navigation.navigate('InfluencerServiceOrders')}
+              onPress={() =>
+                gate.require(
+                  'my_orders',
+                  {
+                    screen: 'InfluencerServiceOrders',
+                    action: 'myOrders',
+                    requiredRole: 'influencer',
+                  },
+                  () => navigation.navigate('InfluencerServiceOrders'),
+                )
+              }
               className="bg-pink-50 px-3 h-10 rounded-xl items-center justify-center border border-pink-200"
             >
               <Text className="text-xs font-bold text-pink-600">
@@ -320,6 +336,12 @@ export default function InfluencerServicesList() {
       <View className="absolute bottom-0 left-0 right-0">
         <BottomNav />
       </View>
+      <SignInRequiredModal
+        reason={gate.reason}
+        onClose={gate.close}
+        onSignIn={gate.goSignIn}
+        onSignUp={gate.goSignUp}
+      />
     </SafeAreaView>
   );
 }

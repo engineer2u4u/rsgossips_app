@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
-import { Home, Briefcase, User, Compass, Sparkles } from 'lucide-react-native';
+import { Home, Briefcase, User, Compass, Sparkles, LogIn } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { BRAND, BRAND_GRADIENT_WARM } from '../theme/brand';
+import { useAuth } from '../context/AuthContext';
 
 // Alerts are reachable from the bell icon in the top bar, so they no longer
 // take up a slot in the bottom nav.
@@ -14,6 +15,14 @@ const navItems = [
   { key: 'campaigns', icon: Briefcase, screen: 'InfluencerCampaigns' },
   { key: 'services', icon: Sparkles, screen: 'InfluencerServices' },
   { key: 'profile', icon: User, screen: 'InfluencerProfile' },
+];
+
+// Same four browse tabs for a guest; the profile slot becomes the way in.
+// InfluencerProfile isn't mounted in the guest stack, so without this the
+// fifth tab would navigate to nothing.
+const guestNavItems = [
+  ...navItems.slice(0, 4),
+  { key: 'signIn', icon: LogIn, screen: 'Login' },
 ];
 
 /**
@@ -32,6 +41,8 @@ const BottomNav = () => {
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const items = user?.id ? navItems : guestNavItems;
 
   return (
     <View
@@ -78,14 +89,20 @@ const BottomNav = () => {
           className="flex-row justify-around items-center"
           style={{ height: 68, paddingHorizontal: 6 }}
         >
-          {navItems.map(item => {
+          {items.map(item => {
             const isActive = route.name === item.screen;
             const Icon = item.icon;
 
             return (
               <Pressable
                 key={item.key}
-                onPress={() => navigation.navigate(item.screen)}
+                onPress={() =>
+                  navigation.navigate(
+                    item.screen,
+                    // Open the auth sheet rather than the 3-slide carousel.
+                    item.key === 'signIn' ? {mode: 'signin'} : undefined,
+                  )
+                }
                 className="flex-1 items-center justify-center"
                 style={{ paddingVertical: 4 }}
               >

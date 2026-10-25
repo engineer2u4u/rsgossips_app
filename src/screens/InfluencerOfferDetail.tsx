@@ -50,6 +50,9 @@ import UpgradeRequiredModal, {
 import {useFreeApplications} from '../hooks/useFreeApplications';
 import RatingModal, {type RatingValues} from '../components/RatingModal';
 import LoadingImage from '../components/LoadingImage';
+import SignInRequiredModal from '../components/SignInRequiredModal';
+import {useSignInGate} from '../hooks/useSignInGate';
+import {useResumeAction} from '../hooks/useResumeAction';
 import ApplicationStatusBar from '../components/ApplicationStatusBar';
 import OfferResponseCard from '../components/OfferResponseCard';
 import BottomNav from '../components/BottomNav';
@@ -362,6 +365,20 @@ export default function InfluencerOfferDetail() {
   // landed would block a creator with applications to spare, and the
   // server is the real boundary, so erring open here costs nothing.
   const requestApply = () => {
+    // The wall. Browsing is open; applying belongs to an account, so this is
+    // where a guest is asked to sign in — and we remember the campaign so
+    // they come back to it rather than to a dashboard. Checked before the
+    // plan rules below, because a guest has no plan state at all.
+    if (gate.isGuest) {
+      gate.require('apply_campaign', {
+        screen: 'InfluencerOfferDetail',
+        // The screen reads route.params.id — not campaignId.
+        params: {id: campaignId},
+        action: 'apply',
+        requiredRole: 'influencer',
+      });
+      return;
+    }
     if (!freeApps.subscribed && freeApps.known) {
       if (!isBarter) {
         setUpgradeReason('paid_campaign');
@@ -377,15 +394,25 @@ export default function InfluencerOfferDetail() {
   const [showRating, setShowRating] = useState(false);
   const [myRating, setMyRating] = useState<RatingValues | null>(null);
   const [refetchFlag, setRefetchFlag] = useState(0);
+  const gate = useSignInGate();
+  // Reopens the apply form when a guest signs in and is brought back here.
+  useResumeAction({apply: () => setShowApplyForm(true)});
 
   useEffect(() => {
     let cancelled = false;
     const fetchCampaign = async () => {
-      if (!campaignId || !user?.id) return setLoading(false);
+      // No user check: this screen is the shareable unit of the marketplace
+      // and must open for a signed-out visitor — a forwarded link that says
+      // "Not found" is the wall Apple rejected under 5.1.1(v). The
+      // influencerId only decorates rows with THIS creator's application
+      // state, so omitting it returns the same campaign, minus personal
+      // fields that are meaningless to a guest anyway.
+      if (!campaignId) return setLoading(false);
       try {
-        const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
-          influencerId: user.id,
-        });
+        const data = await invokeFn<{campaigns?: any[]}>(
+          'list-campaigns',
+          user?.id ? {influencerId: user.id} : {},
+        );
         if (cancelled) return;
         const found = data?.campaigns?.find((c: any) => c.id === campaignId);
         if (found) {
@@ -1217,6 +1244,15 @@ export default function InfluencerOfferDetail() {
       <View className="absolute bottom-0 left-0 right-0">
         <BottomNav />
       </View>
+
+      {/* Guest reaching an account-based action. Sibling of the upgrade
+          modal: same shape, different wall. */}
+      <SignInRequiredModal
+        reason={gate.reason}
+        onClose={gate.close}
+        onSignIn={gate.goSignIn}
+        onSignUp={gate.goSignUp}
+      />
 
       {/* Apply Form Modal */}
       <UpgradeRequiredModal

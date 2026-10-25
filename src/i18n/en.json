@@ -406,7 +406,8 @@
       "brands": "Brands",
       "campaigns": "Campaigns",
       "services": "Services",
-      "profile": "Profile"
+      "profile": "Profile",
+      "signIn": "Sign in"
     }
   },
   "BrandBottomNav": {
@@ -2144,7 +2145,9 @@
     "freeBannerTitle_other": "{{count}} free barter applications left",
     "freeBannerExhausted": "You have used all your free applications",
     "freeBannerBody": "Free accounts can apply to barter campaigns, where brands pay in product. Paid campaigns, your media kit and analytics unlock on any plan.",
-    "freeBannerCta": "See plans"
+    "freeBannerCta": "See plans",
+    "loadFailedTitle": "Couldn't load campaigns",
+    "loadFailedBody": "Check your connection and try again."
   },
   "ScreensInfluencerChats": {
     "messages": "Messages",
@@ -2163,7 +2166,9 @@
     "sortMatch": "Match score",
     "sortAz": "A–Z",
     "sortCampaigns": "Active campaigns",
-    "loadMore": "Load more ({{n}} remaining)"
+    "loadMore": "Load more ({{n}} remaining)",
+    "loadFailedTitle": "Couldn't load brands",
+    "loadFailedBody": "Check your connection and try again."
   },
   "ScreensInfluencerMediaKit": {
     "shareMessage": "Check out my media kit",
@@ -3855,5 +3860,37 @@
     "established": "Established",
     "emerging": "Emerging",
     "buildingTrust": "Building Trust"
+  },
+  "SignInRequired": {
+    "close": "Close",
+    "signIn": "Sign in",
+    "createAccount": "Create an account",
+    "keepBrowsing": "Keep browsing",
+    "apply_campaign": {
+      "title": "Sign in to apply",
+      "body": "Applying sends this brand your profile and your rate, so it needs an account. Browsing stays open either way."
+    },
+    "request_quote": {
+      "title": "Sign in to request a quote",
+      "body": "A quote is sent to you and tracked in your orders, so it needs an account."
+    },
+    "my_orders": {
+      "title": "Sign in to see your orders",
+      "body": "Your orders live in your account. Sign in to pick up where you left off."
+    },
+    "generic": {
+      "title": "Sign in to continue",
+      "body": "This part of RGossips belongs to your account."
+    }
+  },
+  "Login": {
+    "keepBrowsing": "Keep browsing"
+  },
+  "InfluencerLayout": {
+    "signIn": "Sign in"
+  },
+  "InfluencerHome": {
+    "guestTitle": "Browse brand campaigns",
+    "guestBody": "Look around freely. You only need an account to apply or order."
   }
 }

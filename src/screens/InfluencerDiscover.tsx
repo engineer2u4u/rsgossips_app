@@ -55,85 +55,15 @@ interface Brand {
   accountType?: BrandAccountType;
 }
 
-const FALLBACK_BRANDS: Brand[] = [
-  {
-    id: '1',
-    name: 'D LUXE PERFUMES',
-    category: 'Perfume',
-    minBudget: 1500,
-    maxBudget: 7500,
-    isVerified: true,
-    platforms: ['Instagram'],
-    activeCampaigns: 12,
-    rating: 4.9,
-    followers: '45K',
-    logo: 'https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs',
-    payout: '₹1,500 - ₹7,500',
-  },
-  {
-    id: '2',
-    name: 'ZAUDI',
-    category: 'Perfume',
-    minBudget: 1000,
-    maxBudget: 5000,
-    isVerified: false,
-    platforms: ['Instagram'],
-    activeCampaigns: 4,
-    rating: 4.3,
-    followers: '12K',
-    logo: 'https://lh3.googleusercontent.com/d/1PS9A-rPC48WUPo8imZjw4XAzChADsceu',
-    payout: '₹1,000 - ₹5,000',
-  },
-  {
-    id: '3',
-    name: 'RIAR ELUX',
-    category: 'Wellness',
-    minBudget: 2000,
-    maxBudget: 8000,
-    isVerified: true,
-    platforms: ['Instagram'],
-    activeCampaigns: 8,
-    rating: 4.7,
-    followers: '28K',
-    logo: 'https://lh3.googleusercontent.com/d/1cUytBemciPv8OdMi6-gADzUCKzfymr1R',
-    payout: '₹2,000 - ₹8,000',
-  },
-  {
-    id: '4',
-    name: 'BIODANCE',
-    category: 'Skincare',
-    minBudget: 3000,
-    maxBudget: 12000,
-    isVerified: false,
-    platforms: ['Instagram'],
-    activeCampaigns: 15,
-    rating: 4.8,
-    followers: '85K',
-    logo: 'https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG',
-    payout: '₹3,000 - ₹12,000',
-  },
-  {
-    id: '5',
-    name: 'SESA POWERPLUS',
-    category: 'Health',
-    minBudget: 1200,
-    maxBudget: 6000,
-    isVerified: false,
-    platforms: ['Instagram'],
-    activeCampaigns: 6,
-    rating: 4.5,
-    followers: '19K',
-    logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r',
-    payout: '₹1,200 - ₹6,000',
-  },
-];
-
 export default function InfluencerDiscover() {
   const {t} = useTranslation();
   const {profile} = useAuth();
   const navigation = useNavigation<any>();
-  const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
+  // See InfluencerCampaign: this screen used to fall back to five invented
+  // brands with hard-coded ratings and payouts whenever list-brands failed.
+  const [loadError, setLoadError] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -153,7 +83,10 @@ export default function InfluencerDiscover() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const loadBrands = useCallback(async () => {
+    setLoadError(false);
     try {
+      // list-brands takes no caller identity, so this is the same call for a
+      // guest as for a signed-in creator.
       const data = await invokeFn<{brands?: any[]}>('list-brands', {});
       if (data?.brands?.length) {
         setBrands(
@@ -181,7 +114,8 @@ export default function InfluencerDiscover() {
         );
       }
     } catch {
-      // Keep fallback brands.
+      setBrands([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -379,6 +313,26 @@ export default function InfluencerDiscover() {
               <Text className="text-sm font-bold text-slate-400">
                 {t('ScreensInfluencerDiscover.loading')}
               </Text>
+            </View>
+          ) : loadError ? (
+            <View
+              className="py-16 bg-white rounded-[32px] items-center px-6"
+              style={{gap: 10}}>
+              <Text className="text-sm font-bold text-slate-700 text-center">
+                {t('ScreensInfluencerDiscover.loadFailedTitle')}
+              </Text>
+              <Text className="text-xs text-slate-400 text-center">
+                {t('ScreensInfluencerDiscover.loadFailedBody')}
+              </Text>
+              <TouchableOpacity
+                onPress={loadBrands}
+                accessibilityRole="button"
+                className="mt-1 px-5 rounded-2xl border items-center justify-center"
+                style={{height: 42, borderColor: '#cbd5e1'}}>
+                <Text className="text-[13px] font-bold text-slate-600">
+                  {t('common.retry')}
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : filteredBrands.length === 0 ? (
             <View className="py-20 bg-white rounded-[32px] items-center">

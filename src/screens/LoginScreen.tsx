@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,6 +11,7 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Mail, RefreshCw, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -18,6 +19,7 @@ import { supabase } from '../utils/supabase';
 import { invokeFn, EdgeFunctionError } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import OnboardingCarousel from '../components/OnboardingCarousel';
+import {clearAuthIntent} from '../lib/authIntent';
 import RoleSelection from '../components/RoleSelection';
 import InstagramConnect from '../components/InstagramConnect';
 import SignUpForm from '../components/SignUpForm';
@@ -61,7 +63,15 @@ interface InstaProfile {
   tokenExpiresAt?: string;
 }
 
-type LoginRouteParams = { invited?: string; ref?: string };
+type LoginRouteParams = {
+  invited?: string;
+  ref?: string;
+  /** Skip the onboarding carousel and open the auth sheet directly. Set by
+   *  every entry point from the guest marketplace — someone who tapped
+   *  "Sign in" has already decided, and three slides of carousel first is
+   *  not an introduction, it is an obstacle. */
+  mode?: 'signin' | 'signup';
+};
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -82,7 +92,16 @@ export default function LoginScreen() {
     if (authLoading) return;
     if (!authedUser) return;
     const target = authedRole === 'brand' ? 'BrandHome' : 'InfluencerHome';
-    (navigation as any).reset({index: 0, routes: [{name: target}]});
+    // Only reset to a route this navigator actually has. Login now also
+    // lives in the GUEST stack, which has no BrandHome — and resetting to a
+    // missing route logs "action RESET was not handled by any navigator".
+    // It is a no-op either way: RootStack swapping to the authed stack is
+    // what really moves the user, and that stack's initialRouteName already
+    // picks the right home for the role.
+    const state = (navigation as any).getState?.();
+    if (state?.routeNames?.includes(target)) {
+      (navigation as any).reset({index: 0, routes: [{name: target}]});
+    }
   }, [authLoading, authedUser, authedRole, navigation]);
 
   // --- INVITATION DEEP LINK (?invited=<handle>) ---
@@ -165,6 +184,38 @@ export default function LoginScreen() {
     'onboarding',
   );
   const [step, setStep] = useState(1);
+
+  // ?mode=signin|signup — arriving from the guest marketplace. Skipped when
+  // an invitation is in play: that flow drives `flow`/`step` itself and must
+  // not be second-guessed. Role is deliberately NOT preset; signupData.role
+  // feeds check-phone-exists, and force-routing a browsing brand into
+  // creator sign-in earns them a "registered as a brand" error instead of a
+  // single extra tap.
+  const entryMode = route.params?.mode;
+  useEffect(() => {
+    if (route.params?.invited) return;
+    if (entryMode === 'signin' || entryMode === 'signup') {
+      setFlow(entryMode);
+      setStep(1);
+    }
+  }, [entryMode, route.params?.invited]);
+
+  // Can we get out of here? True whenever Login was pushed on top of
+  // something — i.e. the whole guest marketplace. A sign-in screen with no
+  // way back is the forced-registration dead end Apple rejected, so this
+  // drives a visible dismiss affordance.
+  const insets = useSafeAreaInsets();
+  const canDismiss = (navigation as any).canGoBack?.() ?? false;
+  const dismiss = useCallback(() => {
+    // They chose not to sign in; whatever they were trying to do is over.
+    clearAuthIntent();
+    if ((navigation as any).canGoBack?.()) {
+      navigation.goBack();
+    } else {
+      (navigation as any).navigate('InfluencerHome');
+    }
+  }, [navigation]);
+
   // The auth bottom-sheet's ScrollView — handed to the signup forms so their
   // scroll-to-invalid-field logic can drive the actual scroller (the forms'
   // own nested ScrollViews may not be the ones scrolling).
@@ -239,6 +290,14 @@ export default function LoginScreen() {
   const nextStep = () => setStep(s => s + 1);
 
   const closeAuth = () => {
+    // Arrived from the marketplace? Go back to it. Dropping the visitor on
+    // the onboarding carousel instead left them on a screen they never asked
+    // for, with the way back one more tap away — which read as no way back
+    // at all.
+    if ((navigation as any).canGoBack?.()) {
+      dismiss();
+      return;
+    }
     setFlow('onboarding');
     setStep(1);
     setError('');
@@ -441,7 +500,12 @@ export default function LoginScreen() {
         : 'InfluencerHome';
       // reset (not navigate) — clears the auth stack so swipe-back can't
       // surface a stale BrandHome / InfluencerHome from a prior session.
-      (navigation as any).reset({index: 0, routes: [{name: target}]});
+      // Guarded: from the guest stack that route does not exist, and the
+      // stack swap handles it. See the restore effect above.
+      const navState = (navigation as any).getState?.();
+      if (navState?.routeNames?.includes(target)) {
+        (navigation as any).reset({index: 0, routes: [{name: target}]});
+      }
     } catch (err: any) {
       if (err instanceof OtpError && err.code === 'deactivated') {
         // Deactivating from the app used to be a one-way door: the app had
@@ -722,6 +786,7 @@ export default function LoginScreen() {
         onSignUpClick={switchToSignUp}
       />
 
+
       {/* Overlay when auth is open. Non-interactive — the sheet only closes via
           the X button so a stray backdrop tap can't lose typed input or abort
           an in-flight OTP / sign-up. */}
@@ -911,6 +976,32 @@ export default function LoginScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      )}
+
+      {/* Always a way back to the marketplace, in every state of this screen
+          — carousel or auth sheet. Signing in is a choice here, not a toll
+          gate, which is the whole of guideline 5.1.1(v). Rendered last so it
+          sits above the sheet's backdrop; hidden only when Login is the root
+          screen (cold start with no session), where there is nothing behind
+          it to go back to. */}
+      {canDismiss && (
+        <Pressable
+          onPress={dismiss}
+          accessibilityRole="button"
+          accessibilityLabel={t('Login.keepBrowsing')}
+          className="absolute flex-row items-center rounded-full px-4"
+          style={{
+            top: insets.top + 10,
+            right: 16,
+            height: 38,
+            gap: 6,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+          }}>
+          <X size={15} color="#fff" />
+          <Text className="text-white text-[12.5px] font-bold">
+            {t('Login.keepBrowsing')}
+          </Text>
+        </Pressable>
       )}
     </View>
   );

@@ -1,7 +1,7 @@
 import React, {useRef, createContext, useContext, useState, useEffect, useCallback} from 'react';
 import {View, ScrollView, Image, Pressable, Text, RefreshControl} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Bell, Headphones} from 'lucide-react-native';
+import {Bell, Headphones, LogIn} from 'lucide-react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
 import BottomNav from '../components/BottomNav';
@@ -9,7 +9,9 @@ import SupportChatModal from '../components/SupportChatModal';
 import InstagramRequiredGate from '../components/InstagramRequiredGate';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
-import {BRAND, BG} from '../theme/brand';
+import {BRAND, BG, BRAND_GRADIENT_WARM} from '../theme/brand';
+import LinearGradient from 'react-native-linear-gradient';
+import {useTranslation} from 'react-i18next';
 
 const LayoutScrollContext = createContext<React.RefObject<ScrollView | null> | null>(null);
 export function useLayoutScroll() {
@@ -19,6 +21,7 @@ export function useLayoutScroll() {
 function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
   const navigation = useNavigation<any>();
   const {user} = useAuth();
+  const {t} = useTranslation();
   const [unread, setUnread] = useState(0);
 
   // Mirrors the web header: fetch all notifications via the `notifications`
@@ -81,6 +84,27 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
         resizeMode="contain"
       />
 
+      {/* A guest has no notifications and no InfluencerNotifications route —
+          the slot becomes the way in instead. Support is hidden below for
+          the same reason: its decision tree navigates to account screens. */}
+      {!user?.id ? (
+        <Pressable
+          onPress={() => navigation.navigate('Login', {mode: 'signin'})}
+          accessibilityRole="button"
+          className="flex-row items-center rounded-2xl px-4"
+          style={{height: 40, gap: 6, overflow: 'hidden'}}>
+          <LinearGradient
+            colors={[...BRAND_GRADIENT_WARM]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+          />
+          <LogIn size={15} color="#fff" />
+          <Text className="text-white text-[13px] font-bold">
+            {t('InfluencerLayout.signIn')}
+          </Text>
+        </Pressable>
+      ) : (
       <Pressable
         onPress={() => navigation.navigate('InfluencerNotifications')}
         className="w-10 h-10 rounded-2xl border border-slate-100 bg-white items-center justify-center relative">
@@ -105,12 +129,15 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
           </View>
         )}
       </Pressable>
+      )}
 
-      <Pressable
-        onPress={onOpenSupport}
-        className="w-10 h-10 rounded-2xl border border-slate-100 bg-white items-center justify-center">
-        <Headphones size={19} color="#4d4960" />
-      </Pressable>
+      {!!user?.id && (
+        <Pressable
+          onPress={onOpenSupport}
+          className="w-10 h-10 rounded-2xl border border-slate-100 bg-white items-center justify-center">
+          <Headphones size={19} color="#4d4960" />
+        </Pressable>
+      )}
 
     </View>
   );

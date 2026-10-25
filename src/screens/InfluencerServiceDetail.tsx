@@ -5,7 +5,7 @@
 //
 // Web parity: src/app/influencer/services/[id]/page.js.
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +16,9 @@ import {
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import SignInRequiredModal from '../components/SignInRequiredModal';
+import {useSignInGate} from '../hooks/useSignInGate';
+import {useResumeAction} from '../hooks/useResumeAction';
 import {
   ChevronLeft,
   Clock,
@@ -39,6 +42,13 @@ export default function InfluencerServiceDetail() {
 
   const [service, setService] = useState<ServiceRow | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const gate = useSignInGate();
+  const openQuote = useCallback(() => {
+    navigation.navigate('InfluencerServiceQuote', {slug});
+  }, [navigation, slug]);
+  // Resumes the quote once a guest has signed in and been brought back.
+  useResumeAction({requestQuote: openQuote});
 
   useEffect(() => {
     if (!slug) {
@@ -263,12 +273,20 @@ export default function InfluencerServiceDetail() {
               {formatINR(service.price_starting || 0)}
             </Text>
           </View>
+          {/* Anyone may read the service; ordering one needs an account. */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() =>
-              navigation.navigate('InfluencerServiceQuote', {
-                slug: service.slug || service.id,
-              })
+              gate.require(
+                'request_quote',
+                {
+                  screen: 'InfluencerServiceDetail',
+                  params: {slug: service.slug || service.id},
+                  action: 'requestQuote',
+                  requiredRole: 'influencer',
+                },
+                openQuote,
+              )
             }
             style={{
               paddingHorizontal: 22,
@@ -288,6 +306,12 @@ export default function InfluencerServiceDetail() {
           </TouchableOpacity>
         </View>
       </View>
+      <SignInRequiredModal
+        reason={gate.reason}
+        onClose={gate.close}
+        onSignIn={gate.goSignIn}
+        onSignUp={gate.goSignUp}
+      />
     </SafeAreaView>
   );
 }

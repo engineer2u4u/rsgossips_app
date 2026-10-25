@@ -68,50 +68,6 @@ interface CampaignData {
   brandType?: BrandAccountType;
 }
 
-const FALLBACK_CAMPAIGNS: CampaignData[] = [
-  {
-    id: '1',
-    initials: 'SB',
-    title: 'Summer Collection',
-    brandName: 'StyleBrand Co.',
-    status: 'Active',
-    tags: ['Fashion', 'Lifestyle'],
-    budget: '₹25,000 - ₹35,000',
-    deadline: 'Jan 30, 2026',
-    daysLeft: '10d',
-    deliverables: '2 Reels + 2 Stories',
-    location: 'Mumbai, India',
-    platforms: ['instagram', 'tiktok'],
-  },
-  {
-    id: '2',
-    initials: 'MB',
-    title: 'Music Fest Promo',
-    brandName: 'MusicWave Events',
-    status: 'Applied',
-    tags: ['Music', 'Events'],
-    budget: '₹30,000 - ₹40,000',
-    deadline: 'Feb 10, 2026',
-    daysLeft: '21d',
-    deliverables: '4 Reels + 2 Videos',
-    location: 'Pune',
-    platforms: ['instagram', 'youtube'],
-  },
-  {
-    id: '3',
-    initials: 'GB',
-    title: 'Eco-Friendly Campaign',
-    brandName: 'GreenEarth Co.',
-    status: 'Completed',
-    tags: ['Sustainability', 'Lifestyle'],
-    budget: '₹20,000 - ₹25,000',
-    deadline: 'Jan 15, 2026',
-    deliverables: '2 Videos + 1 Reel',
-    location: 'Chennai',
-    platforms: ['youtube'],
-  },
-];
-
 export default function InfluencerCampaign() {
   const {t} = useTranslation();
   const {profile, user} = useAuth();
@@ -131,8 +87,13 @@ export default function InfluencerCampaign() {
     ? (route.params as any).categories
     : [];
 
-  const [campaigns, setCampaigns] = useState<CampaignData[]>(FALLBACK_CAMPAIGNS);
+  const [campaigns, setCampaigns] = useState<CampaignData[]>([]);
   const [loading, setLoading] = useState(true);
+  // Set when list-campaigns fails. This screen used to fall back to three
+  // invented campaigns — one of them labelled "Applied" — which meant a bad
+  // connection showed fabricated marketplace inventory to a real creator, and
+  // would have shown it to an App Store reviewer. An honest failure is better.
+  const [loadError, setLoadError] = useState(false);
 
   const [activeTab, setActiveTab] = useState('Active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,14 +132,16 @@ export default function InfluencerCampaign() {
   }, [incomingCategories.join(',')]);
 
   const loadCampaigns = useCallback(async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
+    setLoadError(false);
     try {
-      const data = await invokeFn<{campaigns?: any[]}>('list-campaigns', {
-        influencerId: user.id,
-      });
+      // No influencerId for a guest: list-campaigns takes it as optional and
+      // uses it only to decorate rows with this creator's application state.
+      // Omitting it returns the same public catalogue, which is what makes
+      // the marketplace browsable without an account.
+      const data = await invokeFn<{campaigns?: any[]}>(
+        'list-campaigns',
+        user?.id ? {influencerId: user.id} : {},
+      );
       if (data?.campaigns?.length) {
         setCampaigns(
           data.campaigns.map((c: any) => ({
@@ -214,7 +177,8 @@ export default function InfluencerCampaign() {
       }
     } catch (err) {
       console.warn('list-campaigns failed:', err);
-      // Keep the fallback list so the screen isn't blank.
+      setCampaigns([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -392,7 +356,14 @@ export default function InfluencerCampaign() {
     () => campaigns.some(c => c.invited && c.status === 'Active'),
     [campaigns],
   );
-  const TABS = hasInvites ? ['Invites', ...BASE_TABS] : BASE_TABS;
+  // Applied / Completed / Invites are account concepts: for a guest they can
+  // only ever be empty, so the switcher is hidden and the list stays on
+  // Active rather than offering three dead tabs.
+  const TABS = !user?.id
+    ? ['Active']
+    : hasInvites
+      ? ['Invites', ...BASE_TABS]
+      : BASE_TABS;
   useEffect(() => {
     if (!hasInvites && activeTab === 'Invites') setActiveTab('Applied');
   }, [hasInvites, activeTab]);
@@ -458,7 +429,9 @@ export default function InfluencerCampaign() {
             />
           </View>
 
-          {/* Tab Switcher — count appears next to the label in parentheses */}
+          {/* Tab Switcher — count appears next to the label in parentheses.
+              Hidden for guests: a single "Active" tab is not a choice. */}
+          {TABS.length > 1 && (
           <View className="bg-white p-1.5 rounded-2xl flex-row shadow-sm border border-slate-50" style={{gap: 4}}>
             {TABS.map(tab => {
               const label =
@@ -491,6 +464,7 @@ export default function InfluencerCampaign() {
               );
             })}
           </View>
+          )}
 
           {/* Filtered strip — mirrors web's "{shown} out of {total}
               campaigns" + gradient Show-all reset; only shown while a
@@ -584,7 +558,30 @@ export default function InfluencerCampaign() {
                 />
               ))}
 
-              {filteredCampaigns.length === 0 && (
+              {/* Failure and emptiness are different things and now say so.
+                  The old fallback list blurred them by showing invented
+                  campaigns in both cases. */}
+              {loadError ? (
+                <View
+                  className="py-16 bg-white rounded-[32px] items-center px-6"
+                  style={{gap: 10}}>
+                  <Text className="text-sm font-bold text-slate-700 text-center">
+                    {t('ScreensInfluencerCampaign.loadFailedTitle')}
+                  </Text>
+                  <Text className="text-xs text-slate-400 text-center">
+                    {t('ScreensInfluencerCampaign.loadFailedBody')}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={loadCampaigns}
+                    accessibilityRole="button"
+                    className="mt-1 px-5 rounded-2xl border items-center justify-center"
+                    style={{height: 42, borderColor: '#cbd5e1'}}>
+                    <Text className="text-[13px] font-bold text-slate-600">
+                      {t('common.retry')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : filteredCampaigns.length === 0 ? (
                 <View className="py-20 bg-white rounded-[32px] items-center">
                   <Text className="text-sm font-bold text-slate-400">
                     {t('ScreensInfluencerCampaign.noCampaigns', {
@@ -595,7 +592,7 @@ export default function InfluencerCampaign() {
                     })}
                   </Text>
                 </View>
-              )}
+              ) : null}
 
               {hasMore && (
                 <TouchableOpacity
