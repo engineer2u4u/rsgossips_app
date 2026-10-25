@@ -15,11 +15,17 @@ type Props = Omit<ImageProps, 'source'> & {
   uri?: string | null;
   /** Placeholder colour; defaults to the app's card grey. */
   placeholderColor?: string;
+  /** NativeWind classes. MUST be applied to the wrapper, not the inner
+   *  Image: callers size this component with `className="w-full h-full"`,
+   *  and letting that fall through to the absolutely-filled Image left the
+   *  wrapper with no dimensions at all, so the picture never appeared. */
+  className?: string;
 };
 
 export default function LoadingImage({
   uri,
   style,
+  className,
   placeholderColor = '#eef0f6',
   ...rest
 }: Props) {
@@ -60,7 +66,7 @@ export default function LoadingImage({
   };
 
   return (
-    <View style={style}>
+    <View className={className} style={style}>
       {/* The placeholder sits behind the image and is removed once it is up,
           so a slow or dead URL never leaves a blank hole. */}
       {!loaded ? (
