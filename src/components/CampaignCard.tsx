@@ -304,6 +304,9 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
     ? explainCampaignMatch(profile, campaign)
     : {score: matchScore || 0, breakdown: []};
 
+  // Published as a teaser: listed so it can build anticipation, but not yet
+  // open. Surfaced on the All tab, which is the only place mobile shows one.
+  const isComingSoon = campaign.status === 'Coming Soon';
   const category = campaign.tags?.[0] || t('CampaignCard.general');
   const badge =
     campaign.daysLeft && parseInt(campaign.daysLeft, 10) <= 7
@@ -469,7 +472,7 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
             className="flex-1 items-center"
             style={{borderRadius: 16, paddingVertical: 14, overflow: 'hidden'}}>
             <LinearGradient
-              colors={[...BRAND_GRADIENT_WARM]}
+              colors={isComingSoon ? ['#7C3AED', '#9810FA'] : [...BRAND_GRADIENT_WARM]}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
               style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
@@ -479,7 +482,14 @@ function CampaignCardImpl({campaign, matchScore = 0}: Props) {
                 ? t('CampaignCard.viewStatus')
                 : campaign.status === 'Applied'
                   ? t('CampaignCard.viewStatus')
-                  : t('CampaignCard.applyNow')}
+                  : // A coming-soon campaign cannot be applied to — the
+                    // detail screen hides its Apply bar and apply-campaign
+                    // refuses it — so promising "Apply Now" here would send
+                    // the creator to a screen with no apply button. Same
+                    // violet treatment web uses.
+                    isComingSoon
+                    ? t('CampaignCard.takeALook')
+                    : t('CampaignCard.applyNow')}
             </Text>
           </TouchableOpacity>
         </View>

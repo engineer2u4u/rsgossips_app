@@ -24,13 +24,19 @@ import {invokeFn} from '../lib/api';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 
-const BASE_TABS = ['Active', 'Applied', 'Completed'];
+const BASE_TABS = ['All', 'Active', 'Applied', 'Completed'];
 
 // Which tab a campaign belongs to. "Invites" = the brand personally invited the
 // creator and they haven't applied yet (once applied → status Applied, so it
 // moves there). Invited campaigns are pulled OUT of Active so they don't double
 // up. Mirrors web src/app/influencer/campaigns/page.js.
 function campaignInTab(c: any, tab: string) {
+  // Everything still open to the creator, in one view. Mirrors web's All
+  // tab, and here it does more work than it does there: no other tab on
+  // mobile matches 'Coming Soon', so until this existed a teaser campaign
+  // was invisible in the app. Unlike Active it keeps invited campaigns, so
+  // All is every browsable campaign rather than Active renamed.
+  if (tab === 'All') return c.status === 'Active' || c.status === 'Coming Soon';
   if (tab === 'Completed') return c.applicationStatus === 'completed';
   if (tab === 'Invites') return !!c.invited && c.status === 'Active';
   if (tab === 'Active') return c.status === 'Active' && !c.invited;
@@ -303,6 +309,7 @@ export default function InfluencerCampaign() {
     };
     const pool = campaigns.filter(matchesNonTabFilters);
     return {
+      All: pool.filter(c => campaignInTab(c, 'All')).length,
       Invites: pool.filter(c => campaignInTab(c, 'Invites')).length,
       Active: pool.filter(c => campaignInTab(c, 'Active')).length,
       Applied: pool.filter(c => campaignInTab(c, 'Applied')).length,

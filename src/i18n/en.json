@@ -677,7 +677,8 @@
       "copied": "Copied",
       "regenerate": "Regenerate",
       "remaining": "{{n}} AI generations left this month"
-    }
+    },
+    "takeALook": "Take a look"
   },
   "CampaignFilters": {
     "title": "Filters",
@@ -2129,11 +2130,13 @@
     "loading": "Loading campaigns...",
     "noCampaigns": "No {{tab}} campaigns found.",
     "tabs": {
+      "All": "All ({{count}})",
       "Active": "Active ({{count}})",
       "Applied": "Applied ({{count}})",
       "Completed": "Completed ({{count}})"
     },
     "tabsLower": {
+      "All": "open",
       "Active": "active",
       "Applied": "applied",
       "Completed": "completed"
