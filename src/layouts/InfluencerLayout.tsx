@@ -1,14 +1,14 @@
-import React, {useRef, createContext, useContext, useState, useEffect, useCallback} from 'react';
+import React, {useRef, createContext, useContext, useState, useCallback} from 'react';
 import {View, ScrollView, Image, Pressable, Text, RefreshControl} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Bell, Headphones, LogIn} from 'lucide-react-native';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 import BottomNav from '../components/BottomNav';
 import SupportChatModal from '../components/SupportChatModal';
 import InstagramRequiredGate from '../components/InstagramRequiredGate';
 import {useAuth} from '../context/AuthContext';
-import {invokeFn} from '../lib/api';
+import {useUnreadNotifications} from '../hooks/useUnreadNotifications';
 import {BRAND, BG, BRAND_GRADIENT_WARM} from '../theme/brand';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTranslation} from 'react-i18next';
@@ -22,54 +22,8 @@ function TopBar({onOpenSupport}: {onOpenSupport: () => void}) {
   const navigation = useNavigation<any>();
   const {user} = useAuth();
   const {t} = useTranslation();
-  const [unread, setUnread] = useState(0);
-
-  // Mirrors the web header: fetch all notifications via the `notifications`
-  // edge function and count the unread ones. Refresh on a 30s tick and
-  // again whenever the layout regains focus (so the badge clears the moment
-  // the user comes back from the Notifications screen).
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    const fetchUnread = async () => {
-      try {
-        const data = await invokeFn<{notifications?: any[]}>(
-          'notifications',
-          {action: 'list', userId: user.id},
-        );
-        if (cancelled) return;
-        const count = (data?.notifications || []).filter(
-          (n: any) => !n.is_read,
-        ).length;
-        setUnread(count);
-      } catch {
-        // Best-effort — leave the existing count if the call fails.
-      }
-    };
-    fetchUnread();
-    const id = setInterval(fetchUnread, 30000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [user?.id]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (!user?.id) return;
-      invokeFn<{notifications?: any[]}>('notifications', {
-        action: 'list',
-        userId: user.id,
-      })
-        .then(data => {
-          const count = (data?.notifications || []).filter(
-            (n: any) => !n.is_read,
-          ).length;
-          setUnread(count);
-        })
-        .catch(() => {});
-    }, [user?.id]),
-  );
+  // One implementation, shared with the brand header (BrandHero).
+  const unread = useUnreadNotifications(user?.id);
 
   return (
     <View

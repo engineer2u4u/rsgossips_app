@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 
 import { useAuth } from '../context/AuthContext';
+import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
 import { HOME_COLORS } from '../theme/brandHome';
 
 // Top bar for the redesigned brand Home feed (RGossips Explore design): brand
@@ -14,7 +15,8 @@ import { HOME_COLORS } from '../theme/brandHome';
 const BrandHero: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const unread = useUnreadNotifications(user?.id);
 
   const displayName =
     profile?.gstin_trade_name ||
@@ -66,19 +68,31 @@ const BrandHero: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
             onPress={() => navigation.navigate('BrandNotifications' as never)}
             style={iconBtn}>
             <Bell size={21} color="#3E4A6B" />
-            <View
-              style={{
-                position: 'absolute',
-                top: 11,
-                right: 11,
-                width: 7,
-                height: 7,
-                borderRadius: 99,
-                backgroundColor: '#9B5FC4',
-                borderWidth: 1.5,
-                borderColor: '#fff',
-              }}
-            />
+            {/* A count, and only when there is something to count. This was
+                a 7pt dot rendered unconditionally — permanently on, and
+                silent about how many. Same shape as the creator-side badge
+                in InfluencerLayout. */}
+            {unread > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  minWidth: 18,
+                  height: 18,
+                  paddingHorizontal: 4,
+                  borderRadius: 9,
+                  backgroundColor: '#9B5FC4',
+                  borderWidth: 2,
+                  borderColor: '#fff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>
+                  {unread > 9 ? '9+' : unread}
+                </Text>
+              </View>
+            )}
           </Pressable>
           <Pressable onPress={() => onSupport?.()} style={iconBtn}>
             <MessageCircle size={21} color="#3E4A6B" />
