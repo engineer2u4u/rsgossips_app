@@ -1816,6 +1816,7 @@
       "Draft": "Draft",
       "Paused": "Paused",
       "Completed": "Completed",
+      "Closed": "Closed",
       "Review": "In review",
       "Rejected": "Rejected"
     },

@@ -28,6 +28,7 @@ import {invokeFn} from '../lib/api';
 
 const TABS = [
   'Active',
+  'Closed',
   'Review',
   'Rejected',
   'Draft',
@@ -63,7 +64,8 @@ type BrandCampaign = {
   createdAt?: string;
 };
 
-const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
+// Every tab but Closed is a plain DB status.
+const TAB_STATUS: Record<Exclude<Tab, 'Closed'>, BrandCampaign['status']> = {
   Active: 'active',
   Review: 'under_review',
   Rejected: 'rejected',
@@ -71,6 +73,32 @@ const TAB_STATUS: Record<Tab, BrandCampaign['status']> = {
   Paused: 'paused',
   Completed: 'completed',
 };
+
+// Which tab a campaign belongs under.
+//
+// A campaign whose end date has passed keeps DB status "active" — nothing
+// sweeps it — but it is not live: creators cannot apply and nothing further
+// will be delivered. Filtering the Active tab on status alone therefore
+// counted it as live, so the tab read "Active (1)" above a card whose own
+// chip already said CLOSED.
+//
+// It gets its own tab rather than folding into Completed, which means the
+// brand marked the work finished. An expired campaign may still have
+// deliverables outstanding, so the two are not the same thing.
+//
+// Campaigns that are merely past their APPLICATION deadline stay under
+// Active: applications have shut but the collaboration is still running,
+// which is exactly the distinction the card's two chips already draw.
+function tabFor(c: BrandCampaign): Tab | null {
+  if (c.status === 'active') {
+    return campaignEnded(c.endDate, c.applicationDeadline) ? 'Closed' : 'Active';
+  }
+  return (
+    (Object.keys(TAB_STATUS) as Exclude<Tab, 'Closed'>[]).find(
+      x => TAB_STATUS[x] === c.status,
+    ) || null
+  );
+}
 
 export default function BrandCampaigns() {
   const {t} = useTranslation();
@@ -122,24 +150,26 @@ export default function BrandCampaigns() {
   const counts = useMemo(() => {
     const c: Record<Tab, number> = {
       Active: 0,
+      Closed: 0,
       Review: 0,
       Rejected: 0,
       Draft: 0,
       Paused: 0,
       Completed: 0,
     };
+    // Same tabFor the list uses, so a count can never disagree with what
+    // opening that tab actually shows.
     for (const k of campaigns) {
-      const t = (Object.keys(TAB_STATUS) as Tab[]).find(x => TAB_STATUS[x] === k.status);
-      if (t) c[t] += 1;
+      const tab = tabFor(k);
+      if (tab) c[tab] += 1;
     }
     return c;
   }, [campaigns]);
 
   const filtered = useMemo(() => {
-    const status = TAB_STATUS[activeTab];
     const q = query.trim().toLowerCase();
     return campaigns
-      .filter(c => c.status === status)
+      .filter(c => tabFor(c) === activeTab)
       .filter(c => !q || c.title.toLowerCase().includes(q));
   }, [campaigns, activeTab, query]);
 
