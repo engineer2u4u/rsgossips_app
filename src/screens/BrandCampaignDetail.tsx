@@ -13,7 +13,7 @@
 //     creator accepts → brand funds escrow → work → release)
 //   - RatingModal upserts campaign_ratings (rater_role = "brand")
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {applicationDeadlinePassed, campaignEnded} from '../lib/campaignDates';
 import {
   ActivityIndicator,
@@ -28,18 +28,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {
   ArrowLeft,
-  Calendar,
   Check,
   AlertCircle,
   CheckCircle,
   ChevronDown,
   ExternalLink,
-  Loader2,
   Pause,
+  Pencil,
   Play,
   RefreshCw,
   RotateCcw,
@@ -317,9 +316,14 @@ export default function BrandCampaignDetail() {
     }
   }, [user?.id, id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // On focus, not just on mount: coming back from the edit screen has to
+  // show the campaign as it now is, and the same goes for returning from an
+  // application. BrandCampaigns already refreshes this way.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const updateCampaignStatus = async (newStatus: CampaignStatus) => {
     if (!user?.id || !campaign?.id) return;
@@ -494,6 +498,32 @@ export default function BrandCampaignDetail() {
 
           {/* Status actions */}
           <View style={{flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap'}}>
+            {/* Edit. The app had no way to change a campaign once created,
+                while the web has had one here all along — a typo meant
+                deleting and starting over.
+
+                Locked once anyone has applied: the brief is what they
+                applied under, so changing it after the fact changes the deal
+                they agreed to. The server enforces this too (it answers
+                "has_applications"); checking here as well means the brand
+                gets an explanation instead of a form that refuses to save. */}
+            <ActionBtn
+              label={t('ScreensBrandCampaignDetail.edit')}
+              Icon={Pencil}
+              color="#5851DB"
+              bg="#EBE9FE"
+              onPress={() => {
+                if (applications.length > 0) {
+                  Alert.alert(
+                    t('ScreensBrandCampaignDetail.editLockedTitle'),
+                    t('ScreensBrandCampaignDetail.editLockedMessage'),
+                    [{text: t('ScreensBrandCampaignDetail.editLockedOk')}],
+                  );
+                  return;
+                }
+                (navigation.navigate as any)('CreateCampaign', {campaignId: id});
+              }}
+            />
             <StatusActions status={status} onChange={updateCampaignStatus} />
           </View>
         </View>

@@ -1804,7 +1804,11 @@
       "offPlatformNote": "This records that you have reimbursed the creator. RGossips does not transfer the money.",
       "failedTitle": "Could not update",
       "failedBody": "Please try again."
-    }
+    },
+    "edit": "Edit",
+    "editLockedTitle": "Campaign locked",
+    "editLockedMessage": "Creators have already applied, so the brief can no longer be changed — editing it now would alter the terms people applied under. Duplicate the campaign to make changes.",
+    "editLockedOk": "Got it"
   },
   "ScreensBrandCampaigns": {
     "headerTitle": "Campaigns",
@@ -2080,7 +2084,8 @@
     "footer": {
       "cancel": "Cancel",
       "saveDraft": "Save Draft",
-      "publish": "Publish"
+      "publish": "Publish",
+      "saveChanges": "Save changes"
     },
     "loading": {
       "publishing": "Publishing campaign…",
@@ -2095,7 +2100,9 @@
       "draftSavedMessage": "You can publish it from the campaigns list.",
       "ok": "OK",
       "underReviewTitle": "Campaign submitted for review",
-      "underReviewMessage": "Kindly wait for the campaign to be reviewed before creators can see it. We usually get through this within a few hours."
+      "underReviewMessage": "Kindly wait for the campaign to be reviewed before creators can see it. We usually get through this within a few hours.",
+      "updatedTitle": "Campaign updated",
+      "updatedMessage": "Your changes have been saved."
     },
     "errors": {
       "signedIn": "You must be signed in",
@@ -2112,7 +2119,10 @@
       "startInPast": "Pick a start date from today onwards.",
       "deadlineInPast": "The application deadline must be today or later, or creators will never be able to apply.",
       "endInPast": "The delivery end date must be today or later.",
-      "deadlineBeforeStart": "The application deadline cannot be before the campaign start date."
+      "deadlineBeforeStart": "The application deadline cannot be before the campaign start date.",
+      "loadFailed": "Couldn't load this campaign.",
+      "updateFailed": "Couldn't save your changes.",
+      "hasApplications": "Creators have already applied to this campaign, so the brief is locked. Duplicate it to make changes, then publish the copy."
     },
     "cityPicker": {
       "title": "Choose locations",
@@ -2122,7 +2132,9 @@
       "selectedCount_other": "{{count}} cities selected",
       "cancel": "Cancel",
       "save": "Done"
-    }
+    },
+    "topTitleEdit": "Edit Campaign",
+    "topSubtitleEdit": "Changes go live as soon as you save"
   },
   "ScreensInfluencerCampaign": {
     "title": "Campaigns",

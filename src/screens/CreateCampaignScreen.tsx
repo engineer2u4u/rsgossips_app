@@ -1,21 +1,32 @@
-// Create-campaign form — full RN port of web's CreateCampaignDialog.jsx
+// Create / edit campaign form — full RN port of web's CreateCampaignDialog.jsx
 // (commit df31bb1). Submits to brand-campaigns action="create" with a
 // "draft" or "active" status depending on which button the brand hits.
+//
+// Edit mode: navigate here with {campaignId} and the form loads that
+// campaign and submits action="update" instead. The app had no way to edit a
+// campaign at all, while the web has had one on the campaign detail page —
+// a brand who made a typo could only delete it and start again.
+//
+// The server refuses an update once anyone has applied (it answers
+// "has_applications"), because editing the brief would change the terms
+// people applied under. The way out is to duplicate the campaign.
 //
 // Scope notes:
 //   - Banner / gallery upload is NOT in this batch (web uses a separate
 //     `upload-campaign-image` edge function + canvas-based compression).
 //     Both URLs submit as empty; the screen can still create a campaign
 //     end-to-end and the brand can add images via the web dashboard.
-//   - Dates use plain text inputs with a YYYY-MM-DD hint. A native date
-//     picker is a one-line swap-in once we add @react-native-community/datetimepicker.
+//   - Dates use the in-app calendar sheet (components/DateField). They were
+//     plain text inputs with a YYYY-MM-DD hint, which meant typing three
+//     dates by hand on a phone keyboard.
 //   - Conditional sections (budget vs barter, product vs service, etc.)
 //     mirror the web's `showBudget` / `showProductValue` / `showBarterCompensation`
 //     / `isBarter` predicates exactly so the resulting campaign row matches
 //     whichever surface created it.
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -47,6 +58,7 @@ import {invokeFn} from '../lib/api';
 import {useGlobalLoading} from '../context/LoadingContext';
 import {pickFromLibrary, pickManyFromLibrary, type PickedImage} from '../lib/image-picker';
 import {uploadCampaignImage} from '../lib/image-upload';
+import DateField from '../components/DateField';
 
 const CATEGORIES = [
   'Beauty & Skincare',
@@ -223,8 +235,90 @@ const initialForm: FormState = {
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export default function CreateCampaignScreen() {
+// Server dates arrive as full ISO timestamps; the form (and the DB column)
+// want a plain calendar day. Sliced out of the string rather than parsed via
+// Date — see lib/campaignDates.ts on why a timezone round-trip lands a day
+// out east of Greenwich.
+const isoToDay = (v?: string | null) =>
+  typeof v === 'string' && v.length >= 10 ? v.slice(0, 10) : '';
+
+// content_types_required comes back as ["reels:2", "stories:1"] — unpack it
+// into the num_* fields. Mirrors parseContentTypes in the web dialog.
+function parseContentTypes(arr?: string[]): Record<string, string> {
+  const out: Record<string, string> = {
+    num_reels: '',
+    num_posts: '',
+    num_stories: '',
+    num_videos: '',
+    num_blogs: '',
+  };
+  for (const item of Array.isArray(arr) ? arr : []) {
+    const [k, n] = String(item).split(':');
+    if (!k) continue;
+    if (['reels', 'posts', 'stories', 'videos', 'blogs'].includes(k)) {
+      out['num_' + k] = String(Number(n) || 0);
+    }
+  }
+  return out;
+}
+
+// brand-campaigns(get) returns camelCase. Port of the web's campaignToForm.
+function campaignToForm(c: any) {
+  const targetCities = Array.isArray(c && c.targetCities) ? c.targetCities : [];
+  const allIndia = targetCities.length === 1 && targetCities[0] === 'All India';
+  return {
+    form: {
+      ...initialForm,
+      title: c?.title || '',
+      description: c?.description || '',
+      campaign_type: c?.campaignType || 'barter',
+      offering_type:
+        c?.offeringType ||
+        (c?.productName ? 'product' : c?.serviceLocation ? 'service' : 'product'),
+      max_influencers: c?.maxInfluencers ? String(c.maxInfluencers) : '',
+      budget_total: c?.budgetTotal ? String(c.budgetTotal) : '',
+      budget_per_influencer: c?.budgetPerInfluencer ? String(c.budgetPerInfluencer) : '',
+      product_name: c?.productName || '',
+      product_value: c?.productValue ? String(c.productValue) : '',
+      include_product_reimbursement: !!c?.includeProductReimbursement,
+      shipping_required: c?.shippingRequired || 'no',
+      shipping_timeline_days: c?.shippingTimelineDays ? String(c.shippingTimelineDays) : '',
+      service_location: c?.serviceLocation || '',
+      barter_compensation: c?.barterCompensation || '',
+      ...parseContentTypes(c?.contentTypesRequired),
+      target_follower_min: c?.targetFollowerMin ? String(c.targetFollowerMin) : '',
+      target_follower_max: c?.targetFollowerMax ? String(c.targetFollowerMax) : '',
+      target_influencer_tier: c?.targetInfluencerTier || 'all',
+      min_engagement_rate: c?.minEngagementRate ? String(c.minEngagementRate) : '',
+      content_dos: c?.contentDos || '',
+      content_donts: c?.contentDonts || '',
+      required_hashtags: c?.requiredHashtags || '',
+      brand_handles_to_tag: c?.brandHandlesToTag || '',
+      usage_rights: c?.usageRights || 'creator_only',
+      keepup_duration: c?.keepupDuration || 'permanent',
+      exclusivity_days: c?.exclusivityDays || '0',
+      payment_timeline: c?.paymentTimeline || 'on_approval',
+      campaign_start_date: isoToDay(c?.startDate),
+      application_deadline: isoToDay(c?.applicationDeadline),
+      campaign_end_date: isoToDay(c?.endDate || c?.campaignEndDate),
+    },
+    categories: Array.isArray(c?.categories) ? c.categories : [],
+    platforms:
+      Array.isArray(c?.platforms) && c.platforms.length ? c.platforms : ['Instagram'],
+    cities: allIndia ? [] : targetCities,
+    allIndia,
+    genders: Array.isArray(c?.targetGender) ? c.targetGender : [],
+    languages: Array.isArray(c?.targetLanguages) ? c.targetLanguages : [],
+    bannerUrl: c?.bannerImage || '',
+    galleryUrls: Array.isArray(c?.galleryImages) ? c.galleryImages : [],
+  };
+}
+
+export default function CreateCampaignScreen({route}: any) {
   const navigation = useNavigation();
+  // Edit mode when the caller hands us a campaignId.
+  const editId = route?.params?.campaignId || null;
+  const isEdit = !!editId;
   const {t} = useTranslation();
   const insets = useSafeAreaInsets();
   const {user} = useAuth();
@@ -283,6 +377,53 @@ export default function CreateCampaignScreen() {
   const [languages, setLanguages] = useState<string[]>([]);
   const [banner, setBanner] = useState<PickedImage | null>(null);
   const [gallery, setGallery] = useState<PickedImage[]>([]);
+  // Images already on the campaign. The picker deals in local files, so an
+  // edit that does not touch the banner must still send the URL back or the
+  // update would clear it.
+  const [existingBannerUrl, setExistingBannerUrl] = useState('');
+  const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
+  const [loadingCampaign, setLoadingCampaign] = useState(isEdit);
+
+  // Edit mode — load the campaign and fill the form from it.
+  useEffect(() => {
+    if (!isEdit || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await invokeFn<{campaign?: any; error?: string}>(
+          'brand-campaigns',
+          {action: 'get', campaignId: editId, brandId: user.id},
+        );
+        if (cancelled) return;
+        if (!data?.campaign) {
+          setError(data?.error || t('ScreensCreateCampaignScreen.errors.loadFailed'));
+          return;
+        }
+        const p = campaignToForm(data.campaign);
+        setForm(p.form as FormState);
+        setCategories(p.categories);
+        setPlatforms(p.platforms);
+        setCities(p.cities);
+        setAllIndia(p.allIndia);
+        setGenders(p.genders);
+        setLanguages(p.languages);
+        setExistingBannerUrl(p.bannerUrl);
+        setExistingGalleryUrls(p.galleryUrls);
+      } catch (e: any) {
+        if (!cancelled) {
+          setError(e?.message || t('ScreensCreateCampaignScreen.errors.loadFailed'));
+        }
+      } finally {
+        if (!cancelled) setLoadingCampaign(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // t is stable enough here; re-running on a language switch would throw
+    // away whatever the brand had already typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, editId, user?.id]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -374,51 +515,72 @@ export default function CreateCampaignScreen() {
     [applyBudget, budgetSource],
   );
 
-  const validate = (): string | null => {
-    if (!user?.id) return t('ScreensCreateCampaignScreen.errors.signedIn');
-    if (!form.title.trim()) return t('ScreensCreateCampaignScreen.errors.titleRequired');
-    if (!form.campaign_start_date) return t('ScreensCreateCampaignScreen.errors.startRequired');
-    if (!form.application_deadline) return t('ScreensCreateCampaignScreen.errors.deadlineRequired');
-    if (!form.campaign_end_date) return t('ScreensCreateCampaignScreen.errors.endRequired');
+  // Where each section sits, so a failed Publish can scroll to the thing
+  // that is wrong. Publish lives in a sticky footer, so a brand who filled
+  // the form top-to-bottom was at the bottom when the error box appeared at
+  // the very top — the tap looked like it had done nothing at all.
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionY = useRef<Record<string, number>>({});
+  const measureSection = useCallback((id: string, y: number) => {
+    sectionY.current[id] = y;
+  }, []);
+
+  const validate = (): {section: string | null; message: string} | null => {
+    const fail = (section: string | null, message: string) => ({section, message});
+    if (!user?.id) return fail(null, t('ScreensCreateCampaignScreen.errors.signedIn'));
+    if (!form.title.trim())
+      return fail('basicInfo', t('ScreensCreateCampaignScreen.errors.titleRequired'));
+    if (!form.campaign_start_date)
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.startRequired'));
+    if (!form.application_deadline)
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.deadlineRequired'));
+    if (!form.campaign_end_date)
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.endRequired'));
     for (const d of [
       form.campaign_start_date,
       form.application_deadline,
       form.campaign_end_date,
     ]) {
       if (!ISO_DATE_RE.test(d)) {
-        return t('ScreensCreateCampaignScreen.errors.dateFormat', {value: d});
+        return fail('schedule', t('ScreensCreateCampaignScreen.errors.dateFormat', {value: d}));
       }
     }
-    // There is no native date picker on this screen (plain yyyy-mm-dd text
-    // inputs), so there is nothing to grey out — the check is the only
-    // guard. A campaign with a past deadline publishes, gets approved and
-    // reaches nobody; the server refuses it too.
-    //
-    if (isPastDay(form.campaign_start_date)) {
-      return t('ScreensCreateCampaignScreen.errors.startInPast');
+    // DateField greys out the days that would break these rules, so in
+    // practice this is a backstop — against a draft reloaded after its dates
+    // have gone stale, mainly. A campaign with a past deadline publishes,
+    // gets approved and reaches nobody; the server refuses it too.
+    // Not when editing. A campaign that is already running started before
+    // today by definition, so this check would make a live campaign
+    // permanently unsaveable — fix a typo in the title and the form refuses
+    // over a date you cannot change. The server agrees: its update action
+    // validates the deadline and end date against today, but not the start.
+    if (!isEdit && isPastDay(form.campaign_start_date)) {
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.startInPast'));
     }
     if (isPastDay(form.application_deadline)) {
-      return t('ScreensCreateCampaignScreen.errors.deadlineInPast');
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.deadlineInPast'));
     }
     if (isPastDay(form.campaign_end_date)) {
-      return t('ScreensCreateCampaignScreen.errors.endInPast');
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.endInPast'));
     }
     // Applications must not close before the campaign has begun.
     // yyyy-mm-dd sorts chronologically, so a string compare is enough.
     if (form.application_deadline < form.campaign_start_date) {
-      return t('ScreensCreateCampaignScreen.errors.deadlineBeforeStart');
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.deadlineBeforeStart'));
     }
     if (
       new Date(form.application_deadline).getTime() >
       new Date(form.campaign_end_date).getTime()
     ) {
-      return t('ScreensCreateCampaignScreen.errors.deadlineBeforeEnd');
+      return fail('schedule', t('ScreensCreateCampaignScreen.errors.deadlineBeforeEnd'));
     }
     if (totalDeliverables < 1) {
-      return t('ScreensCreateCampaignScreen.errors.minDeliverable');
+      return fail('deliverables', t('ScreensCreateCampaignScreen.errors.minDeliverable'));
     }
-    if (categories.length < 1) return t('ScreensCreateCampaignScreen.errors.minCategory');
-    if (platforms.length < 1) return t('ScreensCreateCampaignScreen.errors.minPlatform');
+    if (categories.length < 1)
+      return fail('categories', t('ScreensCreateCampaignScreen.errors.minCategory'));
+    if (platforms.length < 1)
+      return fail('platforms', t('ScreensCreateCampaignScreen.errors.minPlatform'));
     return null;
   };
 
@@ -426,7 +588,14 @@ export default function CreateCampaignScreen() {
     setError(null);
     const err = validate();
     if (err) {
-      setError(err);
+      setError(err.message);
+      // Scroll to the offending section, or to the top, where the error box
+      // itself is rendered. Either way something visibly moves.
+      const y = err.section ? sectionY.current[err.section] : 0;
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, (y ?? 0) - 12),
+        animated: true,
+      });
       return;
     }
 
@@ -434,8 +603,10 @@ export default function CreateCampaignScreen() {
     await withLoading(
       (async () => {
         try {
-          let bannerUrl = '';
-          const galleryUrls: string[] = [];
+          // An edit that did not touch the images keeps the ones already
+          // there; a newly picked banner replaces it.
+          let bannerUrl = existingBannerUrl;
+          const galleryUrls: string[] = [...existingGalleryUrls];
 
           if (banner) {
             const res = await uploadCampaignImage(banner, 'banners');
@@ -446,25 +617,61 @@ export default function CreateCampaignScreen() {
             if (res.url) galleryUrls.push(res.url);
           }
 
-          const payload = {
-            action: 'create',
-            brandId: user!.id,
-            campaign: {
-              ...form,
-              target_categories: categories,
-              target_cities: allIndia ? ['All India'] : cities,
-              banner_image_url: bannerUrl,
-              gallery_image_urls: galleryUrls,
-              status: publish ? 'active' : 'draft',
-              platforms,
-              target_gender: genders,
-              target_languages: languages,
-            },
+          const campaign: Record<string, any> = {
+            ...form,
+            target_categories: categories,
+            target_cities: allIndia ? ['All India'] : cities,
+            banner_image_url: bannerUrl,
+            gallery_image_urls: galleryUrls,
+            platforms,
+            target_gender: genders,
+            target_languages: languages,
           };
-          const data = await invokeFn<{campaignId?: string; underReview?: boolean}>(
-            'brand-campaigns',
-            payload,
-          );
+          // On update the server deliberately leaves status alone, so that
+          // editing a paused campaign does not silently unpause it. Sending
+          // a status here would be ignored at best and misleading at worst.
+          if (!isEdit) campaign.status = publish ? 'active' : 'draft';
+
+          const payload = isEdit
+            ? {action: 'update', brandId: user!.id, campaignId: editId, campaign}
+            : {action: 'create', brandId: user!.id, campaign};
+          const data = await invokeFn<{
+            campaignId?: string;
+            underReview?: boolean;
+            success?: boolean;
+            error?: string;
+            applied?: number;
+          }>('brand-campaigns', payload);
+
+          // The brief is frozen once anyone has applied — editing it would
+          // change the terms they applied under. The server is the authority
+          // on this; the detail screen also checks before letting you in,
+          // but an application can land between the two.
+          if (data?.error === 'has_applications') {
+            setError(t('ScreensCreateCampaignScreen.errors.hasApplications'));
+            scrollRef.current?.scrollTo({y: 0, animated: true});
+            return;
+          }
+          if (data?.error) {
+            setError(data.error);
+            scrollRef.current?.scrollTo({y: 0, animated: true});
+            return;
+          }
+
+          if (isEdit && data?.success) {
+            Alert.alert(
+              t('ScreensCreateCampaignScreen.alerts.updatedTitle'),
+              t('ScreensCreateCampaignScreen.alerts.updatedMessage'),
+              [
+                {
+                  text: t('ScreensCreateCampaignScreen.alerts.ok'),
+                  onPress: () => navigation.goBack(),
+                },
+              ],
+            );
+            return;
+          }
+
           if (data?.campaignId) {
             // Publishing does not mean live. Unless the brand is on
             // auto-approve the server parks the campaign in `under_review`,
@@ -491,7 +698,14 @@ export default function CreateCampaignScreen() {
             );
           }
         } catch (e: any) {
-          setError(e?.message || t('ScreensCreateCampaignScreen.errors.createFailed'));
+          setError(
+            e?.message ||
+              t(
+                isEdit
+                  ? 'ScreensCreateCampaignScreen.errors.updateFailed'
+                  : 'ScreensCreateCampaignScreen.errors.createFailed',
+              ),
+          );
         }
       })(),
       publish
@@ -516,15 +730,31 @@ export default function CreateCampaignScreen() {
           <ArrowLeft size={22} color="#0f172a" />
         </Pressable>
         <View>
-          <Text style={s.topTitle}>{t('ScreensCreateCampaignScreen.topTitle')}</Text>
+          <Text style={s.topTitle}>
+            {t(
+              isEdit
+                ? 'ScreensCreateCampaignScreen.topTitleEdit'
+                : 'ScreensCreateCampaignScreen.topTitle',
+            )}
+          </Text>
           <Text style={s.topSub}>
-            {t('ScreensCreateCampaignScreen.topSubtitle')}
+            {t(
+              isEdit
+                ? 'ScreensCreateCampaignScreen.topSubtitleEdit'
+                : 'ScreensCreateCampaignScreen.topSubtitle',
+            )}
           </Text>
         </View>
         <View style={{width: 30}} />
       </View>
 
+      {loadingCampaign ? (
+        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+          <ActivityIndicator size="large" color="#5851DB" />
+        </View>
+      ) : (
       <ScrollView
+        ref={scrollRef}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{padding: 16, gap: 16, paddingBottom: 120}}>
         {error ? (
@@ -534,7 +764,9 @@ export default function CreateCampaignScreen() {
         ) : null}
 
         {/* Basic info */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.basicInfo')}>
+        <Section id="basicInfo"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.basicInfo')}>
           <Field label={t('ScreensCreateCampaignScreen.fields.title')} required>
             <TextInput
               value={form.title}
@@ -667,7 +899,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Product / Service */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.productService')}>
+        <Section id="productService"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.productService')}>
           <Field label={t('ScreensCreateCampaignScreen.fields.whatPromoting')} required>
             <View style={s.twoCol}>
               <TogglePill
@@ -757,7 +991,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Banner */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.bannerImage')}>
+        <Section id="bannerImage"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.bannerImage')}>
           {banner ? (
             <View style={s.bannerPreview}>
               <Image source={{uri: banner.uri}} style={s.bannerImage} />
@@ -794,6 +1030,8 @@ export default function CreateCampaignScreen() {
 
         {/* Gallery */}
         <Section
+          id="gallery"
+          onMeasure={measureSection}
           title={t('ScreensCreateCampaignScreen.sections.gallery')}
           rightLabel={gallery.length > 0 ? t('ScreensCreateCampaignScreen.gallery.count', {count: gallery.length}) : undefined}>
           {gallery.length > 0 ? (
@@ -834,6 +1072,8 @@ export default function CreateCampaignScreen() {
 
         {/* Platforms */}
         <Section
+          id="platforms"
+          onMeasure={measureSection}
           title={t('ScreensCreateCampaignScreen.sections.platforms')}
           required
           rightLabel={platforms.length > 0 ? t('ScreensCreateCampaignScreen.counts.selected', {count: platforms.length}) : undefined}>
@@ -846,6 +1086,8 @@ export default function CreateCampaignScreen() {
 
         {/* Deliverables */}
         <Section
+          id="deliverables"
+          onMeasure={measureSection}
           title={t('ScreensCreateCampaignScreen.sections.deliverables')}
           required
           rightLabel={t('ScreensCreateCampaignScreen.counts.pieces', {count: totalDeliverables})}
@@ -875,6 +1117,8 @@ export default function CreateCampaignScreen() {
 
         {/* Categories */}
         <Section
+          id="categories"
+          onMeasure={measureSection}
           title={t('ScreensCreateCampaignScreen.sections.categories')}
           required
           rightLabel={t('ScreensCreateCampaignScreen.counts.ofTotal', {count: categories.length, total: CATEGORIES.length})}
@@ -887,7 +1131,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Influencer requirements */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.influencerRequirements')}>
+        <Section id="influencerRequirements"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.influencerRequirements')}>
           <View style={s.twoCol}>
             <Field
               label={t('ScreensCreateCampaignScreen.fields.tier')}
@@ -941,6 +1187,8 @@ export default function CreateCampaignScreen() {
 
         {/* Locations */}
         <Section
+          id="locations"
+          onMeasure={measureSection}
           title={t('ScreensCreateCampaignScreen.sections.locations')}
           rightLabel={allIndia ? t('ScreensCreateCampaignScreen.locations.allIndia') : t('ScreensCreateCampaignScreen.counts.selected', {count: cities.length})}>
           <Pressable
@@ -987,7 +1235,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Audience preferences */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.audiencePreferences')}>
+        <Section id="audiencePreferences"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.audiencePreferences')}>
           <Field label={t('ScreensCreateCampaignScreen.fields.preferredGender')}>
             <ChipGroup
               options={GENDERS}
@@ -1005,7 +1255,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Content guidelines */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.contentGuidelines')}>
+        <Section id="contentGuidelines"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.contentGuidelines')}>
           <Field
             label={t('ScreensCreateCampaignScreen.fields.mustInclude')}
             hint={t('ScreensCreateCampaignScreen.fields.mustIncludeHint')}>
@@ -1053,7 +1305,9 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Terms & rights */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.termsRights')}>
+        <Section id="termsRights"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.termsRights')}>
           <Field label={t('ScreensCreateCampaignScreen.fields.contentUsageRights')}>
             <Dropdown
               value={form.usage_rights}
@@ -1087,47 +1341,41 @@ export default function CreateCampaignScreen() {
         </Section>
 
         {/* Schedule */}
-        <Section title={t('ScreensCreateCampaignScreen.sections.schedule')}>
+        <Section id="schedule"
+          onMeasure={measureSection}
+          title={t('ScreensCreateCampaignScreen.sections.schedule')}>
+          {/* Each field floors the next: a deadline before the start date,
+              or an end date before the deadline, is not a typo to catch on
+              submit — it is a day the calendar should not offer. */}
           <Field
             label={t('ScreensCreateCampaignScreen.fields.startDate')}
-            required
-            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
-            <TextInput
+            required>
+            <DateField
               value={form.campaign_start_date}
-              onChangeText={v => update('campaign_start_date', v)}
-              placeholder="2026-06-01"
-              placeholderTextColor="#cbd5e1"
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              style={s.input}
+              onChange={v => update('campaign_start_date', v)}
+              accessibilityLabel={t('ScreensCreateCampaignScreen.fields.startDate')}
             />
           </Field>
           <Field
             label={t('ScreensCreateCampaignScreen.fields.applicationDeadline')}
-            required
-            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
-            <TextInput
+            required>
+            <DateField
               value={form.application_deadline}
-              onChangeText={v => update('application_deadline', v)}
-              placeholder="2026-06-15"
-              placeholderTextColor="#cbd5e1"
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              style={s.input}
+              onChange={v => update('application_deadline', v)}
+              minimum={form.campaign_start_date || undefined}
+              accessibilityLabel={t('ScreensCreateCampaignScreen.fields.applicationDeadline')}
             />
           </Field>
           <Field
             label={t('ScreensCreateCampaignScreen.fields.campaignEndDate')}
-            required
-            hint={t('ScreensCreateCampaignScreen.fields.dateHint')}>
-            <TextInput
+            required>
+            <DateField
               value={form.campaign_end_date}
-              onChangeText={v => update('campaign_end_date', v)}
-              placeholder="2026-07-15"
-              placeholderTextColor="#cbd5e1"
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              style={s.input}
+              onChange={v => update('campaign_end_date', v)}
+              minimum={
+                form.application_deadline || form.campaign_start_date || undefined
+              }
+              accessibilityLabel={t('ScreensCreateCampaignScreen.fields.campaignEndDate')}
             />
           </Field>
           <Text style={s.helperText}>
@@ -1135,6 +1383,7 @@ export default function CreateCampaignScreen() {
           </Text>
         </Section>
       </ScrollView>
+      )}
 
       {/* Footer */}
       <View style={[s.footer, {paddingBottom: 12 + insets.bottom}]}>
@@ -1144,12 +1393,16 @@ export default function CreateCampaignScreen() {
           style={[s.footerBtn, s.footerCancel]}>
           <Text style={s.footerCancelText}>{t('ScreensCreateCampaignScreen.footer.cancel')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => submit(false)}
-          disabled={submitting}
-          style={[s.footerBtn, s.footerDraft]}>
-          <Text style={s.footerDraftText}>{t('ScreensCreateCampaignScreen.footer.saveDraft')}</Text>
-        </TouchableOpacity>
+        {!isEdit && (
+          <TouchableOpacity
+            onPress={() => submit(false)}
+            disabled={submitting}
+            style={[s.footerBtn, s.footerDraft]}>
+            <Text style={s.footerDraftText}>
+              {t('ScreensCreateCampaignScreen.footer.saveDraft')}
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           onPress={() => submit(true)}
           disabled={submitting}
@@ -1157,7 +1410,13 @@ export default function CreateCampaignScreen() {
           <LinearGradient
             colors={['#5851DB', '#4338CA']}
             style={s.publishGradient}>
-            <Text style={s.footerPublishText}>{t('ScreensCreateCampaignScreen.footer.publish')}</Text>
+            <Text style={s.footerPublishText}>
+              {t(
+                isEdit
+                  ? 'ScreensCreateCampaignScreen.footer.saveChanges'
+                  : 'ScreensCreateCampaignScreen.footer.publish',
+              )}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -1168,12 +1427,16 @@ export default function CreateCampaignScreen() {
 /* ─────────── Reusable subcomponents ─────────── */
 
 function Section({
+  id,
+  onMeasure,
   title,
   required,
   rightLabel,
   rightHighlight,
   children,
 }: {
+  id?: string;
+  onMeasure?: (id: string, y: number) => void;
   title: string;
   required?: boolean;
   rightLabel?: string;
@@ -1181,7 +1444,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <View style={s.section}>
+    <View
+      style={s.section}
+      // y is relative to the ScrollView's content container, which is this
+      // view's direct parent — exactly what scrollTo wants.
+      onLayout={e => id && onMeasure?.(id, e.nativeEvent.layout.y)}>
       <View style={s.sectionHead}>
         <Text style={s.sectionTitle}>
           {title}
@@ -1236,30 +1503,43 @@ function Dropdown({
   options: {value: string; label: string}[];
   onChange: (v: string) => void;
 }) {
-  // Inline picker: tap each option in a horizontal scroller. Not a dropdown
-  // per se but cleaner than wrestling with a modal Picker on RN.
+  // Inline picker: tap each option. Not a dropdown per se but cleaner than
+  // wrestling with a modal Picker on RN.
+  //
+  // A short set wraps; a long one scrolls. Three chips in a half-width
+  // column did not fit the horizontal scroller, so "Hybrid" rendered as
+  // "Hybr" and "Pickup required" as "Pickup re" — the row scrolled, but
+  // nothing said so, and a clipped option reads as a broken one. Long lists
+  // (exclusivity periods, usage rights) keep the scroller: wrapping those
+  // builds a wall of chips taller than the field it belongs to.
+  const chips = options.map(o => {
+    const active = o.value === value;
+    return (
+      <TouchableOpacity
+        key={o.value}
+        onPress={() => onChange(o.value)}
+        style={[s.dropdownChip, active && s.dropdownChipActive]}>
+        <Text style={[s.dropdownChipText, active && s.dropdownChipTextActive]}>
+          {o.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  });
+
+  if (options.length <= 3) {
+    return (
+      <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 6}}>
+        {chips}
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{gap: 6, paddingRight: 8}}>
-      {options.map(o => {
-        const active = o.value === value;
-        return (
-          <TouchableOpacity
-            key={o.value}
-            onPress={() => onChange(o.value)}
-            style={[s.dropdownChip, active && s.dropdownChipActive]}>
-            <Text
-              style={[
-                s.dropdownChipText,
-                active && s.dropdownChipTextActive,
-              ]}>
-              {o.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+      {chips}
     </ScrollView>
   );
 }
@@ -1624,7 +1904,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 36,
+    justifyContent: 'center',
     borderRadius: 10,
   },
   dropdownChipActive: {
