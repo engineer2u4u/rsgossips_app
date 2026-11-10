@@ -9,7 +9,7 @@
 
 import { Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import { invokeFn } from './api';
+import { invokeFn, reportClientError } from './api';
 
 let handlersBound = false;
 
@@ -35,11 +35,24 @@ function routeFromLink(link: string): { name: string; params?: any } | null {
 async function hasPermission(): Promise<boolean> {
   try {
     const status = await messaging().requestPermission();
-    return (
+    const ok =
       status === messaging.AuthorizationStatus.AUTHORIZED ||
-      status === messaging.AuthorizationStatus.PROVISIONAL
+      status === messaging.AuthorizationStatus.PROVISIONAL;
+    if (!ok) {
+      reportClientError(
+        'push.permission_denied',
+        'Notification permission not granted',
+        { status, platform: Platform.OS },
+        'warn',
+      );
+    }
+    return ok;
+  } catch (e: any) {
+    reportClientError(
+      'push.permission_threw',
+      e?.message || 'requestPermission threw',
+      { platform: Platform.OS },
     );
-  } catch {
     return false;
   }
 }
@@ -47,26 +60,49 @@ async function hasPermission(): Promise<boolean> {
 // Ask permission, get the FCM token, and register it for the signed-in user.
 // Safe to call on every login / app focus — the edge fn upserts by token.
 export async function registerForPush(): Promise<void> {
+  // Every step used to fail silently, so a device that never registered was
+  // indistinguishable from one that did — and a brand reporting "my campaign
+  // was approved but I got no push" left nothing to look at. Same reasoning
+  // as the IAP logging in useSubscriptionPurchase.
   try {
     if (!(await hasPermission())) return;
     // iOS: ensure the device is registered with APNs before requesting a token.
     if (Platform.OS === 'ios') {
       try {
         await messaging().registerDeviceForRemoteMessages();
-      } catch {
-        /* already registered */
+      } catch (e: any) {
+        // Usually "already registered", which is fine. A real APNs failure
+        // looks the same from here, so record it and carry on to getToken —
+        // that is where it will actually bite.
+        reportClientError(
+          'push.apns_register_failed',
+          e?.message || 'registerDeviceForRemoteMessages threw',
+          { platform: Platform.OS },
+          'warn',
+        );
       }
     }
     const token = await messaging().getToken();
-    if (!token) return;
+    if (!token) {
+      // On iOS this is the signature of a missing APNs key in the Firebase
+      // project, or a bundle id the key does not cover.
+      reportClientError('push.no_token', 'getToken returned empty', {
+        platform: Platform.OS,
+      });
+      return;
+    }
     await invokeFn('register-push', {
       action: 'subscribe',
       platform: 'fcm',
       token,
       userAgent: `${Platform.OS} ${Platform.Version}`,
     });
-  } catch {
-    /* Firebase not configured yet — no-op. */
+  } catch (e: any) {
+    reportClientError(
+      'push.register_failed',
+      e?.message || 'registerForPush threw',
+      { platform: Platform.OS },
+    );
   }
 }
 
