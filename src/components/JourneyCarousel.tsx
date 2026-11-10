@@ -17,36 +17,16 @@ interface Campaign {
   image?: string;
 }
 
-const FALLBACK_DATA = [
-  {
-    id: '1',
-    title: 'Luxury Perfume Launch',
-    location: 'Mumbai, India',
-    budget: 150,
-    daysLeft: 14,
-    image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800',
-  },
-  {
-    id: '2',
-    title: 'Wellness Spa Retreat',
-    location: 'Goa, India',
-    budget: 250,
-    daysLeft: 21,
-    image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800',
-  },
-  {
-    id: '3',
-    title: 'Skincare Brand Collab',
-    location: 'Delhi, India',
-    budget: 200,
-    daysLeft: 14,
-    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800',
-  },
-];
+// The invented campaign list is gone: "Luxury Perfume Launch" at 150 and
+// friends were never real listings.
 
 export default function JourneyCarousel() {
   const {t} = useTranslation();
-  const [campaigns, setCampaigns] = useState<Campaign[]>(FALLBACK_DATA);
+  // Starts empty, like the web, where the invented list now survives only as
+  // the unused _OLD_journeyData. The stock image below is a different thing:
+  // generic artwork for a REAL campaign that has no banner, which is what the
+  // web's PLACEHOLDER_IMAGES are for.
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,13 +51,18 @@ export default function JourneyCarousel() {
           if (active.length) setCampaigns(active);
         }
       } catch {
-        // Keep fallback data on error.
+        // Leave it empty — a carousel of invented campaigns is worse than no
+        // carousel.
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Nothing live to show — hide the section rather than render an empty
+  // shell under its heading.
+  if (!campaigns.length) return null;
 
   return (
     <View className="w-full bg-white py-6">

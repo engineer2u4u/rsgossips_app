@@ -6,7 +6,6 @@ import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {supabase} from '../utils/supabase';
 import {invokeFn} from '../lib/api';
-import {BRAND_GRADIENT} from '../theme/brand';
 
 const {width} = Dimensions.get('window');
 const ITEM_WIDTH = width / 2; // Two brands visible at a time, matches web mobile basis-1/2.
@@ -18,14 +17,8 @@ interface Brand {
   instagram_url?: string;
 }
 
-const FALLBACK_BRANDS: Brand[] = [
-  {id: '1', name: 'D LUXE PERFUMES', logo: 'https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs'},
-  {id: '2', name: 'ZAUDI', logo: 'https://lh3.googleusercontent.com/d/1PS9A-rPC48WUPo8imZjw4XAzChADsceu'},
-  {id: '3', name: 'RIAR ELUX', logo: 'https://lh3.googleusercontent.com/d/1cUytBemciPv8OdMi6-gADzUCKzfymr1R'},
-  {id: '4', name: 'BIODANCE', logo: 'https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG'},
-  {id: '5', name: 'SESA POWERPLUS', logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r'},
-  {id: '6', name: 'SESA AYURVEDIC', logo: 'https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r'},
-];
+// The hardcoded brand list is gone — real featured_brands rows, or the
+// live directory, or nothing.
 
 // Section title — warm half of the logo gradient fades INTO the heading on
 // the left, cool half emerges from it on the right. Echoes the
@@ -113,7 +106,9 @@ function BrandLogo({logo, name}: {logo: string; name: string}) {
 export default function BrandsCarousel() {
   const navigation = useNavigation<any>();
   const {t} = useTranslation();
-  const [brands, setBrands] = useState<Brand[]>(FALLBACK_BRANDS);
+  // Starts empty. The web retired its equivalent hardcoded list (it survives
+  // there only as the unused _OLD_BRANDS); this is the app catching up.
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +145,7 @@ export default function BrandsCarousel() {
           );
         }
       } catch {
-        // Keep the fallback set on any failure.
+        // Nothing to show rather than something untrue.
       }
     })();
     return () => {

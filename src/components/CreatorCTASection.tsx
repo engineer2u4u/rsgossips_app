@@ -12,6 +12,13 @@ import {
   VIOLET_BLUE_LOCATIONS,
 } from '../theme/brandHome';
 
+// Public-facing contact targets, same values as the web
+// (components/brands/CreatorCTASection.jsx). wa.me takes E.164 without the
+// leading +. These were a 9999999999 placeholder and a handle that is not
+// ours, so both buttons went nowhere real.
+const WHATSAPP_URL = 'https://wa.me/918802907907';
+const INSTAGRAM_URL = 'https://www.instagram.com/rgossips.agency/';
+
 
 export function CreatorCTASection() {
   const { t } = useTranslation();
@@ -51,7 +58,7 @@ export function CreatorCTASection() {
         <View style={{ flexDirection: 'row', gap: 9, marginTop: 15 }}>
           <Pressable
             style={{ flex: 1, height: 44, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}
-            onPress={() => Linking.openURL('https://wa.me/919999999999').catch(() => {})}>
+            onPress={() => Linking.openURL(WHATSAPP_URL).catch(() => {})}>
             <LinearGradient
               colors={VIOLET_BLUE}
               locations={VIOLET_BLUE_LOCATIONS}
@@ -63,7 +70,7 @@ export function CreatorCTASection() {
           </Pressable>
           <Pressable
             style={{ flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' }}
-            onPress={() => Linking.openURL('https://instagram.com/rgossips').catch(() => {})}>
+            onPress={() => Linking.openURL(INSTAGRAM_URL).catch(() => {})}>
             <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{t('CreatorCTASection.followUs')}</Text>
           </Pressable>
         </View>

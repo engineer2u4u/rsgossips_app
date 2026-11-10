@@ -10,13 +10,22 @@ import { ANGLE_96, CITY_GRADIENT, HOME_COLORS } from '../theme/brandHome';
 const { width: SCREEN_W } = Dimensions.get('window');
 const TILE = (SCREEN_W - 28 - 10) / 2;
 
-type Location = { key: string; count: string; image: string };
+type Location = { key: string; image: ReturnType<typeof require> };
 
+// Bundled city photographs, the same files the web ships in
+// src/assets/states. They were remote Unsplash URLs picked by ID, and one of
+// them was wrong: the "Bangalore" tile showed the Petronas Towers, which are
+// in Kuala Lumpur. Bundling also means the tiles still render offline.
+//
+// No creator counts. The numbers here ("24.6K", "18.9K", "12.4K", "9.7K")
+// were invented — nothing counted creators per city — and the web dropped
+// them for the same reason. A tile that states a figure it cannot source is
+// worse than a tile that just names the city.
 const locations: Location[] = [
-  { key: 'mumbai', count: '24.6K', image: 'https://images.unsplash.com/photo-1598434192043-71111c1b3f41?q=80&w=735&auto=format&fit=crop' },
-  { key: 'delhi', count: '18.9K', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=600&auto=format&fit=crop' },
-  { key: 'bangalore', count: '12.4K', image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=600&auto=format&fit=crop' },
-  { key: 'hyderabad', count: '9.7K', image: 'https://images.unsplash.com/photo-1679214803434-af50c2c92009?q=80&w=1974&auto=format&fit=crop' },
+  { key: 'mumbai', image: require('../assets/cities/mumbai.jpg') },
+  { key: 'delhi', image: require('../assets/cities/delhi.jpg') },
+  { key: 'bangalore', image: require('../assets/cities/banglore.jpg') },
+  { key: 'hyderabad', image: require('../assets/cities/hyderabad.jpg') },
 ];
 
 export const CreatorsByLocation = () => {
@@ -34,7 +43,11 @@ export const CreatorsByLocation = () => {
         {locations.map(loc => (
           <Pressable
             key={loc.key}
-            onPress={() => navigation.navigate('BrandSearch' as never)}
+            onPress={() =>
+              (navigation.navigate as any)('BrandSearch', {
+                location: t(`CreatorsByLocation.cities.${loc.key}`),
+              })
+            }
             style={{
               width: TILE,
               borderRadius: 16,
@@ -43,7 +56,7 @@ export const CreatorsByLocation = () => {
               borderWidth: 1,
               borderColor: HOME_COLORS.cardBorder,
             }}>
-            <Image source={{ uri: loc.image }} style={{ width: '100%', height: 96, backgroundColor: '#EEF1F8' }} resizeMode="cover" />
+            <Image source={loc.image} style={{ width: '100%', height: 96, backgroundColor: '#EEF1F8' }} resizeMode="cover" />
             <View
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 12, paddingVertical: 10, overflow: 'hidden' }}>
               <LinearGradient
@@ -55,9 +68,6 @@ export const CreatorsByLocation = () => {
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }} numberOfLines={1}>
                   {t(`CreatorsByLocation.cities.${loc.key}`)}
-                </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9.5 }}>
-                  {t('CreatorsByLocation.creatorsCount', { count: loc.count })}
                 </Text>
               </View>
               <View

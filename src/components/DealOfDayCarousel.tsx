@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useRef} from 'react';
 import {View, Text, TouchableOpacity, Dimensions, Pressable, ActivityIndicator} from 'react-native';
 import Carousel, {type ICarouselInstance} from 'react-native-reanimated-carousel';
-import {Flame, Clock, MapPin} from 'lucide-react-native';
+import {Flame, Clock} from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
@@ -19,15 +19,12 @@ interface Deal {
 
 const {width} = Dimensions.get('window');
 
-// Same fallback list the web uses when list-featured-campaigns returns empty
-// or errors out. The numeric ids signal "no deep link — open the campaigns
-// tab instead of trying to route to a non-existent offer detail".
-const FALLBACK_DEALS: Deal[] = [
-  {id: 1, title: 'Featured Campaign', img: 'https://images.pexels.com/photos/27127418/pexels-photo-27127418.jpeg', deadline: null},
-  {id: 2, title: 'Featured Campaign', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800', deadline: null},
-  {id: 3, title: 'Featured Campaign', img: 'https://images.pexels.com/photos/22922098/pexels-photo-22922098.jpeg', deadline: null},
-  {id: 4, title: 'Featured Campaign', img: 'https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800', deadline: null},
-];
+// No fallback deals. This used to substitute four stock photos captioned
+// "Featured Campaign" whenever list-featured-campaigns came back empty OR
+// errored — invented inventory, with ids that deep-linked nowhere, shown to
+// creators as though brands were running campaigns. The section now hides
+// itself instead. (The web's DealsLaptop.jsx still does this; it needs the
+// same change.)
 
 // Countdown — mirrors web's RollingTimer logic:
 // - No deadline → "OPEN"
@@ -203,11 +200,9 @@ export default function DealOfDayCarousel() {
               deadline: c.applicationDeadline || null,
             })),
           );
-        } else {
-          setDeals(FALLBACK_DEALS);
         }
       } catch {
-        if (!cancelled) setDeals(FALLBACK_DEALS);
+        // Leave deals empty: an empty marketplace says so.
       } finally {
         if (!cancelled) setLoading(false);
       }

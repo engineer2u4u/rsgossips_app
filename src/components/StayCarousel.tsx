@@ -30,54 +30,10 @@ interface Stay {
 
 const {width} = Dimensions.get('window');
 
-// Fallback shown while list-featured-campaigns (section: "stay") has no
-// active rows — mirrors the web FALLBACK_STAYS.
-const FALLBACK_STAYS: Stay[] = [
-  {
-    id: 'stay-1',
-    displayTitle: 'The Azure Glass Resort',
-    brandName: 'Azure Hospitality',
-    description: 'Luxury overwater villa partnerships',
-    location: 'Maldives, Indian Ocean',
-    imageUrl:
-      'https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800',
-    priceType: 'Full Collab',
-    brand: {instagramFollowers: '120K'},
-  },
-  {
-    id: 'stay-2',
-    displayTitle: 'Urban Oasis Suites',
-    brandName: 'Urban Oasis',
-    description: 'City escapes for lifestyle creators',
-    location: 'Downtown Tokyo, Japan',
-    imageUrl:
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800',
-    priceType: 'Gifting',
-    brand: {instagramFollowers: '45K'},
-  },
-  {
-    id: 'stay-3',
-    displayTitle: 'Alpine Heritage Lodge',
-    brandName: 'Heritage Alps',
-    description: 'Boutique alpine retreats',
-    location: 'Zermatt, Switzerland',
-    imageUrl:
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800',
-    priceType: 'Paid Stay',
-    brand: {instagramFollowers: '88K'},
-  },
-  {
-    id: 'stay-4',
-    displayTitle: 'Terrace Palms Boutique',
-    brandName: 'Terrace Palms',
-    description: 'Moroccan riad collabs',
-    location: 'Marrakech, Morocco',
-    imageUrl:
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800',
-    priceType: 'Full Collab',
-    brand: {instagramFollowers: '250K'},
-  },
-];
+// No fallback stays. "The Azure Glass Resort" in the Maldives and "Urban
+// Oasis Suites" in Tokyo were invented partnerships, substituted whenever
+// the feed came back empty or errored. Showing a creator a collaboration
+// that does not exist is the one failure mode worth hiding the section for.
 
 // StayCard mirrors the DealOfDay card: full-bleed image with a dark gradient
 // veil top + bottom, a brand chip + secondary location chip at the top, and
@@ -220,11 +176,9 @@ export default function StayCarousel() {
               },
             })),
           );
-        } else {
-          setStays(FALLBACK_STAYS);
         }
       } catch {
-        if (!cancelled) setStays(FALLBACK_STAYS);
+        // Leave stays empty rather than inventing partnerships.
       } finally {
         if (!cancelled) setLoading(false);
       }
