@@ -13,6 +13,13 @@
  *    (padding/height/borderRadius + overflow:hidden) and the gradient becomes
  *    an absolute-fill background sibling. See commit c53ceb3.
  *
+ * 3. Percentage width/height on a gradient. Same root cause as 1 — without
+ *    Fabric the percentage resolves against nothing on iOS and the gradient
+ *    renders at zero. The brand Trust Score bar was `width: `${pct}%`` and
+ *    came out empty on every iPhone however good the score; the fix is to
+ *    measure the track with onLayout and give the fill a width in points.
+ *    This check did not exist when that shipped, which is why it does now.
+ *
  * 2. Hard-coded home-indicator padding inside a Modal. `Platform.OS === 'ios'
  *    ? 34 : 20` guesses an inset that varies by device, and is wrong on
  *    Android 15+, where targetSdk 36 forces edge-to-edge and the sheet draws
@@ -73,6 +80,17 @@ for (const file of files) {
     // collapsed on iOS, clipping its buttons, because its HEIGHT came from
     // padding + children. Only width AND height together are safe.
     const sizesFromPadding = /padding/.test(tag) || /["\s]p[xy]?-\d/.test(tag);
+
+    // A percentage dimension is worse than no dimension: it looks explicit,
+    // so the width-and-height escape above would wave it through.
+    const pctDimension = /(width|height):s*(`[^`]*%`|['"][d.]+%['"])/.exec(tag);
+    if (pctDimension) {
+      problems.push(
+        `${file}:${at}: <LinearGradient> sized with a percentage ` +
+          `(${pctDimension[1]}) — it resolves to nothing on iOS. Measure the ` +
+          'parent with onLayout and pass a width/height in points',
+      );
+    }
 
     if (sizesFromPadding && !hasWidthAndHeight) {
       problems.push(
