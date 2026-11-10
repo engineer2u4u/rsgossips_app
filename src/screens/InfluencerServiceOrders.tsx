@@ -19,6 +19,7 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ChevronLeft, ChevronRight, Search} from 'lucide-react-native';
+import BottomNav from '../components/BottomNav';
 import {supabase} from '../utils/supabase';
 import {useAuth} from '../context/AuthContext';
 import {formatINR} from '../lib/services';
@@ -154,7 +155,13 @@ export default function InfluencerServiceOrders() {
         className="bg-white px-5 py-4 flex-row items-center border-b border-slate-100"
         style={{gap: 12}}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            navigation.canGoBack()
+              ? navigation.goBack()
+              : navigation.navigate('InfluencerServices')
+          }
+          accessibilityRole="button"
+          hitSlop={8}
           className="w-10 h-10 rounded-full bg-[#FCE6F1] items-center justify-center">
           <ChevronLeft size={20} color="#E60076" />
         </TouchableOpacity>
@@ -169,7 +176,7 @@ export default function InfluencerServiceOrders() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{padding: 16, paddingBottom: 80, gap: 14}}
+        contentContainerStyle={{padding: 16, paddingBottom: 128, gap: 14}}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -261,6 +268,8 @@ export default function InfluencerServiceOrders() {
           ))
         )}
       </ScrollView>
+
+      <BottomNav />
     </SafeAreaView>
   );
 }

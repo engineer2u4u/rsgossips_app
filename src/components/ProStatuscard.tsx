@@ -362,7 +362,7 @@ export default function ProStatusCard() {
             className="text-[12.5px] font-semibold text-slate-700 mt-1"
             numberOfLines={1}
           >
-            {renewalCopy}
+            {renewalCopy}{' '}
             <Text className="font-bold text-slate-900">{renewalDays}</Text>
           </Text>
 
