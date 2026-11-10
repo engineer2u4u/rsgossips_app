@@ -31,6 +31,9 @@ export type SearchInfluencer = {
   is_elite?: boolean;
   /** Pro badge — same contract as is_elite; the two are exclusive. */
   is_pro?: boolean;
+  /** "meme_page" | "celebrity" | "" — admin classification, from
+   *  list-influencers. Drives the Profile Type filter. */
+  creator_type?: string;
 };
 
 interface Props {

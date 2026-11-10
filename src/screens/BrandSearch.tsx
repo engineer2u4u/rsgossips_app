@@ -32,6 +32,7 @@ import {
   EMPTY_FILTERS,
   FilterDrawer,
   FOLLOWER_RANGES,
+  PROFILE_TYPE_WIRE,
   type FilterValues,
 } from '../components/brands/FilterDrawer';
 import {invokeFn} from '../lib/api';
@@ -89,6 +90,15 @@ function matchesFilters(inf: SearchInfluencer, f: FilterValues, q: string) {
     });
     if (!ok) return false;
   }
+  // Profile Type — "Meme page" / "Celebrity" chips against the stored
+  // creator_type. Compared lowercased, the way list-influencers does it
+  // server-side for the web.
+  const profileTypes = f['Profile Type'] || [];
+  if (profileTypes.length) {
+    const stored = (inf.creator_type || '').toLowerCase();
+    const wanted = profileTypes.map(p => (PROFILE_TYPE_WIRE[p] || p).toLowerCase());
+    if (!wanted.includes(stored)) return false;
+  }
   const locations = f.Location || [];
   if (locations.length) {
     if (!inf.city || !locations.includes(inf.city)) return false;
@@ -117,11 +127,25 @@ export default function BrandSearch({route}: any) {
   // parameters at all, so the screen opened unfiltered and the tap looked
   // like it had done nothing.
   const [searchText, setSearchText] = useState<string>(route?.params?.q || '');
-  const [filters, setFilters] = useState<FilterValues>(() =>
-    route?.params?.category
-      ? {...EMPTY_FILTERS, Categories: [route.params.category]}
-      : EMPTY_FILTERS,
-  );
+  // ?location — the "Creators by location" city tiles. Same reason as
+  // ?category: without it the tile opened an unfiltered directory and the
+  // tap looked like it had done nothing.
+  const [filters, setFilters] = useState<FilterValues>(() => {
+    const next = {...EMPTY_FILTERS};
+    if (route?.params?.category) next.Categories = [route.params.category];
+    if (route?.params?.location) next.Location = [route.params.location];
+    // ?profileType=meme_page | celebrity — the home feed's Meme Pages and
+    // Celebrities cards. Translated back to the chip label so the
+    // pre-selection also lights up inside the filter drawer, same as web.
+    const pt = route?.params?.profileType;
+    if (pt) {
+      const label = Object.keys(PROFILE_TYPE_WIRE).find(
+        k => PROFILE_TYPE_WIRE[k] === pt,
+      );
+      if (label) next['Profile Type'] = [label];
+    }
+    return next;
+  });
   const [sort, setSort] = useState<SortMode>(null);
   const [sortOpen, setSortOpen] = useState(false);
   const [shown, setShown] = useState(PAGE_SIZE);

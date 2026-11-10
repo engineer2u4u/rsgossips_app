@@ -49,12 +49,22 @@ export const FILTER_DATA: Record<string, string[]> = {
   ],
   'Follower Count': ['0 - 10k', '10k - 50k', '50k - 100k', '100k - 500k', '500k - 1M', '1M+'],
   'Creator Type': ['Mega', 'Macro', 'Micro', 'Nano'],
+  // Chip labels, not wire values: the server stores creator_type as
+  // "meme_page" / "celebrity". PROFILE_TYPE_WIRE below does the translation,
+  // exactly as filtersToWire does on web.
+  'Profile Type': ['Meme page', 'Celebrity'],
   Location: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Remote'],
   // Language names are proper nouns — rendered verbatim, never translated.
   'Content Language': CONTENT_LANGUAGES,
 };
 
 export const FILTER_GROUPS = Object.keys(FILTER_DATA);
+
+/** Chip label → the value stored in influencer_profiles.creator_type. */
+export const PROFILE_TYPE_WIRE: Record<string, string> = {
+  'Meme page': 'meme_page',
+  Celebrity: 'celebrity',
+};
 
 export const EMPTY_FILTERS: FilterValues = Object.fromEntries(
   FILTER_GROUPS.map(k => [k, []]),

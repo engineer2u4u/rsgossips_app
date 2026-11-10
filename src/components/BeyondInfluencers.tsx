@@ -10,9 +10,14 @@ import { ANGLE_120, HOME_COLORS } from '../theme/brandHome';
 // Feature cards from the RGossips Explore design: two tinted promo tiles that
 // send the brand into the directory pre-focused on a segment.
 // Vector icons, not emoji (emoji render as "?" on the device font stack).
+// profileType maps to influencer_profiles.creator_type. Both cards used to
+// navigate with no parameters at all, so each opened the same unfiltered
+// directory and the tap read as "nothing happened" — the same bug the web
+// fixed in its BeyondInfluencer.jsx.
 const CARDS = [
   {
     key: 'meme',
+    profileType: 'meme_page',
     Icon: Laugh,
     colors: ['#F2ECFB', '#E4E7F7'],
     border: '#E1DAF3',
@@ -20,6 +25,7 @@ const CARDS = [
   },
   {
     key: 'celeb',
+    profileType: 'celebrity',
     Icon: Clapperboard,
     colors: ['#EAECFA', '#E0E6F7'],
     border: '#D8DEF2',
@@ -40,7 +46,11 @@ export const BeyondInfluencers = () => {
         // clips the title — driving the size from a plain View avoids that.
         <Pressable
           key={c.key}
-          onPress={() => navigation.navigate('BrandSearch' as never)}
+          onPress={() =>
+            (navigation.navigate as any)('BrandSearch', {
+              profileType: c.profileType,
+            })
+          }
           style={{
             flex: 1,
             padding: 16,
