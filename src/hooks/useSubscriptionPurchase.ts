@@ -17,7 +17,10 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Platform} from 'react-native';
-import {useIAP} from 'react-native-iap';
+import {
+  useIAP,
+  getAvailablePurchases as fetchAvailablePurchases,
+} from 'react-native-iap';
 import type {Purchase, PurchaseError} from 'react-native-iap';
 import {ALL_IAP_SKUS, IAP_SKUS, verifyPurchase} from '../lib/iap';
 import {reportClientError} from '../lib/api';
@@ -51,8 +54,6 @@ export function useSubscriptionPurchase() {
     fetchProducts,
     requestPurchase,
     finishTransaction,
-    availablePurchases,
-    getAvailablePurchases,
   } = useIAP({
     onPurchaseSuccess: async (purchase: Purchase) => {
       setStatus('verifying');
@@ -190,9 +191,17 @@ export function useSubscriptionPurchase() {
    * subscriptions without one fails review — and it is the recovery path for a
    * reinstall or a new device.
    */
+  // Each restore gets a generation number. A cancel or a timeout bumps it,
+  // and every step below checks it after awaiting, so a late result from an
+  // abandoned attempt is dropped instead of acting on a screen that has
+  // moved on.
+  const restoreGen = useRef(0);
+
   const restore = useCallback(async () => {
     setError('');
     setStatus('restoring');
+    const gen = ++restoreGen.current;
+
     // The Plans screen puts a full-screen blocking overlay up for the whole
     // time status !== 'idle'. getAvailablePurchases() can sit there without
     // ever settling (a store account that never finishes signing in, a
@@ -200,58 +209,85 @@ export function useSubscriptionPurchase() {
     // reported from TestFlight as "unresponsive after tapping Restore".
     // Nothing here can cancel StoreKit, so bound the WAIT instead: give the
     // control back and let them tap again.
-    let timedOut = false;
     const timer = setTimeout(() => {
-      timedOut = true;
+      if (restoreGen.current !== gen) return;
+      restoreGen.current++;
       setError('Restore took too long. Please try again.');
       setStatus('idle');
     }, RESTORE_TIMEOUT_MS);
-    try {
-      await getAvailablePurchases();
-    } catch (e: any) {
-      if (!timedOut) {
-        setError(e?.message || 'Could not restore purchases.');
-        setStatus('idle');
-      }
-    } finally {
-      clearTimeout(timer);
-    }
-  }, [getAvailablePurchases]);
 
-  // Verify whatever the restore turned up. Runs off availablePurchases rather
-  // than a return value because that is where the library reports results.
-  useEffect(() => {
-    if (status !== 'restoring') return;
-    if (!availablePurchases?.length) {
+    // The library's OWN function, not the hook's wrapper. The wrapper swallows
+    // the result and only writes it to state, and the previous version of
+    // this read that state from an effect keyed on status === 'restoring'.
+    // That effect fired the instant status changed — while the state still
+    // held its initial [] — judged "no purchases", and set status back to
+    // idle. When the real list arrived moments later the effect saw idle and
+    // returned. Restore therefore reported "No previous purchases found on
+    // this account" without ever having looked, on every tap, for everyone.
+    // Awaiting the actual return value removes the race outright.
+    let list: Purchase[];
+    try {
+      list = await fetchAvailablePurchases({
+        onlyIncludeActiveItemsIOS: true,
+        alsoPublishToEventListenerIOS: false,
+      });
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (restoreGen.current !== gen) return;
+      setError(err?.message || 'Could not restore purchases.');
+      setStatus('idle');
+      return;
+    }
+    clearTimeout(timer);
+    if (restoreGen.current !== gen) return;
+
+    if (!list?.length) {
       setStatus('idle');
       setError('No previous purchases found on this account.');
       return;
     }
-    (async () => {
-      let entitled = false;
-      let restoredPlan: string | null = null;
-      for (const p of availablePurchases) {
-        try {
-          const res = await verifyPurchase(p);
-          if (res?.success) {
-            // Finish even a lapsed one — it is verified and recorded, and
-            // leaving it open makes the store replay it forever.
-            await finishTransaction({purchase: p, isConsumable: false});
-            if (res.entitled) {
-              entitled = true;
-              if (res.plan) restoredPlan = String(res.plan);
-            }
+
+    // From here the receipts are in hand and verification is writing
+    // entitlements, so this is no longer cancellable — 'verifying' is the
+    // status the screen already treats that way.
+    setStatus('verifying');
+    let entitled = false;
+    let restoredPlan: string | null = null;
+    for (const p of list) {
+      try {
+        const res = await verifyPurchase(p);
+        if (res?.success) {
+          // Finish even a lapsed one — it is verified and recorded, and
+          // leaving it open makes the store replay it forever.
+          await finishTransaction({purchase: p, isConsumable: false});
+          if (res.entitled) {
+            entitled = true;
+            if (res.plan) restoredPlan = String(res.plan);
           }
-        } catch {
-          // One bad receipt must not abandon the rest.
+        } else {
+          // Same reasoning as the purchase path: a refusal arrives as HTTP
+          // 200 and would otherwise leave no trace.
+          reportClientError(
+            'iap.restore_verification_refused',
+            res?.error || 'Restore verification refused',
+            {
+              detail: res?.detail ?? null,
+              productId: (p as any)?.productId ?? null,
+            },
+          );
         }
+      } catch (err: any) {
+        // One bad receipt must not abandon the rest — but it must be seen.
+        reportClientError('iap.restore_verify_threw', err?.message || 'verify threw', {
+          productId: (p as any)?.productId ?? null,
+        });
       }
-      await refreshProfile();
-      if (entitled && restoredPlan) setSubscribedPlan(restoredPlan);
-      else if (!entitled) setError('No active subscription found to restore.');
-      setStatus('idle');
-    })();
-  }, [availablePurchases, status, finishTransaction, refreshProfile]);
+    }
+    await refreshProfile();
+    if (entitled && restoredPlan) setSubscribedPlan(restoredPlan);
+    else if (!entitled) setError('No active subscription found to restore.');
+    setStatus('idle');
+  }, [finishTransaction, refreshProfile]);
 
   return {
     connected,
@@ -269,13 +305,16 @@ export function useSubscriptionPurchase() {
     /**
      * Give the screen back while a restore is still in flight. Nothing here
      * can cancel a StoreKit request, so this only stops the UI waiting on it:
-     * a late result is ignored because the verify effect runs on
-     * status === 'restoring'. Restore is safe to abandon — it grants nothing
+     * a late result is ignored because restore() checks its generation after
+     * every await. Restore is safe to abandon — it grants nothing
      * by itself, and running it again is free. Deliberately NOT offered for
      * 'purchasing' or 'verifying': money is moving there, and a receipt that
      * arrives after the user walks away still has to be verified and
      * finished, or the store replays it forever.
      */
-    cancelRestore: () => setStatus(s => (s === 'restoring' ? 'idle' : s)),
+    cancelRestore: () => {
+      restoreGen.current++;
+      setStatus(s => (s === 'restoring' ? 'idle' : s));
+    },
   };
 }
