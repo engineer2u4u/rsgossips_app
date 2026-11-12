@@ -2144,7 +2144,7 @@
     "loading": "Loading campaigns...",
     "noCampaigns": "No {{tab}} campaigns found.",
     "tabs": {
-      "All": "All ({{count}})",
+      "All": "Open ({{count}})",
       "Active": "Active ({{count}})",
       "Applied": "Applied ({{count}})",
       "Completed": "Completed ({{count}})"
