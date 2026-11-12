@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -78,6 +78,24 @@ export default function InfluencerPricing() {
     restore,
     cancelRestore,
   } = useSubscriptionPurchase();
+
+  // The one error box sits near the top of the page, under the cycle toggle,
+  // while Restore is at the very bottom after the plan cards and Buy is on a
+  // card mid-page. Tap either, and the message landed off-screen above — the
+  // tap looked like it did nothing. Reported with Restore's "No previous
+  // purchases found on this account", which nobody ever saw.
+  //
+  // The scroll happens in the box's own onLayout rather than in an effect on
+  // `error`: the box mounts conditionally, so an effect keyed on the string
+  // would fire before the box has a position, and would read a stale or zero
+  // y. onLayout fires only once it has one. lastScrolledError stops a mere
+  // relayout (rotation, keyboard) from yanking the page back up, and resets
+  // when the error clears so the same message scrolls again next time.
+  const scrollRef = useRef<ScrollView>(null);
+  const lastScrolledError = useRef('');
+  useEffect(() => {
+    if (!error) lastScrolledError.current = '';
+  }, [error]);
 
   // Store-specific wording for the info tooltips — the flow is identical, only
   // the store name differs between platforms.
@@ -172,7 +190,7 @@ export default function InfluencerPricing() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{padding: 20, paddingBottom: 48}}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{padding: 20, paddingBottom: 48}}>
         {/* Monthly / annual */}
         <View className="flex-row bg-slate-100 rounded-2xl p-1 mb-5">
           {(['monthly', 'annual'] as BillingCycle[]).map(c => {
@@ -199,7 +217,18 @@ export default function InfluencerPricing() {
         </View>
 
         {!!error && (
-          <View className="rounded-xl bg-red-50 px-4 py-3 mb-4">
+          <View
+            className="rounded-xl bg-red-50 px-4 py-3 mb-4"
+            onLayout={e => {
+              if (error === lastScrolledError.current) return;
+              lastScrolledError.current = error;
+              // y is relative to the ScrollView's content container, which
+              // is this view's direct parent — exactly what scrollTo wants.
+              scrollRef.current?.scrollTo({
+                y: Math.max(0, e.nativeEvent.layout.y - 12),
+                animated: true,
+              });
+            }}>
             <Text className="text-[13px] text-red-600">{error}</Text>
           </View>
         )}
