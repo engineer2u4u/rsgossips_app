@@ -101,7 +101,17 @@ export default function InfluencerCampaign() {
   // would have shown it to an App Store reviewer. An honest failure is better.
   const [loadError, setLoadError] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('Active');
+  // ?tab= from a caller (the Profile stat cards deep-link here: earnings
+  // and Completed land on 'Completed', in-flight work on 'Applied').
+  const requestedTab: string | undefined = (route.params as any)?.tab;
+  const [activeTab, setActiveTab] = useState(
+    requestedTab && BASE_TABS.includes(requestedTab) ? requestedTab : 'Active',
+  );
+  useEffect(() => {
+    if (requestedTab && BASE_TABS.includes(requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(incomingCategories);

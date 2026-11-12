@@ -114,6 +114,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   const completion = computeProfileCompletion(profile);
   const openMediaKit = () => navigation.navigate('InfluencerMediaKit' as never);
+  const openCampaignsTab = (tab: 'Applied' | 'Completed') =>
+    (navigation as any).navigate('InfluencerCampaigns', {tab});
   const openServiceRequests = () =>
     navigation.navigate('InfluencerServiceOrders' as never);
 
@@ -257,6 +259,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           change=""
           color="#10B981"
           bg="#FFFBF5"
+          onPress={() => openCampaignsTab('Completed')}
         />
         <StatCard
           icon={Clock}
@@ -265,6 +268,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           change=""
           color="#3B82F6"
           bg="#F0F9FF"
+          onPress={() => openCampaignsTab('Applied')}
         />
         <StatCard
           icon={Award}
@@ -273,6 +277,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           change=""
           color="#10B981"
           bg="#F0FDF4"
+          onPress={() => openCampaignsTab('Completed')}
         />
         <StatCard
           icon={Hourglass}
@@ -281,6 +286,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           change=""
           color="#8B5CF6"
           bg="#FAF5FF"
+          onPress={() => openCampaignsTab('Applied')}
         />
       </View>
 
@@ -536,11 +542,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   );
 };
 
-function StatCard({icon: Icon, title, value, change, color, bg}: {
+function StatCard({icon: Icon, title, value, change, color, bg, onPress}: {
   icon: any; title: string; value: string; change: string; color: string; bg: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={{width: '48%', backgroundColor: bg}} className="p-4 rounded-xl border border-white shadow-sm">
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}: ${value}`}
+      style={{width: '48%', backgroundColor: bg}}
+      className="p-4 rounded-xl border border-white shadow-sm">
       <View className="w-10 h-10 bg-white/80 rounded-xl items-center justify-center mb-3">
         <Icon size={20} color={color} />
       </View>
@@ -551,7 +564,7 @@ function StatCard({icon: Icon, title, value, change, color, bg}: {
           <Text className="text-[10px] font-bold" style={{color}}>{change}</Text>
         ) : null}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
