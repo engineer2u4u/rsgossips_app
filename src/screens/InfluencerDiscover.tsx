@@ -77,6 +77,12 @@ export default function InfluencerDiscover() {
   // Mirrors web src/app/influencer/brands/page.js.
   const [sortBy, setSortBy] = useState<SortBy>('match');
 
+  // The header "Agency" chip is a shortcut onto the drawer's brand-type
+  // filter: on = agencies only, off = everyone. Lit only when the filter is
+  // exactly [agency], so a drawer selection of both types reads as off.
+  const agencyOnly = brandTypes.length === 1 && brandTypes[0] === 'agency';
+  const toggleAgencyOnly = () => setBrandTypes(agencyOnly ? [] : ['agency']);
+
   // Client-side pagination — render `visibleCount` cards, "Load more"
   // appends the next PAGE_SIZE. Reset on any filter/sort change so we
   // never show stale slices after toggling a filter.
@@ -279,7 +285,7 @@ export default function InfluencerDiscover() {
                   n: filteredBrands.length,
                 })}
               </Text>
-              <View className="flex-row" style={{gap: 8}}>
+              <View className="flex-row flex-wrap" style={{gap: 8}}>
                 {SORT_OPTIONS.map(opt => {
                   const active = sortBy === opt.key;
                   return (
@@ -303,6 +309,24 @@ export default function InfluencerDiscover() {
                     </TouchableOpacity>
                   );
                 })}
+                {/* Filter chip, violet when on to echo the card label. */}
+                <TouchableOpacity
+                  onPress={toggleAgencyOnly}
+                  activeOpacity={0.8}
+                  className={
+                    agencyOnly
+                      ? 'px-3 py-1.5 rounded-xl bg-violet-600'
+                      : 'px-3 py-1.5 rounded-xl bg-white border border-slate-100'
+                  }>
+                  <Text
+                    className={
+                      agencyOnly
+                        ? 'text-[11px] font-bold text-white'
+                        : 'text-[11px] font-bold text-slate-500'
+                    }>
+                    {t('ScreensInfluencerDiscover.filterAgency')}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}

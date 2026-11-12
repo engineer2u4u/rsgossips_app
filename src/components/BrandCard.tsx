@@ -320,20 +320,16 @@ function BrandCardImpl({brand, matchScore = 0, onPress}: Props) {
         shadowRadius: 16,
         elevation: 6,
       }}>
-      {/* Brand / agency — admin-set label (list-brands accountType). */}
-      <View
-        className={`absolute top-3 left-3 z-10 px-2 py-0.5 rounded-lg ${
-          brand.accountType === 'agency' ? 'bg-violet-50' : 'bg-sky-50'
-        }`}>
-        <Text
-          className={`text-[9px] font-black uppercase ${
-            brand.accountType === 'agency' ? 'text-violet-600' : 'text-sky-600'
-          }`}>
-          {brand.accountType === 'agency'
-            ? t('BrandCard.typeAgency')
-            : t('BrandCard.typeBrand')}
-        </Text>
-      </View>
+      {/* Agency label (admin-set, list-brands accountType). Brands carry
+          no label: they are the default, and tagging every card "BRAND"
+          said nothing. */}
+      {brand.accountType === 'agency' && (
+        <View className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-lg bg-violet-50">
+          <Text className="text-[9px] font-black uppercase text-violet-600">
+            {t('BrandCard.typeAgency')}
+          </Text>
+        </View>
+      )}
 
       {/* Match Score Badge — pressable, opens the "why this match?" sheet.
           A nested touchable claims the tap, so the card's own onPress

@@ -2183,6 +2183,7 @@
     "sortMatch": "Match score",
     "sortAz": "A–Z",
     "sortCampaigns": "Active campaigns",
+    "filterAgency": "Agency",
     "loadMore": "Load more ({{n}} remaining)",
     "loadFailedTitle": "Couldn't load brands",
     "loadFailedBody": "Check your connection and try again."
