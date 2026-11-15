@@ -9,7 +9,7 @@
 
 import React, {useState} from 'react';
 import {Alert, Image, Linking, Pressable, Text, View} from 'react-native';
-import {Check, Instagram, MapPin, MoreVertical, Plus} from 'lucide-react-native';
+import {BadgeCheck, Check, Instagram, MapPin, MoreVertical, Plus} from 'lucide-react-native';
 import {useTranslation} from 'react-i18next';
 import ReportBlockSheet from '../ReportBlockSheet';
 import EliteBadge from '../EliteBadge';
@@ -34,6 +34,8 @@ export type SearchInfluencer = {
   /** "meme_page" | "celebrity" | "" — admin classification, from
    *  list-influencers. Drives the Profile Type filter. */
   creator_type?: string;
+  /** Handle ownership proven by OAuth (093). False = self-declared at signup. */
+  instagram_verified?: boolean;
 };
 
 interface Props {
@@ -139,10 +141,16 @@ export function InfluencerCard({
           ) : influencer.is_pro ? (
             <ProBadge />
           ) : null}
+          {influencer.instagram_verified ? (
+            <BadgeCheck size={14} color="#3B82F6" />
+          ) : null}
         </View>
         {handle ? (
           <Text className="text-[11px] text-gray-400" numberOfLines={1}>
             @{handle}
+            {influencer.instagram_verified
+              ? ''
+              : ' · ' + t('Verification.selfDeclared')}
           </Text>
         ) : null}
         <View className="flex-row items-center" style={{gap: 12, marginTop: 2}}>

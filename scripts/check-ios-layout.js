@@ -31,11 +31,15 @@
 const {execSync} = require('child_process');
 const fs = require('fs');
 
-const files = execSync('git ls-files "src/**/*.tsx" "src/*.tsx"', {
+// Tracked AND untracked, minus anything deleted but not yet staged: a new
+// component must be checked before it is committed, and a file removed from
+// the tree must not crash the check until its deletion is staged.
+const files = execSync('git ls-files --cached --others --exclude-standard "src/**/*.tsx" "src/*.tsx"', {
   encoding: 'utf8',
 })
   .split('\n')
-  .filter(Boolean);
+  .filter(Boolean)
+  .filter(f => fs.existsSync(f));
 
 const problems = [];
 

@@ -111,6 +111,9 @@ function matchesFilters(inf: SearchInfluencer, f: FilterValues, q: string) {
     const infLangs = Array.isArray(inf.languages) ? inf.languages : [];
     if (!languages.some(l => infLangs.includes(l))) return false;
   }
+  if ((f.Verification || []).includes('Verified only') && !inf.instagram_verified) {
+    return false;
+  }
   return true;
 }
 

@@ -26,7 +26,6 @@ import {
   Eye,
   Heart,
   Star,
-  TrendingUp,
 } from 'lucide-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
@@ -50,16 +49,14 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
   const navigation = useNavigation<any>();
   const {stats, loading} = useInfluencerCampaigns();
 
-  const followers = profile?.followers_count || 0;
   const engagement = profile?.engagement_rate || 0;
-  // Web treats total reach as a profile-level proxy. Without per-campaign
-  // metrics we approximate with profile.total_reach when populated, falling
-  // back to followers × campaign count as a rough indicator.
-  const totalReach =
-    profile?.total_reach ||
-    (followers > 0 && stats.completedCount > 0
-      ? followers * stats.completedCount
-      : 0);
+  // Only what Instagram reported. Without a connection (or insights
+  // permission) there is no reach figure, and the tile says so with a dash
+  // rather than a number we made up.
+  const totalReach = Number(profile?.total_reach) || 0;
+  const demo = profile?.audience_demographics;
+  const hasDemo =
+    !!demo?.gender || (Array.isArray(demo?.ageRanges) && demo.ageRanges.length > 0);
 
   // KPI row (4 tiles)
   const kpis = [
@@ -80,7 +77,7 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
     {
       icon: Eye,
       label: t('AnalyticsPage.totalReach'),
-      value: formatCountCompact(totalReach),
+      value: totalReach > 0 ? formatCountCompact(totalReach) : '—',
       sub: t('AnalyticsPage.reachAcross', {count: stats.myCount}),
       bg: '#FDF2F8',
       iconBg: '#EC4899',
@@ -313,6 +310,12 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
             {t('AnalyticsPage.audienceDemographics')}
           </Text>
 
+          {!hasDemo ? (
+            <Text className="text-[13px] text-slate-500">
+              {t('AnalyticsPageDemo.noDemographics')}
+            </Text>
+          ) : (
+            <>
           <Text className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">
             {t('AnalyticsPage.genderDistribution')}
           </Text>
@@ -320,17 +323,17 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
             {[
               {
                 key: 'female',
-                pct: profile?.audience_demographics?.gender?.female || 62,
+                pct: demo?.gender?.female || 0,
                 color: '#A855F7',
               },
               {
                 key: 'male',
-                pct: profile?.audience_demographics?.gender?.male || 35,
+                pct: demo?.gender?.male || 0,
                 color: '#3B82F6',
               },
               {
                 key: 'other',
-                pct: profile?.audience_demographics?.gender?.other || 3,
+                pct: demo?.gender?.other || 0,
                 color: '#F59E0B',
               },
             ].map(g => (
@@ -357,12 +360,7 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
             {t('AnalyticsPage.ageDistribution')}
           </Text>
           <View style={{gap: 8}}>
-            {(profile?.audience_demographics?.ageRanges || [
-              {range: '18-24', pct: 35},
-              {range: '25-34', pct: 40},
-              {range: '35-44', pct: 18},
-              {range: '45+', pct: 7},
-            ]).map((a: any) => (
+            {(Array.isArray(demo?.ageRanges) ? demo.ageRanges : []).map((a: any) => (
               <View key={a.range}>
                 <View className="flex-row justify-between mb-1">
                   <Text className="text-xs font-semibold text-slate-600">
@@ -385,6 +383,8 @@ const AnalyticsPage: React.FC<Props> = ({onBack}) => {
               </View>
             ))}
           </View>
+            </>
+          )}
         </View>
 
         {/* Web parity: the analytics screen on rgossips.com is a single

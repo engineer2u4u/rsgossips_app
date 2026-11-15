@@ -7,6 +7,7 @@ import { navigationRef } from './src/lib/navigation';
 import { registerForPush, initPushHandlers } from './src/lib/push';
 import OfflineGate from './src/components/OfflineGate';
 import InstagramReconnectModal from './src/components/InstagramReconnectModal';
+import ConnectInstagramPrompt from './src/components/ConnectInstagramPrompt';
 import EliteWelcomeModal from './src/components/EliteWelcomeModal';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { LinkingOptions } from '@react-navigation/native';
@@ -231,6 +232,9 @@ export default function App() {
             {/* Dead Instagram token → reconnect popup for creators. Root-level so
                 stacked screens don't each mount a copy. */}
             <InstagramReconnectModal />
+            {/* Never-connected creators (typed handle at signup) → connect
+                prompt. Mutually exclusive with the reconnect modal above. */}
+            <ConnectInstagramPrompt />
             <EliteWelcomeModal />
             <OfflineGate />
           </AuthProvider>

@@ -53,6 +53,10 @@ export const FILTER_DATA: Record<string, string[]> = {
   // "meme_page" / "celebrity". PROFILE_TYPE_WIRE below does the translation,
   // exactly as filtersToWire does on web.
   'Profile Type': ['Meme page', 'Celebrity'],
+  // Verified = handle ownership proven by OAuth (list-influencers
+  // instagram_verified). Unverified creators are otherwise shown and ranked
+  // lower by the server; this hides them.
+  Verification: ['Verified only'],
   Location: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Remote'],
   // Language names are proper nouns — rendered verbatim, never translated.
   'Content Language': CONTENT_LANGUAGES,

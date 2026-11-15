@@ -54,7 +54,9 @@ export default function CompleteProfileCard() {
   const navigation = useContext(NavigationContext);
   const [showRatesModal, setShowRatesModal] = useState(false);
 
-  const hasInstagram = !!profile?.instagram_handle;
+  // A typed handle is not a connection. The step completes on OAuth (093's
+  // instagram_verified), which is also what the connect prompt asks for.
+  const hasInstagram = !!profile?.instagram_verified;
   const hasMediaKit = !!profile?.media_kit_published;
   const serviceRates = profile?.service_rates || {};
   const hasRates =

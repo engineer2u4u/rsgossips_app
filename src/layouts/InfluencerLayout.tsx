@@ -6,7 +6,6 @@ import {useNavigation} from '@react-navigation/native';
 
 import BottomNav from '../components/BottomNav';
 import SupportChatModal from '../components/SupportChatModal';
-import InstagramRequiredGate from '../components/InstagramRequiredGate';
 import {useAuth} from '../context/AuthContext';
 import {useUnreadNotifications} from '../hooks/useUnreadNotifications';
 import {BRAND, BG, BRAND_GRADIENT_WARM} from '../theme/brand';
@@ -111,15 +110,6 @@ export default function InfluencerLayout({
   const insets = useSafeAreaInsets();
   const [supportOpen, setSupportOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const {profile, instagramTokenMissing} = useAuth();
-  // Instagram is a mandatory connection for influencers. We gate the
-  // dashboard only when BOTH signals agree: the profile flag is explicit
-  // false AND the refresh-instagram poll also reports the token missing.
-  // This stops a stale `instagram_connected: false` from check-profile
-  // from gating users whose token is in fact still valid (refresh-instagram
-  // clears instagramTokenMissing the moment it confirms the token works).
-  const needsIg =
-    !!profile && profile.instagram_connected === false && instagramTokenMissing;
 
   const handleRefresh = useCallback(async () => {
     if (!onRefresh) return;
@@ -182,7 +172,6 @@ export default function InfluencerLayout({
         onClose={() => setSupportOpen(false)}
       />
 
-      {needsIg && <InstagramRequiredGate />}
     </SafeAreaView>
   );
 }

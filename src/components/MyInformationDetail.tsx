@@ -15,6 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useAuth} from '../context/AuthContext';
 import {invokeFn} from '../lib/api';
 import {useProfilePhoto} from '../utils/photoUrl';
+import PublicRefreshButton from './PublicRefreshButton';
 
 const {width} = Dimensions.get('window');
 
@@ -231,6 +232,8 @@ const MyInformationDetail: React.FC<Props> = ({onBack, onEditProfile}) => {
               <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('MyInformationDetail.stats.following')}</Text>
             </View>
           </View>
+          {/* Renders only while Instagram is NOT connected. */}
+          <PublicRefreshButton />
 
           {/* Edit Profile Button — use a real flex gap instead of an
               ml-2 margin so the icon + label center predictably on iOS

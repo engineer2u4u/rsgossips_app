@@ -36,6 +36,8 @@ interface InstaProfile {
 
 interface Props {
   onNext: (profile: InstaProfile) => void;
+  /** Signup only: offered under the button so OAuth is a choice, not a wall. */
+  onUseHandleInstead?: () => void;
   mode?: 'signin' | 'signup';
   role?: 'brand' | 'influencer';
   loading?: boolean;
@@ -48,6 +50,7 @@ export default function InstagramConnect({
   role = 'influencer',
   loading: externalLoading = false,
   error: externalError = '',
+  onUseHandleInstead,
 }: Props) {
   const {t} = useTranslation();
   const [connecting, setConnecting] = useState(false);
@@ -350,11 +353,17 @@ export default function InstagramConnect({
           )}
         </Pressable>
 
-        {!profile && (
+        {!profile && onUseHandleInstead ? (
+          <Pressable onPress={onUseHandleInstead} className="mt-4 py-2 items-center">
+            <Text className="text-[13px] font-semibold text-[#9810FA]">
+              {t('InstagramConnect.useHandleInstead')}
+            </Text>
+          </Pressable>
+        ) : !profile ? (
           <Text className="text-center text-[11px] text-slate-400 mt-3">
             {t('InstagramConnect.connectionRequired')}
           </Text>
-        )}
+        ) : null}
       </View>
 
       {/* Instagram OAuth WebView Modal */}

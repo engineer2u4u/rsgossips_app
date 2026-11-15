@@ -32,11 +32,13 @@ import {formatINRCompact} from '../lib/influencer-stats';
 import {REWARDS_ENABLED} from '../lib/features';
 import {useProfilePhoto} from '../utils/photoUrl';
 import {openManagePlan} from '../lib/manage-plan';
+import PublicRefreshButton from './PublicRefreshButton';
 
 // Mirrors the web useProfileCompletion hook (CompleteProfileCard.jsx).
 // Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
 function computeProfileCompletion(profile: any) {
-  const hasInstagram = !!profile?.instagram_handle;
+  // Verified (OAuth'd), not merely a handle on file — see CompleteProfileCard.
+  const hasInstagram = !!profile?.instagram_verified;
   const hasMediaKit = !!profile?.media_kit_published;
   const serviceRates = profile?.service_rates || profile?.serviceRates || {};
   const hasRates = Object.values(serviceRates).some((v: any) => v && Number(v) > 0);
@@ -207,6 +209,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               <Text className="text-[10px] font-bold text-gray-400 uppercase">{t('DashboardView.following')}</Text>
             </View>
           </View>
+          {/* Renders only while Instagram is NOT connected. */}
+          <PublicRefreshButton />
         </View>
       </View>
 

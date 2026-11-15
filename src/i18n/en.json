@@ -1246,6 +1246,7 @@
     "signIn": "Sign In",
     "continue": "Continue",
     "connectionRequired": "Instagram connection is required to proceed",
+    "useHandleInstead": "Enter my username instead",
     "loadingInstagram": "Loading Instagram...",
     "roleBrand": "a Brand",
     "roleInfluencer": "an Influencer",
@@ -3910,5 +3911,61 @@
   "InfluencerHome": {
     "guestTitle": "Browse brand campaigns",
     "guestBody": "Look around freely. You only need an account to apply or order."
+  },
+  "InstagramHandleStep": {
+    "title": "Your Instagram",
+    "subtitle": "Enter your Instagram username and we'll pull your public profile. No permissions needed.",
+    "placeholder": "username",
+    "lookUp": "Look up",
+    "looking": "Looking up...",
+    "notYou": "Not you?",
+    "followers": "Followers",
+    "following": "Following",
+    "posts": "Posts",
+    "confirm": "That's me, continue",
+    "checking": "Checking...",
+    "connectInstead": "Connect Instagram instead",
+    "connectInsteadHint": "Connecting gives you a verified badge and shows brands your reach and audience.",
+    "errorEmpty": "Enter your Instagram username first.",
+    "errorInvalid": "That doesn't look like a valid Instagram username.",
+    "errorNotFound": "We couldn't find that account. Check the spelling.",
+    "errorNotBusiness": "That account isn't a public Creator or Business account. Switch it in Instagram settings, or connect Instagram instead.",
+    "errorRateLimited": "Instagram is busy right now. Please try again in a minute.",
+    "errorUnavailable": "Instagram lookup is temporarily unavailable. You can connect Instagram instead.",
+    "errorAlreadyRegistered": "This Instagram account is already registered as a {{source}}.",
+    "roleBrand": "brand",
+    "roleInfluencer": "creator",
+    "roleOther": "user"
+  },
+  "ConnectInstagramPrompt": {
+    "title": "Connect Instagram",
+    "body": "Get a verified badge, rank higher in brand search, and show brands your reach, views and audience.",
+    "connect": "Connect Instagram",
+    "connecting": "Connecting...",
+    "later": "Maybe later",
+    "pointVerified": "Verified badge on your profile",
+    "pointRanking": "Higher placement in brand search",
+    "pointInsights": "Reach, views and audience demographics"
+  },
+  "PublicRefresh": {
+    "refresh": "Refresh numbers",
+    "refreshing": "Refreshing...",
+    "updatedAgo": "Updated {{ago}}",
+    "nextIn": "Next refresh in {{in}}",
+    "justNow": "just now",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago",
+    "hours": "{{n}}h",
+    "minutes": "{{n}}m",
+    "failed": "Could not refresh right now."
+  },
+  "Verification": {
+    "verified": "Verified",
+    "selfDeclared": "Self-declared",
+    "filterGroup": "Verification",
+    "verifiedOnly": "Verified only"
+  },
+  "AnalyticsPageDemo": {
+    "noDemographics": "Connect Instagram with insights to see your audience's gender and age split."
   }
 }

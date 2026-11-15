@@ -42,6 +42,8 @@ interface Profile {
   // boolean instead. The actual token never reaches the client.
   instagram_connected?: boolean;
   instagram_token_expires_at?: string | null;
+  /** Ownership proven by OAuth at some point (093). False = self-declared. */
+  instagram_verified?: boolean;
   [key: string]: any;
 }
 
@@ -149,8 +151,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         // server EXPLICITLY says disconnected — `undefined` means an old
         // API response and we'd rather under-warn than show a false
         // banner to a connected user.
+        // Only someone who once connected can have LOST a connection. A
+        // self-declared creator (handle typed at signup, never OAuth'd) has
+        // instagram_connected === false too, and must not be told to
+        // "reconnect" something they never connected — the connect prompt
+        // handles them.
         if (
-          data.profile.instagram_handle &&
+          data.profile.instagram_verified &&
           data.profile.instagram_connected === false
         ) {
           setInstagramTokenMissing(true);

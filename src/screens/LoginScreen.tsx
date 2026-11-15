@@ -22,6 +22,7 @@ import OnboardingCarousel from '../components/OnboardingCarousel';
 import {clearAuthIntent} from '../lib/authIntent';
 import RoleSelection from '../components/RoleSelection';
 import InstagramConnect from '../components/InstagramConnect';
+import InstagramHandleStep from '../components/InstagramHandleStep';
 import SignUpForm from '../components/SignUpForm';
 import BrandSignUpForm from '../components/BrandSignUpForm';
 import CategorySelection from '../components/CategorySelection';
@@ -159,7 +160,9 @@ export default function LoginScreen() {
           name: inv.name || prev.name,
         }));
         setFlow('signup');
-        setStep(2); // → InstagramConnect (mandatory)
+        // Brands have no Instagram step any more; the invitation is claimed
+        // by id in create-profile, so no handle match is needed for them.
+        setStep((data.role || 'influencer') === 'brand' ? 3 : 2);
       } catch (e: any) {
         if (cancelled) return;
         setInvitationBlock({
@@ -535,9 +538,15 @@ export default function LoginScreen() {
   // SIGN UP FLOW HANDLERS
   // ========================
 
+  // Step 2 for creators is the Instagram step. It opens on the handle
+  // lookup (no permission asked); "Connect Instagram instead" switches to
+  // the OAuth component for creators who want the verified badge now.
+  const [igMode, setIgMode] = useState<'handle' | 'oauth'>('handle');
+
   const handleSignUpRoleSelected = (selectedRole: 'brand' | 'influencer') => {
     setSignupData(prev => ({ ...prev, role: selectedRole }));
-    nextStep(); // -> step 2 (Instagram connect)
+    // Brands go straight to their form: Instagram is not asked of them.
+    setStep(selectedRole === 'brand' ? 3 : 2);
   };
 
   const handleSignUpInstagramConnect = async (profile: InstaProfile) => {
@@ -919,11 +928,19 @@ export default function LoginScreen() {
                     onSwitchMode={switchToSignIn}
                   />
                 )}
-                {step === 2 && (
+                {step === 2 && igMode === 'handle' && (
+                  <InstagramHandleStep
+                    onNext={handleSignUpInstagramConnect}
+                    onConnectInstead={() => setIgMode('oauth')}
+                    initialHandle={invitation?.instagramHandle || ''}
+                  />
+                )}
+                {step === 2 && igMode === 'oauth' && (
                   <InstagramConnect
                     onNext={handleSignUpInstagramConnect}
                     mode="signup"
                     role={signupData.role || 'influencer'}
+                    onUseHandleInstead={() => setIgMode('handle')}
                   />
                 )}
                 {step === 3 && signupData.role === 'brand' && (

@@ -2,8 +2,6 @@ import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomNav from '../components/BrandBottomNav';
-import InstagramRequiredGate from '../components/InstagramRequiredGate';
-import { useAuth } from '../context/AuthContext';
 import { BG } from '../theme/brand';
 
 export default function BrandsLayout({
@@ -13,12 +11,7 @@ export default function BrandsLayout({
    *  suits the screens with a white header (home). */
   topColor = BG.header,
 }: any) {
-  const { profile } = useAuth();
   const insets = useSafeAreaInsets();
-  // Block dashboard interaction until IG is connected. The gate is a
-  // fixed full-screen modal; the layout still renders so the gate has
-  // an auth-aware mount target.
-  const needsIg = !!profile && profile.instagram_connected === false;
 
   return (
     // edges omits 'top' so the strip below can paint it the header's colour —
@@ -43,8 +36,6 @@ export default function BrandsLayout({
 
       {/* Bottom Navigation */}
       <BottomNav />
-
-      {needsIg && <InstagramRequiredGate />}
     </SafeAreaView>
   );
 }

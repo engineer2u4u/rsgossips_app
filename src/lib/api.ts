@@ -57,6 +57,8 @@ const DEFAULT_TIMEOUT_MS = 20000;
  * notifications, which are legitimately callable pre-auth.
  */
 const REQUIRES_SESSION = new Set([
+  // Identity comes from the JWT; an anon call is refused in-function.
+  'refresh-instagram-public',
   // verify_jwt: true — platform-gated
   'submit-deliverables',
   'update-application-status',
